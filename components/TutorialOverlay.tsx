@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface TutorialOverlayProps {
@@ -15,7 +14,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) 
       <div className="fixed inset-0 bg-black/60 z-50 pointer-events-auto backdrop-blur-[1px]"></div>
 
       {/* Sys_Admin Instruction Box */}
-      <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-[70] w-[450px] animate-slide-in">
+      <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-[70] w-[450px] animate-slide-in pointer-events-none">
         <div className="bg-amber-500 text-black px-2 py-1 font-bold flex justify-between items-center text-xs font-mono border-t border-l border-r border-amber-600">
            <div className="flex items-center space-x-2">
                <i className="fas fa-terminal"></i>

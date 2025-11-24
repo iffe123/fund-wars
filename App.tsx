@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, Difficulty, GamePhase, LifeAction, PortfolioAction, PortfolioCompany, MarketVolatility, NewsEvent, PortfolioImpact, UserProfile, CompanyEvent, NPC, QuizQuestion } from './types';
 import { PlayerLevel, DealType } from './types';
@@ -124,6 +123,7 @@ const App: React.FC = () => {
       });
 
       setGamePhase('LIFE_MANAGEMENT'); // Start in workspace, but with tutorial rail
+      setActiveTab('WORKSPACE'); // Ensure we are on the workspace tab
       setTutorialStep(1); // Start Tutorial
       setBootComplete(true);
       logEvent('tutorial_start');
@@ -205,7 +205,10 @@ const App: React.FC = () => {
 
   // --- RENDER HELPERS ---
   const renderLeftPanel = () => (
-      <TerminalPanel title="COMMS_ARRAY" className="h-full flex flex-col">
+      <TerminalPanel 
+        title="COMMS_ARRAY" 
+        className={`h-full flex flex-col ${tutorialStep === 4 ? 'z-[60] relative' : ''}`}
+      >
           <div className="flex-1 bg-black">
               {npcs.map(npc => (
                   <button
@@ -331,27 +334,30 @@ const App: React.FC = () => {
             title="WORKSPACE_HOME" 
             className={`h-full flex flex-col p-4 bg-black ${isTutorialActive ? 'relative z-[55]' : ''}`}
           >
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                  {LIFE_ACTIONS.map(action => (
-                      <button 
-                        key={action.id}
-                        onClick={() => {
-                            if (tutorialStep > 0) return; // Lock during tutorial
-                            handleStatChange(action.outcome.statChanges);
-                            addToast(action.text, 'success');
-                        }}
-                        className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
-                      >
-                          <i className={`fas ${action.icon} text-2xl mb-2 text-slate-500 group-hover:text-blue-500`}></i>
-                          <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-white">{action.text}</span>
-                      </button>
-                  ))}
-              </div>
+              {/* Hide Life Actions during Tutorial Step 1 to prevent pushing content down */}
+              {tutorialStep !== 1 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    {LIFE_ACTIONS.map(action => (
+                        <button 
+                            key={action.id}
+                            onClick={() => {
+                                if (tutorialStep > 0) return; // Lock during tutorial
+                                handleStatChange(action.outcome.statChanges);
+                                addToast(action.text, 'success');
+                            }}
+                            className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                        >
+                            <i className={`fas ${action.icon} text-2xl mb-2 text-slate-500 group-hover:text-blue-500`}></i>
+                            <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-white">{action.text}</span>
+                        </button>
+                    ))}
+                </div>
+              )}
               
               <div className="flex-1 border-t border-slate-800 pt-4">
                   <div className="flex justify-between items-center mb-2">
                       <span className="text-xs font-bold text-slate-500">PENDING_TASKS</span>
-                      <div className={tutorialStep === 1 ? 'z-[60] relative' : ''}>
+                      <div className={tutorialStep === 1 ? 'relative z-[60]' : ''}>
                           <TerminalButton 
                             label="MANAGE_ASSETS" 
                             icon="fa-briefcase" 
@@ -398,10 +404,15 @@ const App: React.FC = () => {
         
         {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
         <div className="hidden md:grid flex-1 grid-cols-[250px_1fr_250px] overflow-hidden relative">
-            <div className="border-r border-slate-700 bg-black">
+            <div className={`border-r border-slate-700 bg-black ${tutorialStep === 4 ? 'z-[60] relative' : ''}`}>
                 {renderLeftPanel()}
             </div>
-            <div className="bg-black relative flex flex-col">
+            {/* 
+                CENTER COLUMN WRAPPER 
+                We lift this ENTIRE column during tutorial steps that require interaction 
+                with the center panel (Step 1, 2, 3, 6)
+            */}
+            <div className={`bg-black relative flex flex-col ${(tutorialStep === 1 || tutorialStep === 2 || tutorialStep === 3 || tutorialStep === 6) ? 'z-[51]' : ''}`}>
                 {renderCenterPanel()}
             </div>
             <div className="border-l border-slate-700 bg-black">
