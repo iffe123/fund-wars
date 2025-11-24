@@ -1,33 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { ChatMessage, PlayerStats, Scenario, NPC } from '../types';
 
-// Helper to safely get environment variables (supports Vite and standard process.env)
-const getEnvVar = (key: string) => {
-  // Check for VITE_ prefix (standard for Vite)
-  
-  // Safe access for import.meta.env
-  try {
-      const meta = import.meta as any;
-      if (meta && meta.env) {
-        if (meta.env[key]) return meta.env[key];
-      }
-  } catch (e) {
-      // Ignore error if import.meta is not available
-  }
+// --- ENV: read safely from Vite/Vercel ---
+// @ts-ignore
+const API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_API_KEY : undefined;
 
-  // Check process.env (Standard Node/Webpack fallback)
-  try {
-      if (typeof process !== 'undefined' && process.env) {
-        if (process.env[key]) return process.env[key];
-      }
-  } catch (e) {
-      // Ignore
-  }
-  return undefined;
-};
-
-// Safely retrieve API Key
-const API_KEY = getEnvVar('VITE_API_KEY');
+if (!API_KEY) {
+  console.warn("Gemini API Key missing. Did you set VITE_API_KEY in Vercel (Production)?");
+}
 
 const tools = [
   {
@@ -129,7 +109,7 @@ export const getAdvisorResponse = async (
 
     const response = await chat.sendMessage({ message: newPrompt });
 
-    return response.text;
+    return response.text || "I have nothing to say.";
   } catch (error) {
     console.error("Error calling Gemini API:", error);
     return "Looks like the market for good advice just crashed. Try again later, champ.";
@@ -245,5 +225,5 @@ export const getPortfolioAdvice = async (
      });
      
      const response = await chat.sendMessage({ message: prompt });
-     return response.text;
+     return response.text || "Nothing to report.";
 }

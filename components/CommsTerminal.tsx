@@ -204,16 +204,16 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 p-4 pt-16 pb-32 overflow-y-auto space-y-2 custom-scrollbar">
+                <div className="flex-1 p-4 pt-16 pb-32 overflow-y-auto space-y-4 custom-scrollbar">
                     {activeMessages.map((msg, index) => (
-                        <div key={index} className={`flex w-full mb-4 ${msg.sender === 'player' ? 'justify-end' : 'justify-start'}`}>
+                        <div key={index} className={`flex w-full ${msg.sender === 'player' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`flex max-w-[85%] ${msg.sender === 'player' ? 'flex-row-reverse' : 'flex-row'} items-end gap-3`}>
                                 
                                 {/* Avatar Bubble */}
                                 <div className={`
                                     w-8 h-8 rounded-full flex items-center justify-center shrink-0 border shadow-sm
                                     ${msg.sender === 'player' 
-                                        ? 'bg-blue-950 border-blue-500 text-blue-400' 
+                                        ? 'bg-blue-600 border-blue-400 text-white' 
                                         : activeTab === 'ADVISOR' 
                                             ? 'bg-amber-950 border-amber-600 text-amber-500'
                                             : 'bg-slate-800 border-slate-600 text-slate-400'
@@ -232,10 +232,10 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                                 <div className={`
                                     px-4 py-3 rounded-xl text-sm shadow-md border
                                     ${msg.sender === 'player' 
-                                        ? 'bg-blue-900 border-blue-700 text-blue-50 rounded-br-none' 
+                                        ? 'bg-blue-700 border-blue-600 text-white rounded-br-none mr-0' 
                                         : activeTab === 'ADVISOR'
-                                            ? 'bg-amber-900/10 border-amber-800/60 text-amber-100 rounded-bl-none'
-                                            : 'bg-slate-800 border-slate-700 text-slate-200 rounded-bl-none'
+                                            ? 'bg-amber-950/40 border-amber-800/60 text-amber-100 rounded-bl-none mr-12'
+                                            : 'bg-slate-800 border-slate-700 text-slate-200 rounded-bl-none mr-12'
                                     }
                                 `}>
                                     {/* Optional Name Header for NPCs */}
@@ -247,7 +247,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                                         </div>
                                     )}
                                     
-                                    <p className="leading-relaxed">{msg.text}</p>
+                                    <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                                 </div>
                             </div>
                         </div>

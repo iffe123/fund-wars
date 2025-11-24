@@ -114,14 +114,20 @@ const OfficeMessenger: React.FC<OfficeMessengerProps> = ({
 
                 <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50">
                     {activeMessages.map((msg, index) => (
-                    <div key={index} className={`flex items-end gap-2 ${msg.sender === 'player' ? 'justify-end' : 'justify-start'}`}>
+                    <div key={index} className={`flex items-end gap-2 w-full ${msg.sender === 'player' ? 'justify-end' : 'justify-start'}`}>
                         {(msg.sender === 'advisor' || msg.sender === 'npc') && (
                             <div className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm text-xs text-slate-500">
                                 <i className={`fas ${msg.sender === 'advisor' ? 'fa-user-tie' : npcList.find(n => n.id === activeTab)?.avatar}`}></i>
                             </div>
                         )}
-                        <div className={`rounded-lg px-3 py-2 max-w-[85%] shadow-sm text-sm ${msg.sender === 'player' ? 'bg-blue-600 text-white' : 'bg-white text-slate-800 border border-slate-200'}`}>
-                        <p>{msg.text}</p>
+                        <div className={`
+                            rounded-lg px-3 py-2 max-w-[85%] shadow-sm text-sm 
+                            ${msg.sender === 'player' 
+                                ? 'bg-blue-700 text-white mr-0' 
+                                : 'bg-white text-slate-800 border border-slate-200 mr-12'
+                            }
+                        `}>
+                            <p>{msg.text}</p>
                         </div>
                     </div>
                     ))}
