@@ -8,7 +8,12 @@ import { db } from '../services/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { logEvent } from '../services/analytics';
 
-const GameContext = createContext<GameContextType | undefined>(undefined);
+// Extend Context to include advanceTime
+interface GameContextTypeExtended extends GameContextType {
+    advanceTime: () => void;
+}
+
+const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
@@ -139,6 +144,52 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => clearInterval(interval);
   }, [gamePhase, marketVolatility]);
 
+  // --- TIME ADVANCEMENT & SCENARIO TRIGGER ---
+  const advanceTime = useCallback(() => {
+      if (!playerStats) return;
+
+      // 1. Increment Time
+      const nextMonth = playerStats.gameMonth + 1;
+      const nextYear = nextMonth > 12 ? playerStats.gameYear + 1 : playerStats.gameYear;
+      const finalMonth = nextMonth > 12 ? 1 : nextMonth;
+
+      // 2. Update Stats (Monthly Burn/Gain)
+      updatePlayerStats({
+          // Add recurring monthly logic here (e.g., burn rate, salary)
+          score: 10, // Survival bonus
+      });
+      
+      // Update Context State for Time directly
+      setPlayerStats(prev => prev ? ({ ...prev, gameYear: nextYear, gameMonth: finalMonth }) : null);
+
+      // 3. Trigger Scenarios (30% Chance or if Queue is empty)
+      // Filter scenarios that haven't been played and whose conditions are met
+      const availableScenarios = SCENARIOS.filter(s => 
+          !playerStats.playedScenarioIds.includes(s.id) && 
+          s.id !== 1 // Don't replay intro
+          // Add more condition checks here (reputation, etc)
+      );
+
+      const shouldTriggerEvent = Math.random() < 0.4; // 40% chance per week/turn
+
+      if (shouldTriggerEvent && availableScenarios.length > 0) {
+          const randomIndex = Math.floor(Math.random() * availableScenarios.length);
+          const nextScenario = availableScenarios[randomIndex];
+          
+          setActiveScenario(nextScenario);
+          setGamePhase('SCENARIO');
+          
+          // Mark as played immediately so we don't loop it
+          updatePlayerStats({ playedScenarioIds: [nextScenario.id] });
+          logEvent('scenario_triggered', { id: nextScenario.id, title: nextScenario.title });
+      } else {
+          // No scenario, just a quiet week
+          addLogEntry("Week advanced. Market stable.");
+      }
+
+  }, [playerStats]);
+
+
   // --- STAT UPDATES ---
   const updatePlayerStats = useCallback((changes: StatChanges) => {
     setPlayerStats(prevStats => {
@@ -233,6 +284,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log(`[Game Log]: ${message}`);
   };
 
+  const setTutorialStepHandler = (step: number) => {
+      setTutorialStep(step);
+  };
+
   return (
     <GameContext.Provider value={{
       user,
@@ -248,7 +303,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       handleActionOutcome,
       sendNpcMessage,
       addLogEntry,
-      setTutorialStep
+      setTutorialStep: setTutorialStepHandler,
+      advanceTime
     }}>
       {children}
     </GameContext.Provider>

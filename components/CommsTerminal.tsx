@@ -205,53 +205,56 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
 
                 {/* Messages */}
                 <div className="flex-1 p-4 pt-16 pb-32 overflow-y-auto space-y-4 custom-scrollbar">
-                    {activeMessages.map((msg, index) => (
-                        <div key={index} className={`flex w-full ${msg.sender === 'player' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`flex max-w-[85%] ${msg.sender === 'player' ? 'flex-row-reverse' : 'flex-row'} items-end gap-3`}>
-                                
-                                {/* Avatar Bubble */}
-                                <div className={`
-                                    w-8 h-8 rounded-full flex items-center justify-center shrink-0 border shadow-sm
-                                    ${msg.sender === 'player' 
-                                        ? 'bg-blue-600 border-blue-400 text-white' 
-                                        : activeTab === 'ADVISOR' 
-                                            ? 'bg-amber-950 border-amber-600 text-amber-500'
-                                            : 'bg-slate-800 border-slate-600 text-slate-400'
-                                    }
-                                `}>
-                                     <i className={`fas ${
-                                        msg.sender === 'player' 
-                                            ? 'fa-user' 
-                                            : activeTab === 'ADVISOR' 
-                                                ? 'fa-user-tie' 
-                                                : activeNPC?.avatar || 'fa-user'
-                                    } text-xs`}></i>
-                                </div>
-
-                                {/* Message Bubble */}
-                                <div className={`
-                                    px-4 py-3 rounded-xl text-sm shadow-md border
-                                    ${msg.sender === 'player' 
-                                        ? 'bg-blue-700 border-blue-600 text-white rounded-br-none mr-0' 
-                                        : activeTab === 'ADVISOR'
-                                            ? 'bg-amber-950/40 border-amber-800/60 text-amber-100 rounded-bl-none mr-12'
-                                            : 'bg-slate-800 border-slate-700 text-slate-200 rounded-bl-none mr-12'
-                                    }
-                                `}>
-                                    {/* Optional Name Header for NPCs */}
-                                    {msg.sender !== 'player' && (
-                                        <div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${
-                                            activeTab === 'ADVISOR' ? 'text-amber-600' : 'text-slate-500'
-                                        }`}>
-                                            {msg.senderName || (activeTab === 'ADVISOR' ? 'Machiavelli' : activeNPC?.name)}
-                                        </div>
-                                    )}
+                    {activeMessages.map((msg, index) => {
+                        const isPlayer = msg.sender === 'player';
+                        return (
+                            <div key={index} className={`flex w-full ${isPlayer ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`flex max-w-[90%] ${isPlayer ? 'flex-row-reverse' : 'flex-row'} items-end gap-3`}>
                                     
-                                    <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                                    {/* Avatar Bubble */}
+                                    <div className={`
+                                        w-8 h-8 rounded-full flex items-center justify-center shrink-0 border shadow-sm
+                                        ${isPlayer 
+                                            ? 'bg-blue-600 border-blue-400 text-white' 
+                                            : activeTab === 'ADVISOR' 
+                                                ? 'bg-amber-950 border-amber-600 text-amber-500'
+                                                : 'bg-slate-800 border-slate-600 text-slate-400'
+                                        }
+                                    `}>
+                                        <i className={`fas ${
+                                            isPlayer 
+                                                ? 'fa-user' 
+                                                : activeTab === 'ADVISOR' 
+                                                    ? 'fa-user-tie' 
+                                                    : activeNPC?.avatar || 'fa-user'
+                                        } text-xs`}></i>
+                                    </div>
+
+                                    {/* Message Bubble */}
+                                    <div className={`
+                                        px-4 py-3 rounded-xl text-sm shadow-md border
+                                        ${isPlayer 
+                                            ? 'bg-blue-600 border-blue-500 text-white rounded-br-none ml-8 md:ml-16' 
+                                            : activeTab === 'ADVISOR'
+                                                ? 'bg-amber-950/60 border-amber-800/50 text-amber-100 rounded-bl-none mr-8 md:mr-16'
+                                                : 'bg-slate-800 border-slate-700 text-slate-200 rounded-bl-none mr-8 md:mr-16'
+                                        }
+                                    `}>
+                                        {/* Optional Name Header for NPCs */}
+                                        {!isPlayer && (
+                                            <div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${
+                                                activeTab === 'ADVISOR' ? 'text-amber-600' : 'text-slate-500'
+                                            }`}>
+                                                {msg.senderName || (activeTab === 'ADVISOR' ? 'Machiavelli' : activeNPC?.name)}
+                                            </div>
+                                        )}
+                                        
+                                        <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                     {(isNpcLoading) && (
                          <div className="flex items-center space-x-2 text-slate-500 text-xs animate-pulse ml-12">
                             <i className="fas fa-pen"></i>

@@ -8,7 +8,8 @@ type AnalyticsEvent =
   | 'game_over'
   | 'user_stuck'
   | 'login_success'
-  | 'app_init';
+  | 'app_init'
+  | 'scenario_triggered';
 
 interface EventParams {
   [key: string]: string | number | boolean;

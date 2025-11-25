@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import type { ChatMessage, PlayerStats, Scenario, NPC } from '../types';
 
@@ -123,7 +124,7 @@ export const getNPCResponse = async (
     playerStats: PlayerStats
 ): Promise<{ text: string, functionCalls?: any[] }> => {
     if (!API_KEY) {
-        return { text: "..." };
+        return { text: "[SYSTEM]: Connection Error. API Key Missing or Invalid." };
     }
 
     try {
@@ -205,7 +206,7 @@ export const getNPCResponse = async (
         };
     } catch (error) {
         console.error("Error calling Gemini API for NPC:", error);
-        return { text: "(The line seems dead...)" };
+        return { text: "[CONNECTION LOST]: The NPC is not responding. Check console logs." };
     }
 };
 
