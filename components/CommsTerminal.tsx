@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import type { ChatMessage, NPC } from '../types';
 import { useGame } from '../context/GameContext';
@@ -14,6 +13,7 @@ interface CommsTerminalProps {
   isOpen?: boolean; // Prop to control visibility from parent (mobile tab)
   onClose?: () => void;
   mode?: 'DESKTOP_OVERLAY' | 'MOBILE_EMBED';
+  selectedNpcId?: string;
 }
 
 const CommsTerminal: React.FC<CommsTerminalProps> = ({ 
@@ -26,7 +26,8 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
     predefinedQuestions,
     isOpen: propIsOpen,
     onClose: propOnClose,
-    mode = 'DESKTOP_OVERLAY'
+    mode = 'DESKTOP_OVERLAY',
+    selectedNpcId
 }) => {
   const { tutorialStep, setTutorialStep } = useGame();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
@@ -45,6 +46,17 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
           setIsOpen(true);
       }
   }, [tutorialStep, isOpen]);
+
+  // Sync activeTab with selectedNpcId prop
+  useEffect(() => {
+    if (selectedNpcId) {
+        if (selectedNpcId === 'advisor') {
+            setActiveTab('ADVISOR');
+        } else {
+            setActiveTab(selectedNpcId);
+        }
+    }
+  }, [selectedNpcId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -208,14 +220,14 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                     {activeMessages.map((msg, index) => {
                         const isPlayer = msg.sender === 'player';
                         return (
-                            <div key={index} className={`flex w-full ${isPlayer ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`flex max-w-[90%] ${isPlayer ? 'flex-row-reverse' : 'flex-row'} items-end gap-3`}>
+                            <div key={index} className={`flex w-full mb-4 ${isPlayer ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`flex max-w-[85%] ${isPlayer ? 'flex-row-reverse' : 'flex-row'} items-end gap-3`}>
                                     
                                     {/* Avatar Bubble */}
                                     <div className={`
                                         w-8 h-8 rounded-full flex items-center justify-center shrink-0 border shadow-sm
                                         ${isPlayer 
-                                            ? 'bg-blue-600 border-blue-400 text-white' 
+                                            ? 'bg-blue-700 border-blue-500 text-white' 
                                             : activeTab === 'ADVISOR' 
                                                 ? 'bg-amber-950 border-amber-600 text-amber-500'
                                                 : 'bg-slate-800 border-slate-600 text-slate-400'
@@ -232,12 +244,12 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
 
                                     {/* Message Bubble */}
                                     <div className={`
-                                        px-4 py-3 rounded-xl text-sm shadow-md border
+                                        px-4 py-3 rounded-xl text-sm shadow-md border relative group
                                         ${isPlayer 
-                                            ? 'bg-blue-600 border-blue-500 text-white rounded-br-none ml-8 md:ml-16' 
+                                            ? 'bg-blue-700 border-blue-500 text-white rounded-br-none ml-12' // Player style with left indent
                                             : activeTab === 'ADVISOR'
-                                                ? 'bg-amber-950/60 border-amber-800/50 text-amber-100 rounded-bl-none mr-8 md:mr-16'
-                                                : 'bg-slate-800 border-slate-700 text-slate-200 rounded-bl-none mr-8 md:mr-16'
+                                                ? 'bg-amber-950/80 border-amber-800/60 text-amber-100 rounded-bl-none mr-12' // Advisor style with right indent
+                                                : 'bg-slate-800 border-slate-700 text-slate-200 rounded-bl-none mr-12' // NPC style with right indent
                                         }
                                     `}>
                                         {/* Optional Name Header for NPCs */}

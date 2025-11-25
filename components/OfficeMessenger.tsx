@@ -123,10 +123,10 @@ const OfficeMessenger: React.FC<OfficeMessengerProps> = ({
                                     </div>
                                 )}
                                 <div className={`
-                                    rounded-lg px-4 py-2 max-w-[80%] shadow-sm text-sm 
+                                    rounded-lg px-4 py-2 max-w-[85%] shadow-sm text-sm border
                                     ${isPlayer 
-                                        ? 'bg-blue-600 text-white rounded-br-none ml-12' 
-                                        : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none mr-12'
+                                        ? 'bg-blue-600 border-blue-500 text-white rounded-br-none ml-12' // Player: Blue, Left Indent
+                                        : 'bg-white border-slate-200 text-slate-800 rounded-bl-none mr-12' // NPC: White, Right Indent
                                     }
                                 `}>
                                     <p>{msg.text}</p>
@@ -139,7 +139,7 @@ const OfficeMessenger: React.FC<OfficeMessengerProps> = ({
                              <div className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm text-xs text-slate-500">
                                 <i className="fas fa-user-tie"></i>
                             </div>
-                            <div className="bg-white text-slate-800 border border-slate-200 rounded-lg px-3 py-2">
+                            <div className="bg-white text-slate-800 border border-slate-200 rounded-lg px-3 py-2 mr-12">
                                 <div className="flex items-center space-x-1">
                                     <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>
                                     <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
