@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import type { ChatMessage, NPC } from '../types';
 import { useGame } from '../context/GameContext';
@@ -109,7 +110,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
     return (
         <button 
          onClick={() => setIsOpen(true)}
-         className={`fixed bottom-6 right-6 bg-slate-900 border-2 border-amber-500 text-amber-500 font-mono text-sm py-2 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-40 flex items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-slate-800 ${tutorialStep === 4 ? 'z-[60] animate-bounce ring-2 ring-white' : ''}`}
+         className={`fixed bottom-6 right-6 bg-slate-900 border-2 border-amber-500 text-amber-500 font-mono text-sm py-2 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-40 flex items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-slate-800 ${tutorialStep === 4 ? 'z-[100] animate-bounce ring-2 ring-white' : ''}`}
         >
           <div className="relative">
              <i className="fas fa-terminal animate-pulse"></i>
@@ -140,7 +141,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
   // Styling logic based on mode
   const containerClasses = mode === 'MOBILE_EMBED'
       ? "w-full h-full flex flex-col bg-slate-900"
-      : `fixed bottom-6 right-6 w-[90vw] md:w-[600px] h-[70vh] flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-50 border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'z-[60] ring-2 ring-amber-500' : ''}`;
+      : `fixed bottom-6 right-6 w-[90vw] md:w-[600px] h-[70vh] flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-50 border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'z-[100] ring-2 ring-amber-500' : ''}`;
 
   return (
     <div className={containerClasses}>
@@ -219,6 +220,19 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                 <div className="flex-1 p-4 pt-16 pb-32 overflow-y-auto space-y-4 custom-scrollbar">
                     {activeMessages.map((msg, index) => {
                         const isPlayer = msg.sender === 'player';
+                        const isSystem = msg.sender === 'system';
+                        
+                        if (isSystem) {
+                            return (
+                                <div key={index} className="w-full flex justify-center my-2">
+                                    <div className="text-[10px] text-slate-500 border border-slate-800 bg-black/20 px-3 py-1 rounded font-mono italic text-center max-w-[80%]">
+                                        <i className="fas fa-terminal mr-2 text-xs"></i>
+                                        {msg.text}
+                                    </div>
+                                </div>
+                            );
+                        }
+
                         return (
                             <div key={index} className={`flex w-full mb-4 ${isPlayer ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`flex max-w-[85%] ${isPlayer ? 'flex-row-reverse' : 'flex-row'} items-end gap-3`}>

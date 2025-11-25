@@ -202,7 +202,7 @@ export interface NewsEvent {
 }
 
 export interface ChatMessage {
-  sender: 'player' | 'advisor' | 'npc';
+  sender: 'player' | 'advisor' | 'npc' | 'system';
   senderName?: string;
   text: string;
 }
@@ -259,10 +259,12 @@ export interface GameContextType {
   difficulty: Difficulty | null;
   marketVolatility: MarketVolatility;
   tutorialStep: number;
+  actionLog: string[];
   setGamePhase: (phase: GamePhase) => void;
   updatePlayerStats: (changes: StatChanges) => void;
   handleActionOutcome: (outcome: { description: string; statChanges: StatChanges }, title: string) => void;
   sendNpcMessage: (npcId: string, message: string) => void;
   addLogEntry: (message: string) => void;
   setTutorialStep: (step: number) => void;
+  advanceTime: () => void;
 }

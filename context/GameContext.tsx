@@ -33,6 +33,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [marketVolatility, setMarketVolatility] = useState<MarketVolatility>('NORMAL');
   const [tutorialStep, setTutorialStep] = useState<number>(0);
+  const [actionLog, setActionLog] = useState<string[]>([]);
 
   // --- CLOUD SAVE / LOAD ---
   
@@ -70,6 +71,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   if (data.marketVolatility) setMarketVolatility(data.marketVolatility);
                   if (data.npcs) setNpcs(data.npcs);
                   if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
+                  if (data.actionLog) setActionLog(data.actionLog);
                   logEvent('login_success');
                   
               } else {
@@ -96,6 +98,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           marketVolatility,
           npcs,
           tutorialStep,
+          actionLog,
           lastSaved: new Date().toISOString()
       };
 
@@ -105,7 +108,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } catch (error) {
           console.error("Error saving game:", error);
       }
-  }, [currentUser, playerStats, gamePhase, activeScenario, marketVolatility, npcs, tutorialStep]);
+  }, [currentUser, playerStats, gamePhase, activeScenario, marketVolatility, npcs, tutorialStep, actionLog]);
 
   // Auto-Save on Phase Change or Major Event
   useEffect(() => {
@@ -162,19 +165,54 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Update Context State for Time directly
       setPlayerStats(prev => prev ? ({ ...prev, gameYear: nextYear, gameMonth: finalMonth }) : null);
 
-      // 3. Trigger Scenarios (30% Chance or if Queue is empty)
+      // 3. Trigger Scenarios (Probability + Filtering)
       // Filter scenarios that haven't been played and whose conditions are met
-      const availableScenarios = SCENARIOS.filter(s => 
-          !playerStats.playedScenarioIds.includes(s.id) && 
-          s.id !== 1 // Don't replay intro
-          // Add more condition checks here (reputation, etc)
-      );
+      const availableScenarios = SCENARIOS.filter(s => {
+          // Don't replay played scenarios (unless we decide to allow repeats for generic ones later)
+          if (playerStats.playedScenarioIds.includes(s.id) && s.id !== 1) return false;
+          if (s.id === 1) return false; // Intro is handled specially
 
-      const shouldTriggerEvent = Math.random() < 0.4; // 40% chance per week/turn
+          // Check Conditions
+          if (s.requiresPortfolio && playerStats.portfolio.length === 0) return false;
+          
+          if (s.minReputation && playerStats.reputation < s.minReputation) return false;
+          if (s.maxReputation && playerStats.reputation > s.maxReputation) return false;
+          
+          if (s.minStress && playerStats.stress < s.minStress) return false;
+          if (s.minCash && playerStats.cash < s.minCash) return false;
+
+          // Flag Requirements
+          if (s.requiredFlags) {
+              const hasAllFlags = s.requiredFlags.every(flag => playerStats.playerFlags[flag]);
+              if (!hasAllFlags) return false;
+          }
+
+          // Blocked by Flags
+          if (s.blockedByFlags) {
+              const hasBlockingFlag = s.blockedByFlags.some(flag => playerStats.playerFlags[flag]);
+              if (hasBlockingFlag) return false;
+          }
+
+          return true;
+      });
+
+      // 40% base chance, higher if stress is high (more crises)
+      const crisisMultiplier = playerStats.stress > 70 ? 1.5 : 1.0;
+      const shouldTriggerEvent = Math.random() < (0.4 * crisisMultiplier); 
 
       if (shouldTriggerEvent && availableScenarios.length > 0) {
-          const randomIndex = Math.floor(Math.random() * availableScenarios.length);
-          const nextScenario = availableScenarios[randomIndex];
+          // Priority Selection: Prioritize scenarios with specific flags or requirements (more narrative) over generic ones
+          // Sort by specificity (length of requirements)
+          availableScenarios.sort((a, b) => {
+              const scoreA = (a.requiredFlags?.length || 0) + (a.requiresPortfolio ? 1 : 0);
+              const scoreB = (b.requiredFlags?.length || 0) + (b.requiresPortfolio ? 1 : 0);
+              return scoreB - scoreA; // Descending
+          });
+
+          // Weighted random selection favoring higher priority, but allowing variance
+          // Take top 3 applicable
+          const candidates = availableScenarios.slice(0, 3);
+          const nextScenario = candidates[Math.floor(Math.random() * candidates.length)];
           
           setActiveScenario(nextScenario);
           setGamePhase('SCENARIO');
@@ -182,9 +220,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // Mark as played immediately so we don't loop it
           updatePlayerStats({ playedScenarioIds: [nextScenario.id] });
           logEvent('scenario_triggered', { id: nextScenario.id, title: nextScenario.title });
+          addLogEntry(`Event Triggered: ${nextScenario.title}`);
       } else {
           // No scenario, just a quiet week
-          addLogEntry("Week advanced. Market stable.");
+          addLogEntry("Week advanced. No critical incidents reported.");
       }
 
   }, [playerStats]);
@@ -281,6 +320,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const addLogEntry = (message: string) => {
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const entry = `${timestamp} // ${message}`;
+      setActionLog(prev => [entry, ...prev].slice(0, 50)); // Keep last 50
       console.log(`[Game Log]: ${message}`);
   };
 
@@ -298,6 +340,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       difficulty,
       marketVolatility,
       tutorialStep,
+      actionLog,
       setGamePhase,
       updatePlayerStats,
       handleActionOutcome,

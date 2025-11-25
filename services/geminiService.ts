@@ -47,6 +47,12 @@ RPG ROLEPLAYING PROTOCOLS:
 - If the player is facing a moral dilemma (like insider trading), tempt them with the upside but cynically warn them about getting caught.
 - If the player asks "What would you do?", give them the most ruthless option available.
 
+CHAIN OF THOUGHT REASONING (SYSTEM LOGS):
+- The chat history may contain messages starting with [SYSTEM_LOG]. These are ACTIONS the player has already taken.
+- ALWAYS analyze the most recent [SYSTEM_LOG] before answering.
+- If the log says "Player chose: X", react to that choice immediately. Praise their ruthlessness or mock their stupidity.
+- Do not ask the player "What did you do?". You KNOW what they did because it is in the log.
+
 ADAPTIVE BEHAVIOR:
 - If the player's Stress is high (>70%), mock them for cracking under pressure.
 - If the player's Reputation is low, remind them they are irrelevant.
@@ -95,8 +101,9 @@ export const getAdvisorResponse = async (
     const ai = new GoogleGenAI({ apiKey: API_KEY });
     
     // Map the app's chat history to Gemini's history format
+    // CRITICAL: Map 'system' messages to 'user' role so the model treats them as context it must respond to.
     const geminiHistory = history.map(msg => ({
-        role: msg.sender === 'player' ? 'user' : 'model',
+        role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
         parts: [{ text: msg.text }],
     }));
 
@@ -182,7 +189,7 @@ export const getNPCResponse = async (
         const ai = new GoogleGenAI({ apiKey: API_KEY });
         
         const geminiHistory = history.map(msg => ({
-            role: msg.sender === 'player' ? 'user' : 'model',
+            role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
             parts: [{ text: msg.text }],
         }));
 

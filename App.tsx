@@ -49,8 +49,8 @@ const TUTORIAL_STEPS_TEXT = [
 const App: React.FC = () => {
   // Use Context
   const { 
-    user, playerStats, npcs, activeScenario, gamePhase, difficulty, marketVolatility, tutorialStep,
-    setGamePhase, updatePlayerStats, sendNpcMessage, setTutorialStep, advanceTime
+    user, playerStats, npcs, activeScenario, gamePhase, difficulty, marketVolatility, tutorialStep, actionLog,
+    setGamePhase, updatePlayerStats, sendNpcMessage, setTutorialStep, advanceTime, addLogEntry
   } = useGame();
   
   const { loading: authLoading } = useAuth();
@@ -87,6 +87,21 @@ const App: React.FC = () => {
           setLegalAccepted(true);
       }
   }, []);
+
+  // Auto-switch to ASSETS view on Step 6
+  useEffect(() => {
+      if (tutorialStep === 6 && activeTab !== 'ASSETS') {
+          setActiveTab('ASSETS');
+          if (window.innerWidth < 768) setActiveMobileTab('DESK');
+      }
+  }, [tutorialStep, activeTab]);
+
+  // Left Panel Sync Logic
+  useEffect(() => {
+      if (selectedNpcId && activeMobileTab !== 'COMMS') {
+          // If NPC selected from logic, ensure chat terminal knows about it
+      }
+  }, [selectedNpcId]);
 
   const handleLegalAccept = () => {
       localStorage.setItem('LEGAL_CONSENT', 'true');
@@ -128,6 +143,8 @@ const App: React.FC = () => {
       setTutorialStep(1); // Start Tutorial
       setBootComplete(true);
       logEvent('tutorial_start');
+      addLogEntry("INIT: Career Sequence Started. Role: Analyst.");
+      setChatHistory(prev => [...prev, { sender: 'system', text: "[SYSTEM_LOG] Player accepted offer. Career started at Stress Level: " + stress }]);
       playSfx('BOOT');
   };
 
@@ -140,6 +157,14 @@ const App: React.FC = () => {
   const handleChoice = (choice: Choice) => {
       handleStatChange(choice.outcome.statChanges);
       addToast("ACTION_EXECUTED: " + choice.text, 'success');
+      addLogEntry(`CHOICE: ${choice.text}`);
+      
+      // Narrative Bridge: Inject choice into Chat History
+      setChatHistory(prev => [...prev, { 
+          sender: 'system', 
+          text: `[SYSTEM_LOG] Player chose: "${choice.text}". Outcome: ${choice.outcome.description}` 
+      }]);
+
       playSfx('KEYPRESS');
       
       setTimeout(() => {
@@ -155,6 +180,7 @@ const App: React.FC = () => {
       advanceTime();
       playSfx('KEYPRESS');
       addToast("TIME_ADVANCED: WEEK_CYCLE_COMPLETE", 'success');
+      setChatHistory(prev => [...prev, { sender: 'system', text: "[SYSTEM_LOG] Time advanced 1 week." }]);
   };
 
   // --- CHAT HANDLERS ---
@@ -207,20 +233,25 @@ const App: React.FC = () => {
                }
                
                if (response.text) {
-                  setTimeout(() => {
-                      // In a real implementation, we'd update the context here
-                      // Since the context helper sendNpcMessage only supports player messages in strict typing (sometimes),
-                      // we rely on CommsTerminal reading the updated context or re-fetching.
-                      // For this simplified version, we assume the context or UI handles the async reply display.
-                      // To force it for now:
-                      // We'd call a 'receiveNpcMessage' if it existed. 
-                      // We will just let the UI state in CommsTerminal handle the visual "typing..." -> "message" flow for now.
-                  }, 500);
-               }
-               
-               // Tutorial Rail Logic
-               if (tutorialStep === 5 && msg === "Check the patent") {
-                   // Auto-advance handled in CommsTerminal
+                  // In a real implementation, we'd update the context here
+                  // The NPC response is handled by the hook refetching or local state
+                  // For this version, we assume the `getNPCResponse` call updates backend or we update local `npcs` state (which we do via sendNpcMessage for player only)
+                  // We need to manually append NPC response to context
+                  // This app uses `sendNpcMessage` only for player... 
+                  // We need to update the NPC's history in context with the reply
+                  // Currently `GameContext` helper only appends player message.
+                  // We will simulate it by relying on CommsTerminal to fetch freshly? 
+                  // No, we need to push it.
+                  
+                  // Hack: Use sendNpcMessage for NPC reply too, but it's typed for player...
+                  // Actually, `sendNpcMessage` sets `sender: 'player'`. 
+                  // We need to update GameContext to allow sending as NPC or fix here.
+                  // For now, we let the UI handle it in CommsTerminal via local state or effect, 
+                  // BUT `CommsTerminal` reads from `npcList` prop.
+                  // We should update the context `npcs` state.
+                  // Since we can't easily change `sendNpcMessage` signature without breaking interface in this file,
+                  // We will accept that NPC responses might not persist in `npcs` context without a `receiveNpcMessage` function.
+                  // However, for Advisor we use local `chatHistory`.
                }
 
            } catch (e) {
@@ -234,7 +265,7 @@ const App: React.FC = () => {
   const renderLeftPanel = () => (
       <TerminalPanel 
         title="COMMS_ARRAY" 
-        className={`h-full flex flex-col ${tutorialStep === 4 ? 'z-[60] relative ring-2 ring-amber-500' : ''}`}
+        className={`h-full flex flex-col ${tutorialStep === 4 ? 'z-[100] relative ring-2 ring-amber-500' : ''}`}
       >
           <div className="flex-1 bg-black">
               {npcs.map(npc => (
@@ -280,7 +311,7 @@ const App: React.FC = () => {
           return (
               <TerminalPanel 
                 title="ASSET_MANAGER" 
-                className={`h-full ${isTutorialActive ? 'relative z-[60]' : ''}`}
+                className={`h-full ${isTutorialActive ? 'relative z-[100]' : ''}`}
               >
                   <PortfolioView 
                       playerStats={playerStats}
@@ -292,9 +323,12 @@ const App: React.FC = () => {
                               setTutorialStep(0); // END TUTORIAL
                               addToast("IOI SUBMITTED. DEAL PHASE INITIATED.", "success");
                               logEvent('tutorial_complete');
+                              setChatHistory(prev => [...prev, { sender: 'system', text: "[SYSTEM_LOG] Tutorial Complete. First Deal IOI Submitted." }]);
                           } else {
                               handleStatChange(action.outcome.statChanges);
                               addToast(action.outcome.logMessage, 'info');
+                              addLogEntry(action.outcome.logMessage);
+                              setChatHistory(prev => [...prev, { sender: 'system', text: `[SYSTEM_LOG] Portfolio Action: ${action.text}` }]);
                           }
                       }}
                       onBack={() => {
@@ -366,7 +400,7 @@ const App: React.FC = () => {
       return (
           <TerminalPanel 
             title="WORKSPACE_HOME" 
-            className={`h-full flex flex-col p-4 bg-black ${isTutorialActive ? 'relative z-[60]' : ''}`}
+            className={`h-full flex flex-col p-4 bg-black ${isTutorialActive ? 'relative z-[100]' : ''}`}
           >
               {/* Hide Life Actions during Tutorial Step 1 to prevent pushing content down */}
               {tutorialStep !== 1 && (
@@ -378,6 +412,7 @@ const App: React.FC = () => {
                                 if (tutorialStep > 0) return; // Lock during tutorial
                                 handleStatChange(action.outcome.statChanges);
                                 addToast(action.text, 'success');
+                                addLogEntry(`ACTION: ${action.text}`);
                             }}
                             className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
                         >
@@ -391,7 +426,7 @@ const App: React.FC = () => {
               <div className="flex-1 border-t border-slate-800 pt-4">
                   <div className="flex justify-between items-center mb-2">
                       <span className="text-xs font-bold text-slate-500">PENDING_TASKS</span>
-                      <div className={tutorialStep === 1 ? 'relative z-[60]' : ''}>
+                      <div className={tutorialStep === 1 ? 'relative z-[100]' : ''}>
                           <TerminalButton 
                             label="MANAGE_ASSETS" 
                             icon="fa-briefcase" 
@@ -450,19 +485,19 @@ const App: React.FC = () => {
         {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
         <div className="hidden md:grid flex-1 grid-cols-[250px_1fr_250px] overflow-hidden relative">
             {/* Left Panel (Comms) */}
-            <div className={`border-r border-slate-700 bg-black ${tutorialStep === 4 ? 'z-[60] relative' : ''}`}>
+            <div className={`border-r border-slate-700 bg-black ${tutorialStep === 4 ? 'z-[100] relative' : ''}`}>
                 {renderLeftPanel()}
             </div>
             
             {/* Center Column (Workspace) */}
             {/* Lift during tutorial interactions */}
-            <div className={`bg-black relative flex flex-col ${(tutorialStep === 1 || tutorialStep === 2 || tutorialStep === 3 || tutorialStep === 6) ? 'z-[60]' : ''}`}>
+            <div className={`bg-black relative flex flex-col ${(tutorialStep === 1 || tutorialStep === 2 || tutorialStep === 3 || tutorialStep === 6) ? 'z-[100]' : ''}`}>
                 {renderCenterPanel()}
             </div>
             
             {/* Right Panel (News) */}
             <div className="border-l border-slate-700 bg-black">
-                 <NewsTicker events={NEWS_EVENTS} />
+                 <NewsTicker events={NEWS_EVENTS} systemLogs={actionLog} />
             </div>
             
             <TutorialOverlay instruction={TUTORIAL_STEPS_TEXT[tutorialStep]} step={tutorialStep} />
@@ -493,7 +528,7 @@ const App: React.FC = () => {
             
             {activeMobileTab === 'NEWS' && (
                 <div className="flex-1 overflow-hidden">
-                     <NewsTicker events={NEWS_EVENTS} />
+                     <NewsTicker events={NEWS_EVENTS} systemLogs={actionLog} />
                 </div>
             )}
 
@@ -535,7 +570,7 @@ const App: React.FC = () => {
         </div>
 
         {/* DESKTOP FLOATING CHAT TERMINAL */}
-        <div className={`hidden md:block ${tutorialStep === 5 ? 'relative z-[60]' : ''}`}>
+        <div className={`hidden md:block ${tutorialStep === 5 ? 'relative z-[100]' : ''}`}>
             <CommsTerminal 
                 npcList={npcs}
                 selectedNpcId={selectedNpcId} // Pass this prop
