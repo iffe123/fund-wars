@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
 import { useHaptic } from '../hooks/useHaptic';
 
 // --- BUTTONS ---
 interface TerminalButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'danger' | 'warning' | 'default';
+  variant?: 'primary' | 'danger' | 'warning' | 'default' | 'success';
   label: string;
   icon?: string;
 }
@@ -27,6 +26,7 @@ export const TerminalButton: React.FC<TerminalButtonProps> = ({
     primary: "border-green-600 text-green-500 hover:bg-green-600 hover:text-black disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-green-500",
     danger: "border-red-600 text-red-500 hover:bg-red-600 hover:text-black disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-red-500",
     warning: "border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-black disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-amber-500",
+    success: "border-green-600 text-green-500 hover:bg-green-600 hover:text-black disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-green-500",
   };
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {

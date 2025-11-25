@@ -268,3 +268,75 @@ export interface GameContextType {
   setTutorialStep: (step: number) => void;
   advanceTime: () => void;
 }
+
+// ==================== COMPETITOR FUNDS SYSTEM ====================
+
+export type RivalStrategy = 'AGGRESSIVE' | 'CONSERVATIVE' | 'OPPORTUNISTIC' | 'PREDATORY';
+
+export interface RivalFund {
+  id: string;
+  name: string;
+  managingPartner: string;
+  npcId: string;
+  strategy: RivalStrategy;
+  aum: number;
+  dryPowder: number;
+  portfolio: RivalPortfolioCo[];
+  winStreak: number;
+  totalDeals: number;
+  reputation: number;
+  aggressionLevel: number;
+  riskTolerance: number;
+}
+
+export interface RivalPortfolioCo {
+  name: string;
+  dealType: DealType;
+  acquisitionPrice: number;
+  currentValue: number;
+  acquiredMonth: number;
+  acquiredYear: number;
+}
+
+export interface CompetitiveDeal {
+  id: number;
+  companyName: string;
+  sector: string;
+  description: string;
+  askingPrice: number;
+  fairValue: number;
+  dealType: DealType;
+  metrics: {
+    revenue: number;
+    ebitda: number;
+    growth: number;
+    debt: number;
+  };
+  seller: string;
+  deadline: number;
+  interestedRivals: string[];
+  isHot: boolean;
+  hiddenRisk?: string;
+  hiddenUpside?: string;
+}
+
+export interface AuctionState {
+  deal: CompetitiveDeal;
+  currentBid: number;
+  currentLeader: string;
+  bids: AuctionBid[];
+  round: number;
+  maxRounds: number;
+  isComplete: boolean;
+  winner?: string;
+  finalPrice?: number;
+}
+
+export interface AuctionBid {
+  bidderId: string;
+  bidderName: string;
+  amount: number;
+  round: number;
+  timestamp: number;
+  wasBluff?: boolean;
+}

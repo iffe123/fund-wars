@@ -1,16 +1,20 @@
-
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, Scenario, StatChanges, PortfolioCompany } from '../types';
+import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal } from '../types';
 import { PlayerLevel, DealType } from '../types';
-import { DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS } from '../constants';
+import { DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS } from '../constants';
 import { useAuth } from './AuthContext';
 import { db } from '../services/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { logEvent } from '../services/analytics';
 
-// Extend Context to include advanceTime
 interface GameContextTypeExtended extends GameContextType {
     advanceTime: () => void;
+    rivalFunds: RivalFund[];
+    activeDeals: CompetitiveDeal[];
+    updateRivalFund: (fundId: string, updates: Partial<RivalFund>) => void;
+    addDeal: (deal: CompetitiveDeal) => void;
+    removeDeal: (dealId: number) => void;
+    generateNewDeals: () => void;
 }
 
 const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
@@ -18,7 +22,6 @@ const GameContext = createContext<GameContextTypeExtended | undefined>(undefined
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
   
-  // Transform Firebase User to App UserProfile
   const user: UserProfile | null = currentUser ? {
       id: currentUser.uid,
       name: currentUser.displayName || 'Anonymous',
@@ -27,25 +30,26 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   } : null;
 
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
-  const [npcs, setNpcs] = useState<NPC[]>(INITIAL_NPCS);
+  const [npcs, setNpcs] = useState<NPC[]>([...INITIAL_NPCS, ...RIVAL_FUND_NPCS]);
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(SCENARIOS[0]);
   const [gamePhase, setGamePhase] = useState<GamePhase>('INTRO');
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [marketVolatility, setMarketVolatility] = useState<MarketVolatility>('NORMAL');
   const [tutorialStep, setTutorialStep] = useState<number>(0);
   const [actionLog, setActionLog] = useState<string[]>([]);
+  
+  // --- RIVAL FUNDS & COMPETITIVE DEALS ---
+  const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS);
+  const [activeDeals, setActiveDeals] = useState<CompetitiveDeal[]>([]);
 
   // --- CLOUD SAVE / LOAD ---
-  
-  // Load Game on Auth
   useEffect(() => {
       if (!currentUser) {
-          setPlayerStats(null); // Reset on logout
+          setPlayerStats(null);
           setGamePhase('INTRO');
           return;
       }
 
-      // If DB isn't configured, skip cloud load and treat as new local session
       if (!db) {
           console.log("[CLOUD_LOAD] Firestore not available. Using local session.");
           setGamePhase('INTRO'); 
@@ -58,10 +62,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               const docSnap = await getDoc(docRef);
 
               if (docSnap.exists()) {
-                  const data = docSnap.data();
+                  // Cast to any to handle DocumentData being unknown
+                  const data = docSnap.data() as any;
                   console.log("[CLOUD_LOAD] Save found:", data);
                   
-                  // Restore State
                   if (data.playerStats) setPlayerStats(data.playerStats);
                   if (data.gamePhase) setGamePhase(data.gamePhase);
                   if (data.activeScenarioId) {
@@ -72,11 +76,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   if (data.npcs) setNpcs(data.npcs);
                   if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
                   if (data.actionLog) setActionLog(data.actionLog);
+                  if (data.rivalFunds) setRivalFunds(data.rivalFunds);
+                  if (data.activeDeals) setActiveDeals(data.activeDeals);
                   logEvent('login_success');
                   
               } else {
                   console.log("[CLOUD_LOAD] New User. Starting Cold Open.");
-                  setGamePhase('INTRO'); // Force Intro for new users
+                  setGamePhase('INTRO');
               }
           } catch (error) {
               console.error("Error loading save:", error);
@@ -86,10 +92,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       loadGame();
   }, [currentUser]);
 
-  // Save Game Logic
   const saveGame = useCallback(async () => {
       if (!currentUser || !playerStats) return;
-      if (!db) return; // Skip if no DB connection
+      if (!db) return;
 
       const gameState = {
           playerStats,
@@ -99,6 +104,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           npcs,
           tutorialStep,
           actionLog,
+          rivalFunds,
+          activeDeals,
           lastSaved: new Date().toISOString()
       };
 
@@ -108,23 +115,20 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } catch (error) {
           console.error("Error saving game:", error);
       }
-  }, [currentUser, playerStats, gamePhase, activeScenario, marketVolatility, npcs, tutorialStep, actionLog]);
+  }, [currentUser, playerStats, gamePhase, activeScenario, marketVolatility, npcs, tutorialStep, actionLog, rivalFunds, activeDeals]);
 
-  // Auto-Save on Phase Change or Major Event
   useEffect(() => {
       if (gamePhase !== 'INTRO' && gamePhase !== 'GAME_OVER') {
-          const timeout = setTimeout(() => saveGame(), 2000); // Debounce save
+          const timeout = setTimeout(() => saveGame(), 2000);
           return () => clearTimeout(timeout);
       }
   }, [playerStats, gamePhase, saveGame]);
 
-  // Log Game Over
   useEffect(() => {
       if (gamePhase === 'GAME_OVER' || gamePhase === 'PRISON' || gamePhase === 'ALONE') {
           logEvent('game_over', { reason: gamePhase, score: playerStats?.score || 0 });
       }
   }, [gamePhase]);
-
 
   // --- MARKET CYCLE ---
   useEffect(() => {
@@ -151,28 +155,20 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const advanceTime = useCallback(() => {
       if (!playerStats) return;
 
-      // 1. Increment Time
       const nextMonth = playerStats.gameMonth + 1;
       const nextYear = nextMonth > 12 ? playerStats.gameYear + 1 : playerStats.gameYear;
       const finalMonth = nextMonth > 12 ? 1 : nextMonth;
 
-      // 2. Update Stats (Monthly Burn/Gain)
       updatePlayerStats({
-          // Add recurring monthly logic here (e.g., burn rate, salary)
-          score: 10, // Survival bonus
+          score: 10,
       });
       
-      // Update Context State for Time directly
       setPlayerStats(prev => prev ? ({ ...prev, gameYear: nextYear, gameMonth: finalMonth }) : null);
 
-      // 3. Trigger Scenarios (Probability + Filtering)
-      // Filter scenarios that haven't been played and whose conditions are met
       const availableScenarios = SCENARIOS.filter(s => {
-          // Don't replay played scenarios (unless we decide to allow repeats for generic ones later)
           if (playerStats.playedScenarioIds.includes(s.id) && s.id !== 1) return false;
-          if (s.id === 1) return false; // Intro is handled specially
+          if (s.id === 1) return false;
 
-          // Check Conditions
           if (s.requiresPortfolio && playerStats.portfolio.length === 0) return false;
           
           if (s.minReputation && playerStats.reputation < s.minReputation) return false;
@@ -181,13 +177,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (s.minStress && playerStats.stress < s.minStress) return false;
           if (s.minCash && playerStats.cash < s.minCash) return false;
 
-          // Flag Requirements
           if (s.requiredFlags) {
               const hasAllFlags = s.requiredFlags.every(flag => playerStats.playerFlags[flag]);
               if (!hasAllFlags) return false;
           }
 
-          // Blocked by Flags
           if (s.blockedByFlags) {
               const hasBlockingFlag = s.blockedByFlags.some(flag => playerStats.playerFlags[flag]);
               if (hasBlockingFlag) return false;
@@ -196,33 +190,26 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return true;
       });
 
-      // 40% base chance, higher if stress is high (more crises)
       const crisisMultiplier = playerStats.stress > 70 ? 1.5 : 1.0;
       const shouldTriggerEvent = Math.random() < (0.4 * crisisMultiplier); 
 
       if (shouldTriggerEvent && availableScenarios.length > 0) {
-          // Priority Selection: Prioritize scenarios with specific flags or requirements (more narrative) over generic ones
-          // Sort by specificity (length of requirements)
           availableScenarios.sort((a, b) => {
               const scoreA = (a.requiredFlags?.length || 0) + (a.requiresPortfolio ? 1 : 0);
               const scoreB = (b.requiredFlags?.length || 0) + (b.requiresPortfolio ? 1 : 0);
-              return scoreB - scoreA; // Descending
+              return scoreB - scoreA;
           });
 
-          // Weighted random selection favoring higher priority, but allowing variance
-          // Take top 3 applicable
           const candidates = availableScenarios.slice(0, 3);
           const nextScenario = candidates[Math.floor(Math.random() * candidates.length)];
           
           setActiveScenario(nextScenario);
           setGamePhase('SCENARIO');
           
-          // Mark as played immediately so we don't loop it
           updatePlayerStats({ playedScenarioIds: [nextScenario.id] });
           logEvent('scenario_triggered', { id: nextScenario.id, title: nextScenario.title });
           addLogEntry(`Event Triggered: ${nextScenario.title}`);
       } else {
-          // No scenario, just a quiet week
           addLogEntry("Week advanced. No critical incidents reported.");
       }
 
@@ -322,13 +309,71 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addLogEntry = (message: string) => {
       const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const entry = `${timestamp} // ${message}`;
-      setActionLog(prev => [entry, ...prev].slice(0, 50)); // Keep last 50
+      setActionLog(prev => [entry, ...prev].slice(0, 50));
       console.log(`[Game Log]: ${message}`);
   };
 
   const setTutorialStepHandler = (step: number) => {
       setTutorialStep(step);
   };
+
+  // --- RIVAL FUND FUNCTIONS ---
+  
+  const updateRivalFund = useCallback((fundId: string, updates: Partial<RivalFund>) => {
+      setRivalFunds(prev => prev.map(fund => 
+          fund.id === fundId ? { ...fund, ...updates } : fund
+      ));
+  }, []);
+
+  const addDeal = useCallback((deal: CompetitiveDeal) => {
+      setActiveDeals(prev => [...prev, deal]);
+      addLogEntry(`NEW DEAL: ${deal.companyName} ($${(deal.askingPrice / 1000000).toFixed(0)}M)`);
+  }, []);
+
+  const removeDeal = useCallback((dealId: number) => {
+      setActiveDeals(prev => prev.filter(d => d.id !== dealId));
+  }, []);
+
+  const generateNewDeals = useCallback(() => {
+      const availableDeals = COMPETITIVE_DEALS.filter(
+          d => !activeDeals.some(ad => ad.id === d.id)
+      );
+      
+      if (availableDeals.length === 0) return;
+      
+      if (Math.random() > 0.4) return;
+      
+      const numDeals = Math.random() > 0.7 ? 2 : 1;
+      const shuffled = [...availableDeals].sort(() => Math.random() - 0.5);
+      const newDeals = shuffled.slice(0, Math.min(numDeals, availableDeals.length));
+      
+      newDeals.forEach(deal => {
+          const interestedRivals = rivalFunds
+              .filter(fund => {
+                  if (fund.dryPowder < deal.askingPrice * 0.5) return false;
+                  if (deal.dealType === DealType.VENTURE_CAPITAL && fund.strategy === 'CONSERVATIVE') return Math.random() > 0.8;
+                  if (deal.isHot && fund.strategy === 'PREDATORY') return true;
+                  return Math.random() > 0.3;
+              })
+              .map(f => f.id);
+          
+          addDeal({
+              ...deal,
+              interestedRivals,
+              deadline: deal.deadline + Math.floor(Math.random() * 3) - 1
+          });
+      });
+  }, [activeDeals, rivalFunds, addDeal]);
+
+  // Expire deals on time advance
+  useEffect(() => {
+      if (!playerStats) return;
+      
+      setActiveDeals(prev => prev.map(deal => ({
+          ...deal,
+          deadline: deal.deadline - 1
+      })).filter(deal => deal.deadline > 0));
+  }, [playerStats?.gameMonth]);
 
   return (
     <GameContext.Provider value={{
@@ -347,7 +392,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       sendNpcMessage,
       addLogEntry,
       setTutorialStep: setTutorialStepHandler,
-      advanceTime
+      advanceTime,
+      rivalFunds,
+      activeDeals,
+      updateRivalFund,
+      addDeal,
+      removeDeal,
+      generateNewDeals
     }}>
       {children}
     </GameContext.Provider>

@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, Difficulty, GamePhase, LifeAction, PortfolioAction, PortfolioCompany, MarketVolatility, NewsEvent, PortfolioImpact, UserProfile, CompanyEvent, NPC, QuizQuestion } from './types';
+import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, Difficulty, GamePhase, LifeAction, PortfolioAction, PortfolioCompany, MarketVolatility, NewsEvent, PortfolioImpact, UserProfile, CompanyEvent, NPC, QuizQuestion, CompetitiveDeal, RivalFund } from './types';
 import { PlayerLevel, DealType } from './types';
-import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS } from './constants';
+import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS, RIVAL_FUNDS } from './constants';
 import NewsTicker from './components/NewsTicker';
 import CommsTerminal from './components/CommsTerminal';
 import PortfolioView from './components/PortfolioView';
@@ -22,6 +22,9 @@ import { useGame } from './context/GameContext';
 import { useAuth } from './context/AuthContext';
 import { useAudio } from './context/AudioContext';
 import { logEvent } from './services/analytics';
+import CompetitiveAuctionModal, { AuctionResult } from './components/CompetitiveAuctionModal';
+import DealMarket from './components/DealMarket';
+import RivalLeaderboard from './components/RivalLeaderboard';
 
 declare global {
   interface Window {
@@ -50,7 +53,8 @@ const App: React.FC = () => {
   // Use Context
   const { 
     user, playerStats, npcs, activeScenario, gamePhase, difficulty, marketVolatility, tutorialStep, actionLog,
-    setGamePhase, updatePlayerStats, sendNpcMessage, setTutorialStep, advanceTime, addLogEntry
+    setGamePhase, updatePlayerStats, sendNpcMessage, setTutorialStep, advanceTime, addLogEntry,
+    rivalFunds, activeDeals, updateRivalFund, removeDeal, generateNewDeals
   } = useGame();
   
   const { loading: authLoading } = useAuth();
@@ -60,7 +64,7 @@ const App: React.FC = () => {
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [activeTab, setActiveTab] = useState<'WORKSPACE' | 'ASSETS' | 'FOUNDER'>('WORKSPACE');
+  const [activeTab, setActiveTab] = useState<'WORKSPACE' | 'ASSETS' | 'FOUNDER' | 'DEALS'>('WORKSPACE');
   const [activeMobileTab, setActiveMobileTab] = useState<'COMMS' | 'DESK' | 'NEWS' | 'MENU'>('DESK');
   
   // --- UI STATE ---
@@ -69,6 +73,10 @@ const App: React.FC = () => {
       { sender: 'advisor', text: "SYSTEM READY. Awaiting inputs." }
   ]);
   const [isAdvisorLoading, setIsAdvisorLoading] = useState(false);
+
+  // --- AUCTION STATE ---
+  const [currentAuction, setCurrentAuction] = useState<CompetitiveDeal | null>(null);
+  const [lastAuctionResult, setLastAuctionResult] = useState<AuctionResult | null>(null);
 
   const currentScenario = activeScenario || SCENARIOS[0];
 
@@ -178,9 +186,84 @@ const App: React.FC = () => {
           return;
       }
       advanceTime();
+      generateNewDeals(); // Generate new competitive deals
       playSfx('KEYPRESS');
       addToast("TIME_ADVANCED: WEEK_CYCLE_COMPLETE", 'success');
       setChatHistory(prev => [...prev, { sender: 'system', text: "[SYSTEM_LOG] Time advanced 1 week." }]);
+      
+      if (activeDeals.length > 0) {
+          addToast(`${activeDeals.length} DEAL${activeDeals.length > 1 ? 'S' : ''} IN PIPELINE`, 'info');
+      }
+  };
+
+  // --- AUCTION HANDLERS ---
+  const handleStartAuction = (deal: CompetitiveDeal) => {
+      setCurrentAuction(deal);
+      playSfx('NOTIFICATION');
+      addLogEntry(`AUCTION ENTERED: ${deal.companyName}`);
+      setChatHistory(prev => [...prev, { 
+          sender: 'system', 
+          text: `[SYSTEM_LOG] You entered the auction for ${deal.companyName}. Competitors: ${deal.interestedRivals.length}` 
+      }]);
+  };
+
+  const handleAuctionComplete = (result: AuctionResult) => {
+      setCurrentAuction(null);
+      setLastAuctionResult(result);
+      removeDeal(result.deal.id);
+      
+      updatePlayerStats(result.statChanges);
+      
+      if (result.won && result.portfolioCompany) {
+          updatePlayerStats({ addPortfolioCompany: result.portfolioCompany });
+      }
+      
+      if (!result.won && result.winnerId !== 'none' && result.winnerId !== 'player') {
+          const winningFund = rivalFunds.find(f => f.id === result.winnerId);
+          if (winningFund) {
+              updateRivalFund(result.winnerId, {
+                  totalDeals: winningFund.totalDeals + 1,
+                  winStreak: winningFund.winStreak + 1,
+                  dryPowder: winningFund.dryPowder - result.finalPrice,
+                  portfolio: [...winningFund.portfolio, {
+                      name: result.deal.companyName,
+                      dealType: result.deal.dealType,
+                      acquisitionPrice: result.finalPrice,
+                      currentValue: result.deal.fairValue,
+                      acquiredMonth: playerStats?.gameMonth || 1,
+                      acquiredYear: playerStats?.gameYear || 1
+                  }]
+              });
+          }
+      }
+      
+      addLogEntry(result.won 
+          ? `AUCTION WON: ${result.deal.companyName} for $${(result.finalPrice / 1000000).toFixed(1)}M`
+          : `AUCTION LOST: ${result.deal.companyName} to ${result.winnerName}`
+      );
+      
+      if (result.rivalTaunt) {
+          setChatHistory(prev => [...prev, { 
+              sender: 'npc', 
+              senderName: 'Hunter',
+              text: result.rivalTaunt!
+          }]);
+          playSfx('NOTIFICATION');
+      }
+      
+      if (result.won) {
+          addToast(`DEAL CLOSED: ${result.deal.companyName}`, 'success');
+          playSfx('SUCCESS');
+      } else {
+          addToast(`DEAL LOST to ${result.winnerName}`, 'error');
+          playSfx('ERROR');
+      }
+  };
+
+  const handleDismissDeal = (dealId: number) => {
+      removeDeal(dealId);
+      addToast("DEAL DISMISSED", 'info');
+      playSfx('KEYPRESS');
   };
 
   // --- CHAT HANDLERS ---
@@ -365,7 +448,28 @@ const App: React.FC = () => {
           )
       }
 
-      // 3. Scenario Workspace
+      // 3. Deal Market (Competitive Auctions)
+      if (activeTab === 'DEALS' && playerStats) {
+          return (
+              <div className="h-full grid grid-rows-[1fr_auto] md:grid-rows-1 md:grid-cols-[1fr_300px] gap-2">
+                  <DealMarket
+                      deals={activeDeals}
+                      playerStats={playerStats}
+                      onSelectDeal={handleStartAuction}
+                      onDismissDeal={handleDismissDeal}
+                  />
+                  <div className="hidden md:block">
+                      <RivalLeaderboard
+                          rivalFunds={rivalFunds}
+                          playerStats={playerStats}
+                          className="h-full"
+                      />
+                  </div>
+              </div>
+          );
+      }
+
+      // 4. Scenario Workspace
       if (gamePhase === 'SCENARIO') {
           return (
               <TerminalPanel title={`CIM_READER :: ${currentScenario.title.toUpperCase()}`} className="h-full flex flex-col">
@@ -393,7 +497,7 @@ const App: React.FC = () => {
           );
       }
 
-      // 4. Downtime / Default Workspace
+      // 5. Downtime / Default Workspace
       // LIFT PANEL ABOVE OVERLAY DURING TUTORIAL STEP 1
       const isTutorialActive = tutorialStep === 1;
 
@@ -439,6 +543,22 @@ const App: React.FC = () => {
                           />
                       </div>
                   </div>
+                  
+                  {/* DEAL FLOW BUTTON */}
+                  {tutorialStep === 0 && (
+                      <div className="mb-4">
+                          <TerminalButton 
+                            label={`DEAL_FLOW ${activeDeals.length > 0 ? `(${activeDeals.length})` : ''}`}
+                            icon="fa-gavel" 
+                            onClick={() => {
+                                setActiveTab('DEALS');
+                                playSfx('KEYPRESS');
+                            }}
+                            className={`w-full ${activeDeals.length > 0 ? 'border-amber-500 text-amber-400 hover:bg-amber-900/20' : ''}`}
+                          />
+                      </div>
+                  )}
+
                   <div className="text-slate-600 text-sm italic mb-4">
                       {tutorialStep > 0 ? "URGENT: Review PackFancy Deal Memo." : "Review portfolio or advance timeline."}
                   </div>
@@ -581,6 +701,17 @@ const App: React.FC = () => {
                 predefinedQuestions={PREDEFINED_QUESTIONS}
             />
         </div>
+
+        {/* COMPETITIVE AUCTION MODAL */}
+        {currentAuction && playerStats && (
+            <CompetitiveAuctionModal
+                deal={currentAuction}
+                playerCash={playerStats.cash}
+                playerReputation={playerStats.reputation}
+                onComplete={handleAuctionComplete}
+                onClose={() => setCurrentAuction(null)}
+            />
+        )}
 
         {/* MOBILE BOTTOM NAV */}
         <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
