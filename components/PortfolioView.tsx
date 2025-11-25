@@ -59,7 +59,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
   const handleSubmitIOI = (companyId: number) => {
       // TRIGGER LIVE AUCTION
       const company = portfolio.find(c => c.id === companyId);
-      if (company && tutorialStep !== 6) { // Don't trigger auction on tutorial step? Or force it? Let's skip for tutorial
+      if (company && tutorialStep !== 6) { // Don't trigger auction on tutorial step
            setShowAuction(company);
            return;
       }
@@ -80,9 +80,6 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
 
   const handleAuctionComplete = (success: boolean, finalBid: number) => {
       if (success && showAuction) {
-          // Player won, but paid more
-          // Need to update the investment cost in the stat changes of the action
-          // We cheat a bit here by calling onAction with modified payload logic via app handler, or just manually updating stats
           updatePlayerStats({ modifyCompany: { id: showAuction.id, updates: { investmentCost: finalBid } } });
           const dummyAction: PortfolioAction = {
             id: 'submit_ioi',
@@ -93,7 +90,6 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
           };
           onAction(showAuction.id, dummyAction);
       } else {
-          // Lost
           updatePlayerStats({ reputation: -5, stress: +5 });
       }
       setShowAuction(null);
@@ -104,9 +100,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
       if (choice === 'IGNORE') updatePlayerStats({ reputation: +5, stress: -5 });
       if (choice === 'LEVERAGE') updatePlayerStats({ reputation: +20, stress: +20, ethics: -50, setsFlags: ['HAS_BLACKMAIL_MATERIAL'] });
       if (choice === 'WHISTLEBLOW') {
-          // Trigger Ending sequence logic (handled in App via flag or phase change)
-          // For now, simple flag
-          updatePlayerStats({ setsFlags: ['WHISTLEBLOWER'] }); // App should watch for this
+          updatePlayerStats({ setsFlags: ['WHISTLEBLOWER'] }); 
       }
   };
 
@@ -134,7 +128,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
       </div>
 
       <div className="flex-1 flex overflow-hidden relative">
-          {/* ASSET LIST (Responsive: Table on Desktop, Cards on Mobile) */}
+          {/* ASSET LIST */}
           <div className={`${selectedId ? 'md:w-1/2 hidden md:flex' : 'w-full flex'} border-r border-slate-700 flex-col transition-all bg-black overflow-hidden`}>
               <div className="bg-slate-800 px-3 py-1 text-[10px] uppercase text-slate-400 font-bold border-b border-slate-700 shrink-0">
                   Active_Holdings
@@ -158,7 +152,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
                                 }}
                                 className={`
                                     bg-slate-900 border border-slate-700 rounded p-4 relative overflow-hidden
-                                    ${isTutorialTarget ? 'z-[60] ring-2 ring-amber-500 animate-pulse' : ''}
+                                    ${isTutorialTarget ? 'z-[70] ring-2 ring-amber-500 animate-pulse relative' : ''}
                                 `}
                              >
                                  <div className="flex justify-between items-start mb-2">
@@ -208,7 +202,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
                                     className={`
                                         cursor-pointer hover:bg-slate-800 transition-colors 
                                         ${isSelected ? 'bg-slate-800 text-amber-500' : ''}
-                                        ${isTutorialTarget ? 'z-[60] relative bg-slate-800 ring-2 ring-amber-500' : ''}
+                                        ${isTutorialTarget ? 'z-[70] relative bg-slate-800 ring-2 ring-amber-500' : ''}
                                     `}
                                   >
                                       <td className="p-2 border-b border-slate-800 font-bold">
@@ -231,12 +225,12 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
               </div>
           </div>
 
-          {/* DETAIL VIEW (Full screen on mobile when selected, Split on Desktop) */}
+          {/* DETAIL VIEW (Split on Desktop) */}
           {selectedCompany && (
               <div className={`
                   md:w-1/2 flex flex-col bg-slate-900/50 
                   absolute inset-0 md:static bg-black md:bg-transparent
-                  ${(tutorialStep === 3 || tutorialStep === 6) ? 'z-[55] relative' : 'z-50 md:z-0'} 
+                  ${(tutorialStep === 3 || tutorialStep === 6) ? 'z-[60] relative' : 'z-50 md:z-0'} 
               `}>
                   <div className="bg-slate-800 px-3 py-1 text-[10px] uppercase text-slate-400 font-bold border-b border-slate-700 flex justify-between items-center shrink-0">
                       <span>Asset_Detail :: {selectedCompany.name.toUpperCase()}</span>
@@ -292,14 +286,14 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
                   <div className={`
                       p-3 bg-slate-900 border-t border-slate-700 grid grid-cols-2 md:grid-cols-4 gap-2 
                       absolute bottom-0 left-0 right-0 md:relative
-                      ${(tutorialStep === 3 || tutorialStep === 6) ? 'z-[60] relative' : ''}
+                      ${(tutorialStep === 3 || tutorialStep === 6) ? 'z-[70] relative ring-t-2 ring-amber-500' : ''}
                   `}>
                       <button 
                         onClick={() => handleAnalyze(selectedCompany.id)}
                         disabled={analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed}
                         className={`
                              relative border flex flex-col items-center justify-center p-3 rounded transition-all
-                             ${tutorialStep === 3 ? 'z-[60] bg-slate-800 border-amber-500 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)] animate-pulse' : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700'}
+                             ${tutorialStep === 3 ? 'z-[70] bg-amber-950/50 border-amber-500 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)] animate-pulse' : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700'}
                              ${(analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed) ? 'opacity-50 cursor-not-allowed' : ''}
                         `}
                       >
@@ -326,7 +320,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
                          disabled={(!selectedCompany.isAnalyzed && tutorialStep !== 0) || isMarketPanic} 
                          className={`
                              border flex flex-col items-center justify-center p-3 rounded transition-all
-                             ${tutorialStep === 6 ? 'z-[60] relative bg-green-900 border-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)] animate-pulse' : 'bg-green-900/30 border-green-800 text-green-500 hover:bg-green-900/50'}
+                             ${tutorialStep === 6 ? 'z-[70] relative bg-green-900 border-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)] animate-pulse' : 'bg-green-900/30 border-green-800 text-green-500 hover:bg-green-900/50'}
                              ${((!selectedCompany.isAnalyzed && tutorialStep !== 0) || isMarketPanic) ? 'opacity-30 grayscale cursor-not-allowed' : ''}
                         `}
                       >
