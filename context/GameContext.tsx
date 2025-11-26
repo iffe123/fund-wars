@@ -66,7 +66,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   const data = docSnap.data() as any;
                   console.log("[CLOUD_LOAD] Save found:", data);
                   
-                  if (data.playerStats) setPlayerStats(data.playerStats);
+                  if (data.playerStats) setPlayerStats({
+                      ...data.playerStats,
+                      loanBalance: data.playerStats.loanBalance ?? 0,
+                      loanRate: data.playerStats.loanRate ?? 0,
+                  });
                   if (data.gamePhase) setGamePhase(data.gamePhase);
                   if (data.activeScenarioId) {
                       const scen = SCENARIOS.find(s => s.id === data.activeScenarioId);
@@ -220,7 +224,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updatePlayerStats = useCallback((changes: StatChanges) => {
     setPlayerStats(prevStats => {
         const baseStats = prevStats || DIFFICULTY_SETTINGS['Normal'].initialStats;
-        const newStats: PlayerStats = { ...baseStats };
+        const newStats: PlayerStats = {
+            ...baseStats,
+            loanBalance: baseStats.loanBalance ?? 0,
+            loanRate: baseStats.loanRate ?? 0,
+        };
         
         if (typeof changes.cash === 'number') newStats.cash += changes.cash;
         if (typeof changes.reputation === 'number') newStats.reputation += changes.reputation;
@@ -235,6 +243,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (typeof changes.dependency === 'number') newStats.dependency = Math.max(0, Math.min(100, (newStats.dependency || 0) + changes.dependency));
         if (typeof changes.aum === 'number') newStats.aum = (newStats.aum || 0) + changes.aum;
         if (changes.employees) newStats.employees = changes.employees;
+
+        if (typeof changes.loanBalanceChange === 'number') {
+            newStats.loanBalance = Math.max(0, (newStats.loanBalance || 0) + changes.loanBalanceChange);
+        }
+        if (typeof changes.loanRate === 'number') {
+            newStats.loanRate = Math.max(0, changes.loanRate);
+        }
 
         if (changes.addPortfolioCompany) {
              const finalCompany: PortfolioCompany = {
@@ -273,6 +288,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
              newStats.playerFlags[`NPC_REMOVED_${changes.removeNpcId}`] = true;
         }
 
+        // Prevent the player from running a negative balance unless a loan exists
+        if (newStats.loanBalance <= 0) {
+            newStats.loanBalance = 0;
+            newStats.loanRate = 0;
+            if (newStats.cash < 0) newStats.cash = 0;
+        }
+
         return newStats;
     });
 
@@ -294,12 +316,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updatePlayerStats(outcome.statChanges);
   };
 
-  const sendNpcMessage = (npcId: string, message: string) => {
+  const sendNpcMessage = (npcId: string, message: string, sender: 'player' | 'npc' | 'system' = 'player', senderName?: string) => {
       setNpcs(prev => prev.map(npc => {
           if (npc.id === npcId) {
               return {
                   ...npc,
-                  dialogueHistory: [...npc.dialogueHistory, { sender: 'player', text: message }]
+                  dialogueHistory: [...npc.dialogueHistory, { sender, senderName, text: message }]
               };
           }
           return npc;

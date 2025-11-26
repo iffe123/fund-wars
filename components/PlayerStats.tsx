@@ -27,10 +27,16 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
                   <i className="fas fa-wallet"></i>
                   <span className="font-bold">{formatMoney(stats.cash)}</span>
               </div>
+              {stats.loanBalance > 0 && (
+                  <div className="flex items-center space-x-1 text-red-400 text-[11px] font-mono">
+                      <i className="fas fa-skull-crossbones"></i>
+                      <span>Debt {formatMoney(stats.loanBalance)}</span>
+                  </div>
+              )}
               <div className="flex-1 flex items-center space-x-2">
                    <i className="fas fa-brain text-amber-500 text-xs"></i>
                    <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
-                       <div 
+                       <div
                          className={`h-full ${stats.stress > 70 ? 'bg-red-500' : 'bg-amber-500'}`} 
                          style={{ width: `${Math.min(100, stats.stress)}%` }}
                         ></div>
@@ -44,6 +50,14 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
                 <div className="flex items-center space-x-2 text-green-500">
                     <i className="fas fa-wallet"></i>
                     <span className="font-bold">${stats.cash.toLocaleString()}</span>
+                </div>
+                <div className={`flex items-center space-x-2 ${stats.loanBalance > 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                    <i className="fas fa-handshake-slash"></i>
+                    <span>
+                        {stats.loanBalance > 0
+                          ? `DEBT: ${formatMoney(stats.loanBalance)} @ ${(stats.loanRate * 100).toFixed(1)}%`
+                          : 'NO DEBT'}
+                    </span>
                 </div>
                 <div className="flex items-center space-x-2 text-amber-500">
                     <i className="fas fa-brain"></i>
