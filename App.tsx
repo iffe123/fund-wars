@@ -79,6 +79,18 @@ const App: React.FC = () => {
   const [lastAuctionResult, setLastAuctionResult] = useState<AuctionResult | null>(null);
 
   const currentScenario = activeScenario || SCENARIOS[0];
+  const scenarioChoices = (currentScenario.choices && currentScenario.choices.length > 0)
+    ? currentScenario.choices
+    : (currentScenario.structureOptions
+        ? currentScenario.structureOptions.flatMap(option =>
+            option.followUpChoices.map(choice => ({
+              ...choice,
+              text: `${option.type}: ${choice.text}`,
+              description: choice.description || option.description,
+            }))
+          )
+        : []);
+  const founderUnlocked = playerStats ? playerStats.reputation >= 50 : false;
 
   // --- SARCASTIC ERROR HANDLER ---
   const addToast = (message: string, type: 'error' | 'success' | 'info' = 'info') => {
@@ -396,7 +408,7 @@ const App: React.FC = () => {
                 title="ASSET_MANAGER" 
                 className={`h-full ${isTutorialActive ? 'relative z-[100]' : ''}`}
               >
-                  <PortfolioView 
+                  <PortfolioView
                       playerStats={playerStats}
                       onAction={(id, action) => {
                           // Special logic for Submit IOI in tutorial
@@ -419,7 +431,14 @@ const App: React.FC = () => {
                           setActiveTab('WORKSPACE');
                           playSfx('KEYPRESS');
                       }}
-                      onJumpShip={() => setActiveTab('FOUNDER')}
+                      onJumpShip={() => {
+                          if (!founderUnlocked) {
+                              addToast('Founder Mode locked. Build more reputation first.', 'error');
+                              return;
+                          }
+                          setActiveTab('FOUNDER');
+                      }}
+                      canAccessFounder={founderUnlocked}
                   />
               </TerminalPanel>
           )
@@ -477,9 +496,15 @@ const App: React.FC = () => {
                       <div className="border-l-2 border-amber-500 pl-4 mb-6 text-lg italic text-amber-100">
                           {currentScenario.description}
                       </div>
-                      
+
                       <div className="grid gap-3">
-                          {currentScenario.choices?.map((choice, i) => (
+                          {scenarioChoices.length === 0 && (
+                              <div className="text-xs text-slate-500 border border-dashed border-slate-700 p-4 text-center">
+                                  No decision points available yet. Gather more intel.
+                              </div>
+                          )}
+
+                          {scenarioChoices.map((choice, i) => (
                               <button
                                   key={i}
                                   onClick={() => handleChoice(choice)}

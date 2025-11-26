@@ -13,9 +13,10 @@ interface PortfolioViewProps {
   onAction: (companyId: number, action: PortfolioAction) => void;
   onBack: () => void;
   onJumpShip?: () => void;
+  canAccessFounder?: boolean;
 }
 
-const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, onBack, onJumpShip }) => {
+const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, onBack, onJumpShip, canAccessFounder = false }) => {
   const { tutorialStep, updatePlayerStats, setTutorialStep, marketVolatility } = useGame();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [analyzingIds, setAnalyzingIds] = useState<number[]>([]);
@@ -122,7 +123,19 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
               <TerminalButton label="EXPORT" icon="fa-file-csv" disabled className="hidden md:inline-flex" />
           </div>
           <div className="flex space-x-2">
-              {onJumpShip && <TerminalButton label="FOUNDER_MODE" icon="fa-rocket" variant="warning" onClick={onJumpShip} />}
+              {onJumpShip && (
+                  <TerminalButton
+                      label="FOUNDER_MODE"
+                      icon="fa-rocket"
+                      variant="warning"
+                      disabled={!canAccessFounder}
+                      title={canAccessFounder ? undefined : 'Increase your reputation to unlock Founder Mode'}
+                      onClick={() => {
+                          if (!canAccessFounder) return;
+                          onJumpShip();
+                      }}
+                  />
+              )}
               <TerminalButton label="CLOSE" icon="fa-times" onClick={onBack} />
           </div>
       </div>
