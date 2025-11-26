@@ -2,6 +2,19 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { ChatMessage, PlayerStats, Scenario, NPC } from '../types';
 
+const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: string) => {
+  const mood = npc.relationship > 60 ? "almost warm" : npc.relationship < 30 ? "cold" : "guarded";
+  const financeJab = npc.traits.includes('Aggressive')
+    ? "Stop hesitating. Close or kill the deal."
+    : "Bring me something with real upside or don't bother me.";
+
+  const loanWarning = playerStats.loanBalance > 0
+    ? "And pay that loan before the lender eats you alive."
+    : "You still have dry powder. Use it before someone else does.";
+
+  return `${npc.name} (${npc.role}) gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"`;
+};
+
 // --- ENV: read safely from Vite/Vercel ---
 // @ts-ignore
 const API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_API_KEY : undefined;
@@ -131,7 +144,7 @@ export const getNPCResponse = async (
     playerStats: PlayerStats
 ): Promise<{ text: string, functionCalls?: any[] }> => {
     if (!API_KEY) {
-        return { text: "[SYSTEM]: Connection Error. API Key Missing or Invalid." };
+        return { text: offlineNpcReply(npc, playerStats, playerMessage) };
     }
 
     try {
@@ -213,7 +226,7 @@ export const getNPCResponse = async (
         };
     } catch (error) {
         console.error("Error calling Gemini API for NPC:", error);
-        return { text: "[CONNECTION LOST]: The NPC is not responding. Check console logs." };
+        return { text: offlineNpcReply(npc, playerStats, playerMessage) };
     }
 };
 

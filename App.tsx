@@ -58,7 +58,7 @@ const App: React.FC = () => {
   } = useGame();
   
   const { loading: authLoading } = useAuth();
-  const { playSfx } = useAudio();
+  const { playSfx, playAmbience } = useAudio();
 
   // --- CORE STATE ---
   const [legalAccepted, setLegalAccepted] = useState(false);
@@ -108,6 +108,13 @@ const App: React.FC = () => {
       }
   }, []);
 
+  // Kill the boot ticking/ambience once the main UI is live
+  useEffect(() => {
+      if (bootComplete) {
+          playAmbience(false);
+      }
+  }, [bootComplete, playAmbience]);
+
   // Auto-switch to ASSETS view on Step 6
   useEffect(() => {
       if (tutorialStep === 6 && activeTab !== 'ASSETS') {
@@ -115,6 +122,13 @@ const App: React.FC = () => {
           if (window.innerWidth < 768) setActiveMobileTab('DESK');
       }
   }, [tutorialStep, activeTab]);
+
+  // Ensure the market is live once the tutorial is cleared
+  useEffect(() => {
+      if (tutorialStep === 0 && bootComplete && gamePhase === 'LIFE_MANAGEMENT' && activeDeals.length === 0) {
+          generateNewDeals();
+      }
+  }, [tutorialStep, bootComplete, gamePhase, activeDeals.length, generateNewDeals]);
 
   // Left Panel Sync Logic
   useEffect(() => {
@@ -193,9 +207,19 @@ const App: React.FC = () => {
   };
   
   const handleAdvanceTime = () => {
+      if (!playerStats) return;
+
       if (tutorialStep > 0) {
           addToast("COMPLETE TUTORIAL FIRST", 'error');
           return;
+      }
+
+      if (playerStats.loanBalance > 0) {
+          const activeRate = playerStats.loanRate || 0.28;
+          const monthlyInterest = Math.ceil(playerStats.loanBalance * activeRate / 12);
+          updatePlayerStats({ loanBalanceChange: monthlyInterest, cash: -monthlyInterest, stress: +3 });
+          addToast(`Interest Accrued: $${monthlyInterest.toLocaleString()}`, 'error');
+          addLogEntry(`Loan interest compounded at ${(activeRate * 100).toFixed(1)}% APR`);
       }
       advanceTime();
       generateNewDeals(); // Generate new competitive deals
@@ -327,27 +351,9 @@ const App: React.FC = () => {
                   });
                }
                
-               if (response.text) {
-                  // In a real implementation, we'd update the context here
-                  // The NPC response is handled by the hook refetching or local state
-                  // For this version, we assume the `getNPCResponse` call updates backend or we update local `npcs` state (which we do via sendNpcMessage for player only)
-                  // We need to manually append NPC response to context
-                  // This app uses `sendNpcMessage` only for player... 
-                  // We need to update the NPC's history in context with the reply
-                  // Currently `GameContext` helper only appends player message.
-                  // We will simulate it by relying on CommsTerminal to fetch freshly? 
-                  // No, we need to push it.
-                  
-                  // Hack: Use sendNpcMessage for NPC reply too, but it's typed for player...
-                  // Actually, `sendNpcMessage` sets `sender: 'player'`. 
-                  // We need to update GameContext to allow sending as NPC or fix here.
-                  // For now, we let the UI handle it in CommsTerminal via local state or effect, 
-                  // BUT `CommsTerminal` reads from `npcList` prop.
-                  // We should update the context `npcs` state.
-                  // Since we can't easily change `sendNpcMessage` signature without breaking interface in this file,
-                  // We will accept that NPC responses might not persist in `npcs` context without a `receiveNpcMessage` function.
-                  // However, for Advisor we use local `chatHistory`.
-               }
+                 const npcReply = response.text || `${targetNPC.name} stares and slowly nods.`;
+                 sendNpcMessage(npcId, npcReply, 'npc', targetNPC.name);
+                 addToast(`${targetNPC.name} responded`, 'info');
 
            } catch (e) {
                console.error("NPC Chat Error", e);
@@ -535,15 +541,41 @@ const App: React.FC = () => {
               {tutorialStep !== 1 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     {LIFE_ACTIONS.map(action => (
-                        <button 
+                        <button
                             key={action.id}
                             onClick={() => {
                                 if (tutorialStep > 0) return; // Lock during tutorial
+                                if (!playerStats) return;
+                                if (action.id === 'hard_money_loan') {
+                                    if (playerStats.loanBalance > 0) {
+                                        addToast('Existing bridge loan outstanding.', 'error');
+                                        return;
+                                    }
+                                    handleStatChange(action.outcome.statChanges);
+                                    addToast('Bridge loan funded at predatory terms.', 'info');
+                                    addLogEntry('Took a hard money bridge loan.');
+                                    return;
+                                }
+                                if (action.id === 'loan_payment') {
+                                    if (playerStats.loanBalance <= 0) {
+                                        addToast('No lender breathing down your neck right now.', 'error');
+                                        return;
+                                    }
+                                    const payment = Math.min(10000, playerStats.loanBalance, playerStats.cash);
+                                    if (payment <= 0) {
+                                        addToast('Insufficient cash to pay down debt.', 'error');
+                                        return;
+                                    }
+                                    updatePlayerStats({ cash: -payment, loanBalanceChange: -payment, stress: -2, score: +25 });
+                                    addToast(`Debt payment sent: $${payment.toLocaleString()}`, 'success');
+                                    addLogEntry('Paid down high-interest debt.');
+                                    return;
+                                }
                                 handleStatChange(action.outcome.statChanges);
                                 addToast(action.text, 'success');
                                 addLogEntry(`ACTION: ${action.text}`);
                             }}
-                            className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                            className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all active:scale-95 active:border-amber-500 active:shadow-[0_0_12px_rgba(245,158,11,0.4)] ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
                         >
                             <i className={`fas ${action.icon} text-2xl mb-2 text-slate-500 group-hover:text-blue-500`}></i>
                             <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-white">{action.text}</span>

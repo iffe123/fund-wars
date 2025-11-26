@@ -32,10 +32,13 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
 }) => {
   const { tutorialStep, setTutorialStep } = useGame();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'ADVISOR' | string>('ADVISOR'); 
+  const [activeTab, setActiveTab] = useState<'ADVISOR' | string>('ADVISOR');
   const [input, setInput] = useState('');
   const [loadingNpcs, setLoadingNpcs] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const [dragPosition, setDragPosition] = useState({ x: 24, y: 24 });
 
   // Sync internal state with prop if provided, otherwise manage internally
   const isOpen = propIsOpen !== undefined ? propIsOpen : internalIsOpen;
@@ -98,6 +101,58 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
     if (e.key === 'Enter') handleSend();
   };
 
+  useEffect(() => {
+      if (mode !== 'DESKTOP_OVERLAY') return;
+      const defaultX = Math.max(16, window.innerWidth - 640);
+      const defaultY = Math.max(16, window.innerHeight - 520);
+      setDragPosition({ x: defaultX, y: defaultY });
+  }, [mode]);
+
+  const handleDragMove = (clientX: number, clientY: number) => {
+      const nextX = Math.min(window.innerWidth - 280, Math.max(8, clientX - dragOffset.current.x));
+      const nextY = Math.min(window.innerHeight - 200, Math.max(8, clientY - dragOffset.current.y));
+      setDragPosition({ x: nextX, y: nextY });
+  };
+
+  const mouseMoveHandler = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      handleDragMove(e.clientX, e.clientY);
+  };
+
+  const touchMoveHandler = (e: TouchEvent) => {
+      if (!isDragging.current) return;
+      const touch = e.touches[0];
+      handleDragMove(touch.clientX, touch.clientY);
+  };
+
+  const mouseUpHandler = () => stopDragging();
+
+  const stopDragging = () => {
+      isDragging.current = false;
+      document.removeEventListener('mousemove', mouseMoveHandler);
+      document.removeEventListener('mouseup', mouseUpHandler);
+      document.removeEventListener('touchmove', touchMoveHandler);
+      document.removeEventListener('touchend', mouseUpHandler);
+  };
+
+  const handleDragStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+      if (mode !== 'DESKTOP_OVERLAY') return;
+      isDragging.current = true;
+      const point = 'touches' in e ? e.touches[0] : e;
+      dragOffset.current = {
+          x: point.clientX - dragPosition.x,
+          y: point.clientY - dragPosition.y,
+      };
+      document.addEventListener('mousemove', mouseMoveHandler);
+      document.addEventListener('mouseup', mouseUpHandler);
+      document.addEventListener('touchmove', touchMoveHandler);
+      document.addEventListener('touchend', mouseUpHandler);
+  };
+
+  useEffect(() => {
+      return () => stopDragging();
+  }, []);
+
   // TUTORIAL: Force Sarah Chat
   useEffect(() => {
       if (tutorialStep === 5 && activeTab !== 'sarah') {
@@ -141,13 +196,21 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
   // Styling logic based on mode
   const containerClasses = mode === 'MOBILE_EMBED'
       ? "w-full h-full flex flex-col bg-slate-900"
-      : `fixed bottom-6 right-6 w-[90vw] md:w-[600px] h-[70vh] flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-50 border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'z-[100] ring-2 ring-amber-500' : ''}`;
+      : `fixed w-[90vw] md:w-[600px] h-[70vh] flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-50 border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'z-[100] ring-2 ring-amber-500' : ''}`;
+
+  const containerStyle = mode === 'DESKTOP_OVERLAY'
+      ? { top: dragPosition.y, left: dragPosition.x }
+      : undefined;
 
   return (
-    <div className={containerClasses}>
+    <div className={containerClasses} style={containerStyle}>
         {/* Terminal Header - Only show in Overlay mode */}
         {mode === 'DESKTOP_OVERLAY' && (
-            <div className="bg-slate-800 p-2 flex justify-between items-center border-b border-amber-500/30 handle cursor-move">
+            <div
+              className="bg-slate-800 p-2 flex justify-between items-center border-b border-amber-500/30 handle cursor-move"
+              onMouseDown={handleDragStart}
+              onTouchStart={handleDragStart}
+            >
                 <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                     <div className="w-3 h-3 bg-amber-500 rounded-full"></div>

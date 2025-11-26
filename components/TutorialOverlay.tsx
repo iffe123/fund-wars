@@ -33,7 +33,10 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) 
   return (
     <>
       {/* Full Screen Mask - Blocks clicks everywhere except raised elements */}
-      <div className="fixed inset-0 bg-black/70 z-50 pointer-events-auto backdrop-blur-[2px] transition-opacity duration-500"></div>
+      <div
+        className="fixed inset-0 bg-black/70 z-50 pointer-events-auto backdrop-blur-[2px] transition-opacity duration-500"
+        onClick={() => setTutorialStep(0)}
+      ></div>
 
       {/* Sys_Admin Instruction Box */}
       <div className={`fixed left-1/2 transform -translate-x-1/2 z-[70] w-[90vw] md:w-[450px] animate-slide-in pointer-events-none ${positionClass}`}>

@@ -97,6 +97,8 @@ export interface PlayerStats {
   health: number; // 0-100
   dependency: number; // 0-100
   tutorialStep: number; // 0=Done, 1..N=Active Step
+  loanBalance: number; // Outstanding debt balance
+  loanRate: number; // Annualized interest rate (e.g. 0.24 = 24%)
 }
 
 export interface StatChanges {
@@ -130,6 +132,8 @@ export interface StatChanges {
   removeNpcId?: string;
   playedScenarioIds?: number[];
   employees?: string[];
+  loanBalanceChange?: number; // Positive to add debt, negative to repay
+  loanRate?: number; // Update the active loan's interest rate
 }
 
 export interface SkillCheck {
@@ -263,7 +267,7 @@ export interface GameContextType {
   setGamePhase: (phase: GamePhase) => void;
   updatePlayerStats: (changes: StatChanges) => void;
   handleActionOutcome: (outcome: { description: string; statChanges: StatChanges }, title: string) => void;
-  sendNpcMessage: (npcId: string, message: string) => void;
+  sendNpcMessage: (npcId: string, message: string, sender?: 'player' | 'npc' | 'system', senderName?: string) => void;
   addLogEntry: (message: string) => void;
   setTutorialStep: (step: number) => void;
   advanceTime: () => void;

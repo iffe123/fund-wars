@@ -23,7 +23,9 @@ const NORMAL_STATS: PlayerStats = {
   employees: [],
   health: 100,
   dependency: 0,
-  tutorialStep: 0 
+  tutorialStep: 0,
+  loanBalance: 0,
+  loanRate: 0,
 };
 
 export const INITIAL_NPCS: NPC[] = [
@@ -883,6 +885,24 @@ export const LIFE_ACTIONS: LifeAction[] = [
         description: "You take the analysts out for drinks and actually listen to their complaints. They look at you like a messiah. Building loyalty from the bottom up.",
         statChanges: { reputation: +5, ethics: +10, analystRating: +10, cash: -200, npcRelationshipUpdate: { npcId: 'sarah', change: 15, memory: 'Bought drinks for the team' } }
     }
+  },
+  {
+    id: 'hard_money_loan',
+    text: 'Take Bridge Loan',
+    icon: 'fa-skull-crossbones',
+    outcome: {
+      description: "You sign a predatory term sheet. Cash hits the account fast, but the lender is circling for their pound of flesh.",
+      statChanges: { cash: +50000, stress: +8, loanBalanceChange: +50000, loanRate: 0.28, score: +75 },
+    },
+  },
+  {
+    id: 'loan_payment',
+    text: 'Pay Down Debt',
+    icon: 'fa-money-bill-wave',
+    outcome: {
+      description: "You wire a chunk back to the lender. It hurts the wallet, but at least the sharks ease off for a week.",
+      statChanges: { cash: -10000, loanBalanceChange: -10000, stress: -2, score: +25 },
+    },
   }
 ];
 

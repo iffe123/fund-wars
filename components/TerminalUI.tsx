@@ -8,16 +8,17 @@ interface TerminalButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
   icon?: string;
 }
 
-export const TerminalButton: React.FC<TerminalButtonProps> = ({ 
-  variant = 'default', 
-  label, 
-  icon, 
-  className = '', 
+export const TerminalButton: React.FC<TerminalButtonProps> = ({
+  variant = 'default',
+  label,
+  icon,
+  className = '',
   disabled,
   onClick,
-  ...props 
+  ...props
 }) => {
   const { triggerImpact } = useHaptic();
+  const [isPressed, setIsPressed] = useState(false);
   
   const baseStyles = "uppercase tracking-widest text-xs font-bold py-2 px-4 border transition-all duration-75 flex items-center justify-center space-x-2 active:translate-y-0.5";
   
@@ -32,13 +33,15 @@ export const TerminalButton: React.FC<TerminalButtonProps> = ({
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       if (!disabled) {
           triggerImpact('LIGHT');
+          setIsPressed(true);
+          setTimeout(() => setIsPressed(false), 120);
       }
       if (onClick) onClick(e);
   };
 
   return (
     <button 
-        className={`${baseStyles} ${variants[variant]} ${className}`} 
+        className={`${baseStyles} ${variants[variant]} ${isPressed ? 'ring-2 ring-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.4)]' : ''} ${className}`}
         disabled={disabled} 
         onClick={handleClick}
         {...props}
