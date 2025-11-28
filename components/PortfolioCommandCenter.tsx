@@ -48,7 +48,9 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
         tooltip: company.isAnalyzed ? 'Move to deal execution' : 'Analyze first',
         onClick: () => {
           onJumpToAssets();
-          setTutorialStep(6);
+          if (tutorialStep > 0) {
+            setTutorialStep(6);
+          }
         },
       });
 
