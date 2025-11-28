@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { ChatMessage, NPC } from '../types';
 import { useGame } from '../context/GameContext';
 
@@ -7,7 +7,7 @@ interface CommsTerminalProps {
   npcList: NPC[];
   advisorMessages: ChatMessage[];
   onSendMessageToAdvisor: (msg: string) => void;
-  onSendMessageToNPC: (npcId: string, msg: string) => void;
+  onSendMessageToNPC: (npcId: string, msg: string) => Promise<void>;
   onReviewModel?: () => void; // New prop
   isLoadingAdvisor: boolean;
   predefinedQuestions: string[];
@@ -30,7 +30,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
     mode = 'DESKTOP_OVERLAY',
     selectedNpcId
 }) => {
-  const { tutorialStep, setTutorialStep } = useGame();
+  const { tutorialStep, setTutorialStep, playerStats, activeScenario } = useGame();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'ADVISOR' | string>('ADVISOR');
   const [input, setInput] = useState('');
@@ -68,32 +68,30 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
 
   useEffect(scrollToBottom, [activeTab, advisorMessages, npcList]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
       if (!input.trim()) return;
 
       if (activeTab === 'ADVISOR') {
           onSendMessageToAdvisor(input);
       } else {
           setLoadingNpcs(prev => ({ ...prev, [activeTab]: true }));
-          onSendMessageToNPC(activeTab, input);
-          setTimeout(() => setLoadingNpcs(prev => ({ ...prev, [activeTab]: false })), 2000); 
+          await onSendMessageToNPC(activeTab, input);
+          setLoadingNpcs(prev => ({ ...prev, [activeTab]: false }));
       }
       setInput('');
   };
 
-  const handleQuickResponse = (response: string) => {
+  const handleQuickResponse = async (response: string) => {
       if (activeTab === 'ADVISOR') {
           onSendMessageToAdvisor(response);
       } else {
           setLoadingNpcs(prev => ({ ...prev, [activeTab]: true }));
-          onSendMessageToNPC(activeTab, response);
-          setTimeout(() => {
-              setLoadingNpcs(prev => ({ ...prev, [activeTab]: false }));
-              // TUTORIAL RAIL: Step 5 Complete
-              if (tutorialStep === 5 && response === "Check the patent") {
-                   setTutorialStep(6);
-              }
-          }, 2000);
+          await onSendMessageToNPC(activeTab, response);
+          setLoadingNpcs(prev => ({ ...prev, [activeTab]: false }));
+          // TUTORIAL RAIL: Step 5 Complete
+          if (tutorialStep === 5 && response.toLowerCase().includes("patent")) {
+               setTutorialStep(6);
+          }
       }
   };
 
@@ -185,13 +183,33 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
   const activeNPC = npcList.find(n => n.id === activeTab);
   const isNpcLoading = activeTab !== 'ADVISOR' && loadingNpcs[activeTab];
 
-  // Generic Quick Responses for NPCs
-  const npcQuickResponses = [
-      "Let's grab lunch.",
-      "Any updates on the deal?",
-      "I need a favor.",
-      "Just checking in."
-  ];
+  const npcQuickResponses = useMemo(() => {
+      if (!playerStats) return ["Any updates on the deal?", "Just checking in."];
+      const base: string[] = [];
+
+      const targetCompany = playerStats.portfolio.find(p => !p.isAnalyzed) || playerStats.portfolio[0];
+      if (targetCompany) {
+          base.push(`Pressure test ${targetCompany.name}`);
+      }
+
+      if (activeScenario && activeScenario.title) {
+          base.push(`React to: ${activeScenario.title}`);
+      }
+
+      if (playerStats.loanBalance > 0) {
+          base.push('Help me refinance debt');
+      }
+
+      if (activeNPC?.role.includes('Analyst') && targetCompany) {
+          base.push(`Check the patent on ${targetCompany.name}`);
+      }
+
+      if (base.length < 4) {
+          base.push('Run gossip scan', 'Where are we weak right now?');
+      }
+
+      return Array.from(new Set(base)).slice(0, 5);
+  }, [playerStats, activeScenario, activeNPC]);
 
   // Styling logic based on mode
   const containerClasses = mode === 'MOBILE_EMBED'
@@ -388,6 +406,11 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                              )
                          )}
                     </div>
+                    {activeTab !== 'ADVISOR' && (
+                        <div className="text-[10px] text-slate-500 mb-2 uppercase tracking-wide">
+                            Gemini-driven replies adapt to your stats, debt, and the current case file. Toss sharper prompts for spicier intel.
+                        </div>
+                    )}
 
                     <div className="flex space-x-2">
                         <div className="flex-1 relative">
