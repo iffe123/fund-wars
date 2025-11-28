@@ -9,7 +9,7 @@ interface PortfolioCommandCenterProps {
 }
 
 const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen, onClose, onJumpToAssets }) => {
-  const { playerStats, updatePlayerStats, addLogEntry, setTutorialStep } = useGame();
+  const { playerStats, updatePlayerStats, addLogEntry, tutorialStep, setTutorialStep } = useGame();
 
   const companies = playerStats?.portfolio || [];
 
@@ -25,7 +25,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
             reputation: +2,
           });
           addLogEntry(`Diligence refreshed for ${company.name}`);
-          if (!company.isAnalyzed) setTutorialStep(4);
+          if (!company.isAnalyzed && tutorialStep === 3) setTutorialStep(4);
         },
       });
 
@@ -54,7 +54,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
 
       return { company, actions };
     });
-  }, [companies, updatePlayerStats, addLogEntry, onJumpToAssets, setTutorialStep]);
+  }, [companies, tutorialStep, updatePlayerStats, addLogEntry, onJumpToAssets, setTutorialStep]);
 
   if (!isOpen) return null;
 
