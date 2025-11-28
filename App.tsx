@@ -25,6 +25,7 @@ import { logEvent } from './services/analytics';
 import CompetitiveAuctionModal, { AuctionResult } from './components/CompetitiveAuctionModal';
 import DealMarket from './components/DealMarket';
 import RivalLeaderboard from './components/RivalLeaderboard';
+import PortfolioCommandCenter from './components/PortfolioCommandCenter';
 
 declare global {
   interface Window {
@@ -44,8 +45,8 @@ const TUTORIAL_STEPS_TEXT = [
     "The meat grinder is empty. Click [MANAGE_ASSETS] to see the deal Chad just threw at you.", // Step 1
     "Here it is. 'PackFancy'. Click the row to open the Deal Memo.", // Step 2
     "Look at that Revenue. Flat as a pancake. If you buy this now, you get fired. You need an edge. Click [ANALYZE] to dig deeper.", // Step 3
-    "Analysis complete. We found a weird patent on Page 40. Ask your analyst Sarah about it. Go to [COMMS].", // Step 4
-    "Type: 'Check the patent'.", // Step 5
+    "Analysis complete. We found a weird patent on Page 40. Ask your analyst Sarah about it. Go to [COMMS] (mobile users switch to COMMS tab).", // Step 4
+    "Tell Sarah to check the patent. Type or tap the prompt.", // Step 5
     "Now we're talking. Valuation just doubled. Click [SUBMIT IOI] to lock it in.", // Step 6
 ];
 
@@ -73,6 +74,7 @@ const App: React.FC = () => {
       { sender: 'advisor', text: "SYSTEM READY. Awaiting inputs." }
   ]);
   const [isAdvisorLoading, setIsAdvisorLoading] = useState(false);
+  const [showPortfolioDashboard, setShowPortfolioDashboard] = useState(false);
 
   // --- AUCTION STATE ---
   const [currentAuction, setCurrentAuction] = useState<CompetitiveDeal | null>(null);
@@ -122,6 +124,13 @@ const App: React.FC = () => {
           if (window.innerWidth < 768) setActiveMobileTab('DESK');
       }
   }, [tutorialStep, activeTab]);
+
+  // Auto-switch to COMMS on tutorial step 4 for mobile users to avoid confusion
+  useEffect(() => {
+      if (tutorialStep === 4 && window.innerWidth < 768 && activeMobileTab !== 'COMMS') {
+          setActiveMobileTab('COMMS');
+      }
+  }, [tutorialStep, activeMobileTab]);
 
   // Ensure the market is live once the tutorial is cleared
   useEffect(() => {
@@ -183,6 +192,17 @@ const App: React.FC = () => {
   };
 
   const handleStatChange = (changes: StatChanges) => {
+      if (playerStats && typeof changes.cash === 'number' && changes.cash < 0) {
+          const projectedCash = playerStats.cash + changes.cash;
+          if (projectedCash < 0) {
+              const deficit = Math.abs(projectedCash);
+              const loanSize = Math.max(25000, Math.ceil(deficit * 1.1));
+              updatePlayerStats({ cash: loanSize, loanBalanceChange: loanSize, loanRate: 0.22 });
+              addToast(`Auto-bridge loan wired: $${loanSize.toLocaleString()}`, 'info');
+              addLogEntry('Emergency loan drawn to cover negative cash.');
+          }
+      }
+
       updatePlayerStats(changes);
       if (changes.cash && changes.cash < 0) addToast(`Funds Debited: $${Math.abs(changes.cash)}`, 'info');
       if (changes.reputation && changes.reputation < 0) addToast(`Reputation Hit: ${changes.reputation}`, 'error');
@@ -324,7 +344,11 @@ const App: React.FC = () => {
            // 2. Fetch AI Response
            try {
                const response = await getNPCResponse(msg, targetNPC, targetNPC.dialogueHistory, playerStats);
-               
+
+               if (tutorialStep === 5 && /patent/i.test(msg)) {
+                   setTutorialStep(6);
+               }
+
                if (response.functionCalls) {
                   // Handle game state updates from AI tools
                   response.functionCalls.forEach(call => {
@@ -588,9 +612,9 @@ const App: React.FC = () => {
                   <div className="flex justify-between items-center mb-2">
                       <span className="text-xs font-bold text-slate-500">PENDING_TASKS</span>
                       <div className={tutorialStep === 1 ? 'relative z-[100]' : ''}>
-                          <TerminalButton 
-                            label="MANAGE_ASSETS" 
-                            icon="fa-briefcase" 
+                          <TerminalButton
+                            label="MANAGE_ASSETS"
+                            icon="fa-briefcase"
                             onClick={() => {
                                 setActiveTab('ASSETS');
                                 if (tutorialStep === 1) setTutorialStep(2);
@@ -598,6 +622,14 @@ const App: React.FC = () => {
                             }}
                             className={tutorialStep === 1 ? 'bg-amber-500 text-black border-white animate-pulse shadow-[0_0_20px_rgba(245,158,11,0.6)]' : ''}
                           />
+                          <div className="mt-2">
+                              <TerminalButton
+                                label="PORTFOLIO_DASHBOARD"
+                                icon="fa-grid-2"
+                                onClick={() => setShowPortfolioDashboard(true)}
+                                className="w-full"
+                              />
+                          </div>
                       </div>
                   </div>
                   
@@ -619,6 +651,15 @@ const App: React.FC = () => {
                   <div className="text-slate-600 text-sm italic mb-4">
                       {tutorialStep > 0 ? "URGENT: Review PackFancy Deal Memo." : "Review portfolio or advance timeline."}
                   </div>
+
+                  {tutorialStep === 0 && (
+                      <div className="text-[12px] text-slate-500 space-y-1 border border-slate-800 p-3 bg-slate-950/40">
+                          <div className="font-bold text-amber-400 text-xs">HINT FEED</div>
+                          <div>- NPC chat is powered by Gemini; ask for valuations, red flags, or gossip.</div>
+                          <div>- If cash runs dry, grab a bridge loan from LIFE_ACTIONS or we auto-wire one.</div>
+                          <div>- The Portfolio Dashboard button above jumps straight to company actions.</div>
+                      </div>
+                  )}
 
                   {/* NEW: ADVANCE WEEK BUTTON */}
                   {tutorialStep === 0 && (
@@ -748,7 +789,7 @@ const App: React.FC = () => {
 
         {/* DESKTOP FLOATING CHAT TERMINAL */}
         <div className={`hidden md:block ${tutorialStep === 5 ? 'relative z-[100]' : ''}`}>
-            <CommsTerminal 
+            <CommsTerminal
                 npcList={npcs}
                 selectedNpcId={selectedNpcId} // Pass this prop
                 advisorMessages={chatHistory}
@@ -758,6 +799,16 @@ const App: React.FC = () => {
                 predefinedQuestions={PREDEFINED_QUESTIONS}
             />
         </div>
+
+        <PortfolioCommandCenter
+            isOpen={showPortfolioDashboard}
+            onClose={() => setShowPortfolioDashboard(false)}
+            onJumpToAssets={() => {
+                setShowPortfolioDashboard(false);
+                setActiveTab('ASSETS');
+                if (window.innerWidth < 768) setActiveMobileTab('DESK');
+            }}
+        />
 
         {/* COMPETITIVE AUCTION MODAL */}
         {currentAuction && playerStats && (
