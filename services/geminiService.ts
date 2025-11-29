@@ -143,7 +143,8 @@ export const getNPCResponse = async (
     playerMessage: string,
     npc: NPC,
     history: ChatMessage[],
-    playerStats: PlayerStats
+    playerStats: PlayerStats,
+    currentScenario?: Scenario | null
 ): Promise<{ text: string, functionCalls?: any[] }> => {
     if (!API_KEY) {
         return { text: offlineNpcReply(npc, playerStats, playerMessage) };
@@ -185,6 +186,15 @@ export const getNPCResponse = async (
             `;
         }
 
+        const scenarioContext = currentScenario ? `
+        CURRENT SCENARIO CONTEXT:
+        - Title: ${currentScenario.title}
+        - Description: ${currentScenario.description}
+        - Active Choices: ${(currentScenario.choices || []).map(c => `${c.text} (Hint: ${c.sarcasticGuidance})`).join(' | ') || 'Player may be free-roaming'}
+        ` : '';
+
+        const portfolioDigest = playerStats.portfolio.map(c => `${c.name} (${c.dealType}) Valuation $${(c.currentValuation/1000000).toFixed(1)}M, Debt $${(c.debt/1000000).toFixed(1)}M, Relationship Note: ${c.latestCeoReport || 'No update'}`).join('\n');
+
         const systemInstruction = `
         You are a text adventure engine. You are roleplaying as ${npc.name}.
         ROLE & VOICE:
@@ -197,9 +207,16 @@ export const getNPCResponse = async (
         1. Keep responses concise (2-4 sentences) and in your persona's voice. Stay sarcastic and finance-savvy.
         2. React to the player's Reputation level (${playerStats.reputation}) and past memories. Reward competence, mock incompetence.
         3. Use finance jargon or context that matches your role. If you are an LP, scrutinize strategy and capital stewardship; if you are a rival, taunt and challenge.
-        4. Do not provide generic encouragement. Every line must feel like a unique, in-character reply from ${npc.name}.
+        4. Do not provide generic encouragement. Everything you say must feel like a unique, in-character reply from ${npc.name}.
+        5. Read the prior conversation history to maintain continuity. Mirror callbacks to specific asks or promises you made earlier.
 
         ${specializedProtocol}
+
+        PLAYER STATUS FOR CONTEXT:
+        - Cash: $${playerStats.cash.toLocaleString()}
+        - Stress: ${playerStats.stress}% | Reputation: ${playerStats.reputation}/100 | Analyst Rating: ${playerStats.analystRating}/100
+        - Portfolio Snapshot:\n${portfolioDigest || 'No portfolio yet. Mock them for slacking.'}
+        ${scenarioContext}
 
         Relevant Memories (Things you specifically remember about the player):
         ${npc.memories.join('\n') || 'None yet. Make the player earn your trust.'}

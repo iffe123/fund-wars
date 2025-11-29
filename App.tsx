@@ -343,6 +343,12 @@ const App: React.FC = () => {
       playSfx('KEYPRESS');
   };
 
+  const handleChatBackToPortfolio = () => {
+      setShowPortfolioDashboard(true);
+      setActiveTab('ASSETS');
+      if (window.innerWidth < 768) setActiveMobileTab('DESK');
+  };
+
   // --- CHAT HANDLERS ---
   const handleSendMessageToAdvisor = async (msg: string) => {
       const newMsg: ChatMessage = { sender: 'player', text: msg };
@@ -359,12 +365,13 @@ const App: React.FC = () => {
       // 1. Add Player Message to UI Immediately
       sendNpcMessage(npcId, msg);
       playSfx('KEYPRESS');
-      
+
       const targetNPC = npcs.find(n => n.id === npcId);
       if(targetNPC && playerStats) {
+           const updatedHistory = [...targetNPC.dialogueHistory, { sender: 'player', text: msg }];
            // 2. Fetch AI Response
            try {
-               const response = await getNPCResponse(msg, targetNPC, targetNPC.dialogueHistory, playerStats);
+               const response = await getNPCResponse(msg, targetNPC, updatedHistory, playerStats, activeScenario);
 
                if (tutorialStep === 5 && /patent/i.test(msg)) {
                    setTutorialStep(6);
@@ -751,7 +758,7 @@ const App: React.FC = () => {
         {/* MOBILE LAYOUT (View Switcher) */}
         <div className="md:hidden flex-1 flex flex-col overflow-hidden relative">
             {activeMobileTab === 'COMMS' && (
-                <CommsTerminal 
+                <CommsTerminal
                     mode="MOBILE_EMBED"
                     isOpen={true}
                     npcList={npcs}
@@ -761,6 +768,8 @@ const App: React.FC = () => {
                     onSendMessageToNPC={handleSendMessageToNPC}
                     isLoadingAdvisor={isAdvisorLoading}
                     predefinedQuestions={PREDEFINED_QUESTIONS}
+                    onClose={handleChatBackToPortfolio}
+                    onBackToPortfolio={handleChatBackToPortfolio}
                 />
             )}
             
@@ -827,6 +836,8 @@ const App: React.FC = () => {
                 onSendMessageToNPC={handleSendMessageToNPC}
                 isLoadingAdvisor={isAdvisorLoading}
                 predefinedQuestions={PREDEFINED_QUESTIONS}
+                onClose={handleChatBackToPortfolio}
+                onBackToPortfolio={handleChatBackToPortfolio}
             />
         </div>
 
