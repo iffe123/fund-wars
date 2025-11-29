@@ -50,12 +50,16 @@ const TUTORIAL_STEPS_TEXT = [
     "Now we're talking. Valuation just doubled. Click [SUBMIT IOI] to lock it in.", // Step 6
 ];
 
+const DEFAULT_CHAT: ChatMessage[] = [
+    { sender: 'advisor', text: "SYSTEM READY. Awaiting inputs." }
+];
+
 const App: React.FC = () => {
   // Use Context
-  const { 
+  const {
     user, playerStats, npcs, activeScenario, gamePhase, difficulty, marketVolatility, tutorialStep, actionLog,
     setGamePhase, updatePlayerStats, sendNpcMessage, setTutorialStep, advanceTime, addLogEntry,
-    rivalFunds, activeDeals, updateRivalFund, removeDeal, generateNewDeals
+    rivalFunds, activeDeals, updateRivalFund, removeDeal, generateNewDeals, resetGame
   } = useGame();
   
   const { loading: authLoading } = useAuth();
@@ -70,9 +74,7 @@ const App: React.FC = () => {
   
   // --- UI STATE ---
   const [selectedNpcId, setSelectedNpcId] = useState<string>('advisor');
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
-      { sender: 'advisor', text: "SYSTEM READY. Awaiting inputs." }
-  ]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(DEFAULT_CHAT);
   const [isAdvisorLoading, setIsAdvisorLoading] = useState(false);
   const [showPortfolioDashboard, setShowPortfolioDashboard] = useState(false);
 
@@ -225,6 +227,13 @@ const App: React.FC = () => {
         setGamePhase('LIFE_MANAGEMENT');
       }, 1000);
   };
+
+  const handleScenarioFallback = () => {
+      addToast('No actionable intel. Returning to desk.', 'info');
+      addLogEntry(`Scenario Cleared: ${currentScenario.title} contained no decisions.`);
+      setGamePhase('LIFE_MANAGEMENT');
+      setActiveTab('WORKSPACE');
+  };
   
   const handleAdvanceTime = () => {
       if (!playerStats) return;
@@ -314,6 +323,18 @@ const App: React.FC = () => {
           addToast(`DEAL LOST to ${result.winnerName}`, 'error');
           playSfx('ERROR');
       }
+  };
+
+  const handleResetSimulation = () => {
+      resetGame();
+      setBootComplete(false);
+      setActiveTab('WORKSPACE');
+      setActiveMobileTab('DESK');
+      setChatHistory(DEFAULT_CHAT);
+      setSelectedNpcId('advisor');
+      setToasts([]);
+      addToast('Simulation reset. Rebooting intro...', 'info');
+      addLogEntry('Simulation reset to cold open.');
   };
 
   const handleDismissDeal = (dealId: number) => {
@@ -529,8 +550,14 @@ const App: React.FC = () => {
 
                       <div className="grid gap-3">
                           {scenarioChoices.length === 0 && (
-                              <div className="text-xs text-slate-500 border border-dashed border-slate-700 p-4 text-center">
-                                  No decision points available yet. Gather more intel.
+                              <div className="text-xs text-slate-500 border border-dashed border-slate-700 p-4 text-center space-y-3">
+                                  <div>No decision points available yet. Gather more intel.</div>
+                                  <button
+                                      onClick={handleScenarioFallback}
+                                      className="px-4 py-2 border border-slate-600 text-slate-300 hover:border-amber-500 hover:text-amber-400 transition-colors"
+                                  >
+                                      Return to Desk
+                                  </button>
                               </div>
                           )}
 
@@ -767,7 +794,10 @@ const App: React.FC = () => {
                              <span className="text-green-500">{playerStats?.level}</span>
                         </div>
                     </div>
-                    <button className="w-full border border-red-900 text-red-500 py-3 uppercase font-bold text-xs tracking-widest hover:bg-red-900/20">
+                    <button
+                        className="w-full border border-red-900 text-red-500 py-3 uppercase font-bold text-xs tracking-widest hover:bg-red-900/20"
+                        onClick={handleResetSimulation}
+                    >
                         Reset Simulation
                     </button>
                     <div className="pt-8 border-t border-slate-800">

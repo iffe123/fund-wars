@@ -15,6 +15,7 @@ interface GameContextTypeExtended extends GameContextType {
     addDeal: (deal: CompetitiveDeal) => void;
     removeDeal: (dealId: number) => void;
     generateNewDeals: () => void;
+    resetGame: () => void;
 }
 
 const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
@@ -342,7 +343,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // --- RIVAL FUND FUNCTIONS ---
   
   const updateRivalFund = useCallback((fundId: string, updates: Partial<RivalFund>) => {
-      setRivalFunds(prev => prev.map(fund => 
+      setRivalFunds(prev => prev.map(fund =>
           fund.id === fundId ? { ...fund, ...updates } : fund
       ));
   }, []);
@@ -397,6 +398,20 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       })).filter(deal => deal.deadline > 0));
   }, [playerStats?.gameMonth]);
 
+  const resetGame = useCallback(() => {
+      setPlayerStats(null);
+      setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS]);
+      setActiveScenario(SCENARIOS[0]);
+      setGamePhase('INTRO');
+      setDifficulty(null);
+      setMarketVolatility('NORMAL');
+      setTutorialStep(0);
+      setActionLog([]);
+      setRivalFunds(RIVAL_FUNDS);
+      setActiveDeals([]);
+      logEvent('game_reset');
+  }, []);
+
   return (
     <GameContext.Provider value={{
       user,
@@ -420,7 +435,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updateRivalFund,
       addDeal,
       removeDeal,
-      generateNewDeals
+      generateNewDeals,
+      resetGame
     }}>
       {children}
     </GameContext.Provider>

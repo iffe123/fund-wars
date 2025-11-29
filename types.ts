@@ -271,6 +271,7 @@ export interface GameContextType {
   addLogEntry: (message: string) => void;
   setTutorialStep: (step: number) => void;
   advanceTime: () => void;
+  resetGame: () => void;
 }
 
 // ==================== COMPETITOR FUNDS SYSTEM ====================
