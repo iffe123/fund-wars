@@ -3,6 +3,9 @@
   "private": true,
   "version": "9.2.0",
   "type": "module",
+  "engines": {
+    "node": "^18 || ^20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

@@ -1,9 +1,43 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import type { ChatMessage, PlayerStats, Scenario, NPC } from '../types';
+import type { ChatMessage, PlayerStats, Scenario, NPC, NPCMemory, KnowledgeEntry } from '../types';
+
+const summarizeMemories = (memories: NPCMemory[]): string => {
+  if (!memories || memories.length === 0) return 'None yet. Make the player earn your trust.';
+
+  return memories
+    .slice(-5)
+    .map(mem => {
+      const when = mem.timestamp ? new Date(mem.timestamp).toLocaleDateString() : 'Recent';
+      const sentiment = mem.sentiment ? ` (${mem.sentiment})` : '';
+      const tags = mem.tags && mem.tags.length > 0 ? ` [${mem.tags.join(', ')}]` : '';
+      return `- ${when}${sentiment}${tags}: ${mem.summary}`;
+    })
+    .join('\n');
+};
+
+const summarizeKnowledge = (intel: KnowledgeEntry[], focusNpc?: NPC): string => {
+  if (!intel || intel.length === 0) return 'No intel logged yet. Ask sharper questions.';
+
+  const relevant = focusNpc
+    ? intel.filter(k => k.npcId === focusNpc.id || k.tags?.includes(focusNpc.id) || (focusNpc.faction && k.faction === focusNpc.faction))
+    : intel;
+
+  const entries = (relevant.length > 0 ? relevant : intel).slice(-5);
+
+  return entries
+    .map(k => {
+      const when = k.timestamp ? new Date(k.timestamp).toLocaleDateString() : 'Recent';
+      const via = k.source ? ` via ${k.source}` : '';
+      const tags = k.tags && k.tags.length > 0 ? ` [${k.tags.join(', ')}]` : '';
+      const title = k.title ? `${k.title}: ` : '';
+      return `- ${when}${via}${tags}: ${title}${k.summary}`;
+    })
+    .join('\n');
+};
 
 const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: string) => {
-  const mood = npc.relationship > 60 ? "almost warm" : npc.relationship < 30 ? "cold" : "guarded";
+  const mood = npc.mood > 70 ? "almost warm" : npc.mood < 30 ? "cold" : "guarded";
   const financeJab = npc.traits.includes('Aggressive')
     ? "Stop hesitating. Close or kill the deal."
     : "Bring me something with real upside or don't bother me.";
@@ -13,8 +47,13 @@ const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: stri
     : "You still have dry powder. Use it before someone else does.";
 
   const traitFlair = npc.traits.length > 0 ? `(${npc.traits.join(', ')})` : '';
+  const trustCue = npc.trust < 30 ? "(barely trusts you)" : npc.trust > 70 ? "(expects you to deliver)" : "(watching you)";
+  const lastMemory = npc.memories[npc.memories.length - 1];
+  const callback = lastMemory ? ` They remember: ${lastMemory.summary}.` : '';
+  const intelHit = (playerStats.knowledgeLog || []).filter(k => k.npcId === npc.id || k.tags?.includes(npc.id)).slice(-1)[0];
+  const intelNote = intelHit ? ` You logged: ${intelHit.summary}.` : '';
 
-  return `${npc.name} ${traitFlair} gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"`;
+  return `${npc.name} ${traitFlair} ${trustCue} gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"${callback}${intelNote}`;
 };
 
 // --- ENV: read safely from Vite/Vercel ---
@@ -94,12 +133,16 @@ export const getAdvisorResponse = async (
   try {
     let currentSystemInstruction = advisorSystemInstruction;
     
-    if (playerStats) {
-        currentSystemInstruction += `\n\nCURRENT PLAYER STATUS (Use this to tailor your insults/advice):\nLevel: ${playerStats.level}\nCash: $${playerStats.cash.toLocaleString()}\nReputation: ${playerStats.reputation}\nStress: ${playerStats.stress}%\nAnalyst Rating: ${playerStats.analystRating}\nPortfolio Count: ${playerStats.portfolio.length}`;
+        if (playerStats) {
+            currentSystemInstruction += `\n\nCURRENT PLAYER STATUS (Use this to tailor your insults/advice):\nLevel: ${playerStats.level}\nCash: $${playerStats.cash.toLocaleString()}\nReputation: ${playerStats.reputation}\nFaction Reputation -> MDs: ${playerStats.factionReputation.MANAGING_DIRECTORS}, LPs: ${playerStats.factionReputation.LIMITED_PARTNERS}, Regulators: ${playerStats.factionReputation.REGULATORS}, Analysts: ${playerStats.factionReputation.ANALYSTS}, Rivals: ${playerStats.factionReputation.RIVALS}\nStress: ${playerStats.stress}%\nAnalyst Rating: ${playerStats.analystRating}\nPortfolio Count: ${playerStats.portfolio.length}`;
         
         if (playerStats.portfolio.length > 0) {
             currentSystemInstruction += `\nPORTFOLIO DETAILS: ${playerStats.portfolio.map(c => `${c.name} (Valuation: $${(c.currentValuation/1000000).toFixed(1)}M, Debt: $${(c.debt/1000000).toFixed(1)}M, Deal: ${c.dealType})`).join('; ')}`;
         }
+
+        const knowledgeDigest = summarizeKnowledge(playerStats?.knowledgeLog || []);
+        const knowledgeFlags = playerStats?.knowledgeFlags || [];
+        currentSystemInstruction += `\n\nRECENT INTEL THE PLAYER BELIEVES:\n${knowledgeDigest}\nKnowledge flags: ${knowledgeFlags.join(', ') || 'None'}`;
     }
 
     if (currentScenario) {
@@ -195,31 +238,47 @@ export const getNPCResponse = async (
 
         const portfolioDigest = playerStats.portfolio.map(c => `${c.name} (${c.dealType}) Valuation $${(c.currentValuation/1000000).toFixed(1)}M, Debt $${(c.debt/1000000).toFixed(1)}M, Relationship Note: ${c.latestCeoReport || 'No update'}`).join('\n');
 
+        const scheduleNote = npc.schedule
+            ? `Availability - Weekday: ${npc.schedule.weekday.join('/')} | Weekend: ${npc.schedule.weekend.join('/') || 'None'}. Preferred channel: ${npc.schedule.preferredChannel || 'none listed'}.`
+            : 'Availability - Flexible; no schedule set.';
+
+        const knowledgeDigest = summarizeKnowledge(playerStats.knowledgeLog || [], npc);
+
         const systemInstruction = `
         You are a text adventure engine. You are roleplaying as ${npc.name}.
         ROLE & VOICE:
         - Title: ${npc.role}.
         - Personality Traits: ${npc.traits.join(', ')}.
         - Relationship with player: ${npc.relationship}/100 (let this color your tone: hostile if <30, neutral if 30-70, warmer if >70).
+        - Mood: ${npc.mood}/100 (recent vibe; higher means receptive, lower means prickly).
+        - Trust: ${npc.trust}/100 (longer-term belief the player will deliver; gate generosity on this).
+        - Goals/agenda: ${npc.goals && npc.goals.length > 0 ? npc.goals.join('; ') : 'Unstated; pursue role-aligned ambitions.'}
+        - ${scheduleNote}
+        - Current time: ${playerStats.currentDayType} ${playerStats.currentTimeSlot}. If off-hours, acknowledge the timing and be brief or annoyed unless trust is high.
         - Never break character or speak as a generic assistant. Everything you say should sound like ${npc.name}.
 
         BEHAVIOR RULES:
         1. Keep responses concise (2-4 sentences) and in your persona's voice. Stay sarcastic and finance-savvy.
-        2. React to the player's Reputation level (${playerStats.reputation}) and past memories. Reward competence, mock incompetence.
-        3. Use finance jargon or context that matches your role. If you are an LP, scrutinize strategy and capital stewardship; if you are a rival, taunt and challenge.
-        4. Do not provide generic encouragement. Everything you say must feel like a unique, in-character reply from ${npc.name}.
-        5. Read the prior conversation history to maintain continuity. Mirror callbacks to specific asks or promises you made earlier.
+        2. React to the player's Reputation level (${playerStats.reputation}), their effect on your mood/trust, and past memories. Reward competence, mock incompetence.
+        3. If mood is low (<30), be curt and withhold favors. If trust is high (>70), volunteer extra intel or capital; if trust is low, demand proof before helping.
+        4. Use finance jargon or context that matches your role. If you are an LP, scrutinize strategy and capital stewardship; if you are a rival, taunt and challenge.
+        5. Do not provide generic encouragement. Everything you say must feel like a unique, in-character reply from ${npc.name}.
+        6. Read the prior conversation history to maintain continuity. Mirror callbacks to specific asks or promises you made earlier.
 
         ${specializedProtocol}
 
         PLAYER STATUS FOR CONTEXT:
         - Cash: $${playerStats.cash.toLocaleString()}
         - Stress: ${playerStats.stress}% | Reputation: ${playerStats.reputation}/100 | Analyst Rating: ${playerStats.analystRating}/100
+        - Faction Reputation -> MDs: ${playerStats.factionReputation.MANAGING_DIRECTORS}, LPs: ${playerStats.factionReputation.LIMITED_PARTNERS}, Regulators: ${playerStats.factionReputation.REGULATORS}, Analysts: ${playerStats.factionReputation.ANALYSTS}, Rivals: ${playerStats.factionReputation.RIVALS}
         - Portfolio Snapshot:\n${portfolioDigest || 'No portfolio yet. Mock them for slacking.'}
         ${scenarioContext}
 
         Relevant Memories (Things you specifically remember about the player):
-        ${npc.memories.join('\n') || 'None yet. Make the player earn your trust.'}
+        ${summarizeMemories(npc.memories)}
+
+        Intel and rumors you believe the player holds (use or challenge these):
+        ${knowledgeDigest}
         `;
 
         const ai = new GoogleGenAI({ apiKey: API_KEY });
