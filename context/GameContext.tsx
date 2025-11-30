@@ -172,6 +172,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   console.log("[CLOUD_LOAD] Save found:", data);
 
                   try {
+                      const safeKnowledgeLog = Array.isArray(data.playerStats?.knowledgeLog)
+                        ? data.playerStats.knowledgeLog.map((k: any) => normalizeKnowledgeEntry(k))
+                        : [];
+                      const safeKnowledgeFlags = Array.isArray(data.playerStats?.knowledgeFlags)
+                        ? Array.from(new Set(data.playerStats.knowledgeFlags))
+                        : [];
+                      const safeNpcs = Array.isArray(data.npcs) ? data.npcs.map(hydrateNpc) : [...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc);
+                      const safeRivalFunds = Array.isArray(data.rivalFunds) ? data.rivalFunds.map(hydrateFund) : RIVAL_FUNDS.map(hydrateFund);
+                      const safeActiveDeals = Array.isArray(data.activeDeals) ? data.activeDeals : [];
+
                       if (data.playerStats) setPlayerStats({
                           ...data.playerStats,
                           loanBalance: data.playerStats.loanBalance ?? 0,
@@ -180,8 +190,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                           currentDayType: data.playerStats.currentDayType || 'WEEKDAY',
                           currentTimeSlot: data.playerStats.currentTimeSlot || 'MORNING',
                           timeCursor: typeof data.playerStats.timeCursor === 'number' ? data.playerStats.timeCursor : 0,
-                          knowledgeLog: (data.playerStats.knowledgeLog || []).map(k => normalizeKnowledgeEntry(k)),
-                          knowledgeFlags: Array.from(new Set(data.playerStats.knowledgeFlags || [])),
+                          knowledgeLog: safeKnowledgeLog,
+                          knowledgeFlags: safeKnowledgeFlags,
                       });
                       if (data.gamePhase) setGamePhase(data.gamePhase);
                       if (data.activeScenarioId) {
@@ -189,11 +199,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                           if (scen) setActiveScenario(scen);
                       }
                       if (data.marketVolatility) setMarketVolatility(data.marketVolatility);
-                      if (data.npcs) setNpcs(data.npcs.map(hydrateNpc));
+                      if (data.npcs) setNpcs(safeNpcs);
                       if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
                       if (data.actionLog) setActionLog(data.actionLog);
-                      if (data.rivalFunds) setRivalFunds(data.rivalFunds.map(hydrateFund));
-                      if (data.activeDeals) setActiveDeals(data.activeDeals);
+                      if (data.rivalFunds) setRivalFunds(safeRivalFunds);
+                      if (data.activeDeals) setActiveDeals(safeActiveDeals);
                       logEvent('login_success');
                   } catch (parseError) {
                       console.error('[CLOUD_LOAD] Save data malformed, resetting to defaults.', parseError);
