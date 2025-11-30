@@ -187,6 +187,7 @@ export interface StatChanges {
     moodChange?: number;
     memory: NPCMemory | string;
     broadcastTo?: Array<'LP' | 'RIVAL'>;
+    memory: string;
   };
   factionReputation?: Partial<FactionReputation>;
   health?: number;

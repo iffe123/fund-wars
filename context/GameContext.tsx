@@ -105,6 +105,12 @@ const hydrateRivalFund = (fund: RivalFund): RivalFund => ({
     ...fund,
     vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
     lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
+const hydrateNpc = (npc: NPC): NPC => ({
+    ...npc,
+    mood: clampStat(typeof npc.mood === 'number' ? npc.mood : npc.relationship),
+    trust: clampStat(typeof npc.trust === 'number' ? npc.trust : npc.relationship),
+    dialogueHistory: npc.dialogueHistory || [],
+    memories: npc.memories || [],
 });
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -342,6 +348,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       decayNpcAffinities();
 
+      setPlayerStats(prev => prev ? ({ ...prev, gameYear: nextYear, gameMonth: finalMonth }) : null);
+
+      decayNpcAffinities();
+
       setPlayerStats(prev => prev ? ({
           ...prev,
           gameYear: nextYear,
@@ -444,6 +454,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
   }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments, marketVolatility, npcs]);
+  }, [playerStats, decayNpcAffinities]);
 
 
   // --- STAT UPDATES ---
@@ -648,6 +659,21 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 return npc;
             });
         });
+        const { npcId, change, trustChange, moodChange, memory } = changes.npcRelationshipUpdate;
+        setNpcs(prevNpcs => prevNpcs.map(npc => {
+            if (npc.id === npcId) {
+                const calculatedTrustChange = typeof trustChange === 'number' ? trustChange : Math.round(change * 0.6);
+                const calculatedMoodChange = typeof moodChange === 'number' ? moodChange : Math.round(change * 0.8);
+                return {
+                    ...npc,
+                    relationship: clampStat(npc.relationship + change),
+                    mood: clampStat((npc.mood ?? npc.relationship) + calculatedMoodChange),
+                    trust: clampStat((npc.trust ?? npc.relationship) + calculatedTrustChange),
+                    memories: [...npc.memories, memory]
+                };
+            }
+            return npc;
+        }));
     }
   }, [npcs, playerStats]);
 
