@@ -132,6 +132,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setActionLog(prev => [entry, ...prev].slice(0, 50));
       console.log(`[Game Log]: ${message}`);
   }, []);
+
+  const appendNpcMemory = useCallback((npcId: string, memory: NPCMemory | string) => {
+      setNpcs(prev => prev.map(npc => {
+          if (npc.id !== npcId) return npc;
+
+          const normalized = normalizeMemory(memory, npcId);
+          return { ...npc, memories: clampMemories([...npc.memories, normalized]) };
+      }));
+  }, []);
   
   // --- RIVAL FUNDS & COMPETITIVE DEALS ---
   const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS.map(hydrateRivalFund));
@@ -734,6 +743,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               stressDelta += 8;
               reputationDelta -= 2;
               rivalRepDelta -= 2;
+              appendNpcMemory(rival.npcId, {
+                  summary: `Poached ${targetDeal.companyName} before you could move.`,
+                  sentiment: 'negative',
+                  tags: ['rival', 'deal', 'poach'],
+              });
               knowledgeGain.push(normalizeKnowledgeEntry({
                   summary: `${rival.name} poached ${targetDeal.companyName} before you could move.`,
                   npcId: rival.npcId,
@@ -760,6 +774,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               stressDelta += 4 + Math.round(vendetta / 50);
               reputationDelta -= rumorPenalty;
               rivalRepDelta -= 1;
+              appendNpcMemory(rival.npcId, {
+                  summary: `${rival.managingPartner} spread a rumor that you're reckless with diligence.`,
+                  sentiment: 'negative',
+                  tags: ['rival', 'rumor'],
+              });
               knowledgeGain.push(normalizeKnowledgeEntry({
                   summary: `${rival.managingPartner} spread a rumor that you're reckless with diligence.`,
                   npcId: rival.npcId,
@@ -783,7 +802,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               knowledgeGain: knowledgeGain.length ? knowledgeGain : undefined,
           });
       }
-  }, [playerStats, rivalFunds, activeDeals, addLogEntry, updatePlayerStats]);
+  }, [playerStats, rivalFunds, activeDeals, addLogEntry, updatePlayerStats, appendNpcMemory]);
 
   // --- RIVAL FUND FUNCTIONS ---
 
