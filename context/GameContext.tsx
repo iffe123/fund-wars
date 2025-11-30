@@ -327,15 +327,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
   }, [gamePhase]);
 
-  useEffect(() => {
-      if (!playerStats || gamePhase === 'INTRO') return;
-      if ((playerStats.timeCursor ?? 0) < 1) return;
-      const currentTick = playerStats.timeCursor ?? 0;
-      if (lastProcessedRivalTickRef.current === currentTick) return;
-      lastProcessedRivalTickRef.current = currentTick;
-      processRivalMoves();
-  }, [playerStats?.timeCursor, gamePhase, processRivalMoves]);
-
   // --- MARKET CYCLE ---
   useEffect(() => {
     if (gamePhase === 'INTRO') return;
@@ -889,6 +880,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           });
       }
   }, [playerStats, rivalFunds, activeDeals, addLogEntry, updatePlayerStats, appendNpcMemory]);
+
+  useEffect(() => {
+      if (!playerStats || gamePhase === 'INTRO') return;
+      if ((playerStats.timeCursor ?? 0) < 1) return;
+      const currentTick = playerStats.timeCursor ?? 0;
+      if (lastProcessedRivalTickRef.current === currentTick) return;
+      lastProcessedRivalTickRef.current = currentTick;
+      processRivalMoves();
+  }, [playerStats?.timeCursor, gamePhase, processRivalMoves]);
 
   // --- RIVAL FUND FUNCTIONS ---
 
