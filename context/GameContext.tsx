@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal } from '../types';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
+import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, FactionReputation, DayType, TimeSlot, KnowledgeEntry } from '../types';
 import { PlayerLevel, DealType } from '../types';
-import { DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS } from '../constants';
+import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS } from '../constants';
 import { useAuth } from './AuthContext';
 import { db } from '../services/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -48,10 +48,27 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [marketVolatility, setMarketVolatility] = useState<MarketVolatility>('NORMAL');
   const [tutorialStep, setTutorialStep] = useState<number>(0);
   const [actionLog, setActionLog] = useState<string[]>([]);
+
+  const addLogEntry = useCallback((message: string) => {
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const entry = `${timestamp} // ${message}`;
+      setActionLog(prev => [entry, ...prev].slice(0, 50));
+      console.log(`[Game Log]: ${message}`);
+  }, []);
+
+  const appendNpcMemory = useCallback((npcId: string, memory: NPCMemory | string) => {
+      setNpcs(prev => prev.map(npc => {
+          if (npc.id !== npcId) return npc;
+
+          const normalized = normalizeMemory(memory, npcId);
+          return { ...npc, memories: clampMemories([...npc.memories, normalized]) };
+      }));
+  }, []);
   
   // --- RIVAL FUNDS & COMPETITIVE DEALS ---
-  const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS);
+  const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS.map(hydrateFund));
   const [activeDeals, setActiveDeals] = useState<CompetitiveDeal[]>([]);
+  const lastProcessedRivalTickRef = useRef<number | null>(null);
 
   // --- CLOUD SAVE / LOAD ---
   useEffect(() => {
@@ -76,16 +93,47 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   // Cast to any to handle DocumentData being unknown
                   const data = docSnap.data() as any;
                   console.log("[CLOUD_LOAD] Save found:", data);
-                  
-                  if (data.playerStats) setPlayerStats({
-                      ...data.playerStats,
-                      loanBalance: data.playerStats.loanBalance ?? 0,
-                      loanRate: data.playerStats.loanRate ?? 0,
-                  });
-                  if (data.gamePhase) setGamePhase(data.gamePhase);
-                  if (data.activeScenarioId) {
-                      const scen = SCENARIOS.find(s => s.id === data.activeScenarioId);
-                      if (scen) setActiveScenario(scen);
+
+                  try {
+                      const safeKnowledgeLog = sanitizeKnowledgeLog(data.playerStats?.knowledgeLog);
+                      const safeKnowledgeFlags = sanitizeKnowledgeFlags(data.playerStats?.knowledgeFlags);
+                      const safeNpcs = Array.isArray(data.npcs) ? data.npcs.map(hydrateNpc) : [...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc);
+                      const safeRivalFunds = Array.isArray(data.rivalFunds) ? data.rivalFunds.map(hydrateFund) : RIVAL_FUNDS.map(hydrateFund);
+                      const safeActiveDeals = Array.isArray(data.activeDeals)
+                        ? data.activeDeals
+                            .map(hydrateCompetitiveDeal)
+                            .filter((deal): deal is CompetitiveDeal => Boolean(deal))
+                        : [];
+
+                      if (data.playerStats) setPlayerStats({
+                          ...data.playerStats,
+                          loanBalance: data.playerStats.loanBalance ?? 0,
+                          loanRate: data.playerStats.loanRate ?? 0,
+                          factionReputation: hydrateFactionReputation(data.playerStats.factionReputation),
+                          currentDayType: data.playerStats.currentDayType || 'WEEKDAY',
+                          currentTimeSlot: data.playerStats.currentTimeSlot || 'MORNING',
+                          timeCursor: typeof data.playerStats.timeCursor === 'number' ? data.playerStats.timeCursor : 0,
+                          knowledgeLog: safeKnowledgeLog,
+                          knowledgeFlags: safeKnowledgeFlags,
+                      });
+                      if (data.gamePhase) setGamePhase(data.gamePhase);
+                      if (data.activeScenarioId) {
+                          const scen = SCENARIOS.find(s => s.id === data.activeScenarioId);
+                          if (scen) setActiveScenario(scen);
+                      }
+                      if (data.marketVolatility) setMarketVolatility(data.marketVolatility);
+                      if (data.npcs) setNpcs(safeNpcs);
+                      if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
+                      if (data.actionLog) setActionLog(data.actionLog);
+                      if (data.rivalFunds) setRivalFunds(safeRivalFunds);
+                      if (data.activeDeals) setActiveDeals(safeActiveDeals);
+                      logEvent('login_success');
+                  } catch (parseError) {
+                      console.error('[CLOUD_LOAD] Save data malformed, resetting to defaults.', parseError);
+                      setPlayerStats(null);
+                      setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc));
+                      setRivalFunds(RIVAL_FUNDS.map(hydrateFund));
+                      setGamePhase('INTRO');
                   }
                   if (data.marketVolatility) setMarketVolatility(data.marketVolatility);
                   if (data.npcs) setNpcs(data.npcs.map(hydrateNpc));
@@ -186,9 +234,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const advanceTime = useCallback(() => {
       if (!playerStats) return;
 
+      const currentDayType = playerStats.currentDayType || 'WEEKDAY';
+      const currentTimeSlot = playerStats.currentTimeSlot || 'MORNING';
+      const currentTimeCursor = playerStats.timeCursor ?? 0;
+      applyMissedAppointments(currentDayType, currentTimeSlot, currentTimeCursor);
+
       const nextMonth = playerStats.gameMonth + 1;
       const nextYear = nextMonth > 12 ? playerStats.gameYear + 1 : playerStats.gameYear;
       const finalMonth = nextMonth > 12 ? 1 : nextMonth;
+
+      const { nextDayType, nextSlot } = getNextTimeState(currentDayType, currentTimeSlot);
+      const nextTimeCursor = currentTimeCursor + 1;
 
       updatePlayerStats({
           score: 10,
@@ -198,17 +254,59 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setPlayerStats(prev => prev ? ({ ...prev, gameYear: nextYear, gameMonth: finalMonth }) : null);
 
+      decayNpcAffinities();
+
+      setPlayerStats(prev => prev ? ({
+          ...prev,
+          gameYear: nextYear,
+          gameMonth: finalMonth,
+          currentDayType: nextDayType,
+          currentTimeSlot: nextSlot,
+          timeCursor: nextTimeCursor,
+      }) : null);
+
+      const totalPortfolioValue = playerStats.portfolio.reduce((acc, co) => acc + (co.currentValuation || 0), 0);
       const availableScenarios = SCENARIOS.filter(s => {
           if (playerStats.playedScenarioIds.includes(s.id) && s.id !== 1) return false;
           if (s.id === 1) return false;
 
           if (s.requiresPortfolio && playerStats.portfolio.length === 0) return false;
-          
+          if (s.minPortfolioCompanies && playerStats.portfolio.length < s.minPortfolioCompanies) return false;
+          if (s.minPortfolioValue && totalPortfolioValue < s.minPortfolioValue) return false;
+
           if (s.minReputation && playerStats.reputation < s.minReputation) return false;
           if (s.maxReputation && playerStats.reputation > s.maxReputation) return false;
-          
+
+          if (s.allowedVolatility && !s.allowedVolatility.includes(marketVolatility)) return false;
+
+          if (s.dayTypeGate) {
+              if (s.dayTypeGate.dayType && s.dayTypeGate.dayType !== nextDayType) return false;
+              if (s.dayTypeGate.timeSlots && s.dayTypeGate.timeSlots.length > 0 && !s.dayTypeGate.timeSlots.includes(nextSlot)) return false;
+          }
+
+          if (s.factionRequirements) {
+              const meetsFactionReqs = s.factionRequirements.every(req => {
+                  const current = playerStats.factionReputation[req.faction] ?? 0;
+                  if (typeof req.min === 'number' && current < req.min) return false;
+                  if (typeof req.max === 'number' && current > req.max) return false;
+                  return true;
+              });
+              if (!meetsFactionReqs) return false;
+          }
+
           if (s.minStress && playerStats.stress < s.minStress) return false;
           if (s.minCash && playerStats.cash < s.minCash) return false;
+
+          if (s.npcRelationshipRequirements && s.npcRelationshipRequirements.length > 0) {
+              const meetsNpcReqs = s.npcRelationshipRequirements.every(req => {
+                  const npc = npcs.find(n => n.id === req.npcId);
+                  if (!npc) return false;
+                  if (typeof req.minRelationship === 'number' && npc.relationship < req.minRelationship) return false;
+                  if (typeof req.minTrust === 'number' && (npc.trust ?? npc.relationship) < req.minTrust) return false;
+                  return true;
+              });
+              if (!meetsNpcReqs) return false;
+          }
 
           if (s.requiredFlags) {
               const hasAllFlags = s.requiredFlags.every(flag => playerStats.playerFlags[flag]);
@@ -223,27 +321,40 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return true;
       });
 
+      const factionTension = Math.min(...Object.values(playerStats.factionReputation || DEFAULT_FACTION_REPUTATION));
+      const cashPressure = playerStats.cash < 5000 ? 0.1 : 0;
+      const auditPressure = playerStats.auditRisk > 50 ? 0.1 : 0;
       const crisisMultiplier = playerStats.stress > 70 ? 1.5 : 1.0;
-      const shouldTriggerEvent = Math.random() < (0.4 * crisisMultiplier); 
+      const volatilityBias = marketVolatility === 'PANIC' ? 0.2 : marketVolatility === 'CREDIT_CRUNCH' ? 0.1 : marketVolatility === 'BULL_RUN' ? 0.05 : 0;
+      const tensionBias = factionTension < 40 ? 0.08 : 0;
+      const portfolioBias = playerStats.portfolio.length > 0 ? 0.05 : 0;
+      const shouldTriggerEvent = Math.random() < ((0.35 + cashPressure + auditPressure + volatilityBias + tensionBias + portfolioBias) * crisisMultiplier);
+      const slotLabel = `${nextDayType} ${nextSlot}`;
 
       if (shouldTriggerEvent && availableScenarios.length > 0) {
-          availableScenarios.sort((a, b) => {
-              const scoreA = (a.requiredFlags?.length || 0) + (a.requiresPortfolio ? 1 : 0);
-              const scoreB = (b.requiredFlags?.length || 0) + (b.requiresPortfolio ? 1 : 0);
-              return scoreB - scoreA;
+          const scoredScenarios = availableScenarios.map(s => {
+              let score = s.priorityWeight || 1;
+              if (s.triggerTags?.includes('regulatory') && playerStats.auditRisk > 40) score += 2;
+              if (s.triggerTags?.includes('rival') && (playerStats.factionReputation.RIVALS ?? 0) < 35) score += 1.5;
+              if (s.triggerTags?.includes('lp') && (playerStats.factionReputation.LIMITED_PARTNERS ?? 0) > 50) score += 1;
+              if (s.triggerTags?.includes('career') && playerStats.stress < 60) score += 0.5;
+              if (s.triggerTags?.includes('insider') && marketVolatility === 'BULL_RUN') score += 1.25;
+              return { scenario: s, score };
           });
 
-          const candidates = availableScenarios.slice(0, 3);
-          const nextScenario = candidates[Math.floor(Math.random() * candidates.length)];
-          
+          scoredScenarios.sort((a, b) => b.score - a.score);
+          const topScore = scoredScenarios[0].score;
+          const topCandidates = scoredScenarios.filter(s => s.score >= topScore - 0.75).slice(0, 3);
+          const nextScenario = topCandidates[Math.floor(Math.random() * topCandidates.length)].scenario;
+
           setActiveScenario(nextScenario);
           setGamePhase('SCENARIO');
           
           updatePlayerStats({ playedScenarioIds: [nextScenario.id] });
           logEvent('scenario_triggered', { id: nextScenario.id, title: nextScenario.title });
-          addLogEntry(`Event Triggered: ${nextScenario.title}`);
+          addLogEntry(`Event Triggered (${slotLabel}): ${nextScenario.title}`);
       } else {
-          addLogEntry("Week advanced. No critical incidents reported.");
+          addLogEntry(`Week advanced to ${slotLabel}. No critical incidents reported.`);
       }
 
   }, [playerStats, decayNpcAffinities]);
@@ -251,13 +362,43 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // --- STAT UPDATES ---
   const updatePlayerStats = useCallback((changes: StatChanges) => {
+    const npcImpact = changes.npcRelationshipUpdate;
+    const targetNpc = npcImpact ? npcs.find(n => n.id === npcImpact.npcId) : undefined;
+    const playerDayType = playerStats?.currentDayType || 'WEEKDAY';
+    const playerTimeSlot = playerStats?.currentTimeSlot || 'MORNING';
+    const playerTimeCursor = playerStats?.timeCursor ?? 0;
+
     setPlayerStats(prevStats => {
         const baseStats = prevStats || DIFFICULTY_SETTINGS['Normal'].initialStats;
+        const hydratedTimeState = {
+            currentDayType: baseStats.currentDayType || 'WEEKDAY',
+            currentTimeSlot: baseStats.currentTimeSlot || 'MORNING',
+            timeCursor: typeof baseStats.timeCursor === 'number' ? baseStats.timeCursor : 0,
+        };
         const newStats: PlayerStats = {
             ...baseStats,
             loanBalance: baseStats.loanBalance ?? 0,
             loanRate: baseStats.loanRate ?? 0,
+            factionReputation: hydrateFactionReputation(baseStats.factionReputation),
+            ...hydratedTimeState,
+            knowledgeLog: (baseStats.knowledgeLog || []).map(k => normalizeKnowledgeEntry(k)),
+            knowledgeFlags: Array.from(new Set(baseStats.knowledgeFlags || [])),
         };
+
+        const normalizedKnowledgeGain: KnowledgeEntry[] = (changes.knowledgeGain || []).map(k => normalizeKnowledgeEntry(k));
+        const derivedKnowledge: KnowledgeEntry[] = [];
+        if (npcImpact?.memory) {
+            const baseMemory = typeof npcImpact.memory === 'string' ? { summary: npcImpact.memory } : npcImpact.memory;
+            derivedKnowledge.push(
+                normalizeKnowledgeEntry({
+                    summary: baseMemory.summary,
+                    timestamp: baseMemory.timestamp,
+                    npcId: npcImpact.npcId,
+                    source: npcImpact.npcId,
+                    tags: Array.from(new Set(['npc_memory', ...(baseMemory.tags || [])])),
+                })
+            );
+        }
         
         if (typeof changes.cash === 'number') newStats.cash += changes.cash;
         if (typeof changes.reputation === 'number') newStats.reputation += changes.reputation;
@@ -312,9 +453,45 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (changes.playedScenarioIds) {
             newStats.playedScenarioIds = Array.from(new Set([...newStats.playedScenarioIds, ...changes.playedScenarioIds]));
         }
-        
+
         if (changes.removeNpcId) {
              newStats.playerFlags[`NPC_REMOVED_${changes.removeNpcId}`] = true;
+        }
+
+        if (changes.factionReputation) {
+            Object.entries(changes.factionReputation).forEach(([faction, delta]) => {
+                if (typeof delta === 'number') {
+                    const key = faction as keyof FactionReputation;
+                    newStats.factionReputation[key] = clampStat(
+                        (newStats.factionReputation[key] ?? DEFAULT_FACTION_REPUTATION[key]) + delta
+                    );
+                }
+            });
+        }
+
+        if (changes.knowledgeFlags) {
+            newStats.knowledgeFlags = Array.from(new Set([...newStats.knowledgeFlags, ...changes.knowledgeFlags]));
+        }
+
+        const knowledgeCombined = [...newStats.knowledgeLog, ...derivedKnowledge, ...normalizedKnowledgeGain];
+        if (knowledgeCombined.length !== newStats.knowledgeLog.length) {
+            newStats.knowledgeLog = clampKnowledge(knowledgeCombined);
+        }
+
+        const knowledgeFlagSet = new Set(newStats.knowledgeFlags);
+        [...derivedKnowledge, ...normalizedKnowledgeGain].forEach(entry => {
+            if (entry.id) knowledgeFlagSet.add(entry.id);
+            (entry.tags || []).forEach(tag => knowledgeFlagSet.add(tag));
+            if (entry.npcId) knowledgeFlagSet.add(`npc:${entry.npcId}`);
+            if (entry.faction) knowledgeFlagSet.add(`faction:${entry.faction}`);
+        });
+        newStats.knowledgeFlags = Array.from(knowledgeFlagSet);
+
+        if (targetNpc?.faction && npcImpact) {
+            const factionDelta = Math.round(npcImpact.change * 0.6);
+            newStats.factionReputation[targetNpc.faction] = clampStat(
+                (newStats.factionReputation[targetNpc.faction] ?? DEFAULT_FACTION_REPUTATION[targetNpc.faction]) + factionDelta
+            );
         }
 
         // Prevent the player from running a negative balance unless a loan exists
@@ -344,40 +521,175 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return npc;
         }));
     }
-  }, []);
+  }, [npcs, playerStats]);
 
   const handleActionOutcome = (outcome: { description: string; statChanges: StatChanges }, title: string) => {
       updatePlayerStats(outcome.statChanges);
   };
 
   const sendNpcMessage = (npcId: string, message: string, sender: 'player' | 'npc' | 'system' = 'player', senderName?: string) => {
+      const currentTick = playerStats?.timeCursor ?? 0;
       setNpcs(prev => prev.map(npc => {
           if (npc.id === npcId) {
               return {
                   ...npc,
-                  dialogueHistory: [...npc.dialogueHistory, { sender, senderName, text: message }]
+                  dialogueHistory: [...npc.dialogueHistory, { sender, senderName, text: message }],
+                  lastContactTick: sender === 'player' ? currentTick : npc.lastContactTick,
               };
           }
           return npc;
       }));
   };
 
-  const addLogEntry = (message: string) => {
-      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const entry = `${timestamp} // ${message}`;
-      setActionLog(prev => [entry, ...prev].slice(0, 50));
-      console.log(`[Game Log]: ${message}`);
-  };
-
   const setTutorialStepHandler = (step: number) => {
       setTutorialStep(step);
   };
 
+  // --- RIVAL ACTIONS ---
+
+  const processRivalMoves = useCallback(() => {
+      if (!playerStats) return;
+
+      const currentTick = playerStats.timeCursor ?? 0;
+      const rivalStanding = playerStats.factionReputation.RIVALS ?? DEFAULT_FACTION_REPUTATION.RIVALS;
+      const hostility = Math.max(0, 65 - rivalStanding) / 100;
+      const stressBias = playerStats.stress > 70 ? 0.08 : 0;
+      const auditBias = playerStats.auditRisk > 55 ? 0.05 : 0;
+
+      let workingFunds = rivalFunds.map(hydrateFund);
+      let workingDeals = [...activeDeals];
+
+      let fundsChanged = false;
+      let dealsChanged = false;
+      let stressDelta = 0;
+      let reputationDelta = 0;
+      let rivalRepDelta = 0;
+      const knowledgeGain: KnowledgeEntry[] = [];
+
+      const sortedRivals = [...workingFunds].sort((a, b) => (b.aggressionLevel + (b.vendetta ?? 40)) - (a.aggressionLevel + (a.vendetta ?? 40)));
+
+      for (const rival of sortedRivals) {
+          const cooldownReady = (rival.lastActionTick ?? -5) < currentTick - 1;
+          if (!cooldownReady && Math.random() > 0.4) continue;
+
+      const vendetta = rival.vendetta ?? 40;
+      const candidateDeals = workingDeals
+          .filter(d => d.interestedRivals.includes(rival.id))
+          .sort((a, b) => (a.deadline - b.deadline) || (Number(b.isHot) - Number(a.isHot)));
+
+          const targetDeal = candidateDeals[0];
+          const poachChance = targetDeal
+              ? 0.18 + hostility + (vendetta / 150) + (targetDeal.isHot ? 0.08 : 0) + stressBias
+              : 0;
+          const rumorChance = 0.12 + hostility + vendetta / 180 + auditBias;
+
+          if (targetDeal && Math.random() < poachChance) {
+              workingDeals = workingDeals.filter(d => d.id !== targetDeal.id);
+              dealsChanged = true;
+
+              workingFunds = workingFunds.map(f => {
+                  if (f.id !== rival.id) return f;
+
+                  const portfolioEntry = {
+                      name: targetDeal.companyName,
+                      dealType: targetDeal.dealType,
+                      acquisitionPrice: targetDeal.askingPrice,
+                      currentValue: Math.round(targetDeal.askingPrice * 1.1),
+                      acquiredMonth: playerStats.gameMonth,
+                      acquiredYear: playerStats.gameYear,
+                  };
+
+                  fundsChanged = true;
+                  return {
+                      ...f,
+                      dryPowder: Math.max(0, f.dryPowder - Math.round(targetDeal.askingPrice * 0.6)),
+                      portfolio: [...f.portfolio, portfolioEntry],
+                      totalDeals: f.totalDeals + 1,
+                      winStreak: f.winStreak + 1,
+                      reputation: clampStat(f.reputation + 2),
+                      vendetta: clampStat(vendetta + 5),
+                      lastActionTick: currentTick,
+                  };
+              });
+
+              stressDelta += 8;
+              reputationDelta -= 2;
+              rivalRepDelta -= 2;
+              appendNpcMemory(rival.npcId, {
+                  summary: `Poached ${targetDeal.companyName} before you could move.`,
+                  sentiment: 'negative',
+                  tags: ['rival', 'deal', 'poach'],
+              });
+              knowledgeGain.push(normalizeKnowledgeEntry({
+                  summary: `${rival.name} poached ${targetDeal.companyName} before you could move.`,
+                  npcId: rival.npcId,
+                  faction: 'RIVALS',
+                  tags: ['rival', 'deal', 'poach'],
+              }, rival.id));
+              addLogEntry(`RIVAL MOVE: ${rival.name} swooped in and closed ${targetDeal.companyName} while you hesitated.`);
+              break;
+          }
+
+          if (Math.random() < rumorChance) {
+              workingFunds = workingFunds.map(f => f.id === rival.id
+                  ? {
+                      ...f,
+                      winStreak: Math.max(0, f.winStreak - 1),
+                      vendetta: clampStat(vendetta + 3),
+                      lastActionTick: currentTick,
+                  }
+                  : f
+              );
+              fundsChanged = true;
+
+              const rumorPenalty = rival.aggressionLevel > 70 ? 2 : 1;
+              stressDelta += 4 + Math.round(vendetta / 50);
+              reputationDelta -= rumorPenalty;
+              rivalRepDelta -= 1;
+              appendNpcMemory(rival.npcId, {
+                  summary: `${rival.managingPartner} spread a rumor that you're reckless with diligence.`,
+                  sentiment: 'negative',
+                  tags: ['rival', 'rumor'],
+              });
+              knowledgeGain.push(normalizeKnowledgeEntry({
+                  summary: `${rival.managingPartner} spread a rumor that you're reckless with diligence.`,
+                  npcId: rival.npcId,
+                  faction: 'RIVALS',
+                  tags: ['rival', 'rumor'],
+              }, rival.id));
+              addLogEntry(`RIVAL RUMOR: ${rival.managingPartner} blasted you to LPs and bankers. Reputation took a hit.`);
+              break;
+          }
+      }
+
+      if (fundsChanged) setRivalFunds(workingFunds.map(hydrateFund));
+      if (dealsChanged) setActiveDeals(workingDeals);
+
+      const factionDelta = rivalRepDelta !== 0 ? { RIVALS: rivalRepDelta } : undefined;
+      if (stressDelta || reputationDelta || factionDelta || knowledgeGain.length) {
+          updatePlayerStats({
+              stress: stressDelta || undefined,
+              reputation: reputationDelta || undefined,
+              factionReputation: factionDelta,
+              knowledgeGain: knowledgeGain.length ? knowledgeGain : undefined,
+          });
+      }
+  }, [playerStats, rivalFunds, activeDeals, addLogEntry, updatePlayerStats, appendNpcMemory]);
+
+  useEffect(() => {
+      if (!playerStats || gamePhase === 'INTRO') return;
+      if ((playerStats.timeCursor ?? 0) < 1) return;
+      const currentTick = playerStats.timeCursor ?? 0;
+      if (lastProcessedRivalTickRef.current === currentTick) return;
+      lastProcessedRivalTickRef.current = currentTick;
+      processRivalMoves();
+  }, [playerStats?.timeCursor, gamePhase, processRivalMoves]);
+
   // --- RIVAL FUND FUNCTIONS ---
-  
+
   const updateRivalFund = useCallback((fundId: string, updates: Partial<RivalFund>) => {
       setRivalFunds(prev => prev.map(fund =>
-          fund.id === fundId ? { ...fund, ...updates } : fund
+          fund.id === fundId ? hydrateFund({ ...fund, ...updates }) : hydrateFund(fund)
       ));
   }, []);
 
@@ -440,7 +752,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setMarketVolatility('NORMAL');
       setTutorialStep(0);
       setActionLog([]);
-      setRivalFunds(RIVAL_FUNDS);
+      setRivalFunds(RIVAL_FUNDS.map(hydrateFund));
       setActiveDeals([]);
       logEvent('game_reset');
   }, []);

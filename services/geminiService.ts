@@ -1,6 +1,40 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import type { ChatMessage, PlayerStats, Scenario, NPC } from '../types';
+import type { ChatMessage, PlayerStats, Scenario, NPC, NPCMemory, KnowledgeEntry } from '../types';
+
+const summarizeMemories = (memories: NPCMemory[]): string => {
+  if (!memories || memories.length === 0) return 'None yet. Make the player earn your trust.';
+
+  return memories
+    .slice(-5)
+    .map(mem => {
+      const when = mem.timestamp ? new Date(mem.timestamp).toLocaleDateString() : 'Recent';
+      const sentiment = mem.sentiment ? ` (${mem.sentiment})` : '';
+      const tags = mem.tags && mem.tags.length > 0 ? ` [${mem.tags.join(', ')}]` : '';
+      return `- ${when}${sentiment}${tags}: ${mem.summary}`;
+    })
+    .join('\n');
+};
+
+const summarizeKnowledge = (intel: KnowledgeEntry[], focusNpc?: NPC): string => {
+  if (!intel || intel.length === 0) return 'No intel logged yet. Ask sharper questions.';
+
+  const relevant = focusNpc
+    ? intel.filter(k => k.npcId === focusNpc.id || k.tags?.includes(focusNpc.id) || (focusNpc.faction && k.faction === focusNpc.faction))
+    : intel;
+
+  const entries = (relevant.length > 0 ? relevant : intel).slice(-5);
+
+  return entries
+    .map(k => {
+      const when = k.timestamp ? new Date(k.timestamp).toLocaleDateString() : 'Recent';
+      const via = k.source ? ` via ${k.source}` : '';
+      const tags = k.tags && k.tags.length > 0 ? ` [${k.tags.join(', ')}]` : '';
+      const title = k.title ? `${k.title}: ` : '';
+      return `- ${when}${via}${tags}: ${title}${k.summary}`;
+    })
+    .join('\n');
+};
 
 const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: string) => {
   const mood = npc.mood > 70 ? "almost warm" : npc.mood < 30 ? "cold" : "guarded";
@@ -95,12 +129,16 @@ export const getAdvisorResponse = async (
   try {
     let currentSystemInstruction = advisorSystemInstruction;
     
-    if (playerStats) {
-        currentSystemInstruction += `\n\nCURRENT PLAYER STATUS (Use this to tailor your insults/advice):\nLevel: ${playerStats.level}\nCash: $${playerStats.cash.toLocaleString()}\nReputation: ${playerStats.reputation}\nStress: ${playerStats.stress}%\nAnalyst Rating: ${playerStats.analystRating}\nPortfolio Count: ${playerStats.portfolio.length}`;
+        if (playerStats) {
+            currentSystemInstruction += `\n\nCURRENT PLAYER STATUS (Use this to tailor your insults/advice):\nLevel: ${playerStats.level}\nCash: $${playerStats.cash.toLocaleString()}\nReputation: ${playerStats.reputation}\nFaction Reputation -> MDs: ${playerStats.factionReputation.MANAGING_DIRECTORS}, LPs: ${playerStats.factionReputation.LIMITED_PARTNERS}, Regulators: ${playerStats.factionReputation.REGULATORS}, Analysts: ${playerStats.factionReputation.ANALYSTS}, Rivals: ${playerStats.factionReputation.RIVALS}\nStress: ${playerStats.stress}%\nAnalyst Rating: ${playerStats.analystRating}\nPortfolio Count: ${playerStats.portfolio.length}`;
         
         if (playerStats.portfolio.length > 0) {
             currentSystemInstruction += `\nPORTFOLIO DETAILS: ${playerStats.portfolio.map(c => `${c.name} (Valuation: $${(c.currentValuation/1000000).toFixed(1)}M, Debt: $${(c.debt/1000000).toFixed(1)}M, Deal: ${c.dealType})`).join('; ')}`;
         }
+
+        const knowledgeDigest = summarizeKnowledge(playerStats?.knowledgeLog || []);
+        const knowledgeFlags = playerStats?.knowledgeFlags || [];
+        currentSystemInstruction += `\n\nRECENT INTEL THE PLAYER BELIEVES:\n${knowledgeDigest}\nKnowledge flags: ${knowledgeFlags.join(', ') || 'None'}`;
     }
 
     if (currentScenario) {
@@ -196,6 +234,12 @@ export const getNPCResponse = async (
 
         const portfolioDigest = playerStats.portfolio.map(c => `${c.name} (${c.dealType}) Valuation $${(c.currentValuation/1000000).toFixed(1)}M, Debt $${(c.debt/1000000).toFixed(1)}M, Relationship Note: ${c.latestCeoReport || 'No update'}`).join('\n');
 
+        const scheduleNote = npc.schedule
+            ? `Availability - Weekday: ${npc.schedule.weekday.join('/')} | Weekend: ${npc.schedule.weekend.join('/') || 'None'}. Preferred channel: ${npc.schedule.preferredChannel || 'none listed'}.`
+            : 'Availability - Flexible; no schedule set.';
+
+        const knowledgeDigest = summarizeKnowledge(playerStats.knowledgeLog || [], npc);
+
         const systemInstruction = `
         You are a text adventure engine. You are roleplaying as ${npc.name}.
         ROLE & VOICE:
@@ -219,11 +263,15 @@ export const getNPCResponse = async (
         PLAYER STATUS FOR CONTEXT:
         - Cash: $${playerStats.cash.toLocaleString()}
         - Stress: ${playerStats.stress}% | Reputation: ${playerStats.reputation}/100 | Analyst Rating: ${playerStats.analystRating}/100
+        - Faction Reputation -> MDs: ${playerStats.factionReputation.MANAGING_DIRECTORS}, LPs: ${playerStats.factionReputation.LIMITED_PARTNERS}, Regulators: ${playerStats.factionReputation.REGULATORS}, Analysts: ${playerStats.factionReputation.ANALYSTS}, Rivals: ${playerStats.factionReputation.RIVALS}
         - Portfolio Snapshot:\n${portfolioDigest || 'No portfolio yet. Mock them for slacking.'}
         ${scenarioContext}
 
         Relevant Memories (Things you specifically remember about the player):
-        ${npc.memories.join('\n') || 'None yet. Make the player earn your trust.'}
+        ${summarizeMemories(npc.memories)}
+
+        Intel and rumors you believe the player holds (use or challenge these):
+        ${knowledgeDigest}
         `;
 
         const ai = new GoogleGenAI({ apiKey: API_KEY });

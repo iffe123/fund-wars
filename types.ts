@@ -10,6 +10,15 @@ export enum PlayerLevel {
 
 export type MarketVolatility = 'NORMAL' | 'BULL_RUN' | 'CREDIT_CRUNCH' | 'PANIC';
 
+export type Faction =
+  | 'MANAGING_DIRECTORS'
+  | 'ANALYSTS'
+  | 'REGULATORS'
+  | 'LIMITED_PARTNERS'
+  | 'RIVALS';
+
+export type FactionReputation = Record<Faction, number>;
+
 export interface CompanyEvent {
   date: {
     year: number;
@@ -58,6 +67,43 @@ export interface PortfolioImpact {
   applicableDealTypes?: DealType[];
 }
 
+export type MemorySentiment = 'positive' | 'negative' | 'neutral';
+
+export interface NPCMemory {
+  summary: string;
+  timestamp?: string;
+  sentiment?: MemorySentiment;
+  impact?: number;
+  tags?: string[];
+  sourceNpcId?: string;
+}
+
+export interface KnowledgeEntry {
+  id?: string;
+  title?: string;
+  summary: string;
+  timestamp?: string;
+  source?: string;
+  npcId?: string;
+  faction?: Faction;
+  tags?: string[];
+  confidence?: number;
+}
+
+export type DayType = 'WEEKDAY' | 'WEEKEND';
+export type TimeSlot = 'MORNING' | 'AFTERNOON' | 'EVENING';
+
+export interface NPCSchedule {
+  weekday: TimeSlot[];
+  weekend: TimeSlot[];
+  standingMeetings?: Array<{
+    dayType: DayType;
+    timeSlot: TimeSlot;
+    description: string;
+  }>;
+  preferredChannel?: string;
+}
+
 export interface NPC {
   id: string;
   name: string;
@@ -67,9 +113,13 @@ export interface NPC {
   mood: number; // 0-100 (short-term vibe, decays if ignored)
   trust: number; // 0-100 (longer-term stability)
   traits: string[]; // e.g. "Aggressive", "Paranoid"
-  memories: string[]; // Log of player interactions affecting them
+  memories: NPCMemory[]; // Log of player interactions affecting them
   isRival: boolean;
+  faction?: Faction;
   dialogueHistory: ChatMessage[]; // Chat specific to this NPC
+  schedule?: NPCSchedule;
+  lastContactTick?: number;
+  goals?: string[];
   // New for social
   relationshipType?: NPCRelationshipType;
   maintenanceCost?: number; // Weekly cost
@@ -82,6 +132,7 @@ export interface PlayerStats {
   level: PlayerLevel;
   cash: number;
   reputation: number;
+  factionReputation: FactionReputation;
   stress: number;
   energy: number;
   analystRating: number;
@@ -94,6 +145,9 @@ export interface PlayerStats {
   playedScenarioIds: number[];
   gameYear: number;
   gameMonth: number;
+  currentDayType: DayType;
+  currentTimeSlot: TimeSlot;
+  timeCursor: number;
   aum: number; // Assets Under Management (Founder Mode)
   employees: string[]; // List of hired NPC IDs (Founder Mode)
   health: number; // 0-100
@@ -101,6 +155,8 @@ export interface PlayerStats {
   tutorialStep: number; // 0=Done, 1..N=Active Step
   loanBalance: number; // Outstanding debt balance
   loanRate: number; // Annualized interest rate (e.g. 0.24 = 24%)
+  knowledgeLog: KnowledgeEntry[];
+  knowledgeFlags: string[];
 }
 
 export interface StatChanges {
@@ -131,6 +187,7 @@ export interface StatChanges {
     moodChange?: number;
     memory: string;
   };
+  factionReputation?: Partial<FactionReputation>;
   health?: number;
   dependency?: number;
   removeNpcId?: string;
@@ -138,6 +195,8 @@ export interface StatChanges {
   employees?: string[];
   loanBalanceChange?: number; // Positive to add debt, negative to repay
   loanRate?: number; // Update the active loan's interest rate
+  knowledgeGain?: Array<KnowledgeEntry | string>;
+  knowledgeFlags?: string[];
 }
 
 export interface SkillCheck {
@@ -192,12 +251,21 @@ export interface Scenario {
   structureOptions?: StructureChoice[];
   isRivalEvent?: boolean;
   requiresPortfolio?: boolean;
+  /** Optional gating by portfolio depth or value */
+  minPortfolioCompanies?: number;
+  minPortfolioValue?: number;
   requiredFlags?: string[];
   blockedByFlags?: string[];
   minReputation?: number;
   maxReputation?: number;
+  allowedVolatility?: MarketVolatility[];
+  dayTypeGate?: { dayType?: DayType; timeSlots?: TimeSlot[] };
+  factionRequirements?: Array<{ faction: Faction; min?: number; max?: number }>;
   minStress?: number;
   minCash?: number;
+  npcRelationshipRequirements?: Array<{ npcId: string; minRelationship?: number; minTrust?: number }>;
+  priorityWeight?: number;
+  triggerTags?: string[];
 }
 
 export interface NewsEvent {
@@ -296,6 +364,8 @@ export interface RivalFund {
   reputation: number;
   aggressionLevel: number;
   riskTolerance: number;
+  vendetta?: number;
+  lastActionTick?: number;
 }
 
 export interface RivalPortfolioCo {
