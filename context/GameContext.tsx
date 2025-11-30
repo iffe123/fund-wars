@@ -86,7 +86,22 @@ const normalizeKnowledgeEntry = (entry: KnowledgeEntry | string, fallbackSource?
 
 const clampKnowledge = (entries: KnowledgeEntry[]): KnowledgeEntry[] => entries.slice(-18);
 
-const hydrateNpc = (npc: NPC): NPC => {
+export const sanitizeKnowledgeLog = (entries?: unknown): KnowledgeEntry[] => {
+    if (!Array.isArray(entries)) return [];
+
+    const normalized = entries
+        .map(entry => normalizeKnowledgeEntry(entry as KnowledgeEntry | string))
+        .filter(entry => Boolean(entry.summary));
+
+    return clampKnowledge(normalized);
+};
+
+export const sanitizeKnowledgeFlags = (flags?: unknown): string[] => {
+    if (!Array.isArray(flags)) return [];
+    return flags.filter((flag): flag is string => typeof flag === 'string');
+};
+
+export const hydrateNpc = (npc: NPC): NPC => {
     const hydratedMemories = Array.isArray(npc.memories)
         ? clampMemories(npc.memories.map(m => normalizeMemory(m, npc.id)))
         : [];
@@ -101,17 +116,54 @@ const hydrateNpc = (npc: NPC): NPC => {
     };
 };
 
-const hydrateRivalFund = (fund: RivalFund): RivalFund => ({
+export const hydrateRivalFund = (fund: RivalFund): RivalFund => ({
     ...fund,
     vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
     lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
-const hydrateNpc = (npc: NPC): NPC => ({
-    ...npc,
-    mood: clampStat(typeof npc.mood === 'number' ? npc.mood : npc.relationship),
-    trust: clampStat(typeof npc.trust === 'number' ? npc.trust : npc.relationship),
-    dialogueHistory: npc.dialogueHistory || [],
-    memories: npc.memories || [],
 });
+
+export const hydrateFund = (fund: RivalFund): RivalFund => ({
+    ...fund,
+    reputation: clampStat(typeof fund.reputation === 'number' ? fund.reputation : 50),
+    aggressionLevel: clampStat(typeof fund.aggressionLevel === 'number' ? fund.aggressionLevel : 50),
+    riskTolerance: clampStat(typeof fund.riskTolerance === 'number' ? fund.riskTolerance : 50),
+    vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
+    winStreak: typeof fund.winStreak === 'number' ? fund.winStreak : 0,
+    totalDeals: typeof fund.totalDeals === 'number' ? fund.totalDeals : 0,
+    dryPowder: typeof fund.dryPowder === 'number' ? fund.dryPowder : 0,
+    aum: typeof fund.aum === 'number' ? fund.aum : 0,
+    portfolio: Array.isArray(fund.portfolio) ? fund.portfolio : [],
+    lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
+});
+
+export const hydrateCompetitiveDeal = (deal: any): CompetitiveDeal | null => {
+    if (!deal || typeof deal !== 'object') return null;
+
+    const numeric = <T extends number>(value: any, fallback: T): T =>
+        typeof value === 'number' && !Number.isNaN(value) ? value as T : fallback;
+
+    return {
+        id: numeric(deal.id, Date.now()),
+        companyName: deal.companyName || 'Unknown Target',
+        sector: deal.sector || 'Misc',
+        description: deal.description || 'No description',
+        askingPrice: numeric(deal.askingPrice, 0),
+        fairValue: numeric(deal.fairValue, numeric(deal.askingPrice, 0)),
+        dealType: deal.dealType || DealType.LBO,
+        metrics: {
+            revenue: numeric(deal.metrics?.revenue, 0),
+            ebitda: numeric(deal.metrics?.ebitda, 0),
+            growth: numeric(deal.metrics?.growth, 0),
+            debt: numeric(deal.metrics?.debt, 0),
+        },
+        seller: deal.seller || 'Unknown Seller',
+        deadline: numeric(deal.deadline, 3),
+        interestedRivals: Array.isArray(deal.interestedRivals) ? deal.interestedRivals : [],
+        isHot: Boolean(deal.isHot),
+        hiddenRisk: deal.hiddenRisk,
+        hiddenUpside: deal.hiddenUpside,
+    };
+};
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
@@ -218,14 +270,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                       setRivalFunds(RIVAL_FUNDS.map(hydrateFund));
                       setGamePhase('INTRO');
                   }
-                  if (data.marketVolatility) setMarketVolatility(data.marketVolatility);
-                  if (data.npcs) setNpcs(data.npcs.map(hydrateNpc));
-                  if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
-                  if (data.actionLog) setActionLog(data.actionLog);
-                  if (data.rivalFunds) setRivalFunds(data.rivalFunds.map(hydrateRivalFund));
-                  if (data.activeDeals) setActiveDeals(data.activeDeals);
-                  logEvent('login_success');
-                  
+
               } else {
                   console.log("[CLOUD_LOAD] New User. Starting Cold Open.");
                   setGamePhase('INTRO');
@@ -480,9 +525,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
   }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments, marketVolatility, npcs]);
-  }, [playerStats, decayNpcAffinities]);
-
-
   // --- STAT UPDATES ---
   const updatePlayerStats = useCallback((changes: StatChanges) => {
     const npcImpact = changes.npcRelationshipUpdate;
@@ -685,21 +727,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 return npc;
             });
         });
-        const { npcId, change, trustChange, moodChange, memory } = changes.npcRelationshipUpdate;
-        setNpcs(prevNpcs => prevNpcs.map(npc => {
-            if (npc.id === npcId) {
-                const calculatedTrustChange = typeof trustChange === 'number' ? trustChange : Math.round(change * 0.6);
-                const calculatedMoodChange = typeof moodChange === 'number' ? moodChange : Math.round(change * 0.8);
-                return {
-                    ...npc,
-                    relationship: clampStat(npc.relationship + change),
-                    mood: clampStat((npc.mood ?? npc.relationship) + calculatedMoodChange),
-                    trust: clampStat((npc.trust ?? npc.relationship) + calculatedTrustChange),
-                    memories: [...npc.memories, memory]
-                };
-            }
-            return npc;
-        }));
     }
   }, [npcs, playerStats]);
 
@@ -924,6 +951,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [playerStats?.gameMonth]);
 
   const resetGame = useCallback(() => {
+      localStorage.clear();
       setPlayerStats(null);
       setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc));
       setActiveScenario(SCENARIOS[0]);

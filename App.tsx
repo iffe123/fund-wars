@@ -104,6 +104,26 @@ const App: React.FC = () => {
       setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
   };
 
+  // Dev-only or explicit reset via query param
+  useEffect(() => {
+      const url = new URL(window.location.href);
+      const shouldReset = url.searchParams.get('reset') === '1';
+
+      if (shouldReset) {
+          resetGame();
+          setBootComplete(false);
+          setChatHistory(DEFAULT_CHAT);
+          setSelectedNpcId('advisor');
+          setToasts([]);
+          addToast('Session reset via query flag.', 'info');
+
+          url.searchParams.delete('reset');
+          const nextSearch = url.searchParams.toString();
+          const newUrl = `${url.pathname}${nextSearch ? `?${nextSearch}` : ''}${url.hash}`;
+          window.history.replaceState({}, '', newUrl);
+      }
+  }, [resetGame]);
+
   // Check Legal Consent
   useEffect(() => {
       logEvent('app_init');
@@ -729,6 +749,21 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen w-screen bg-black text-slate-200 flex flex-col overflow-hidden font-terminal">
+        {import.meta.env.DEV && (
+            <button
+                className="fixed top-2 right-2 z-[200] bg-slate-800 text-white text-[10px] px-3 py-1 border border-slate-600 rounded hover:bg-slate-700"
+                onClick={() => {
+                    resetGame();
+                    setBootComplete(false);
+                    setChatHistory(DEFAULT_CHAT);
+                    setSelectedNpcId('advisor');
+                    setToasts([]);
+                    addToast('Session reset.', 'success');
+                }}
+            >
+                Reset Game
+            </button>
+        )}
         {/* Mobile Status Bar / Safe Area Top */}
         <div className="pt-[env(safe-area-inset-top)] bg-slate-900 border-b border-slate-700 md:pt-0">
              {playerStats && <PlayerStatsDisplay stats={playerStats} marketVolatility={marketVolatility} />}
