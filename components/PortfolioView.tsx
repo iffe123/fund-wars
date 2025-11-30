@@ -41,11 +41,11 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
       // Simulate analysis delay
       setTimeout(() => {
           setAnalyzingIds(prev => prev.filter(id => id !== companyId));
-          
-          // BLACK BOX TRIGGER (5% Chance)
-          if (Math.random() < 0.05) {
+
+          // BLACK BOX TRIGGER (5% Chance) - disabled during tutorial to avoid disrupting onboarding
+          if (tutorialStep === 0 && Math.random() < 0.05) {
               setShowBlackBox(true);
-              return; 
+              return;
           }
 
           // Mark company as analyzed in stats (simplified logic)
