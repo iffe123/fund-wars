@@ -86,6 +86,12 @@ const normalizeKnowledgeEntry = (entry: KnowledgeEntry | string, fallbackSource?
 
 const clampKnowledge = (entries: KnowledgeEntry[]): KnowledgeEntry[] => entries.slice(-18);
 
+const hydrateFund = (fund: RivalFund): RivalFund => ({
+    ...fund,
+    vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
+    lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
+});
+
 const hydrateNpc = (npc: NPC): NPC => {
     const hydratedMemories = Array.isArray(npc.memories)
         ? clampMemories(npc.memories.map(m => normalizeMemory(m, npc.id)))
@@ -100,12 +106,6 @@ const hydrateNpc = (npc: NPC): NPC => {
         lastContactTick: typeof npc.lastContactTick === 'number' ? npc.lastContactTick : 0,
     };
 };
-
-const hydrateRivalFund = (fund: RivalFund): RivalFund => ({
-    ...fund,
-    vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
-    lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
-});
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
@@ -143,7 +143,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
   
   // --- RIVAL FUNDS & COMPETITIVE DEALS ---
-  const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS.map(hydrateRivalFund));
+  const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS.map(hydrateFund));
   const [activeDeals, setActiveDeals] = useState<CompetitiveDeal[]>([]);
   const lastProcessedRivalTickRef = useRef<number | null>(null);
 
@@ -192,14 +192,14 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                       if (data.npcs) setNpcs(data.npcs.map(hydrateNpc));
                       if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
                       if (data.actionLog) setActionLog(data.actionLog);
-                      if (data.rivalFunds) setRivalFunds(data.rivalFunds.map(hydrateRivalFund));
+                      if (data.rivalFunds) setRivalFunds(data.rivalFunds.map(hydrateFund));
                       if (data.activeDeals) setActiveDeals(data.activeDeals);
                       logEvent('login_success');
                   } catch (parseError) {
                       console.error('[CLOUD_LOAD] Save data malformed, resetting to defaults.', parseError);
                       setPlayerStats(null);
                       setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc));
-                      setRivalFunds(RIVAL_FUNDS.map(hydrateRivalFund));
+                      setRivalFunds(RIVAL_FUNDS.map(hydrateFund));
                       setGamePhase('INTRO');
                   }
 
@@ -696,7 +696,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const stressBias = playerStats.stress > 70 ? 0.08 : 0;
       const auditBias = playerStats.auditRisk > 55 ? 0.05 : 0;
 
-      let workingFunds = rivalFunds.map(hydrateRivalFund);
+      let workingFunds = rivalFunds.map(hydrateFund);
       let workingDeals = [...activeDeals];
 
       let fundsChanged = false;
@@ -802,7 +802,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
       }
 
-      if (fundsChanged) setRivalFunds(workingFunds.map(hydrateRivalFund));
+      if (fundsChanged) setRivalFunds(workingFunds.map(hydrateFund));
       if (dealsChanged) setActiveDeals(workingDeals);
 
       const factionDelta = rivalRepDelta !== 0 ? { RIVALS: rivalRepDelta } : undefined;
@@ -820,7 +820,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateRivalFund = useCallback((fundId: string, updates: Partial<RivalFund>) => {
       setRivalFunds(prev => prev.map(fund =>
-          fund.id === fundId ? hydrateRivalFund({ ...fund, ...updates }) : hydrateRivalFund(fund)
+          fund.id === fundId ? hydrateFund({ ...fund, ...updates }) : hydrateFund(fund)
       ));
   }, []);
 
@@ -883,7 +883,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setMarketVolatility('NORMAL');
       setTutorialStep(0);
       setActionLog([]);
-      setRivalFunds(RIVAL_FUNDS.map(hydrateRivalFund));
+      setRivalFunds(RIVAL_FUNDS.map(hydrateFund));
       setActiveDeals([]);
       logEvent('game_reset');
   }, []);
