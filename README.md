@@ -119,3 +119,30 @@ If GitHub shows a greyed out **Merge pull request** button and lists files with 
    ```
 
 Once the push completes and Vercel reports a successful deployment, GitHub should allow the PR to be merged.
+
+### 🧠 Why the **Merge pull request** button is grey (and how to fix it)
+
+If GitHub shows the button disabled even after Vercel deploys your branch, it almost always means the PR has merge
+conflicts with the base branch:
+
+1. **Confirm you have the base branch locally** (e.g., `main`). If you cannot fetch because of network restrictions,
+   paste the exact error into Codex so we can troubleshoot; otherwise run `git fetch origin` followed by
+   `git checkout main` and `git pull` to ensure it is current.
+2. **Rebase or merge the base branch into your work branch** to surface conflicts locally:
+   ```bash
+   git checkout work
+   git fetch origin
+   git rebase origin/main   # or: git merge origin/main
+   ```
+3. **Resolve conflicts in the files GitHub lists** (e.g., `components/CommsTerminal.tsx`, `constants.ts`,
+   `context/GameContext.tsx`, `types.ts`). Remove all `<<<<<<<`, `=======`, `>>>>>>>` markers, then run
+   `npm run check-conflicts` to verify none remain.
+4. **Build and push from Codex** so GitHub/Vercel see a clean branch with conflicts resolved:
+   ```bash
+   npm run build
+   git add .
+   git commit -m "Resolve merge conflicts"
+   git push origin work
+   ```
+5. **Retry the merge button.** If it’s still grey, ensure the PR targets the correct base branch and that all required
+   checks are green. Share any GitHub/Vercel error snippets in Codex so we can address them.
