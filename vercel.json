@@ -4,6 +4,14 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "env": {
+    "NODE_VERSION": "20"
+  },
+  "build": {
+    "env": {
+      "NODE_VERSION": "20"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
