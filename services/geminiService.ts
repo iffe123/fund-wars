@@ -48,12 +48,8 @@ const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: stri
 
   const traitFlair = npc.traits.length > 0 ? `(${npc.traits.join(', ')})` : '';
   const trustCue = npc.trust < 30 ? "(barely trusts you)" : npc.trust > 70 ? "(expects you to deliver)" : "(watching you)";
-  const lastMemory = npc.memories[npc.memories.length - 1];
-  const callback = lastMemory ? ` They remember: ${lastMemory.summary}.` : '';
-  const intelHit = (playerStats.knowledgeLog || []).filter(k => k.npcId === npc.id || k.tags?.includes(npc.id)).slice(-1)[0];
-  const intelNote = intelHit ? ` You logged: ${intelHit.summary}.` : '';
 
-  return `${npc.name} ${traitFlair} ${trustCue} gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"${callback}${intelNote}`;
+  return `${npc.name} ${traitFlair} ${trustCue} gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"`;
 };
 
 // --- ENV: read safely from Vite/Vercel ---
@@ -252,9 +248,6 @@ export const getNPCResponse = async (
         - Relationship with player: ${npc.relationship}/100 (let this color your tone: hostile if <30, neutral if 30-70, warmer if >70).
         - Mood: ${npc.mood}/100 (recent vibe; higher means receptive, lower means prickly).
         - Trust: ${npc.trust}/100 (longer-term belief the player will deliver; gate generosity on this).
-        - Goals/agenda: ${npc.goals && npc.goals.length > 0 ? npc.goals.join('; ') : 'Unstated; pursue role-aligned ambitions.'}
-        - ${scheduleNote}
-        - Current time: ${playerStats.currentDayType} ${playerStats.currentTimeSlot}. If off-hours, acknowledge the timing and be brief or annoyed unless trust is high.
         - Never break character or speak as a generic assistant. Everything you say should sound like ${npc.name}.
 
         BEHAVIOR RULES:
