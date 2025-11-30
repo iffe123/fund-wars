@@ -112,7 +112,9 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
   const currentTimeSlot = playerStats?.currentTimeSlot || 'MORNING';
   const npcAvailable = (npc?: NPC) => {
       if (!npc || !npc.schedule) return true;
-      const slots = currentDayType === 'WEEKDAY' ? npc.schedule.weekday : npc.schedule.weekend;
+      const slots = currentDayType === 'WEEKDAY'
+          ? (Array.isArray(npc.schedule.weekday) ? npc.schedule.weekday : [])
+          : (Array.isArray(npc.schedule.weekend) ? npc.schedule.weekend : []);
       return slots.includes(currentTimeSlot);
   };
 
