@@ -22,6 +22,89 @@ const GameContext = createContext<GameContextTypeExtended | undefined>(undefined
 
 const clampStat = (value: number, min = 0, max = 100) => Math.max(min, Math.min(max, value));
 
+const slugify = (text: string) =>
+    text
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') || 'fact';
+
+const TIME_SLOTS: TimeSlot[] = ['MORNING', 'AFTERNOON', 'EVENING'];
+
+const getNextTimeState = (currentDayType: DayType, currentTimeSlot: TimeSlot) => {
+    const slotIndex = TIME_SLOTS.indexOf(currentTimeSlot);
+    const nextSlot = TIME_SLOTS[(slotIndex + 1) % TIME_SLOTS.length];
+    const nextDayType: DayType = nextSlot === 'MORNING'
+        ? currentDayType === 'WEEKDAY' ? 'WEEKEND' : 'WEEKDAY'
+        : currentDayType;
+    return { nextDayType, nextSlot };
+};
+
+const isNpcAvailable = (npc: NPC, dayType: DayType, timeSlot: TimeSlot) => {
+    const schedule = npc.schedule;
+    if (!schedule) return true;
+    const slots = dayType === 'WEEKDAY' ? schedule.weekday : schedule.weekend;
+    return slots.includes(timeSlot);
+};
+
+const hydrateFactionReputation = (factionRep?: FactionReputation): FactionReputation => {
+    const hydrated: FactionReputation = { ...DEFAULT_FACTION_REPUTATION };
+    if (!factionRep) return hydrated;
+
+    (Object.keys(hydrated) as Array<keyof FactionReputation>).forEach(key => {
+        hydrated[key] = clampStat(factionRep[key] ?? hydrated[key]);
+    });
+    return hydrated;
+};
+
+const normalizeMemory = (memory: NPCMemory | string, fallbackSourceId?: string): NPCMemory => {
+    const base: NPCMemory = typeof memory === 'string' ? { summary: memory } : memory;
+    const now = new Date().toISOString();
+    return {
+        summary: base.summary,
+        timestamp: base.timestamp || now,
+        sentiment: base.sentiment,
+        impact: base.impact,
+        tags: base.tags || [],
+        sourceNpcId: base.sourceNpcId || fallbackSourceId,
+    };
+};
+
+const clampMemories = (memories: NPCMemory[]): NPCMemory[] => memories.slice(-12);
+
+const normalizeKnowledgeEntry = (entry: KnowledgeEntry | string, fallbackSource?: string): KnowledgeEntry => {
+    const base: KnowledgeEntry = typeof entry === 'string' ? { summary: entry } : entry;
+    const timestamp = base.timestamp || new Date().toISOString();
+    const id = base.id || `${slugify(base.summary).slice(0, 40)}-${timestamp}`;
+    return {
+        ...base,
+        id,
+        timestamp,
+        source: base.source || fallbackSource,
+        tags: base.tags || [],
+    };
+};
+
+const clampKnowledge = (entries: KnowledgeEntry[]): KnowledgeEntry[] => entries.slice(-18);
+
+const hydrateNpc = (npc: NPC): NPC => {
+    const hydratedMemories = Array.isArray(npc.memories)
+        ? clampMemories(npc.memories.map(m => normalizeMemory(m, npc.id)))
+        : [];
+
+    return {
+        ...npc,
+        mood: clampStat(typeof npc.mood === 'number' ? npc.mood : npc.relationship),
+        trust: clampStat(typeof npc.trust === 'number' ? npc.trust : npc.relationship),
+        dialogueHistory: npc.dialogueHistory || [],
+        memories: hydratedMemories,
+        lastContactTick: typeof npc.lastContactTick === 'number' ? npc.lastContactTick : 0,
+    };
+};
+
+const hydrateRivalFund = (fund: RivalFund): RivalFund => ({
+    ...fund,
+    vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
+    lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
 const hydrateNpc = (npc: NPC): NPC => ({
     ...npc,
     mood: clampStat(typeof npc.mood === 'number' ? npc.mood : npc.relationship),
@@ -139,7 +222,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   if (data.npcs) setNpcs(data.npcs.map(hydrateNpc));
                   if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
                   if (data.actionLog) setActionLog(data.actionLog);
-                  if (data.rivalFunds) setRivalFunds(data.rivalFunds);
+                  if (data.rivalFunds) setRivalFunds(data.rivalFunds.map(hydrateRivalFund));
                   if (data.activeDeals) setActiveDeals(data.activeDeals);
                   logEvent('login_success');
                   
@@ -193,6 +276,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
   }, [gamePhase]);
 
+  useEffect(() => {
+      if (!playerStats || gamePhase === 'INTRO') return;
+      if ((playerStats.timeCursor ?? 0) < 1) return;
+      processRivalMoves();
+  }, [playerStats?.timeCursor, gamePhase, processRivalMoves]);
+
   // --- MARKET CYCLE ---
   useEffect(() => {
     if (gamePhase === 'INTRO') return;
@@ -227,6 +316,39 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (decayLogged) {
           addLogEntry('Relationships cooled after a quiet week. Ping your contacts to rebuild mood and trust.');
+      }
+  }, [addLogEntry]);
+
+  const applyMissedAppointments = useCallback((dayType: DayType, timeSlot: TimeSlot, timeCursor: number) => {
+      const missed: string[] = [];
+      setNpcs(prev => prev.map(npc => {
+          const standing = npc.schedule?.standingMeetings || [];
+          const hasMeeting = standing.some(m => m.dayType === dayType && m.timeSlot === timeSlot);
+          if (!hasMeeting) return npc;
+
+          const metThisSlot = npc.lastContactTick === timeCursor;
+          if (metThisSlot) return npc;
+
+          missed.push(npc.name);
+          const penaltyMood = -6;
+          const penaltyTrust = -4;
+          const memory = normalizeMemory({
+              summary: `You missed our ${dayType === 'WEEKDAY' ? 'check-in' : 'meetup'} (${timeSlot.toLowerCase()}).`,
+              sentiment: 'negative',
+              impact: penaltyTrust,
+              tags: ['missed_meeting'],
+          }, npc.id);
+
+          return {
+              ...npc,
+              mood: clampStat((npc.mood ?? npc.relationship) + penaltyMood),
+              trust: clampStat((npc.trust ?? npc.relationship) + penaltyTrust),
+              memories: clampMemories([...npc.memories, memory]),
+          };
+      }));
+
+      if (missed.length) {
+          addLogEntry(`Missed appointments with ${missed.join(', ')}. Mood and trust dropped.`);
       }
   }, [addLogEntry]);
 
@@ -357,6 +479,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           addLogEntry(`Week advanced to ${slotLabel}. No critical incidents reported.`);
       }
 
+  }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments, marketVolatility, npcs]);
   }, [playerStats, decayNpcAffinities]);
 
 
@@ -505,6 +628,63 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     if (changes.npcRelationshipUpdate) {
+        const { npcId, change, trustChange, moodChange, memory, broadcastTo } = changes.npcRelationshipUpdate;
+        const targetAvailable = targetNpc ? isNpcAvailable(targetNpc, playerDayType, playerTimeSlot) : true;
+        const availabilityMoodPenalty = targetAvailable ? 0 : -4;
+        const availabilityTrustPenalty = targetAvailable ? 0 : -2;
+        const availabilityMemory = targetAvailable
+            ? undefined
+            : normalizeMemory({
+                summary: `You pinged during their off-hours (${playerDayType.toLowerCase()} ${playerTimeSlot.toLowerCase()}).`,
+                sentiment: 'negative',
+                impact: availabilityTrustPenalty,
+                tags: ['timing', 'off_hours'],
+            }, npcId);
+
+        setNpcs(prevNpcs => {
+            const sourceNpc = prevNpcs.find(n => n.id === npcId);
+            const normalizedMemory = memory ? normalizeMemory(memory, npcId) : undefined;
+            const shareTargets = broadcastTo ?? (Math.abs(change) >= 6 ? ['LP', 'RIVAL'] : []);
+
+            return prevNpcs.map(npc => {
+                const isTargetNpc = npc.id === npcId;
+                const calculatedTrustChange = typeof trustChange === 'number' ? trustChange : Math.round(change * 0.6);
+                const calculatedMoodChange = typeof moodChange === 'number' ? moodChange : Math.round(change * 0.8);
+                const shouldShareWithLp = shareTargets.includes('LP') && npc.role.includes('Limited Partner');
+                const shouldShareWithRival = shareTargets.includes('RIVAL') && npc.isRival;
+                const shouldReceiveRumor = !isTargetNpc && (shouldShareWithLp || shouldShareWithRival);
+
+                if (isTargetNpc) {
+                    const mergedMemories = [
+                        ...npc.memories,
+                        ...(normalizedMemory ? [normalizedMemory] : []),
+                        ...(availabilityMemory ? [availabilityMemory] : []),
+                    ];
+
+                    return {
+                        ...npc,
+                        relationship: clampStat(npc.relationship + change),
+                        mood: clampStat((npc.mood ?? npc.relationship) + calculatedMoodChange + availabilityMoodPenalty),
+                        trust: clampStat((npc.trust ?? npc.relationship) + calculatedTrustChange + availabilityTrustPenalty),
+                        memories: mergedMemories.length > npc.memories.length ? clampMemories(mergedMemories) : npc.memories,
+                        lastContactTick: playerTimeCursor,
+                    };
+                }
+
+                if (normalizedMemory && shouldReceiveRumor) {
+                    const rumorSummary = `${sourceNpc?.name || 'Someone'}: ${normalizedMemory.summary}`;
+                    const rumorMemory: NPCMemory = {
+                        ...normalizedMemory,
+                        summary: rumorSummary,
+                        sentiment: normalizedMemory.sentiment || (change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'),
+                        tags: Array.from(new Set([...(normalizedMemory.tags || []), 'rumor'])),
+                    };
+                    return { ...npc, memories: clampMemories([...npc.memories, rumorMemory]) };
+                }
+
+                return npc;
+            });
+        });
         const { npcId, change, trustChange, moodChange, memory } = changes.npcRelationshipUpdate;
         setNpcs(prevNpcs => prevNpcs.map(npc => {
             if (npc.id === npcId) {

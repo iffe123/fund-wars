@@ -108,6 +108,14 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
       return 'Doubtful';
   };
 
+  const currentDayType = playerStats?.currentDayType || 'WEEKDAY';
+  const currentTimeSlot = playerStats?.currentTimeSlot || 'MORNING';
+  const npcAvailable = (npc?: NPC) => {
+      if (!npc || !npc.schedule) return true;
+      const slots = currentDayType === 'WEEKDAY' ? npc.schedule.weekday : npc.schedule.weekend;
+      return slots.includes(currentTimeSlot);
+  };
+
   const handleSend = async () => {
       if (!input.trim()) return;
 
@@ -321,6 +329,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                         // TUTORIAL RAIL: Step 4 highlights Sarah
                         const isTutorialTarget = tutorialStep === 4 && npc.id === 'sarah';
                         const isCold = (npc.mood ?? 0) < 30 || (npc.trust ?? 0) < 30;
+                        const isAvailable = npcAvailable(npc);
                         return (
                         <button
                             key={npc.id}
@@ -339,6 +348,9 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                                 <span className="font-bold block">{npc.name}</span>
                                 <span className="text-[10px] opacity-70 truncate">{npc.role}</span>
                                 <span className="text-[10px] text-slate-500 truncate">Mood {npc.mood}/100 • Trust {npc.trust}/100</span>
+                                <span className={`text-[9px] uppercase block ${isAvailable ? 'text-emerald-400' : 'text-slate-600'}`}>
+                                    {isAvailable ? 'Available' : 'Off-hours'}
+                                </span>
                             </div>
                             {isCold && <i className="fas fa-circle-exclamation text-red-500 text-[10px] absolute top-1 right-1"></i>}
                         </button>
@@ -364,6 +376,9 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                                 </span>
                                 <span className="px-2 py-1 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
                                     Relationship {activeNPC.relationship}/100
+                                </span>
+                                <span className="px-2 py-1 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
+                                    {npcAvailable(activeNPC) ? 'Available' : `Off-hours (${currentDayType} · ${currentTimeSlot})`}
                                 </span>
                             </div>
                         )}
