@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, FactionReputation, DayType, TimeSlot } from '../types';
+import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, FactionReputation, DayType, TimeSlot, KnowledgeEntry } from '../types';
 import { PlayerLevel, DealType } from '../types';
 import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS } from '../constants';
 import { useAuth } from './AuthContext';
@@ -21,6 +21,12 @@ interface GameContextTypeExtended extends GameContextType {
 const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
 
 const clampStat = (value: number, min = 0, max = 100) => Math.max(min, Math.min(max, value));
+
+const slugify = (text: string) =>
+    text
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') || 'fact';
 
 const TIME_SLOTS: TimeSlot[] = ['MORNING', 'AFTERNOON', 'EVENING'];
 
@@ -64,6 +70,21 @@ const normalizeMemory = (memory: NPCMemory | string, fallbackSourceId?: string):
 };
 
 const clampMemories = (memories: NPCMemory[]): NPCMemory[] => memories.slice(-12);
+
+const normalizeKnowledgeEntry = (entry: KnowledgeEntry | string, fallbackSource?: string): KnowledgeEntry => {
+    const base: KnowledgeEntry = typeof entry === 'string' ? { summary: entry } : entry;
+    const timestamp = base.timestamp || new Date().toISOString();
+    const id = base.id || `${slugify(base.summary).slice(0, 40)}-${timestamp}`;
+    return {
+        ...base,
+        id,
+        timestamp,
+        source: base.source || fallbackSource,
+        tags: base.tags || [],
+    };
+};
+
+const clampKnowledge = (entries: KnowledgeEntry[]): KnowledgeEntry[] => entries.slice(-18);
 
 const hydrateNpc = (npc: NPC): NPC => {
     const hydratedMemories = Array.isArray(npc.memories)
@@ -142,6 +163,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                       currentDayType: data.playerStats.currentDayType || 'WEEKDAY',
                       currentTimeSlot: data.playerStats.currentTimeSlot || 'MORNING',
                       timeCursor: typeof data.playerStats.timeCursor === 'number' ? data.playerStats.timeCursor : 0,
+                      knowledgeLog: (data.playerStats.knowledgeLog || []).map(k => normalizeKnowledgeEntry(k)),
+                      knowledgeFlags: Array.from(new Set(data.playerStats.knowledgeFlags || [])),
                   });
                   if (data.gamePhase) setGamePhase(data.gamePhase);
                   if (data.activeScenarioId) {
@@ -423,7 +446,24 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             loanRate: baseStats.loanRate ?? 0,
             factionReputation: hydrateFactionReputation(baseStats.factionReputation),
             ...hydratedTimeState,
+            knowledgeLog: (baseStats.knowledgeLog || []).map(k => normalizeKnowledgeEntry(k)),
+            knowledgeFlags: Array.from(new Set(baseStats.knowledgeFlags || [])),
         };
+
+        const normalizedKnowledgeGain: KnowledgeEntry[] = (changes.knowledgeGain || []).map(k => normalizeKnowledgeEntry(k));
+        const derivedKnowledge: KnowledgeEntry[] = [];
+        if (npcImpact?.memory) {
+            const baseMemory = typeof npcImpact.memory === 'string' ? { summary: npcImpact.memory } : npcImpact.memory;
+            derivedKnowledge.push(
+                normalizeKnowledgeEntry({
+                    summary: baseMemory.summary,
+                    timestamp: baseMemory.timestamp,
+                    npcId: npcImpact.npcId,
+                    source: npcImpact.npcId,
+                    tags: Array.from(new Set(['npc_memory', ...(baseMemory.tags || [])])),
+                })
+            );
+        }
         
         if (typeof changes.cash === 'number') newStats.cash += changes.cash;
         if (typeof changes.reputation === 'number') newStats.reputation += changes.reputation;
@@ -493,6 +533,24 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             });
         }
+
+        if (changes.knowledgeFlags) {
+            newStats.knowledgeFlags = Array.from(new Set([...newStats.knowledgeFlags, ...changes.knowledgeFlags]));
+        }
+
+        const knowledgeCombined = [...newStats.knowledgeLog, ...derivedKnowledge, ...normalizedKnowledgeGain];
+        if (knowledgeCombined.length !== newStats.knowledgeLog.length) {
+            newStats.knowledgeLog = clampKnowledge(knowledgeCombined);
+        }
+
+        const knowledgeFlagSet = new Set(newStats.knowledgeFlags);
+        [...derivedKnowledge, ...normalizedKnowledgeGain].forEach(entry => {
+            if (entry.id) knowledgeFlagSet.add(entry.id);
+            (entry.tags || []).forEach(tag => knowledgeFlagSet.add(tag));
+            if (entry.npcId) knowledgeFlagSet.add(`npc:${entry.npcId}`);
+            if (entry.faction) knowledgeFlagSet.add(`faction:${entry.faction}`);
+        });
+        newStats.knowledgeFlags = Array.from(knowledgeFlagSet);
 
         if (targetNpc?.faction && npcImpact) {
             const factionDelta = Math.round(npcImpact.change * 0.6);

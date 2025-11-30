@@ -38,6 +38,8 @@ const NORMAL_STATS: PlayerStats = {
   tutorialStep: 0,
   loanBalance: 0,
   loanRate: 0,
+  knowledgeLog: [],
+  knowledgeFlags: [],
 };
 
 export const INITIAL_NPCS: NPC[] = [
@@ -63,6 +65,7 @@ export const INITIAL_NPCS: NPC[] = [
       ],
     },
     lastContactTick: 0,
+    goals: ['Close a trophy deal this quarter', 'Protect my bonus pool'],
   },
   {
     id: 'hunter',
@@ -86,6 +89,7 @@ export const INITIAL_NPCS: NPC[] = [
       ],
     },
     lastContactTick: 0,
+    goals: ['Steal your deals', 'Win auctions on the cheap'],
   },
   {
     id: 'sarah',
@@ -109,6 +113,7 @@ export const INITIAL_NPCS: NPC[] = [
       ],
     },
     lastContactTick: 0,
+    goals: ['Keep the model clean', 'Get credit for solid diligence'],
   },
   {
     id: 'regulator',
@@ -132,6 +137,7 @@ export const INITIAL_NPCS: NPC[] = [
       ],
     },
     lastContactTick: 0,
+    goals: ['Lower your audit risk', 'Spot sloppy disclosures early'],
   },
   {
     id: 'lp_swiss',
@@ -155,6 +161,7 @@ export const INITIAL_NPCS: NPC[] = [
       ],
     },
     lastContactTick: 0,
+    goals: ['Allocate to disciplined managers', 'Avoid headline risk'],
   },
   {
     id: 'lp_oil',
@@ -178,6 +185,7 @@ export const INITIAL_NPCS: NPC[] = [
       ],
     },
     lastContactTick: 0,
+    goals: ['Swing for outsize returns', 'Move quickly on bold ideas'],
   }
 ];
 
@@ -1413,7 +1421,8 @@ export const RIVAL_FUND_NPCS: NPC[] = [
     faction: 'RIVALS',
     dialogueHistory: [{ sender: 'npc', senderName: 'Victoria Chen', text: "I've seen your fund's deal flow. Interesting strategy. Risky, but interesting." }],
     relationshipType: 'WORK',
-    dealPotential: 60
+    dealPotential: 60,
+    goals: ['Defend Meridian deal flow', 'Exploit your mistakes']
   },
   {
     id: 'marcus',
@@ -1429,6 +1438,7 @@ export const RIVAL_FUND_NPCS: NPC[] = [
     faction: 'RIVALS',
     dialogueHistory: [{ sender: 'npc', senderName: 'Marcus Webb', text: "You and me, we're the same. Hungry. The old money boys like Hunter don't get it." }],
     relationshipType: 'WORK',
-    dealPotential: 40
+    dealPotential: 40,
+    goals: ['Prove scrappy funds can win', 'Leverage gossip to ambush you']
   }
 ];

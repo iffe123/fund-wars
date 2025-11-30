@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import type { ChatMessage, PlayerStats, Scenario, NPC, NPCMemory } from '../types';
+import type { ChatMessage, PlayerStats, Scenario, NPC, NPCMemory, KnowledgeEntry } from '../types';
 
 const summarizeMemories = (memories: NPCMemory[]): string => {
   if (!memories || memories.length === 0) return 'None yet. Make the player earn your trust.';
@@ -12,6 +12,26 @@ const summarizeMemories = (memories: NPCMemory[]): string => {
       const sentiment = mem.sentiment ? ` (${mem.sentiment})` : '';
       const tags = mem.tags && mem.tags.length > 0 ? ` [${mem.tags.join(', ')}]` : '';
       return `- ${when}${sentiment}${tags}: ${mem.summary}`;
+    })
+    .join('\n');
+};
+
+const summarizeKnowledge = (intel: KnowledgeEntry[], focusNpc?: NPC): string => {
+  if (!intel || intel.length === 0) return 'No intel logged yet. Ask sharper questions.';
+
+  const relevant = focusNpc
+    ? intel.filter(k => k.npcId === focusNpc.id || k.tags?.includes(focusNpc.id) || (focusNpc.faction && k.faction === focusNpc.faction))
+    : intel;
+
+  const entries = (relevant.length > 0 ? relevant : intel).slice(-5);
+
+  return entries
+    .map(k => {
+      const when = k.timestamp ? new Date(k.timestamp).toLocaleDateString() : 'Recent';
+      const via = k.source ? ` via ${k.source}` : '';
+      const tags = k.tags && k.tags.length > 0 ? ` [${k.tags.join(', ')}]` : '';
+      const title = k.title ? `${k.title}: ` : '';
+      return `- ${when}${via}${tags}: ${title}${k.summary}`;
     })
     .join('\n');
 };
@@ -30,8 +50,10 @@ const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: stri
   const trustCue = npc.trust < 30 ? "(barely trusts you)" : npc.trust > 70 ? "(expects you to deliver)" : "(watching you)";
   const lastMemory = npc.memories[npc.memories.length - 1];
   const callback = lastMemory ? ` They remember: ${lastMemory.summary}.` : '';
+  const intelHit = (playerStats.knowledgeLog || []).filter(k => k.npcId === npc.id || k.tags?.includes(npc.id)).slice(-1)[0];
+  const intelNote = intelHit ? ` You logged: ${intelHit.summary}.` : '';
 
-  return `${npc.name} ${traitFlair} ${trustCue} gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"${callback}`;
+  return `${npc.name} ${traitFlair} ${trustCue} gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"${callback}${intelNote}`;
 };
 
 // --- ENV: read safely from Vite/Vercel ---
@@ -111,12 +133,16 @@ export const getAdvisorResponse = async (
   try {
     let currentSystemInstruction = advisorSystemInstruction;
     
-    if (playerStats) {
-        currentSystemInstruction += `\n\nCURRENT PLAYER STATUS (Use this to tailor your insults/advice):\nLevel: ${playerStats.level}\nCash: $${playerStats.cash.toLocaleString()}\nReputation: ${playerStats.reputation}\nFaction Reputation -> MDs: ${playerStats.factionReputation.MANAGING_DIRECTORS}, LPs: ${playerStats.factionReputation.LIMITED_PARTNERS}, Regulators: ${playerStats.factionReputation.REGULATORS}, Analysts: ${playerStats.factionReputation.ANALYSTS}, Rivals: ${playerStats.factionReputation.RIVALS}\nStress: ${playerStats.stress}%\nAnalyst Rating: ${playerStats.analystRating}\nPortfolio Count: ${playerStats.portfolio.length}`;
+        if (playerStats) {
+            currentSystemInstruction += `\n\nCURRENT PLAYER STATUS (Use this to tailor your insults/advice):\nLevel: ${playerStats.level}\nCash: $${playerStats.cash.toLocaleString()}\nReputation: ${playerStats.reputation}\nFaction Reputation -> MDs: ${playerStats.factionReputation.MANAGING_DIRECTORS}, LPs: ${playerStats.factionReputation.LIMITED_PARTNERS}, Regulators: ${playerStats.factionReputation.REGULATORS}, Analysts: ${playerStats.factionReputation.ANALYSTS}, Rivals: ${playerStats.factionReputation.RIVALS}\nStress: ${playerStats.stress}%\nAnalyst Rating: ${playerStats.analystRating}\nPortfolio Count: ${playerStats.portfolio.length}`;
         
         if (playerStats.portfolio.length > 0) {
             currentSystemInstruction += `\nPORTFOLIO DETAILS: ${playerStats.portfolio.map(c => `${c.name} (Valuation: $${(c.currentValuation/1000000).toFixed(1)}M, Debt: $${(c.debt/1000000).toFixed(1)}M, Deal: ${c.dealType})`).join('; ')}`;
         }
+
+        const knowledgeDigest = summarizeKnowledge(playerStats?.knowledgeLog || []);
+        const knowledgeFlags = playerStats?.knowledgeFlags || [];
+        currentSystemInstruction += `\n\nRECENT INTEL THE PLAYER BELIEVES:\n${knowledgeDigest}\nKnowledge flags: ${knowledgeFlags.join(', ') || 'None'}`;
     }
 
     if (currentScenario) {
@@ -216,6 +242,8 @@ export const getNPCResponse = async (
             ? `Availability - Weekday: ${npc.schedule.weekday.join('/')} | Weekend: ${npc.schedule.weekend.join('/') || 'None'}. Preferred channel: ${npc.schedule.preferredChannel || 'none listed'}.`
             : 'Availability - Flexible; no schedule set.';
 
+        const knowledgeDigest = summarizeKnowledge(playerStats.knowledgeLog || [], npc);
+
         const systemInstruction = `
         You are a text adventure engine. You are roleplaying as ${npc.name}.
         ROLE & VOICE:
@@ -224,6 +252,7 @@ export const getNPCResponse = async (
         - Relationship with player: ${npc.relationship}/100 (let this color your tone: hostile if <30, neutral if 30-70, warmer if >70).
         - Mood: ${npc.mood}/100 (recent vibe; higher means receptive, lower means prickly).
         - Trust: ${npc.trust}/100 (longer-term belief the player will deliver; gate generosity on this).
+        - Goals/agenda: ${npc.goals && npc.goals.length > 0 ? npc.goals.join('; ') : 'Unstated; pursue role-aligned ambitions.'}
         - ${scheduleNote}
         - Current time: ${playerStats.currentDayType} ${playerStats.currentTimeSlot}. If off-hours, acknowledge the timing and be brief or annoyed unless trust is high.
         - Never break character or speak as a generic assistant. Everything you say should sound like ${npc.name}.
@@ -247,6 +276,9 @@ export const getNPCResponse = async (
 
         Relevant Memories (Things you specifically remember about the player):
         ${summarizeMemories(npc.memories)}
+
+        Intel and rumors you believe the player holds (use or challenge these):
+        ${knowledgeDigest}
         `;
 
         const ai = new GoogleGenAI({ apiKey: API_KEY });

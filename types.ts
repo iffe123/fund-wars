@@ -78,6 +78,18 @@ export interface NPCMemory {
   sourceNpcId?: string;
 }
 
+export interface KnowledgeEntry {
+  id?: string;
+  title?: string;
+  summary: string;
+  timestamp?: string;
+  source?: string;
+  npcId?: string;
+  faction?: Faction;
+  tags?: string[];
+  confidence?: number;
+}
+
 export type DayType = 'WEEKDAY' | 'WEEKEND';
 export type TimeSlot = 'MORNING' | 'AFTERNOON' | 'EVENING';
 
@@ -107,6 +119,7 @@ export interface NPC {
   dialogueHistory: ChatMessage[]; // Chat specific to this NPC
   schedule?: NPCSchedule;
   lastContactTick?: number;
+  goals?: string[];
   // New for social
   relationshipType?: NPCRelationshipType;
   maintenanceCost?: number; // Weekly cost
@@ -142,6 +155,8 @@ export interface PlayerStats {
   tutorialStep: number; // 0=Done, 1..N=Active Step
   loanBalance: number; // Outstanding debt balance
   loanRate: number; // Annualized interest rate (e.g. 0.24 = 24%)
+  knowledgeLog: KnowledgeEntry[];
+  knowledgeFlags: string[];
 }
 
 export interface StatChanges {
@@ -181,6 +196,8 @@ export interface StatChanges {
   employees?: string[];
   loanBalanceChange?: number; // Positive to add debt, negative to repay
   loanRate?: number; // Update the active loan's interest rate
+  knowledgeGain?: Array<KnowledgeEntry | string>;
+  knowledgeFlags?: string[];
 }
 
 export interface SkillCheck {
