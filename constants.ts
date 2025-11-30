@@ -558,6 +558,8 @@ export const SCENARIOS: Scenario[] = [
     title: "The SEC Inquiry",
     description: "Two agents in cheap suits are waiting in the lobby. They're asking questions about the 'Synergy Systems' deal and some rumors regarding competitor sabotage. It seems your 'dirty tricks' with Hunter didn't go unnoticed. The firm is exposed.",
     requiredFlags: ['PLAYED_DIRTY_WITH_HUNTER'],
+    allowedVolatility: ['CREDIT_CRUNCH', 'PANIC'],
+    triggerTags: ['regulatory', 'rival'],
     factionRequirements: [{ faction: 'REGULATORS', max: 80 }],
     choices: [
       {
@@ -591,6 +593,9 @@ export const SCENARIOS: Scenario[] = [
     title: "The Golf Course Whisper",
     description: "You're at the club on a Saturday. A very drunk CFO of a major public company mistakes you for his nephew and mumbles about a 'massive buyout' being announced Monday. This information is worth millions. It is also illegal.",
     minReputation: 25,
+    dayTypeGate: { dayType: 'WEEKEND', timeSlots: ['AFTERNOON', 'EVENING'] },
+    allowedVolatility: ['BULL_RUN', 'NORMAL'],
+    triggerTags: ['insider', 'lp'],
     factionRequirements: [
       { faction: 'REGULATORS', max: 90 },
       { faction: 'LIMITED_PARTNERS', min: 30 }
@@ -659,6 +664,8 @@ export const SCENARIOS: Scenario[] = [
     title: "The Headhunter's Offer",
     description: "A top-tier headhunter calls you on your personal cell. 'I have a role at a mega-fund,' she whispers. 'Double your comp, carry from day one.' It sounds too good to be true. It usually is.",
     minReputation: 75,
+    allowedVolatility: ['BULL_RUN', 'NORMAL'],
+    triggerTags: ['career'],
     factionRequirements: [
       { faction: 'MANAGING_DIRECTORS', min: 50 },
       { faction: 'LIMITED_PARTNERS', min: 35 }

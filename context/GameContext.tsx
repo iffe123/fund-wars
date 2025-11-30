@@ -307,14 +307,24 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           timeCursor: nextTimeCursor,
       }) : null);
 
+      const totalPortfolioValue = playerStats.portfolio.reduce((acc, co) => acc + (co.currentValuation || 0), 0);
       const availableScenarios = SCENARIOS.filter(s => {
           if (playerStats.playedScenarioIds.includes(s.id) && s.id !== 1) return false;
           if (s.id === 1) return false;
 
           if (s.requiresPortfolio && playerStats.portfolio.length === 0) return false;
-          
+          if (s.minPortfolioCompanies && playerStats.portfolio.length < s.minPortfolioCompanies) return false;
+          if (s.minPortfolioValue && totalPortfolioValue < s.minPortfolioValue) return false;
+
           if (s.minReputation && playerStats.reputation < s.minReputation) return false;
           if (s.maxReputation && playerStats.reputation > s.maxReputation) return false;
+
+          if (s.allowedVolatility && !s.allowedVolatility.includes(marketVolatility)) return false;
+
+          if (s.dayTypeGate) {
+              if (s.dayTypeGate.dayType && s.dayTypeGate.dayType !== nextDayType) return false;
+              if (s.dayTypeGate.timeSlots && s.dayTypeGate.timeSlots.length > 0 && !s.dayTypeGate.timeSlots.includes(nextSlot)) return false;
+          }
 
           if (s.factionRequirements) {
               const meetsFactionReqs = s.factionRequirements.every(req => {
@@ -329,6 +339,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (s.minStress && playerStats.stress < s.minStress) return false;
           if (s.minCash && playerStats.cash < s.minCash) return false;
 
+          if (s.npcRelationshipRequirements && s.npcRelationshipRequirements.length > 0) {
+              const meetsNpcReqs = s.npcRelationshipRequirements.every(req => {
+                  const npc = npcs.find(n => n.id === req.npcId);
+                  if (!npc) return false;
+                  if (typeof req.minRelationship === 'number' && npc.relationship < req.minRelationship) return false;
+                  if (typeof req.minTrust === 'number' && (npc.trust ?? npc.relationship) < req.minTrust) return false;
+                  return true;
+              });
+              if (!meetsNpcReqs) return false;
+          }
+
           if (s.requiredFlags) {
               const hasAllFlags = s.requiredFlags.every(flag => playerStats.playerFlags[flag]);
               if (!hasAllFlags) return false;
@@ -342,20 +363,32 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return true;
       });
 
+      const factionTension = Math.min(...Object.values(playerStats.factionReputation || DEFAULT_FACTION_REPUTATION));
+      const cashPressure = playerStats.cash < 5000 ? 0.1 : 0;
+      const auditPressure = playerStats.auditRisk > 50 ? 0.1 : 0;
       const crisisMultiplier = playerStats.stress > 70 ? 1.5 : 1.0;
-      const shouldTriggerEvent = Math.random() < (0.4 * crisisMultiplier);
+      const volatilityBias = marketVolatility === 'PANIC' ? 0.2 : marketVolatility === 'CREDIT_CRUNCH' ? 0.1 : marketVolatility === 'BULL_RUN' ? 0.05 : 0;
+      const tensionBias = factionTension < 40 ? 0.08 : 0;
+      const portfolioBias = playerStats.portfolio.length > 0 ? 0.05 : 0;
+      const shouldTriggerEvent = Math.random() < ((0.35 + cashPressure + auditPressure + volatilityBias + tensionBias + portfolioBias) * crisisMultiplier);
       const slotLabel = `${nextDayType} ${nextSlot}`;
 
       if (shouldTriggerEvent && availableScenarios.length > 0) {
-          availableScenarios.sort((a, b) => {
-              const scoreA = (a.requiredFlags?.length || 0) + (a.requiresPortfolio ? 1 : 0);
-              const scoreB = (b.requiredFlags?.length || 0) + (b.requiresPortfolio ? 1 : 0);
-              return scoreB - scoreA;
+          const scoredScenarios = availableScenarios.map(s => {
+              let score = s.priorityWeight || 1;
+              if (s.triggerTags?.includes('regulatory') && playerStats.auditRisk > 40) score += 2;
+              if (s.triggerTags?.includes('rival') && (playerStats.factionReputation.RIVALS ?? 0) < 35) score += 1.5;
+              if (s.triggerTags?.includes('lp') && (playerStats.factionReputation.LIMITED_PARTNERS ?? 0) > 50) score += 1;
+              if (s.triggerTags?.includes('career') && playerStats.stress < 60) score += 0.5;
+              if (s.triggerTags?.includes('insider') && marketVolatility === 'BULL_RUN') score += 1.25;
+              return { scenario: s, score };
           });
 
-          const candidates = availableScenarios.slice(0, 3);
-          const nextScenario = candidates[Math.floor(Math.random() * candidates.length)];
-          
+          scoredScenarios.sort((a, b) => b.score - a.score);
+          const topScore = scoredScenarios[0].score;
+          const topCandidates = scoredScenarios.filter(s => s.score >= topScore - 0.75).slice(0, 3);
+          const nextScenario = topCandidates[Math.floor(Math.random() * topCandidates.length)].scenario;
+
           setActiveScenario(nextScenario);
           setGamePhase('SCENARIO');
           
@@ -366,7 +399,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           addLogEntry(`Week advanced to ${slotLabel}. No critical incidents reported.`);
       }
 
-  }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments]);
+  }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments, marketVolatility, npcs]);
 
 
   // --- STAT UPDATES ---

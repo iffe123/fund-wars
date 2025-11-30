@@ -235,13 +235,21 @@ export interface Scenario {
   structureOptions?: StructureChoice[];
   isRivalEvent?: boolean;
   requiresPortfolio?: boolean;
+  /** Optional gating by portfolio depth or value */
+  minPortfolioCompanies?: number;
+  minPortfolioValue?: number;
   requiredFlags?: string[];
   blockedByFlags?: string[];
   minReputation?: number;
   maxReputation?: number;
+  allowedVolatility?: MarketVolatility[];
+  dayTypeGate?: { dayType?: DayType; timeSlots?: TimeSlot[] };
   factionRequirements?: Array<{ faction: Faction; min?: number; max?: number }>;
   minStress?: number;
   minCash?: number;
+  npcRelationshipRequirements?: Array<{ npcId: string; minRelationship?: number; minTrust?: number }>;
+  priorityWeight?: number;
+  triggerTags?: string[];
 }
 
 export interface NewsEvent {
