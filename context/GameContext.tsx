@@ -449,11 +449,43 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             factionReputation: { ...hydrateFactionReputation(newStats.factionReputation) },
         };
 
+        // Apply portfolio mutations (add/modify)
+        const currentPortfolio = Array.isArray(newStats.portfolio) ? newStats.portfolio : [];
+        let portfolio = currentPortfolio;
+
+        if (changes.addPortfolioCompany) {
+            portfolio = [...portfolio, { ...changes.addPortfolioCompany, acquisitionDate: { year: 1, month: 1 }, eventHistory: [] } as PortfolioCompany];
+        }
+
+        if (changes.modifyCompany) {
+            const { id, updates } = changes.modifyCompany;
+            portfolio = portfolio.map(company =>
+                company.id === id
+                    ? {
+                        ...company,
+                        ...updates,
+                        latestCeoReport: updates.latestCeoReport ?? company.latestCeoReport ?? 'Pending Analysis...'
+                      }
+                    : company
+            );
+        }
+
+        if (portfolio !== currentPortfolio) {
+            updatedStats.portfolio = portfolio;
+        }
+
         const factionChange = changes.factionReputation;
         if (factionChange) {
             (Object.keys(factionChange) as Array<keyof typeof factionChange>).forEach(key => {
                 updatedStats.factionReputation[key] = clampStat(updatedStats.factionReputation[key] + (factionChange[key] || 0));
             });
+        }
+
+        if (changes.setsFlags?.length) {
+            updatedStats.playerFlags = {
+                ...newStats.playerFlags,
+                ...changes.setsFlags.reduce((acc, flag) => ({ ...acc, [flag]: true }), {} as Record<string, boolean>)
+            };
         }
 
         if (changes.loanBalanceChange) {
