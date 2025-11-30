@@ -86,6 +86,68 @@ const normalizeKnowledgeEntry = (entry: KnowledgeEntry | string, fallbackSource?
 
 const clampKnowledge = (entries: KnowledgeEntry[]): KnowledgeEntry[] => entries.slice(-18);
 
+const sanitizeKnowledgeLog = (entries: any[]): KnowledgeEntry[] => {
+    if (!Array.isArray(entries)) return [];
+
+    const normalized = entries
+        .map((entry: any) => {
+            if (!entry) return null;
+            if (typeof entry === 'string') return normalizeKnowledgeEntry(entry);
+            if (typeof entry.summary !== 'string' || !entry.summary.trim()) return null;
+
+            return normalizeKnowledgeEntry(entry);
+        })
+        .filter((entry): entry is KnowledgeEntry => Boolean(entry));
+
+    return clampKnowledge(normalized);
+};
+
+const sanitizeKnowledgeFlags = (flags: any[]): string[] => {
+    if (!Array.isArray(flags)) return [];
+
+    return Array.from(new Set(flags.filter((f): f is string => typeof f === 'string' && f.trim())));
+};
+
+const hydrateCompetitiveDeal = (deal: any): CompetitiveDeal | null => {
+    if (!deal || typeof deal !== 'object') return null;
+
+    const requiredStrings: Array<keyof CompetitiveDeal> = ['companyName', 'sector', 'description', 'seller'];
+    if (typeof deal.id !== 'number' || Number.isNaN(deal.id)) return null;
+    if (!requiredStrings.every(key => typeof deal[key] === 'string' && deal[key].trim())) return null;
+    if (typeof deal.askingPrice !== 'number' || typeof deal.fairValue !== 'number') return null;
+    if (typeof deal.dealType !== 'string') return null;
+
+    const metrics = deal.metrics && typeof deal.metrics === 'object'
+        ? {
+            revenue: typeof deal.metrics.revenue === 'number' ? deal.metrics.revenue : 0,
+            ebitda: typeof deal.metrics.ebitda === 'number' ? deal.metrics.ebitda : 0,
+            growth: typeof deal.metrics.growth === 'number' ? deal.metrics.growth : 0,
+            debt: typeof deal.metrics.debt === 'number' ? deal.metrics.debt : 0,
+        }
+        : { revenue: 0, ebitda: 0, growth: 0, debt: 0 };
+
+    const interestedRivals = Array.isArray(deal.interestedRivals)
+        ? deal.interestedRivals.filter((r: any): r is string => typeof r === 'string')
+        : [];
+
+    return {
+        id: deal.id,
+        companyName: deal.companyName,
+        sector: deal.sector,
+        description: deal.description,
+        askingPrice: deal.askingPrice,
+        fairValue: deal.fairValue,
+        dealType: deal.dealType,
+        metrics,
+        seller: deal.seller,
+        deadline: typeof deal.deadline === 'number' ? deal.deadline : 0,
+        interestedRivals,
+        isHot: Boolean(deal.isHot),
+        hiddenRisk: typeof deal.hiddenRisk === 'string' ? deal.hiddenRisk : undefined,
+        hiddenUpside: typeof deal.hiddenUpside === 'string' ? deal.hiddenUpside : undefined,
+    };
+};
+
 const hydrateFund = (fund: RivalFund): RivalFund => ({
     ...fund,
     vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
@@ -172,15 +234,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   console.log("[CLOUD_LOAD] Save found:", data);
 
                   try {
-                      const safeKnowledgeLog = Array.isArray(data.playerStats?.knowledgeLog)
-                        ? data.playerStats.knowledgeLog.map((k: any) => normalizeKnowledgeEntry(k))
-                        : [];
-                      const safeKnowledgeFlags = Array.isArray(data.playerStats?.knowledgeFlags)
-                        ? Array.from(new Set(data.playerStats.knowledgeFlags))
-                        : [];
+                      const safeKnowledgeLog = sanitizeKnowledgeLog(data.playerStats?.knowledgeLog);
+                      const safeKnowledgeFlags = sanitizeKnowledgeFlags(data.playerStats?.knowledgeFlags);
                       const safeNpcs = Array.isArray(data.npcs) ? data.npcs.map(hydrateNpc) : [...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc);
                       const safeRivalFunds = Array.isArray(data.rivalFunds) ? data.rivalFunds.map(hydrateFund) : RIVAL_FUNDS.map(hydrateFund);
-                      const safeActiveDeals = Array.isArray(data.activeDeals) ? data.activeDeals : [];
+                      const safeActiveDeals = Array.isArray(data.activeDeals)
+                        ? data.activeDeals
+                            .map(hydrateCompetitiveDeal)
+                            .filter((deal): deal is CompetitiveDeal => Boolean(deal))
+                        : [];
 
                       if (data.playerStats) setPlayerStats({
                           ...data.playerStats,
