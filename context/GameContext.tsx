@@ -321,12 +321,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
   }, [gamePhase]);
 
-  useEffect(() => {
-      if (!playerStats || gamePhase === 'INTRO') return;
-      if ((playerStats.timeCursor ?? 0) < 1) return;
-      processRivalMoves();
-  }, [playerStats?.timeCursor, gamePhase, processRivalMoves]);
-
   // --- MARKET CYCLE ---
   useEffect(() => {
     if (gamePhase === 'INTRO') return;
@@ -395,7 +389,167 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (missed.length) {
           addLogEntry(`Missed appointments with ${missed.join(', ')}. Mood and trust dropped.`);
       }
+
   }, [addLogEntry]);
+
+  // --- STAT UPDATES ---
+  const updatePlayerStats = useCallback((changes: StatChanges) => {
+    const npcImpact = changes.npcRelationshipUpdate;
+    const targetNpc = npcImpact ? npcs.find(n => n.id === npcImpact.npcId) : undefined;
+    const playerDayType = playerStats?.currentDayType || 'WEEKDAY';
+    const playerTimeSlot = playerStats?.currentTimeSlot || 'MORNING';
+    const playerTimeCursor = playerStats?.timeCursor ?? 0;
+
+    setPlayerStats(prevStats => {
+        const baseStats = prevStats || DIFFICULTY_SETTINGS['Normal'].initialStats;
+        const hydratedTimeState = {
+            currentDayType: baseStats.currentDayType || 'WEEKDAY',
+            currentTimeSlot: baseStats.currentTimeSlot || 'MORNING',
+            timeCursor: typeof baseStats.timeCursor === 'number' ? baseStats.timeCursor : 0,
+        };
+        const newStats: PlayerStats = {
+            ...baseStats,
+            loanBalance: baseStats.loanBalance ?? 0,
+            loanRate: baseStats.loanRate ?? 0,
+            factionReputation: hydrateFactionReputation(baseStats.factionReputation),
+            ...hydratedTimeState,
+            knowledgeLog: (baseStats.knowledgeLog || []).map(k => normalizeKnowledgeEntry(k)),
+            knowledgeFlags: Array.from(new Set(baseStats.knowledgeFlags || [])),
+        };
+
+        const normalizedKnowledgeGain: KnowledgeEntry[] = (changes.knowledgeGain || []).map(k => normalizeKnowledgeEntry(k));
+        const derivedKnowledge: KnowledgeEntry[] = [];
+        if (npcImpact?.memory) {
+            const baseMemory = typeof npcImpact.memory === 'string' ? { summary: npcImpact.memory } : npcImpact.memory;
+            derivedKnowledge.push(
+                normalizeKnowledgeEntry({
+                    summary: baseMemory.summary,
+                    timestamp: baseMemory.timestamp,
+                    source: baseMemory.source || targetNpc?.name || npcImpact.npcId,
+                    tags: baseMemory.tags || ['npc'],
+                }, npcImpact.npcId)
+            );
+        }
+
+        const knowledgeLog = clampKnowledge([
+            ...(newStats.knowledgeLog || []),
+            ...normalizedKnowledgeGain,
+            ...derivedKnowledge,
+        ]);
+
+        const combinedFlags = Array.from(new Set([...(newStats.knowledgeFlags || []), ...(changes.knowledgeFlags || [])]));
+
+        const updatedStats: PlayerStats = {
+            ...newStats,
+            stress: clampStat(newStats.stress + (changes.stress || 0)),
+            reputation: clampStat(newStats.reputation + (changes.reputation || 0)),
+            cash: newStats.cash + (changes.cash || 0),
+            knowledgeLog,
+            knowledgeFlags: combinedFlags,
+            factionReputation: { ...hydrateFactionReputation(newStats.factionReputation) },
+        };
+
+        const factionChange = changes.factionReputation;
+        if (factionChange) {
+            (Object.keys(factionChange) as Array<keyof typeof factionChange>).forEach(key => {
+                updatedStats.factionReputation[key] = clampStat(updatedStats.factionReputation[key] + (factionChange[key] || 0));
+            });
+        }
+
+        if (changes.loanBalanceChange) {
+            updatedStats.loanBalance = Math.max(0, (updatedStats.loanBalance || 0) + changes.loanBalanceChange);
+        }
+
+        if (changes.loanRate !== undefined) {
+            updatedStats.loanRate = changes.loanRate;
+        }
+
+        if (changes.portfolio) {
+            updatedStats.portfolio = changes.portfolio;
+        }
+
+        updatedStats.mood = clampStat((changes.mood ?? updatedStats.mood ?? updatedStats.reputation));
+        updatedStats.trust = clampStat((changes.trust ?? updatedStats.trust ?? updatedStats.reputation));
+
+        const daysAdvanced = changes.advanceDays || 0;
+        if (daysAdvanced !== 0) {
+            const currentIndex = TIME_SLOTS.indexOf(playerTimeSlot);
+            const slotsToAdvance = daysAdvanced * TIME_SLOTS.length + currentIndex;
+            const nextSlot = TIME_SLOTS[slotsToAdvance % TIME_SLOTS.length];
+            const dayIncrements = Math.floor(slotsToAdvance / TIME_SLOTS.length);
+            const nextDayType: DayType = ((playerDayType === 'WEEKDAY' ? 0 : 1) + dayIncrements) % 2 === 0 ? 'WEEKDAY' : 'WEEKEND';
+
+            updatedStats.currentDayType = nextDayType;
+            updatedStats.currentTimeSlot = nextSlot;
+            updatedStats.timeCursor = playerTimeCursor + daysAdvanced;
+        }
+
+        const timeShift = changes.advanceTimeSlots || 0;
+        if (timeShift !== 0) {
+            const currentIndex = TIME_SLOTS.indexOf(updatedStats.currentTimeSlot);
+            const nextIndex = (currentIndex + timeShift + TIME_SLOTS.length) % TIME_SLOTS.length;
+            const crossedBoundary = Math.floor((currentIndex + timeShift) / TIME_SLOTS.length);
+            const nextDayType: DayType = ((updatedStats.currentDayType === 'WEEKDAY' ? 0 : 1) + crossedBoundary) % 2 === 0
+                ? 'WEEKDAY'
+                : 'WEEKEND';
+
+            updatedStats.currentTimeSlot = TIME_SLOTS[nextIndex];
+            updatedStats.currentDayType = nextDayType;
+            updatedStats.timeCursor = updatedStats.timeCursor + crossedBoundary;
+        }
+
+        if (changes.score) {
+            updatedStats.score = (updatedStats.score || 0) + changes.score;
+        }
+
+        if (changes.riskAppetite !== undefined) {
+            updatedStats.riskAppetite = clampStat(changes.riskAppetite);
+        }
+
+        if (changes.dealPace !== undefined) {
+            updatedStats.dealPace = clampStat(changes.dealPace);
+        }
+
+        if (changes.auditRisk !== undefined) {
+            updatedStats.auditRisk = clampStat(changes.auditRisk);
+        }
+
+        if (changes.portfolio) {
+            updatedStats.portfolio = changes.portfolio;
+        }
+
+        if (changes.loanBalanceChange && updatedStats.cash < 0) {
+            updatedStats.cash = 0;
+        }
+
+        if (changes.npcRelationshipUpdate && targetNpc) {
+            const change = changes.npcRelationshipUpdate.change || 0;
+            const moodChange = clampStat((targetNpc.mood ?? targetNpc.relationship) + change) - (targetNpc.mood ?? targetNpc.relationship);
+            const trustChange = clampStat((targetNpc.trust ?? targetNpc.relationship) + change) - (targetNpc.trust ?? targetNpc.relationship);
+            const impact = Math.abs(change);
+
+            setNpcs(prev => prev.map(npc => npc.id === targetNpc.id
+                ? {
+                    ...npc,
+                    mood: clampStat((npc.mood ?? npc.relationship) + change),
+                    trust: clampStat((npc.trust ?? npc.relationship) + change),
+                    memories: clampMemories([...npc.memories, normalizeMemory({
+                        summary: npcImpact.memory || `Relationship changed by ${change}`,
+                        sentiment: change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral',
+                        impact,
+                        sourceNpcId: targetNpc.id,
+                    }, npc.id)]),
+                }
+                : npc
+            ));
+
+            updatedStats.mood = clampStat(updatedStats.mood + moodChange);
+            updatedStats.trust = clampStat(updatedStats.trust + trustChange);
+        }
+
+        return updatedStats;
+    });
+  }, [npcs, playerStats]);
 
   // --- TIME ADVANCEMENT & SCENARIO TRIGGER ---
   const advanceTime = useCallback(() => {
@@ -525,211 +679,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
   }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments, marketVolatility, npcs]);
-  // --- STAT UPDATES ---
-  const updatePlayerStats = useCallback((changes: StatChanges) => {
-    const npcImpact = changes.npcRelationshipUpdate;
-    const targetNpc = npcImpact ? npcs.find(n => n.id === npcImpact.npcId) : undefined;
-    const playerDayType = playerStats?.currentDayType || 'WEEKDAY';
-    const playerTimeSlot = playerStats?.currentTimeSlot || 'MORNING';
-    const playerTimeCursor = playerStats?.timeCursor ?? 0;
-
-    setPlayerStats(prevStats => {
-        const baseStats = prevStats || DIFFICULTY_SETTINGS['Normal'].initialStats;
-        const hydratedTimeState = {
-            currentDayType: baseStats.currentDayType || 'WEEKDAY',
-            currentTimeSlot: baseStats.currentTimeSlot || 'MORNING',
-            timeCursor: typeof baseStats.timeCursor === 'number' ? baseStats.timeCursor : 0,
-        };
-        const newStats: PlayerStats = {
-            ...baseStats,
-            loanBalance: baseStats.loanBalance ?? 0,
-            loanRate: baseStats.loanRate ?? 0,
-            factionReputation: hydrateFactionReputation(baseStats.factionReputation),
-            ...hydratedTimeState,
-            knowledgeLog: (baseStats.knowledgeLog || []).map(k => normalizeKnowledgeEntry(k)),
-            knowledgeFlags: Array.from(new Set(baseStats.knowledgeFlags || [])),
-        };
-
-        const normalizedKnowledgeGain: KnowledgeEntry[] = (changes.knowledgeGain || []).map(k => normalizeKnowledgeEntry(k));
-        const derivedKnowledge: KnowledgeEntry[] = [];
-        if (npcImpact?.memory) {
-            const baseMemory = typeof npcImpact.memory === 'string' ? { summary: npcImpact.memory } : npcImpact.memory;
-            derivedKnowledge.push(
-                normalizeKnowledgeEntry({
-                    summary: baseMemory.summary,
-                    timestamp: baseMemory.timestamp,
-                    npcId: npcImpact.npcId,
-                    source: npcImpact.npcId,
-                    tags: Array.from(new Set(['npc_memory', ...(baseMemory.tags || [])])),
-                })
-            );
-        }
-        
-        if (typeof changes.cash === 'number') newStats.cash += changes.cash;
-        if (typeof changes.reputation === 'number') newStats.reputation += changes.reputation;
-        if (typeof changes.stress === 'number') newStats.stress = Math.max(0, Math.min(100, newStats.stress + changes.stress));
-        if (typeof changes.energy === 'number') newStats.energy = Math.max(0, Math.min(100, newStats.energy + changes.energy));
-        if (typeof changes.analystRating === 'number') newStats.analystRating = Math.max(0, Math.min(100, newStats.analystRating + changes.analystRating));
-        if (typeof changes.financialEngineering === 'number') newStats.financialEngineering += changes.financialEngineering;
-        if (typeof changes.ethics === 'number') newStats.ethics = Math.max(0, Math.min(100, newStats.ethics + changes.ethics));
-        if (typeof changes.auditRisk === 'number') newStats.auditRisk = Math.max(0, Math.min(100, newStats.auditRisk + changes.auditRisk));
-        if (typeof changes.score === 'number') newStats.score += changes.score;
-        if (typeof changes.health === 'number') newStats.health = Math.max(0, Math.min(100, (newStats.health || 100) + changes.health));
-        if (typeof changes.dependency === 'number') newStats.dependency = Math.max(0, Math.min(100, (newStats.dependency || 0) + changes.dependency));
-        if (typeof changes.aum === 'number') newStats.aum = (newStats.aum || 0) + changes.aum;
-        if (changes.employees) newStats.employees = changes.employees;
-
-        if (typeof changes.loanBalanceChange === 'number') {
-            newStats.loanBalance = Math.max(0, (newStats.loanBalance || 0) + changes.loanBalanceChange);
-        }
-        if (typeof changes.loanRate === 'number') {
-            newStats.loanRate = Math.max(0, changes.loanRate);
-        }
-
-        if (changes.addPortfolioCompany) {
-             const finalCompany: PortfolioCompany = {
-                  ...changes.addPortfolioCompany,
-                  acquisitionDate: { year: prevStats ? prevStats.gameYear : 1, month: prevStats ? prevStats.gameMonth : 1 },
-                  eventHistory: []
-              };
-              if (changes.dealModification) {
-                 Object.assign(finalCompany, changes.dealModification);
-              }
-              newStats.portfolio = [...newStats.portfolio, finalCompany];
-              logEvent('deal_signed', { name: finalCompany.name, valuation: finalCompany.currentValuation });
-        }
-
-        if (changes.portfolio) {
-            newStats.portfolio = changes.portfolio;
-        }
-
-        if (changes.modifyCompany) {
-             newStats.portfolio = newStats.portfolio.map(p => 
-                p.id === changes.modifyCompany!.id ? { ...p, ...changes.modifyCompany!.updates } : p
-             );
-        }
-
-        if (changes.setsFlags) {
-            changes.setsFlags.forEach(flag => {
-                newStats.playerFlags[flag] = true;
-            });
-        }
-        
-        if (changes.playedScenarioIds) {
-            newStats.playedScenarioIds = Array.from(new Set([...newStats.playedScenarioIds, ...changes.playedScenarioIds]));
-        }
-
-        if (changes.removeNpcId) {
-             newStats.playerFlags[`NPC_REMOVED_${changes.removeNpcId}`] = true;
-        }
-
-        if (changes.factionReputation) {
-            Object.entries(changes.factionReputation).forEach(([faction, delta]) => {
-                if (typeof delta === 'number') {
-                    const key = faction as keyof FactionReputation;
-                    newStats.factionReputation[key] = clampStat(
-                        (newStats.factionReputation[key] ?? DEFAULT_FACTION_REPUTATION[key]) + delta
-                    );
-                }
-            });
-        }
-
-        if (changes.knowledgeFlags) {
-            newStats.knowledgeFlags = Array.from(new Set([...newStats.knowledgeFlags, ...changes.knowledgeFlags]));
-        }
-
-        const knowledgeCombined = [...newStats.knowledgeLog, ...derivedKnowledge, ...normalizedKnowledgeGain];
-        if (knowledgeCombined.length !== newStats.knowledgeLog.length) {
-            newStats.knowledgeLog = clampKnowledge(knowledgeCombined);
-        }
-
-        const knowledgeFlagSet = new Set(newStats.knowledgeFlags);
-        [...derivedKnowledge, ...normalizedKnowledgeGain].forEach(entry => {
-            if (entry.id) knowledgeFlagSet.add(entry.id);
-            (entry.tags || []).forEach(tag => knowledgeFlagSet.add(tag));
-            if (entry.npcId) knowledgeFlagSet.add(`npc:${entry.npcId}`);
-            if (entry.faction) knowledgeFlagSet.add(`faction:${entry.faction}`);
-        });
-        newStats.knowledgeFlags = Array.from(knowledgeFlagSet);
-
-        if (targetNpc?.faction && npcImpact) {
-            const factionDelta = Math.round(npcImpact.change * 0.6);
-            newStats.factionReputation[targetNpc.faction] = clampStat(
-                (newStats.factionReputation[targetNpc.faction] ?? DEFAULT_FACTION_REPUTATION[targetNpc.faction]) + factionDelta
-            );
-        }
-
-        // Prevent the player from running a negative balance unless a loan exists
-        if (newStats.loanBalance <= 0) {
-            newStats.loanBalance = 0;
-            newStats.loanRate = 0;
-            if (newStats.cash < 0) newStats.cash = 0;
-        }
-
-        return newStats;
-    });
-
-    if (changes.npcRelationshipUpdate) {
-        const { npcId, change, trustChange, moodChange, memory, broadcastTo } = changes.npcRelationshipUpdate;
-        const targetAvailable = targetNpc ? isNpcAvailable(targetNpc, playerDayType, playerTimeSlot) : true;
-        const availabilityMoodPenalty = targetAvailable ? 0 : -4;
-        const availabilityTrustPenalty = targetAvailable ? 0 : -2;
-        const availabilityMemory = targetAvailable
-            ? undefined
-            : normalizeMemory({
-                summary: `You pinged during their off-hours (${playerDayType.toLowerCase()} ${playerTimeSlot.toLowerCase()}).`,
-                sentiment: 'negative',
-                impact: availabilityTrustPenalty,
-                tags: ['timing', 'off_hours'],
-            }, npcId);
-
-        setNpcs(prevNpcs => {
-            const sourceNpc = prevNpcs.find(n => n.id === npcId);
-            const normalizedMemory = memory ? normalizeMemory(memory, npcId) : undefined;
-            const shareTargets = broadcastTo ?? (Math.abs(change) >= 6 ? ['LP', 'RIVAL'] : []);
-
-            return prevNpcs.map(npc => {
-                const isTargetNpc = npc.id === npcId;
-                const calculatedTrustChange = typeof trustChange === 'number' ? trustChange : Math.round(change * 0.6);
-                const calculatedMoodChange = typeof moodChange === 'number' ? moodChange : Math.round(change * 0.8);
-                const shouldShareWithLp = shareTargets.includes('LP') && npc.role.includes('Limited Partner');
-                const shouldShareWithRival = shareTargets.includes('RIVAL') && npc.isRival;
-                const shouldReceiveRumor = !isTargetNpc && (shouldShareWithLp || shouldShareWithRival);
-
-                if (isTargetNpc) {
-                    const mergedMemories = [
-                        ...npc.memories,
-                        ...(normalizedMemory ? [normalizedMemory] : []),
-                        ...(availabilityMemory ? [availabilityMemory] : []),
-                    ];
-
-                    return {
-                        ...npc,
-                        relationship: clampStat(npc.relationship + change),
-                        mood: clampStat((npc.mood ?? npc.relationship) + calculatedMoodChange + availabilityMoodPenalty),
-                        trust: clampStat((npc.trust ?? npc.relationship) + calculatedTrustChange + availabilityTrustPenalty),
-                        memories: mergedMemories.length > npc.memories.length ? clampMemories(mergedMemories) : npc.memories,
-                        lastContactTick: playerTimeCursor,
-                    };
-                }
-
-                if (normalizedMemory && shouldReceiveRumor) {
-                    const rumorSummary = `${sourceNpc?.name || 'Someone'}: ${normalizedMemory.summary}`;
-                    const rumorMemory: NPCMemory = {
-                        ...normalizedMemory,
-                        summary: rumorSummary,
-                        sentiment: normalizedMemory.sentiment || (change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'),
-                        tags: Array.from(new Set([...(normalizedMemory.tags || []), 'rumor'])),
-                    };
-                    return { ...npc, memories: clampMemories([...npc.memories, rumorMemory]) };
-                }
-
-                return npc;
-            });
-        });
-    }
-  }, [npcs, playerStats]);
-
   const handleActionOutcome = (outcome: { description: string; statChanges: StatChanges }, title: string) => {
       updatePlayerStats(outcome.statChanges);
   };
