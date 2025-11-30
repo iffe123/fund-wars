@@ -81,3 +81,41 @@ To deploy this securely without exposing keys in the repo:
 *   **Simulation Only:** This is a work of fiction.
 *   **Data:** Telemetry is anonymous.
 *   **Disclaimer:** No financial advice is given.
+
+## 🔀 Resolving GitHub merge conflicts with Codex
+
+If GitHub shows a greyed out **Merge pull request** button and lists files with conflicts, reconcile your branch locally in Codex and push a clean history back to GitHub:
+
+1. **Add and sync the remote** (only needed once):
+   ```bash
+   git remote add origin <your-repo-url>
+   git fetch origin
+   git checkout work
+   git pull --rebase origin work
+   ```
+   Replace `<your-repo-url>` with the HTTPS URL of this repository.
+
+2. **Bring in the latest base branch** (often `main` or `master`) so you can resolve conflicts locally:
+   ```bash
+   git fetch origin
+   git merge origin/main   # or: git rebase origin/main
+   ```
+
+3. **Resolve conflicts in the listed files** (for example, `components/CommsTerminal.tsx`, `context/GameContext.tsx`, `services/geminiService.ts`, `types.ts`):
+   - Open each file and decide whether to keep your changes, the base changes, or a blend.
+   - Remove conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`).
+   - Use the existing `npm run check-conflicts` script to verify no markers remain.
+
+4. **Verify the app builds** before pushing:
+   ```bash
+   npm run build
+   ```
+
+5. **Commit and push from Codex** to trigger Vercel and update the PR:
+   ```bash
+   git add .
+   git commit -m "Resolve merge conflicts"
+   git push origin work
+   ```
+
+Once the push completes and Vercel reports a successful deployment, GitHub should allow the PR to be merged.
