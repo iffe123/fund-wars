@@ -212,6 +212,10 @@ export const getNPCResponse = async (
 
         const portfolioDigest = playerStats.portfolio.map(c => `${c.name} (${c.dealType}) Valuation $${(c.currentValuation/1000000).toFixed(1)}M, Debt $${(c.debt/1000000).toFixed(1)}M, Relationship Note: ${c.latestCeoReport || 'No update'}`).join('\n');
 
+        const scheduleNote = npc.schedule
+            ? `Availability - Weekday: ${npc.schedule.weekday.join('/')} | Weekend: ${npc.schedule.weekend.join('/') || 'None'}. Preferred channel: ${npc.schedule.preferredChannel || 'none listed'}.`
+            : 'Availability - Flexible; no schedule set.';
+
         const systemInstruction = `
         You are a text adventure engine. You are roleplaying as ${npc.name}.
         ROLE & VOICE:
@@ -220,6 +224,8 @@ export const getNPCResponse = async (
         - Relationship with player: ${npc.relationship}/100 (let this color your tone: hostile if <30, neutral if 30-70, warmer if >70).
         - Mood: ${npc.mood}/100 (recent vibe; higher means receptive, lower means prickly).
         - Trust: ${npc.trust}/100 (longer-term belief the player will deliver; gate generosity on this).
+        - ${scheduleNote}
+        - Current time: ${playerStats.currentDayType} ${playerStats.currentTimeSlot}. If off-hours, acknowledge the timing and be brief or annoyed unless trust is high.
         - Never break character or speak as a generic assistant. Everything you say should sound like ${npc.name}.
 
         BEHAVIOR RULES:

@@ -1,5 +1,5 @@
 
-import type { PlayerStats, Scenario, NewsEvent, DifficultySettings, Difficulty, LifeAction, StructureChoice, DueDiligencePhase, PortfolioAction, PortfolioCompany, FinancingPhase, NPC, QuizQuestion, MarketVolatility, RivalFund, CompetitiveDeal, RivalStrategy, FactionReputation } from './types';
+import type { PlayerStats, Scenario, NewsEvent, DifficultySettings, Difficulty, LifeAction, StructureChoice, DueDiligencePhase, PortfolioAction, PortfolioCompany, FinancingPhase, NPC, QuizQuestion, MarketVolatility, RivalFund, CompetitiveDeal, RivalStrategy, FactionReputation, TimeSlot } from './types';
 import { PlayerLevel, DealType } from './types';
 
 export const DEFAULT_FACTION_REPUTATION: FactionReputation = {
@@ -20,14 +20,17 @@ const NORMAL_STATS: PlayerStats = {
   energy: 90,
   analystRating: 50,
   financialEngineering: 10,
-  ethics: 60, 
-  auditRisk: 0, 
+  ethics: 60,
+  auditRisk: 0,
   score: 0,
   portfolio: [],
   playerFlags: {},
   playedScenarioIds: [],
   gameYear: 1,
   gameMonth: 1,
+  currentDayType: 'WEEKDAY',
+  currentTimeSlot: 'MORNING',
+  timeCursor: 0,
   aum: 0,
   employees: [],
   health: 100,
@@ -50,7 +53,16 @@ export const INITIAL_NPCS: NPC[] = [
     memories: [],
     isRival: false,
     faction: 'MANAGING_DIRECTORS',
-    dialogueHistory: [{ sender: 'npc', senderName: 'Chad (MD)', text: "Don't screw this up, rookie. I need this bonus." }]
+    dialogueHistory: [{ sender: 'npc', senderName: 'Chad (MD)', text: "Don't screw this up, rookie. I need this bonus." }],
+    schedule: {
+      weekday: ['MORNING', 'AFTERNOON'],
+      weekend: ['MORNING'],
+      preferredChannel: 'desk standup',
+      standingMeetings: [
+        { dayType: 'WEEKDAY', timeSlot: 'MORNING', description: 'Pipeline standup' },
+      ],
+    },
+    lastContactTick: 0,
   },
   {
     id: 'hunter',
@@ -64,7 +76,16 @@ export const INITIAL_NPCS: NPC[] = [
     memories: [],
     isRival: true,
     faction: 'RIVALS',
-    dialogueHistory: [{ sender: 'npc', senderName: 'Hunter', text: "Cute deal. Did you even check the Liquidation Preferences? or are you just donating money?" }]
+    dialogueHistory: [{ sender: 'npc', senderName: 'Hunter', text: "Cute deal. Did you even check the Liquidation Preferences? or are you just donating money?" }],
+    schedule: {
+      weekday: ['AFTERNOON', 'EVENING'],
+      weekend: ['EVENING'],
+      preferredChannel: 'late-night texts',
+      standingMeetings: [
+        { dayType: 'WEEKDAY', timeSlot: 'EVENING', description: 'Shadow auction updates' },
+      ],
+    },
+    lastContactTick: 0,
   },
   {
     id: 'sarah',
@@ -78,7 +99,16 @@ export const INITIAL_NPCS: NPC[] = [
     memories: [],
     isRival: false,
     faction: 'ANALYSTS',
-    dialogueHistory: [{ sender: 'npc', senderName: 'Sarah', text: "I haven't slept in 40 hours and the Cash Flow Statement is off by $1,000. It's probably a circular reference." }]
+    dialogueHistory: [{ sender: 'npc', senderName: 'Sarah', text: "I haven't slept in 40 hours and the Cash Flow Statement is off by $1,000. It's probably a circular reference." }],
+    schedule: {
+      weekday: ['AFTERNOON', 'EVENING'],
+      weekend: ['AFTERNOON'],
+      preferredChannel: 'data room pings',
+      standingMeetings: [
+        { dayType: 'WEEKDAY', timeSlot: 'AFTERNOON', description: 'Model scrub' },
+      ],
+    },
+    lastContactTick: 0,
   },
   {
     id: 'regulator',
@@ -92,7 +122,16 @@ export const INITIAL_NPCS: NPC[] = [
     memories: [],
     isRival: false,
     faction: 'REGULATORS',
-    dialogueHistory: [{ sender: 'npc', senderName: 'Agent Smith', text: "We are monitoring market activity closely." }]
+    dialogueHistory: [{ sender: 'npc', senderName: 'Agent Smith', text: "We are monitoring market activity closely." }],
+    schedule: {
+      weekday: ['MORNING'],
+      weekend: [],
+      preferredChannel: 'formal memos',
+      standingMeetings: [
+        { dayType: 'WEEKDAY', timeSlot: 'MORNING', description: 'Compliance check' },
+      ],
+    },
+    lastContactTick: 0,
   },
   {
     id: 'lp_swiss',
@@ -106,7 +145,16 @@ export const INITIAL_NPCS: NPC[] = [
     memories: [],
     isRival: false,
     faction: 'LIMITED_PARTNERS',
-    dialogueHistory: [{ sender: 'npc', senderName: 'Hans Gruber', text: "We prefer capital preservation over your... 'American' growth tactics. Show me your IP Roadmap." }]
+    dialogueHistory: [{ sender: 'npc', senderName: 'Hans Gruber', text: "We prefer capital preservation over your... 'American' growth tactics. Show me your IP Roadmap." }],
+    schedule: {
+      weekday: ['MORNING'],
+      weekend: ['MORNING'],
+      preferredChannel: 'scheduled calls',
+      standingMeetings: [
+        { dayType: 'WEEKDAY', timeSlot: 'MORNING', description: 'Quarterly NAV review' },
+      ],
+    },
+    lastContactTick: 0,
   },
   {
     id: 'lp_oil',
@@ -120,7 +168,16 @@ export const INITIAL_NPCS: NPC[] = [
     memories: [],
     isRival: false,
     faction: 'LIMITED_PARTNERS',
-    dialogueHistory: [{ sender: 'npc', senderName: 'Sheikh Al-Maktoum', text: "We need alpha, not beta. Show me something bold." }]
+    dialogueHistory: [{ sender: 'npc', senderName: 'Sheikh Al-Maktoum', text: "We need alpha, not beta. Show me something bold." }],
+    schedule: {
+      weekday: ['AFTERNOON'],
+      weekend: ['AFTERNOON', 'EVENING'],
+      preferredChannel: 'deal dinners',
+      standingMeetings: [
+        { dayType: 'WEEKEND', timeSlot: 'EVENING', description: 'Deal dinner debrief' },
+      ],
+    },
+    lastContactTick: 0,
   }
 ];
 

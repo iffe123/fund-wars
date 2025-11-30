@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, FactionReputation } from '../types';
+import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, FactionReputation, DayType, TimeSlot } from '../types';
 import { PlayerLevel, DealType } from '../types';
 import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS } from '../constants';
 import { useAuth } from './AuthContext';
@@ -21,6 +21,24 @@ interface GameContextTypeExtended extends GameContextType {
 const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
 
 const clampStat = (value: number, min = 0, max = 100) => Math.max(min, Math.min(max, value));
+
+const TIME_SLOTS: TimeSlot[] = ['MORNING', 'AFTERNOON', 'EVENING'];
+
+const getNextTimeState = (currentDayType: DayType, currentTimeSlot: TimeSlot) => {
+    const slotIndex = TIME_SLOTS.indexOf(currentTimeSlot);
+    const nextSlot = TIME_SLOTS[(slotIndex + 1) % TIME_SLOTS.length];
+    const nextDayType: DayType = nextSlot === 'MORNING'
+        ? currentDayType === 'WEEKDAY' ? 'WEEKEND' : 'WEEKDAY'
+        : currentDayType;
+    return { nextDayType, nextSlot };
+};
+
+const isNpcAvailable = (npc: NPC, dayType: DayType, timeSlot: TimeSlot) => {
+    const schedule = npc.schedule;
+    if (!schedule) return true;
+    const slots = dayType === 'WEEKDAY' ? schedule.weekday : schedule.weekend;
+    return slots.includes(timeSlot);
+};
 
 const hydrateFactionReputation = (factionRep?: FactionReputation): FactionReputation => {
     const hydrated: FactionReputation = { ...DEFAULT_FACTION_REPUTATION };
@@ -58,6 +76,7 @@ const hydrateNpc = (npc: NPC): NPC => {
         trust: clampStat(typeof npc.trust === 'number' ? npc.trust : npc.relationship),
         dialogueHistory: npc.dialogueHistory || [],
         memories: hydratedMemories,
+        lastContactTick: typeof npc.lastContactTick === 'number' ? npc.lastContactTick : 0,
     };
 };
 
@@ -79,6 +98,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [marketVolatility, setMarketVolatility] = useState<MarketVolatility>('NORMAL');
   const [tutorialStep, setTutorialStep] = useState<number>(0);
   const [actionLog, setActionLog] = useState<string[]>([]);
+
+  const addLogEntry = useCallback((message: string) => {
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const entry = `${timestamp} // ${message}`;
+      setActionLog(prev => [entry, ...prev].slice(0, 50));
+      console.log(`[Game Log]: ${message}`);
+  }, []);
   
   // --- RIVAL FUNDS & COMPETITIVE DEALS ---
   const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS);
@@ -113,6 +139,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                       loanBalance: data.playerStats.loanBalance ?? 0,
                       loanRate: data.playerStats.loanRate ?? 0,
                       factionReputation: hydrateFactionReputation(data.playerStats.factionReputation),
+                      currentDayType: data.playerStats.currentDayType || 'WEEKDAY',
+                      currentTimeSlot: data.playerStats.currentTimeSlot || 'MORNING',
+                      timeCursor: typeof data.playerStats.timeCursor === 'number' ? data.playerStats.timeCursor : 0,
                   });
                   if (data.gamePhase) setGamePhase(data.gamePhase);
                   if (data.activeScenarioId) {
@@ -214,13 +243,54 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
   }, [addLogEntry]);
 
+  const applyMissedAppointments = useCallback((dayType: DayType, timeSlot: TimeSlot, timeCursor: number) => {
+      const missed: string[] = [];
+      setNpcs(prev => prev.map(npc => {
+          const standing = npc.schedule?.standingMeetings || [];
+          const hasMeeting = standing.some(m => m.dayType === dayType && m.timeSlot === timeSlot);
+          if (!hasMeeting) return npc;
+
+          const metThisSlot = npc.lastContactTick === timeCursor;
+          if (metThisSlot) return npc;
+
+          missed.push(npc.name);
+          const penaltyMood = -6;
+          const penaltyTrust = -4;
+          const memory = normalizeMemory({
+              summary: `You missed our ${dayType === 'WEEKDAY' ? 'check-in' : 'meetup'} (${timeSlot.toLowerCase()}).`,
+              sentiment: 'negative',
+              impact: penaltyTrust,
+              tags: ['missed_meeting'],
+          }, npc.id);
+
+          return {
+              ...npc,
+              mood: clampStat((npc.mood ?? npc.relationship) + penaltyMood),
+              trust: clampStat((npc.trust ?? npc.relationship) + penaltyTrust),
+              memories: clampMemories([...npc.memories, memory]),
+          };
+      }));
+
+      if (missed.length) {
+          addLogEntry(`Missed appointments with ${missed.join(', ')}. Mood and trust dropped.`);
+      }
+  }, [addLogEntry]);
+
   // --- TIME ADVANCEMENT & SCENARIO TRIGGER ---
   const advanceTime = useCallback(() => {
       if (!playerStats) return;
 
+      const currentDayType = playerStats.currentDayType || 'WEEKDAY';
+      const currentTimeSlot = playerStats.currentTimeSlot || 'MORNING';
+      const currentTimeCursor = playerStats.timeCursor ?? 0;
+      applyMissedAppointments(currentDayType, currentTimeSlot, currentTimeCursor);
+
       const nextMonth = playerStats.gameMonth + 1;
       const nextYear = nextMonth > 12 ? playerStats.gameYear + 1 : playerStats.gameYear;
       const finalMonth = nextMonth > 12 ? 1 : nextMonth;
+
+      const { nextDayType, nextSlot } = getNextTimeState(currentDayType, currentTimeSlot);
+      const nextTimeCursor = currentTimeCursor + 1;
 
       updatePlayerStats({
           score: 10,
@@ -228,7 +298,14 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       decayNpcAffinities();
 
-      setPlayerStats(prev => prev ? ({ ...prev, gameYear: nextYear, gameMonth: finalMonth }) : null);
+      setPlayerStats(prev => prev ? ({
+          ...prev,
+          gameYear: nextYear,
+          gameMonth: finalMonth,
+          currentDayType: nextDayType,
+          currentTimeSlot: nextSlot,
+          timeCursor: nextTimeCursor,
+      }) : null);
 
       const availableScenarios = SCENARIOS.filter(s => {
           if (playerStats.playedScenarioIds.includes(s.id) && s.id !== 1) return false;
@@ -266,7 +343,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       const crisisMultiplier = playerStats.stress > 70 ? 1.5 : 1.0;
-      const shouldTriggerEvent = Math.random() < (0.4 * crisisMultiplier); 
+      const shouldTriggerEvent = Math.random() < (0.4 * crisisMultiplier);
+      const slotLabel = `${nextDayType} ${nextSlot}`;
 
       if (shouldTriggerEvent && availableScenarios.length > 0) {
           availableScenarios.sort((a, b) => {
@@ -283,26 +361,35 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           
           updatePlayerStats({ playedScenarioIds: [nextScenario.id] });
           logEvent('scenario_triggered', { id: nextScenario.id, title: nextScenario.title });
-          addLogEntry(`Event Triggered: ${nextScenario.title}`);
+          addLogEntry(`Event Triggered (${slotLabel}): ${nextScenario.title}`);
       } else {
-          addLogEntry("Week advanced. No critical incidents reported.");
+          addLogEntry(`Week advanced to ${slotLabel}. No critical incidents reported.`);
       }
 
-  }, [playerStats, decayNpcAffinities, updatePlayerStats]);
+  }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments]);
 
 
   // --- STAT UPDATES ---
   const updatePlayerStats = useCallback((changes: StatChanges) => {
     const npcImpact = changes.npcRelationshipUpdate;
     const targetNpc = npcImpact ? npcs.find(n => n.id === npcImpact.npcId) : undefined;
+    const playerDayType = playerStats?.currentDayType || 'WEEKDAY';
+    const playerTimeSlot = playerStats?.currentTimeSlot || 'MORNING';
+    const playerTimeCursor = playerStats?.timeCursor ?? 0;
 
     setPlayerStats(prevStats => {
         const baseStats = prevStats || DIFFICULTY_SETTINGS['Normal'].initialStats;
+        const hydratedTimeState = {
+            currentDayType: baseStats.currentDayType || 'WEEKDAY',
+            currentTimeSlot: baseStats.currentTimeSlot || 'MORNING',
+            timeCursor: typeof baseStats.timeCursor === 'number' ? baseStats.timeCursor : 0,
+        };
         const newStats: PlayerStats = {
             ...baseStats,
             loanBalance: baseStats.loanBalance ?? 0,
             loanRate: baseStats.loanRate ?? 0,
             factionReputation: hydrateFactionReputation(baseStats.factionReputation),
+            ...hydratedTimeState,
         };
         
         if (typeof changes.cash === 'number') newStats.cash += changes.cash;
@@ -393,6 +480,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (changes.npcRelationshipUpdate) {
         const { npcId, change, trustChange, moodChange, memory, broadcastTo } = changes.npcRelationshipUpdate;
+        const targetAvailable = targetNpc ? isNpcAvailable(targetNpc, playerDayType, playerTimeSlot) : true;
+        const availabilityMoodPenalty = targetAvailable ? 0 : -4;
+        const availabilityTrustPenalty = targetAvailable ? 0 : -2;
+        const availabilityMemory = targetAvailable
+            ? undefined
+            : normalizeMemory({
+                summary: `You pinged during their off-hours (${playerDayType.toLowerCase()} ${playerTimeSlot.toLowerCase()}).`,
+                sentiment: 'negative',
+                impact: availabilityTrustPenalty,
+                tags: ['timing', 'off_hours'],
+            }, npcId);
+
         setNpcs(prevNpcs => {
             const sourceNpc = prevNpcs.find(n => n.id === npcId);
             const normalizedMemory = memory ? normalizeMemory(memory, npcId) : undefined;
@@ -407,12 +506,19 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const shouldReceiveRumor = !isTargetNpc && (shouldShareWithLp || shouldShareWithRival);
 
                 if (isTargetNpc) {
+                    const mergedMemories = [
+                        ...npc.memories,
+                        ...(normalizedMemory ? [normalizedMemory] : []),
+                        ...(availabilityMemory ? [availabilityMemory] : []),
+                    ];
+
                     return {
                         ...npc,
                         relationship: clampStat(npc.relationship + change),
-                        mood: clampStat((npc.mood ?? npc.relationship) + calculatedMoodChange),
-                        trust: clampStat((npc.trust ?? npc.relationship) + calculatedTrustChange),
-                        memories: normalizedMemory ? clampMemories([...npc.memories, normalizedMemory]) : npc.memories,
+                        mood: clampStat((npc.mood ?? npc.relationship) + calculatedMoodChange + availabilityMoodPenalty),
+                        trust: clampStat((npc.trust ?? npc.relationship) + calculatedTrustChange + availabilityTrustPenalty),
+                        memories: mergedMemories.length > npc.memories.length ? clampMemories(mergedMemories) : npc.memories,
+                        lastContactTick: playerTimeCursor,
                     };
                 }
 
@@ -431,29 +537,24 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             });
         });
     }
-  }, [npcs]);
+  }, [npcs, playerStats]);
 
   const handleActionOutcome = (outcome: { description: string; statChanges: StatChanges }, title: string) => {
       updatePlayerStats(outcome.statChanges);
   };
 
   const sendNpcMessage = (npcId: string, message: string, sender: 'player' | 'npc' | 'system' = 'player', senderName?: string) => {
+      const currentTick = playerStats?.timeCursor ?? 0;
       setNpcs(prev => prev.map(npc => {
           if (npc.id === npcId) {
               return {
                   ...npc,
-                  dialogueHistory: [...npc.dialogueHistory, { sender, senderName, text: message }]
+                  dialogueHistory: [...npc.dialogueHistory, { sender, senderName, text: message }],
+                  lastContactTick: sender === 'player' ? currentTick : npc.lastContactTick,
               };
           }
           return npc;
       }));
-  };
-
-  const addLogEntry = (message: string) => {
-      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const entry = `${timestamp} // ${message}`;
-      setActionLog(prev => [entry, ...prev].slice(0, 50));
-      console.log(`[Game Log]: ${message}`);
   };
 
   const setTutorialStepHandler = (step: number) => {

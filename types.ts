@@ -78,6 +78,20 @@ export interface NPCMemory {
   sourceNpcId?: string;
 }
 
+export type DayType = 'WEEKDAY' | 'WEEKEND';
+export type TimeSlot = 'MORNING' | 'AFTERNOON' | 'EVENING';
+
+export interface NPCSchedule {
+  weekday: TimeSlot[];
+  weekend: TimeSlot[];
+  standingMeetings?: Array<{
+    dayType: DayType;
+    timeSlot: TimeSlot;
+    description: string;
+  }>;
+  preferredChannel?: string;
+}
+
 export interface NPC {
   id: string;
   name: string;
@@ -91,6 +105,8 @@ export interface NPC {
   isRival: boolean;
   faction?: Faction;
   dialogueHistory: ChatMessage[]; // Chat specific to this NPC
+  schedule?: NPCSchedule;
+  lastContactTick?: number;
   // New for social
   relationshipType?: NPCRelationshipType;
   maintenanceCost?: number; // Weekly cost
@@ -116,6 +132,9 @@ export interface PlayerStats {
   playedScenarioIds: number[];
   gameYear: number;
   gameMonth: number;
+  currentDayType: DayType;
+  currentTimeSlot: TimeSlot;
+  timeCursor: number;
   aum: number; // Assets Under Management (Founder Mode)
   employees: string[]; // List of hired NPC IDs (Founder Mode)
   health: number; // 0-100

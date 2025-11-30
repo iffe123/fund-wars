@@ -60,9 +60,13 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
                           : 'NO DEBT'}
                     </span>
                 </div>
-                <div className="flex items-center space-x-2 text-amber-500">
-                    <i className="fas fa-brain"></i>
-                    <span>STRESS: {stats.stress}%</span>
+               <div className="flex items-center space-x-2 text-amber-500">
+                   <i className="fas fa-brain"></i>
+                   <span>STRESS: {stats.stress}%</span>
+               </div>
+                <div className="flex items-center space-x-2 text-slate-400">
+                    <i className="fas fa-clock"></i>
+                    <span>{stats.currentDayType} · {stats.currentTimeSlot}</span>
                 </div>
                 <div className="flex items-center space-x-2 text-blue-400">
                     <i className="fas fa-star"></i>
@@ -73,6 +77,11 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
               <div className={`text-[10px] uppercase tracking-widest font-bold flex items-center space-x-2 ${mktStyle.color}`}>
                   <i className={`fas ${mktStyle.icon}`}></i>
                   <span>{marketVolatility}</span>
+              </div>
+
+              <div className="flex items-center space-x-2 text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                  <i className="fas fa-clock"></i>
+                  <span>{stats.currentDayType} · {stats.currentTimeSlot}</span>
               </div>
 
               <div className="flex items-center space-x-4 text-[10px] uppercase tracking-widest font-bold text-slate-400">
