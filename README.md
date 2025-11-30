@@ -146,3 +146,17 @@ conflicts with the base branch:
    ```
 5. **Retry the merge button.** If it’s still grey, ensure the PR targets the correct base branch and that all required
    checks are green. Share any GitHub/Vercel error snippets in Codex so we can address them.
+
+### 🤔 Which merge option should you pick?
+GitHub will only let you choose a merge strategy *after* conflicts are resolved and checks are green. The three buttons
+do the following:
+
+- **Create a merge commit**: Keeps the entire branch history and adds a single merge commit on the base branch. Use this
+  if you want a visible integration point or if the branch has multiple meaningful commits.
+- **Squash and merge**: Combines all commits from the branch into one commit on the base branch. Use this when the branch
+  is a focused change and you want a clean history.
+- **Rebase and merge**: Replays your branch commits onto the tip of the base branch. Use this only if the branch is
+  already conflict-free and you prefer linear history.
+
+If the merge button is still disabled, it means conflicts remain unresolved; choose a strategy only after you’ve rebased
+or merged the latest base branch locally, cleared all conflict markers, and pushed the updated branch from Codex.
