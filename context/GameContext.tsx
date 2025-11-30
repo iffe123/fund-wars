@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
 import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, FactionReputation, DayType, TimeSlot, KnowledgeEntry } from '../types';
 import { PlayerLevel, DealType } from '../types';
 import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS } from '../constants';
@@ -145,6 +145,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // --- RIVAL FUNDS & COMPETITIVE DEALS ---
   const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS.map(hydrateRivalFund));
   const [activeDeals, setActiveDeals] = useState<CompetitiveDeal[]>([]);
+  const lastProcessedRivalTickRef = useRef<number | null>(null);
 
   // --- CLOUD SAVE / LOAD ---
   useEffect(() => {
@@ -255,6 +256,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
       if (!playerStats || gamePhase === 'INTRO') return;
       if ((playerStats.timeCursor ?? 0) < 1) return;
+      const currentTick = playerStats.timeCursor ?? 0;
+      if (lastProcessedRivalTickRef.current === currentTick) return;
+      lastProcessedRivalTickRef.current = currentTick;
       processRivalMoves();
   }, [playerStats?.timeCursor, gamePhase, processRivalMoves]);
 
