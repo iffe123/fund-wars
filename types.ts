@@ -58,14 +58,27 @@ export interface PortfolioImpact {
   applicableDealTypes?: DealType[];
 }
 
+export type MemorySentiment = 'positive' | 'negative' | 'neutral';
+
+export interface NPCMemory {
+  summary: string;
+  timestamp?: string;
+  sentiment?: MemorySentiment;
+  impact?: number;
+  tags?: string[];
+  sourceNpcId?: string;
+}
+
 export interface NPC {
   id: string;
   name: string;
   role: string;
   avatar: string; // FontAwesome icon class
   relationship: number; // 0-100 (0 = Enemy, 100 = Loyal Ally)
+  mood: number; // 0-100 (short-term vibe, decays if ignored)
+  trust: number; // 0-100 (longer-term stability)
   traits: string[]; // e.g. "Aggressive", "Paranoid"
-  memories: string[]; // Log of player interactions affecting them
+  memories: NPCMemory[]; // Log of player interactions affecting them
   isRival: boolean;
   dialogueHistory: ChatMessage[]; // Chat specific to this NPC
   // New for social
@@ -125,7 +138,10 @@ export interface StatChanges {
   npcRelationshipUpdate?: {
     npcId: string;
     change: number;
-    memory: string;
+    trustChange?: number;
+    moodChange?: number;
+    memory: NPCMemory | string;
+    broadcastTo?: Array<'LP' | 'RIVAL'>;
   };
   health?: number;
   dependency?: number;
