@@ -10,6 +10,15 @@ export enum PlayerLevel {
 
 export type MarketVolatility = 'NORMAL' | 'BULL_RUN' | 'CREDIT_CRUNCH' | 'PANIC';
 
+export type Faction =
+  | 'MANAGING_DIRECTORS'
+  | 'ANALYSTS'
+  | 'REGULATORS'
+  | 'LIMITED_PARTNERS'
+  | 'RIVALS';
+
+export type FactionReputation = Record<Faction, number>;
+
 export interface CompanyEvent {
   date: {
     year: number;
@@ -80,6 +89,7 @@ export interface NPC {
   traits: string[]; // e.g. "Aggressive", "Paranoid"
   memories: NPCMemory[]; // Log of player interactions affecting them
   isRival: boolean;
+  faction?: Faction;
   dialogueHistory: ChatMessage[]; // Chat specific to this NPC
   // New for social
   relationshipType?: NPCRelationshipType;
@@ -93,6 +103,7 @@ export interface PlayerStats {
   level: PlayerLevel;
   cash: number;
   reputation: number;
+  factionReputation: FactionReputation;
   stress: number;
   energy: number;
   analystRating: number;
@@ -143,6 +154,7 @@ export interface StatChanges {
     memory: NPCMemory | string;
     broadcastTo?: Array<'LP' | 'RIVAL'>;
   };
+  factionReputation?: Partial<FactionReputation>;
   health?: number;
   dependency?: number;
   removeNpcId?: string;
@@ -208,6 +220,7 @@ export interface Scenario {
   blockedByFlags?: string[];
   minReputation?: number;
   maxReputation?: number;
+  factionRequirements?: Array<{ faction: Faction; min?: number; max?: number }>;
   minStress?: number;
   minCash?: number;
 }

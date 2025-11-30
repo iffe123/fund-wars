@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal } from '../types';
+import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, FactionReputation } from '../types';
 import { PlayerLevel, DealType } from '../types';
-import { DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS } from '../constants';
+import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS } from '../constants';
 import { useAuth } from './AuthContext';
 import { db } from '../services/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -21,6 +21,16 @@ interface GameContextTypeExtended extends GameContextType {
 const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
 
 const clampStat = (value: number, min = 0, max = 100) => Math.max(min, Math.min(max, value));
+
+const hydrateFactionReputation = (factionRep?: FactionReputation): FactionReputation => {
+    const hydrated: FactionReputation = { ...DEFAULT_FACTION_REPUTATION };
+    if (!factionRep) return hydrated;
+
+    (Object.keys(hydrated) as Array<keyof FactionReputation>).forEach(key => {
+        hydrated[key] = clampStat(factionRep[key] ?? hydrated[key]);
+    });
+    return hydrated;
+};
 
 const normalizeMemory = (memory: NPCMemory | string, fallbackSourceId?: string): NPCMemory => {
     const base: NPCMemory = typeof memory === 'string' ? { summary: memory } : memory;
@@ -102,6 +112,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                       ...data.playerStats,
                       loanBalance: data.playerStats.loanBalance ?? 0,
                       loanRate: data.playerStats.loanRate ?? 0,
+                      factionReputation: hydrateFactionReputation(data.playerStats.factionReputation),
                   });
                   if (data.gamePhase) setGamePhase(data.gamePhase);
                   if (data.activeScenarioId) {
@@ -227,7 +238,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           
           if (s.minReputation && playerStats.reputation < s.minReputation) return false;
           if (s.maxReputation && playerStats.reputation > s.maxReputation) return false;
-          
+
+          if (s.factionRequirements) {
+              const meetsFactionReqs = s.factionRequirements.every(req => {
+                  const current = playerStats.factionReputation[req.faction] ?? 0;
+                  if (typeof req.min === 'number' && current < req.min) return false;
+                  if (typeof req.max === 'number' && current > req.max) return false;
+                  return true;
+              });
+              if (!meetsFactionReqs) return false;
+          }
+
           if (s.minStress && playerStats.stress < s.minStress) return false;
           if (s.minCash && playerStats.cash < s.minCash) return false;
 
@@ -267,17 +288,21 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           addLogEntry("Week advanced. No critical incidents reported.");
       }
 
-  }, [playerStats, decayNpcAffinities]);
+  }, [playerStats, decayNpcAffinities, updatePlayerStats]);
 
 
   // --- STAT UPDATES ---
   const updatePlayerStats = useCallback((changes: StatChanges) => {
+    const npcImpact = changes.npcRelationshipUpdate;
+    const targetNpc = npcImpact ? npcs.find(n => n.id === npcImpact.npcId) : undefined;
+
     setPlayerStats(prevStats => {
         const baseStats = prevStats || DIFFICULTY_SETTINGS['Normal'].initialStats;
         const newStats: PlayerStats = {
             ...baseStats,
             loanBalance: baseStats.loanBalance ?? 0,
             loanRate: baseStats.loanRate ?? 0,
+            factionReputation: hydrateFactionReputation(baseStats.factionReputation),
         };
         
         if (typeof changes.cash === 'number') newStats.cash += changes.cash;
@@ -333,9 +358,27 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (changes.playedScenarioIds) {
             newStats.playedScenarioIds = Array.from(new Set([...newStats.playedScenarioIds, ...changes.playedScenarioIds]));
         }
-        
+
         if (changes.removeNpcId) {
              newStats.playerFlags[`NPC_REMOVED_${changes.removeNpcId}`] = true;
+        }
+
+        if (changes.factionReputation) {
+            Object.entries(changes.factionReputation).forEach(([faction, delta]) => {
+                if (typeof delta === 'number') {
+                    const key = faction as keyof FactionReputation;
+                    newStats.factionReputation[key] = clampStat(
+                        (newStats.factionReputation[key] ?? DEFAULT_FACTION_REPUTATION[key]) + delta
+                    );
+                }
+            });
+        }
+
+        if (targetNpc?.faction && npcImpact) {
+            const factionDelta = Math.round(npcImpact.change * 0.6);
+            newStats.factionReputation[targetNpc.faction] = clampStat(
+                (newStats.factionReputation[targetNpc.faction] ?? DEFAULT_FACTION_REPUTATION[targetNpc.faction]) + factionDelta
+            );
         }
 
         // Prevent the player from running a negative balance unless a loan exists
@@ -388,7 +431,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             });
         });
     }
-  }, []);
+  }, [npcs]);
 
   const handleActionOutcome = (outcome: { description: string; statChanges: StatChanges }, title: string) => {
       updatePlayerStats(outcome.statChanges);

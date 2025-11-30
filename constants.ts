@@ -1,14 +1,23 @@
 
-import type { PlayerStats, Scenario, NewsEvent, DifficultySettings, Difficulty, LifeAction, StructureChoice, DueDiligencePhase, PortfolioAction, PortfolioCompany, FinancingPhase, NPC, QuizQuestion, MarketVolatility, RivalFund, CompetitiveDeal, RivalStrategy } from './types';
+import type { PlayerStats, Scenario, NewsEvent, DifficultySettings, Difficulty, LifeAction, StructureChoice, DueDiligencePhase, PortfolioAction, PortfolioCompany, FinancingPhase, NPC, QuizQuestion, MarketVolatility, RivalFund, CompetitiveDeal, RivalStrategy, FactionReputation } from './types';
 import { PlayerLevel, DealType } from './types';
+
+export const DEFAULT_FACTION_REPUTATION: FactionReputation = {
+  MANAGING_DIRECTORS: 45,
+  ANALYSTS: 55,
+  REGULATORS: 50,
+  LIMITED_PARTNERS: 40,
+  RIVALS: 30,
+};
 
 // The "Rookie" Profile (Default State)
 const NORMAL_STATS: PlayerStats = {
   level: PlayerLevel.ASSOCIATE,
-  cash: 5000, 
-  reputation: 10, 
-  stress: 0, 
-  energy: 90, 
+  cash: 5000,
+  reputation: 10,
+  factionReputation: { ...DEFAULT_FACTION_REPUTATION },
+  stress: 0,
+  energy: 90,
   analystRating: 50,
   financialEngineering: 10,
   ethics: 60, 
@@ -40,6 +49,7 @@ export const INITIAL_NPCS: NPC[] = [
     traits: ['Aggressive', 'Results-Oriented', 'Impatient'],
     memories: [],
     isRival: false,
+    faction: 'MANAGING_DIRECTORS',
     dialogueHistory: [{ sender: 'npc', senderName: 'Chad (MD)', text: "Don't screw this up, rookie. I need this bonus." }]
   },
   {
@@ -53,6 +63,7 @@ export const INITIAL_NPCS: NPC[] = [
     traits: ['Manipulative', 'Competitive', 'Shark'],
     memories: [],
     isRival: true,
+    faction: 'RIVALS',
     dialogueHistory: [{ sender: 'npc', senderName: 'Hunter', text: "Cute deal. Did you even check the Liquidation Preferences? or are you just donating money?" }]
   },
   {
@@ -66,6 +77,7 @@ export const INITIAL_NPCS: NPC[] = [
     traits: ['Overworked', 'Detail-Oriented', 'Anxious'],
     memories: [],
     isRival: false,
+    faction: 'ANALYSTS',
     dialogueHistory: [{ sender: 'npc', senderName: 'Sarah', text: "I haven't slept in 40 hours and the Cash Flow Statement is off by $1,000. It's probably a circular reference." }]
   },
   {
@@ -79,6 +91,7 @@ export const INITIAL_NPCS: NPC[] = [
     traits: ['Suspicious', 'Bureaucratic'],
     memories: [],
     isRival: false,
+    faction: 'REGULATORS',
     dialogueHistory: [{ sender: 'npc', senderName: 'Agent Smith', text: "We are monitoring market activity closely." }]
   },
   {
@@ -92,6 +105,7 @@ export const INITIAL_NPCS: NPC[] = [
     traits: ['Risk-Averse', 'Conservative', 'Traditional'],
     memories: [],
     isRival: false,
+    faction: 'LIMITED_PARTNERS',
     dialogueHistory: [{ sender: 'npc', senderName: 'Hans Gruber', text: "We prefer capital preservation over your... 'American' growth tactics. Show me your IP Roadmap." }]
   },
   {
@@ -105,6 +119,7 @@ export const INITIAL_NPCS: NPC[] = [
     traits: ['Aggressive', 'Visionary', 'Impatient'],
     memories: [],
     isRival: false,
+    faction: 'LIMITED_PARTNERS',
     dialogueHistory: [{ sender: 'npc', senderName: 'Sheikh Al-Maktoum', text: "We need alpha, not beta. Show me something bold." }]
   }
 ];
@@ -481,18 +496,19 @@ export const SCENARIOS: Scenario[] = [
     ],
   },
   // ... [Include standard scenarios] ...
-    {
+  {
     id: 100,
     title: "The SEC Inquiry",
     description: "Two agents in cheap suits are waiting in the lobby. They're asking questions about the 'Synergy Systems' deal and some rumors regarding competitor sabotage. It seems your 'dirty tricks' with Hunter didn't go unnoticed. The firm is exposed.",
     requiredFlags: ['PLAYED_DIRTY_WITH_HUNTER'],
+    factionRequirements: [{ faction: 'REGULATORS', max: 80 }],
     choices: [
       {
         text: "Deny everything and lawyer up.",
         sarcasticGuidance: "Standard operating procedure. Admit nothing, deny everything, make counter-accusations.",
         outcome: {
           description: "You stone-wall the agents. The legal fees are astronomical, and the partners are furious at the scrutiny. You survive, but you're on thin ice.",
-          statChanges: { cash: -10000, reputation: -10, stress: +20, score: -200, auditRisk: +20 },
+          statChanges: { cash: -10000, reputation: -10, stress: +20, score: -200, auditRisk: +20, factionReputation: { REGULATORS: -25, MANAGING_DIRECTORS: +5 } },
         },
       },
       {
@@ -500,7 +516,7 @@ export const SCENARIOS: Scenario[] = [
         sarcasticGuidance: "The prisoner's dilemma. Snitch first and snitch hard.",
         outcome: {
           description: "You provide evidence that Hunter instigated the market manipulation. The SEC turns its gaze on him. You're seen as a rat, but a rat who isn't in jail.",
-          statChanges: { reputation: -20, stress: -10, score: +100, npcRelationshipUpdate: { npcId: 'hunter', change: -100, memory: 'Testified against Hunter to the SEC' } },
+          statChanges: { reputation: -20, stress: -10, score: +100, factionReputation: { REGULATORS: +15, RIVALS: -15, MANAGING_DIRECTORS: -5 }, npcRelationshipUpdate: { npcId: 'hunter', change: -100, memory: 'Testified against Hunter to the SEC' } },
         },
       },
       {
@@ -508,7 +524,7 @@ export const SCENARIOS: Scenario[] = [
         sarcasticGuidance: "It's not a bribe, it's a 'civil penalty' paid in advance. Wink wink.",
         outcome: {
           description: "You arrange a back-channel settlement. It clears the problem, but it costs you a significant chunk of your personal liquidity. The problem goes away, for now.",
-          statChanges: { cash: -25000, stress: -20, reputation: +5, score: +300, ethics: -20, auditRisk: +10 },
+          statChanges: { cash: -25000, stress: -20, reputation: +5, score: +300, ethics: -20, auditRisk: +10, factionReputation: { REGULATORS: -30, LIMITED_PARTNERS: -5 } },
         },
       },
     ]
@@ -518,13 +534,17 @@ export const SCENARIOS: Scenario[] = [
     title: "The Golf Course Whisper",
     description: "You're at the club on a Saturday. A very drunk CFO of a major public company mistakes you for his nephew and mumbles about a 'massive buyout' being announced Monday. This information is worth millions. It is also illegal.",
     minReputation: 25,
+    factionRequirements: [
+      { faction: 'REGULATORS', max: 90 },
+      { faction: 'LIMITED_PARTNERS', min: 30 }
+    ],
     choices: [
       {
         text: "Buy calls on the stock immediately.",
         sarcasticGuidance: "A sure thing is a sure thing. Who's going to know? Just don't buy the yacht until the heat dies down.",
         outcome: {
           description: "You leverage your personal account and make a killing. The stock pops 40% on Monday. You feel invincible. You also feel a slight tightening in your chest every time the phone rings.",
-          statChanges: { cash: +150000, stress: +30, score: +500, setsFlags: ['COMMITTED_INSIDER_TRADING'], ethics: -50, auditRisk: +80 }
+          statChanges: { cash: +150000, stress: +30, score: +500, setsFlags: ['COMMITTED_INSIDER_TRADING'], ethics: -50, auditRisk: +80, factionReputation: { REGULATORS: -40, MANAGING_DIRECTORS: +10, LIMITED_PARTNERS: -5 } }
         }
       },
       {
@@ -532,7 +552,7 @@ export const SCENARIOS: Scenario[] = [
         sarcasticGuidance: "Let the firm take the risk. If it works, you claim credit. If it blows up, you were never there.",
         outcome: {
           description: "The firm makes a small fortune. You casually mention to Chad that you 'had a hunch'. He knows you know, but nothing is on paper. Your value rises.",
-          statChanges: { reputation: +15, analystRating: +10, score: +200, npcRelationshipUpdate: { npcId: 'chad', change: 10, memory: 'Provided extremely accurate market intel' } }
+          statChanges: { reputation: +15, analystRating: +10, score: +200, factionReputation: { MANAGING_DIRECTORS: +8, REGULATORS: -15, LIMITED_PARTNERS: +5 }, npcRelationshipUpdate: { npcId: 'chad', change: 10, memory: 'Provided extremely accurate market intel' } }
         }
       },
       {
@@ -540,7 +560,7 @@ export const SCENARIOS: Scenario[] = [
         sarcasticGuidance: "Boring. Safe. Probably why you'll never own an island. But you will sleep tonight.",
         outcome: {
           description: "You watch the stock soar on Monday from the sidelines. It hurts, but you're not in an orange jumpsuit.",
-          statChanges: { stress: -5, reputation: +5, score: +50, ethics: +10 }
+          statChanges: { stress: -5, reputation: +5, score: +50, ethics: +10, factionReputation: { REGULATORS: +10, MANAGING_DIRECTORS: -5 } }
         }
       }
     ]
@@ -582,13 +602,17 @@ export const SCENARIOS: Scenario[] = [
     title: "The Headhunter's Offer",
     description: "A top-tier headhunter calls you on your personal cell. 'I have a role at a mega-fund,' she whispers. 'Double your comp, carry from day one.' It sounds too good to be true. It usually is.",
     minReputation: 75,
+    factionRequirements: [
+      { faction: 'MANAGING_DIRECTORS', min: 50 },
+      { faction: 'LIMITED_PARTNERS', min: 35 }
+    ],
     choices: [
       {
         text: "Take the interview.",
         sarcasticGuidance: "Grass is always greener. Go see what the big boys are paying.",
         outcome: {
           description: "You ace the interview. The offer is real. You leverage it to get a massive raise at your current firm. You're now the golden child.",
-          statChanges: { cash: +20000, reputation: +10, stress: +5, score: +500 },
+          statChanges: { cash: +20000, reputation: +10, stress: +5, score: +500, factionReputation: { MANAGING_DIRECTORS: +10, LIMITED_PARTNERS: +8, RIVALS: -5 } },
         },
       },
       {
@@ -596,7 +620,7 @@ export const SCENARIOS: Scenario[] = [
         sarcasticGuidance: "Loyalty? In this industry? That's adorable. But maybe sticking with the devil you know is safer.",
         outcome: {
           description: "You stay put. Your MD finds out you turned it down and is impressed. 'Good man,' he grunts. You get a slightly better deal on your next co-invest.",
-          statChanges: { reputation: +5, analystRating: +5, score: +100 },
+          statChanges: { reputation: +5, analystRating: +5, score: +100, factionReputation: { MANAGING_DIRECTORS: +12, LIMITED_PARTNERS: +4 } },
         },
       },
       {
@@ -604,7 +628,7 @@ export const SCENARIOS: Scenario[] = [
         sarcasticGuidance: "Burn the bridge. Take the money and run. New firm, new problems.",
         outcome: {
           description: "You quit. The new firm is a sweatshop, but the pay is incredible. You've reset your reputation, but your bank account is happy.",
-          statChanges: { cash: +50000, reputation: -10, stress: +15, score: +600 },
+          statChanges: { cash: +50000, reputation: -10, stress: +15, score: +600, factionReputation: { MANAGING_DIRECTORS: -25, LIMITED_PARTNERS: -10, RIVALS: +10 } },
         },
       },
     ]
@@ -1322,6 +1346,7 @@ export const RIVAL_FUND_NPCS: NPC[] = [
     traits: ['Calculated', 'Disciplined', 'Risk-Averse'],
     memories: [],
     isRival: true,
+    faction: 'RIVALS',
     dialogueHistory: [{ sender: 'npc', senderName: 'Victoria Chen', text: "I've seen your fund's deal flow. Interesting strategy. Risky, but interesting." }],
     relationshipType: 'WORK',
     dealPotential: 60
@@ -1337,6 +1362,7 @@ export const RIVAL_FUND_NPCS: NPC[] = [
     traits: ['Opportunistic', 'Scrappy', 'Aggressive'],
     memories: [],
     isRival: true,
+    faction: 'RIVALS',
     dialogueHistory: [{ sender: 'npc', senderName: 'Marcus Webb', text: "You and me, we're the same. Hungry. The old money boys like Hunter don't get it." }],
     relationshipType: 'WORK',
     dealPotential: 40
