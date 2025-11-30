@@ -365,6 +365,8 @@ export interface RivalFund {
   reputation: number;
   aggressionLevel: number;
   riskTolerance: number;
+  vendetta?: number;
+  lastActionTick?: number;
 }
 
 export interface RivalPortfolioCo {

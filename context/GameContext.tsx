@@ -101,6 +101,12 @@ const hydrateNpc = (npc: NPC): NPC => {
     };
 };
 
+const hydrateRivalFund = (fund: RivalFund): RivalFund => ({
+    ...fund,
+    vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
+    lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
+});
+
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
   
@@ -128,7 +134,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
   
   // --- RIVAL FUNDS & COMPETITIVE DEALS ---
-  const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS);
+  const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS.map(hydrateRivalFund));
   const [activeDeals, setActiveDeals] = useState<CompetitiveDeal[]>([]);
 
   // --- CLOUD SAVE / LOAD ---
@@ -175,7 +181,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   if (data.npcs) setNpcs(data.npcs.map(hydrateNpc));
                   if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
                   if (data.actionLog) setActionLog(data.actionLog);
-                  if (data.rivalFunds) setRivalFunds(data.rivalFunds);
+                  if (data.rivalFunds) setRivalFunds(data.rivalFunds.map(hydrateRivalFund));
                   if (data.activeDeals) setActiveDeals(data.activeDeals);
                   logEvent('login_success');
                   
@@ -228,6 +234,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           logEvent('game_over', { reason: gamePhase, score: playerStats?.score || 0 });
       }
   }, [gamePhase]);
+
+  useEffect(() => {
+      if (!playerStats || gamePhase === 'INTRO') return;
+      if ((playerStats.timeCursor ?? 0) < 1) return;
+      processRivalMoves();
+  }, [playerStats?.timeCursor, gamePhase, processRivalMoves]);
 
   // --- MARKET CYCLE ---
   useEffect(() => {
@@ -652,11 +664,132 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setTutorialStep(step);
   };
 
+  // --- RIVAL ACTIONS ---
+
+  const processRivalMoves = useCallback(() => {
+      if (!playerStats) return;
+
+      const currentTick = playerStats.timeCursor ?? 0;
+      const rivalStanding = playerStats.factionReputation.RIVALS ?? DEFAULT_FACTION_REPUTATION.RIVALS;
+      const hostility = Math.max(0, 65 - rivalStanding) / 100;
+      const stressBias = playerStats.stress > 70 ? 0.08 : 0;
+      const auditBias = playerStats.auditRisk > 55 ? 0.05 : 0;
+
+      let workingFunds = rivalFunds.map(hydrateRivalFund);
+      let workingDeals = [...activeDeals];
+
+      let fundsChanged = false;
+      let dealsChanged = false;
+      let stressDelta = 0;
+      let reputationDelta = 0;
+      let rivalRepDelta = 0;
+      const knowledgeGain: KnowledgeEntry[] = [];
+
+      const sortedRivals = [...workingFunds].sort((a, b) => (b.aggressionLevel + (b.vendetta ?? 40)) - (a.aggressionLevel + (a.vendetta ?? 40)));
+
+      for (const rival of sortedRivals) {
+          const cooldownReady = (rival.lastActionTick ?? -5) < currentTick - 1;
+          if (!cooldownReady && Math.random() > 0.4) continue;
+
+      const vendetta = rival.vendetta ?? 40;
+      const candidateDeals = workingDeals
+          .filter(d => d.interestedRivals.includes(rival.id))
+          .sort((a, b) => (a.deadline - b.deadline) || (Number(b.isHot) - Number(a.isHot)));
+
+          const targetDeal = candidateDeals[0];
+          const poachChance = targetDeal
+              ? 0.18 + hostility + (vendetta / 150) + (targetDeal.isHot ? 0.08 : 0) + stressBias
+              : 0;
+          const rumorChance = 0.12 + hostility + vendetta / 180 + auditBias;
+
+          if (targetDeal && Math.random() < poachChance) {
+              workingDeals = workingDeals.filter(d => d.id !== targetDeal.id);
+              dealsChanged = true;
+
+              workingFunds = workingFunds.map(f => {
+                  if (f.id !== rival.id) return f;
+
+                  const portfolioEntry = {
+                      name: targetDeal.companyName,
+                      dealType: targetDeal.dealType,
+                      acquisitionPrice: targetDeal.askingPrice,
+                      currentValue: Math.round(targetDeal.askingPrice * 1.1),
+                      acquiredMonth: playerStats.gameMonth,
+                      acquiredYear: playerStats.gameYear,
+                  };
+
+                  fundsChanged = true;
+                  return {
+                      ...f,
+                      dryPowder: Math.max(0, f.dryPowder - Math.round(targetDeal.askingPrice * 0.6)),
+                      portfolio: [...f.portfolio, portfolioEntry],
+                      totalDeals: f.totalDeals + 1,
+                      winStreak: f.winStreak + 1,
+                      reputation: clampStat(f.reputation + 2),
+                      vendetta: clampStat(vendetta + 5),
+                      lastActionTick: currentTick,
+                  };
+              });
+
+              stressDelta += 8;
+              reputationDelta -= 2;
+              rivalRepDelta -= 2;
+              knowledgeGain.push(normalizeKnowledgeEntry({
+                  summary: `${rival.name} poached ${targetDeal.companyName} before you could move.`,
+                  npcId: rival.npcId,
+                  faction: 'RIVALS',
+                  tags: ['rival', 'deal', 'poach'],
+              }, rival.id));
+              addLogEntry(`RIVAL MOVE: ${rival.name} swooped in and closed ${targetDeal.companyName} while you hesitated.`);
+              break;
+          }
+
+          if (Math.random() < rumorChance) {
+              workingFunds = workingFunds.map(f => f.id === rival.id
+                  ? {
+                      ...f,
+                      winStreak: Math.max(0, f.winStreak - 1),
+                      vendetta: clampStat(vendetta + 3),
+                      lastActionTick: currentTick,
+                  }
+                  : f
+              );
+              fundsChanged = true;
+
+              const rumorPenalty = rival.aggressionLevel > 70 ? 2 : 1;
+              stressDelta += 4 + Math.round(vendetta / 50);
+              reputationDelta -= rumorPenalty;
+              rivalRepDelta -= 1;
+              knowledgeGain.push(normalizeKnowledgeEntry({
+                  summary: `${rival.managingPartner} spread a rumor that you're reckless with diligence.`,
+                  npcId: rival.npcId,
+                  faction: 'RIVALS',
+                  tags: ['rival', 'rumor'],
+              }, rival.id));
+              addLogEntry(`RIVAL RUMOR: ${rival.managingPartner} blasted you to LPs and bankers. Reputation took a hit.`);
+              break;
+          }
+      }
+
+      if (fundsChanged) setRivalFunds(workingFunds.map(hydrateRivalFund));
+      if (dealsChanged) setActiveDeals(workingDeals);
+
+      const factionDelta = rivalRepDelta !== 0 ? { RIVALS: rivalRepDelta } : undefined;
+      if (stressDelta || reputationDelta || factionDelta || knowledgeGain.length) {
+          updatePlayerStats({
+              stress: stressDelta || undefined,
+              reputation: reputationDelta || undefined,
+              factionReputation: factionDelta,
+              knowledgeGain: knowledgeGain.length ? knowledgeGain : undefined,
+          });
+      }
+  }, [playerStats, rivalFunds, activeDeals, addLogEntry, updatePlayerStats]);
+
   // --- RIVAL FUND FUNCTIONS ---
-  
+
   const updateRivalFund = useCallback((fundId: string, updates: Partial<RivalFund>) => {
       setRivalFunds(prev => prev.map(fund =>
-          fund.id === fundId ? { ...fund, ...updates } : fund
+          fund.id === fundId ? hydrateRivalFund({ ...fund, ...updates }) : hydrateRivalFund(fund)
       ));
   }, []);
 
@@ -719,7 +852,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setMarketVolatility('NORMAL');
       setTutorialStep(0);
       setActionLog([]);
-      setRivalFunds(RIVAL_FUNDS);
+      setRivalFunds(RIVAL_FUNDS.map(hydrateRivalFund));
       setActiveDeals([]);
       logEvent('game_reset');
   }, []);

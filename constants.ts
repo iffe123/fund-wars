@@ -1224,7 +1224,9 @@ export const RIVAL_FUNDS: RivalFund[] = [
     totalDeals: 0,
     reputation: 75,
     aggressionLevel: 85,
-    riskTolerance: 70
+    riskTolerance: 70,
+    vendetta: 55,
+    lastActionTick: -1
   },
   {
     id: 'meridian_partners',
@@ -1239,7 +1241,9 @@ export const RIVAL_FUNDS: RivalFund[] = [
     totalDeals: 0,
     reputation: 85,
     aggressionLevel: 30,
-    riskTolerance: 25
+    riskTolerance: 25,
+    vendetta: 35,
+    lastActionTick: -1
   },
   {
     id: 'apex_equity',
@@ -1254,7 +1258,9 @@ export const RIVAL_FUNDS: RivalFund[] = [
     totalDeals: 0,
     reputation: 60,
     aggressionLevel: 55,
-    riskTolerance: 80
+    riskTolerance: 80,
+    vendetta: 45,
+    lastActionTick: -1
   }
 ];
 
