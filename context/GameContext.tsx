@@ -20,6 +20,16 @@ interface GameContextTypeExtended extends GameContextType {
 
 const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
 
+const clampStat = (value: number, min = 0, max = 100) => Math.max(min, Math.min(max, value));
+
+const hydrateNpc = (npc: NPC): NPC => ({
+    ...npc,
+    mood: clampStat(typeof npc.mood === 'number' ? npc.mood : npc.relationship),
+    trust: clampStat(typeof npc.trust === 'number' ? npc.trust : npc.relationship),
+    dialogueHistory: npc.dialogueHistory || [],
+    memories: npc.memories || [],
+});
+
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
   
@@ -31,7 +41,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   } : null;
 
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
-  const [npcs, setNpcs] = useState<NPC[]>([...INITIAL_NPCS, ...RIVAL_FUND_NPCS]);
+  const [npcs, setNpcs] = useState<NPC[]>([...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc));
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(SCENARIOS[0]);
   const [gamePhase, setGamePhase] = useState<GamePhase>('INTRO');
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
@@ -78,7 +88,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                       if (scen) setActiveScenario(scen);
                   }
                   if (data.marketVolatility) setMarketVolatility(data.marketVolatility);
-                  if (data.npcs) setNpcs(data.npcs);
+                  if (data.npcs) setNpcs(data.npcs.map(hydrateNpc));
                   if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
                   if (data.actionLog) setActionLog(data.actionLog);
                   if (data.rivalFunds) setRivalFunds(data.rivalFunds);
@@ -151,10 +161,26 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (marketVolatility !== 'PANIC' || Math.random() > 0.7) {
             setMarketVolatility(nextCycle);
         }
-    }, 60000); 
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [gamePhase, marketVolatility]);
+
+  const decayNpcAffinities = useCallback(() => {
+      let decayLogged = false;
+      setNpcs(prev => prev.map(npc => {
+          const moodDecay = npc.isRival ? 2 : 3;
+          const trustDecay = 1;
+          const nextMood = clampStat((npc.mood ?? npc.relationship) - moodDecay);
+          const nextTrust = clampStat((npc.trust ?? npc.relationship) - trustDecay);
+          if (nextMood !== npc.mood || nextTrust !== npc.trust) decayLogged = true;
+          return { ...npc, mood: nextMood, trust: nextTrust };
+      }));
+
+      if (decayLogged) {
+          addLogEntry('Relationships cooled after a quiet week. Ping your contacts to rebuild mood and trust.');
+      }
+  }, [addLogEntry]);
 
   // --- TIME ADVANCEMENT & SCENARIO TRIGGER ---
   const advanceTime = useCallback(() => {
@@ -167,7 +193,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updatePlayerStats({
           score: 10,
       });
-      
+
+      decayNpcAffinities();
+
       setPlayerStats(prev => prev ? ({ ...prev, gameYear: nextYear, gameMonth: finalMonth }) : null);
 
       const availableScenarios = SCENARIOS.filter(s => {
@@ -218,7 +246,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           addLogEntry("Week advanced. No critical incidents reported.");
       }
 
-  }, [playerStats]);
+  }, [playerStats, decayNpcAffinities]);
 
 
   // --- STAT UPDATES ---
@@ -300,12 +328,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     if (changes.npcRelationshipUpdate) {
+        const { npcId, change, trustChange, moodChange, memory } = changes.npcRelationshipUpdate;
         setNpcs(prevNpcs => prevNpcs.map(npc => {
-            if (npc.id === changes.npcRelationshipUpdate?.npcId) {
+            if (npc.id === npcId) {
+                const calculatedTrustChange = typeof trustChange === 'number' ? trustChange : Math.round(change * 0.6);
+                const calculatedMoodChange = typeof moodChange === 'number' ? moodChange : Math.round(change * 0.8);
                 return {
                     ...npc,
-                    relationship: Math.max(0, Math.min(100, npc.relationship + changes.npcRelationshipUpdate.change)),
-                    memories: [...npc.memories, changes.npcRelationshipUpdate.memory]
+                    relationship: clampStat(npc.relationship + change),
+                    mood: clampStat((npc.mood ?? npc.relationship) + calculatedMoodChange),
+                    trust: clampStat((npc.trust ?? npc.relationship) + calculatedTrustChange),
+                    memories: [...npc.memories, memory]
                 };
             }
             return npc;
@@ -400,7 +433,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const resetGame = useCallback(() => {
       setPlayerStats(null);
-      setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS]);
+      setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc));
       setActiveScenario(SCENARIOS[0]);
       setGamePhase('INTRO');
       setDifficulty(null);
