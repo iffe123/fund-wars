@@ -42,7 +42,9 @@ const getNextTimeState = (currentDayType: DayType, currentTimeSlot: TimeSlot) =>
 const isNpcAvailable = (npc: NPC, dayType: DayType, timeSlot: TimeSlot) => {
     const schedule = npc.schedule;
     if (!schedule) return true;
-    const slots = dayType === 'WEEKDAY' ? schedule.weekday : schedule.weekend;
+    const slots = dayType === 'WEEKDAY'
+        ? (Array.isArray(schedule.weekday) ? schedule.weekday : [])
+        : (Array.isArray(schedule.weekend) ? schedule.weekend : []);
     return slots.includes(timeSlot);
 };
 
@@ -374,7 +376,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const applyMissedAppointments = useCallback((dayType: DayType, timeSlot: TimeSlot, timeCursor: number) => {
       const missed: string[] = [];
       setNpcs(prev => prev.map(npc => {
-          const standing = npc.schedule?.standingMeetings || [];
+          const standing = Array.isArray(npc.schedule?.standingMeetings) ? npc.schedule!.standingMeetings! : [];
           const hasMeeting = standing.some(m => m.dayType === dayType && m.timeSlot === timeSlot);
           if (!hasMeeting) return npc;
 
