@@ -92,6 +92,22 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
 
   useEffect(scrollToBottom, [activeTab, advisorMessages, npcList]);
 
+  const describeMood = (value: number) => {
+      if (value >= 75) return 'Warm';
+      if (value >= 55) return 'Open';
+      if (value >= 35) return 'Guarded';
+      if (value >= 15) return 'Icy';
+      return 'Hostile';
+  };
+
+  const describeTrust = (value: number) => {
+      if (value >= 80) return 'Steady';
+      if (value >= 60) return 'Optimistic';
+      if (value >= 40) return 'Uneasy';
+      if (value >= 20) return 'Skeptical';
+      return 'Doubtful';
+  };
+
   const handleSend = async () => {
       if (!input.trim()) return;
 
@@ -304,8 +320,9 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                     {npcList.map(npc => {
                         // TUTORIAL RAIL: Step 4 highlights Sarah
                         const isTutorialTarget = tutorialStep === 4 && npc.id === 'sarah';
+                        const isCold = (npc.mood ?? 0) < 30 || (npc.trust ?? 0) < 30;
                         return (
-                        <button 
+                        <button
                             key={npc.id}
                             onClick={() => {
                                 setActiveTab(npc.id);
@@ -321,8 +338,9 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                             <div className="flex-1 truncate hidden md:block">
                                 <span className="font-bold block">{npc.name}</span>
                                 <span className="text-[10px] opacity-70 truncate">{npc.role}</span>
+                                <span className="text-[10px] text-slate-500 truncate">Mood {npc.mood}/100 • Trust {npc.trust}/100</span>
                             </div>
-                            {npc.relationship < 30 && <i className="fas fa-circle-exclamation text-red-500 text-[10px] absolute top-1 right-1"></i>}
+                            {isCold && <i className="fas fa-circle-exclamation text-red-500 text-[10px] absolute top-1 right-1"></i>}
                         </button>
                     )})}
                 </div>
@@ -336,6 +354,19 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                         <span className="font-bold text-slate-200 block truncate">
                             {activeTab === 'ADVISOR' ? 'Machiavelli (Advisor)' : activeNPC?.name}
                         </span>
+                        {activeTab !== 'ADVISOR' && activeNPC && (
+                            <div className="flex flex-wrap gap-2 mt-1 text-[10px] text-slate-400">
+                                <span className="px-2 py-1 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
+                                    Mood {activeNPC.mood}/100 · {describeMood(activeNPC.mood)}
+                                </span>
+                                <span className="px-2 py-1 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
+                                    Trust {activeNPC.trust}/100 · {describeTrust(activeNPC.trust)}
+                                </span>
+                                <span className="px-2 py-1 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
+                                    Relationship {activeNPC.relationship}/100
+                                </span>
+                            </div>
+                        )}
                     </div>
                     <button
                         onClick={() => { onBackToPortfolio?.(); closeTerminal(); }}

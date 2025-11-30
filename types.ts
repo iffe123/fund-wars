@@ -64,6 +64,8 @@ export interface NPC {
   role: string;
   avatar: string; // FontAwesome icon class
   relationship: number; // 0-100 (0 = Enemy, 100 = Loyal Ally)
+  mood: number; // 0-100 (short-term vibe, decays if ignored)
+  trust: number; // 0-100 (longer-term stability)
   traits: string[]; // e.g. "Aggressive", "Paranoid"
   memories: string[]; // Log of player interactions affecting them
   isRival: boolean;
@@ -125,6 +127,8 @@ export interface StatChanges {
   npcRelationshipUpdate?: {
     npcId: string;
     change: number;
+    trustChange?: number;
+    moodChange?: number;
     memory: string;
   };
   health?: number;
