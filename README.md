@@ -118,6 +118,8 @@ If GitHub shows a greyed out **Merge pull request** button and lists files with 
    git push origin work
    ```
 
+For a concise conflict checklist that you can run through every time the merge button is greyed out, see [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+
 Once the push completes and Vercel reports a successful deployment, GitHub should allow the PR to be merged.
 
 ### 🧠 Why the **Merge pull request** button is grey (and how to fix it)
