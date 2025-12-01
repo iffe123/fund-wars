@@ -812,8 +812,8 @@ const App: React.FC = () => {
             </div>
             
             {/* Center Column (Workspace) */}
-            {/* Lift during tutorial interactions */}
-            <div className={`bg-black relative flex flex-col ${(tutorialStep === 1 || tutorialStep === 2 || tutorialStep === 3 || tutorialStep === 6) ? 'z-[100]' : ''}`}>
+            {/* Lift during tutorial interactions - include step 4 to prevent black screen after analyze */}
+            <div className={`bg-black relative flex flex-col ${(tutorialStep >= 1 && tutorialStep <= 6) ? 'z-[100]' : ''}`}>
                 {renderCenterPanel()}
             </div>
             
