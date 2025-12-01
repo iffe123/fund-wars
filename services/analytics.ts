@@ -1,11 +1,12 @@
 import { logEvent as firebaseLogEvent } from "firebase/analytics";
 import { analytics } from "./firebase";
 
-type AnalyticsEvent = 
+type AnalyticsEvent =
   | 'tutorial_start'
   | 'tutorial_complete'
   | 'deal_signed'
   | 'game_over'
+  | 'game_reset'
   | 'user_stuck'
   | 'login_success'
   | 'app_init'

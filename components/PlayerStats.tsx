@@ -9,6 +9,7 @@ interface PlayerStatsProps {
 
 const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatility }) => {
   const mktStyle = MARKET_VOLATILITY_STYLES[marketVolatility];
+  const factions = stats.factionReputation;
   
   // Panic Effect
   const isPanic = marketVolatility === 'PANIC';
@@ -59,9 +60,13 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
                           : 'NO DEBT'}
                     </span>
                 </div>
-                <div className="flex items-center space-x-2 text-amber-500">
-                    <i className="fas fa-brain"></i>
-                    <span>STRESS: {stats.stress}%</span>
+               <div className="flex items-center space-x-2 text-amber-500">
+                   <i className="fas fa-brain"></i>
+                   <span>STRESS: {stats.stress}%</span>
+               </div>
+                <div className="flex items-center space-x-2 text-slate-400">
+                    <i className="fas fa-clock"></i>
+                    <span>{stats.currentDayType} · {stats.currentTimeSlot}</span>
                 </div>
                 <div className="flex items-center space-x-2 text-blue-400">
                     <i className="fas fa-star"></i>
@@ -74,12 +79,26 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
                   <span>{marketVolatility}</span>
               </div>
 
+              <div className="flex items-center space-x-2 text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                  <i className="fas fa-clock"></i>
+                  <span>{stats.currentDayType} · {stats.currentTimeSlot}</span>
+              </div>
+
               <div className="flex items-center space-x-4 text-[10px] uppercase tracking-widest font-bold text-slate-400">
                   <span>LEVEL {stats.level}</span>
                   <span className="text-blue-400">Rating {stats.analystRating}</span>
                   <span className="text-green-400">Energy {stats.energy}%</span>
                   <span className="text-amber-400">Ethics {stats.ethics}</span>
                   <span className="text-red-400">Audit {stats.auditRisk}%</span>
+              </div>
+
+              <div className="flex items-center space-x-3 text-[10px] font-bold text-slate-300">
+                  <span className="uppercase tracking-widest text-slate-500">Factions</span>
+                  <span className="text-blue-300">MDs {factions.MANAGING_DIRECTORS}</span>
+                  <span className="text-emerald-300">LPs {factions.LIMITED_PARTNERS}</span>
+                  <span className="text-amber-200">Analysts {factions.ANALYSTS}</span>
+                  <span className="text-red-200">Reg {factions.REGULATORS}</span>
+                  <span className="text-pink-200">Rivals {factions.RIVALS}</span>
               </div>
           </div>
       </div>

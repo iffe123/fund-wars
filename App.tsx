@@ -50,12 +50,16 @@ const TUTORIAL_STEPS_TEXT = [
     "Now we're talking. Valuation just doubled. Click [SUBMIT IOI] to lock it in.", // Step 6
 ];
 
+const DEFAULT_CHAT: ChatMessage[] = [
+    { sender: 'advisor', text: "SYSTEM READY. Awaiting inputs." }
+];
+
 const App: React.FC = () => {
   // Use Context
-  const { 
+  const {
     user, playerStats, npcs, activeScenario, gamePhase, difficulty, marketVolatility, tutorialStep, actionLog,
     setGamePhase, updatePlayerStats, sendNpcMessage, setTutorialStep, advanceTime, addLogEntry,
-    rivalFunds, activeDeals, updateRivalFund, removeDeal, generateNewDeals
+    rivalFunds, activeDeals, updateRivalFund, removeDeal, generateNewDeals, resetGame
   } = useGame();
   
   const { loading: authLoading } = useAuth();
@@ -70,9 +74,7 @@ const App: React.FC = () => {
   
   // --- UI STATE ---
   const [selectedNpcId, setSelectedNpcId] = useState<string>('advisor');
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
-      { sender: 'advisor', text: "SYSTEM READY. Awaiting inputs." }
-  ]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(DEFAULT_CHAT);
   const [isAdvisorLoading, setIsAdvisorLoading] = useState(false);
   const [showPortfolioDashboard, setShowPortfolioDashboard] = useState(false);
 
@@ -85,7 +87,7 @@ const App: React.FC = () => {
     ? currentScenario.choices
     : (currentScenario.structureOptions
         ? currentScenario.structureOptions.flatMap(option =>
-            option.followUpChoices.map(choice => ({
+            (option.followUpChoices || []).map(choice => ({
               ...choice,
               text: `${option.type}: ${choice.text}`,
               description: choice.description || option.description,
@@ -101,6 +103,26 @@ const App: React.FC = () => {
       playSfx(type === 'error' ? 'ERROR' : type === 'success' ? 'SUCCESS' : 'NOTIFICATION');
       setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
   };
+
+  // Dev-only or explicit reset via query param
+  useEffect(() => {
+      const url = new URL(window.location.href);
+      const shouldReset = url.searchParams.get('reset') === '1';
+
+      if (shouldReset) {
+          resetGame();
+          setBootComplete(false);
+          setChatHistory(DEFAULT_CHAT);
+          setSelectedNpcId('advisor');
+          setToasts([]);
+          addToast('Session reset via query flag.', 'info');
+
+          url.searchParams.delete('reset');
+          const nextSearch = url.searchParams.toString();
+          const newUrl = `${url.pathname}${nextSearch ? `?${nextSearch}` : ''}${url.hash}`;
+          window.history.replaceState({}, '', newUrl);
+      }
+  }, [resetGame]);
 
   // Check Legal Consent
   useEffect(() => {
@@ -194,10 +216,10 @@ const App: React.FC = () => {
   const handleStatChange = (changes: StatChanges) => {
       if (playerStats && typeof changes.cash === 'number' && changes.cash < 0) {
           const projectedCash = playerStats.cash + changes.cash;
-          const isDebtPaydown = typeof changes.loanBalanceChange === 'number' && changes.loanBalanceChange < 0;
-          if (projectedCash < 0 && !isDebtPaydown) {
+          if (projectedCash < 0) {
               const deficit = Math.abs(projectedCash);
               const loanSize = Math.max(25000, Math.ceil(deficit * 1.1));
+              updatePlayerStats({ cash: loanSize, loanBalanceChange: loanSize, loanRate: 0.22 });
               addToast(`Auto-bridge loan wired: $${loanSize.toLocaleString()}`, 'info');
               addLogEntry('Emergency loan drawn to cover negative cash.');
           }
@@ -224,6 +246,13 @@ const App: React.FC = () => {
       setTimeout(() => {
         setGamePhase('LIFE_MANAGEMENT');
       }, 1000);
+  };
+
+  const handleScenarioFallback = () => {
+      addToast('No actionable intel. Returning to desk.', 'info');
+      addLogEntry(`Scenario Cleared: ${currentScenario.title} contained no decisions.`);
+      setGamePhase('LIFE_MANAGEMENT');
+      setActiveTab('WORKSPACE');
   };
   
   const handleAdvanceTime = () => {
@@ -316,10 +345,28 @@ const App: React.FC = () => {
       }
   };
 
+  const handleResetSimulation = () => {
+      resetGame();
+      setBootComplete(false);
+      setActiveTab('WORKSPACE');
+      setActiveMobileTab('DESK');
+      setChatHistory(DEFAULT_CHAT);
+      setSelectedNpcId('advisor');
+      setToasts([]);
+      addToast('Simulation reset. Rebooting intro...', 'info');
+      addLogEntry('Simulation reset to cold open.');
+  };
+
   const handleDismissDeal = (dealId: number) => {
       removeDeal(dealId);
       addToast("DEAL DISMISSED", 'info');
       playSfx('KEYPRESS');
+  };
+
+  const handleChatBackToPortfolio = () => {
+      setShowPortfolioDashboard(true);
+      setActiveTab('ASSETS');
+      if (window.innerWidth < 768) setActiveMobileTab('DESK');
   };
 
   // --- CHAT HANDLERS ---
@@ -328,22 +375,30 @@ const App: React.FC = () => {
       setChatHistory(prev => [...prev, newMsg]);
       playSfx('KEYPRESS');
       setIsAdvisorLoading(true);
-      const response = await getAdvisorResponse(msg, chatHistory, playerStats, activeScenario);
-      setChatHistory(prev => [...prev, { sender: 'advisor', text: response }]);
-      playSfx('NOTIFICATION');
-      setIsAdvisorLoading(false);
+      try {
+          const response = await getAdvisorResponse(msg, chatHistory, playerStats, activeScenario);
+          setChatHistory(prev => [...prev, { sender: 'advisor', text: response }]);
+          playSfx('NOTIFICATION');
+      } catch (error) {
+          console.error('Advisor response error:', error);
+          setChatHistory(prev => [...prev, { sender: 'advisor', text: 'Connection error. The advisor is temporarily unavailable.' }]);
+          addToast('Advisor connection failed', 'error');
+      } finally {
+          setIsAdvisorLoading(false);
+      }
   };
 
   const handleSendMessageToNPC = async (npcId: string, msg: string) => {
       // 1. Add Player Message to UI Immediately
       sendNpcMessage(npcId, msg);
       playSfx('KEYPRESS');
-      
+
       const targetNPC = npcs.find(n => n.id === npcId);
       if(targetNPC && playerStats) {
+           const updatedHistory: ChatMessage[] = [...targetNPC.dialogueHistory, { sender: 'player' as const, text: msg }];
            // 2. Fetch AI Response
            try {
-               const response = await getNPCResponse(msg, targetNPC, targetNPC.dialogueHistory, playerStats);
+               const response = await getNPCResponse(msg, targetNPC, updatedHistory, playerStats, activeScenario);
 
                if (tutorialStep === 5 && /patent/i.test(msg)) {
                    setTutorialStep(6);
@@ -406,7 +461,7 @@ const App: React.FC = () => {
                       }}
                       className={`w-full text-left p-3 border-b border-slate-800 hover:bg-slate-800 transition-colors flex items-center space-x-3 ${selectedNpcId === npc.id ? 'bg-slate-800 text-amber-500' : 'text-slate-400'}`}
                   >
-                      <div className={`w-2 h-2 rounded-full ${npc.relationship > 50 ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <div className={`w-2 h-2 rounded-full ${npc.mood > 60 && npc.trust > 50 ? 'bg-green-500' : (npc.mood < 30 || npc.trust < 30) ? 'bg-red-500' : 'bg-amber-500'}`}></div>
                       <div className="flex-1">
                           <div className="font-bold text-xs">{npc.name}</div>
                           <div className="text-[10px] opacity-70">{npc.role}</div>
@@ -529,8 +584,14 @@ const App: React.FC = () => {
 
                       <div className="grid gap-3">
                           {scenarioChoices.length === 0 && (
-                              <div className="text-xs text-slate-500 border border-dashed border-slate-700 p-4 text-center">
-                                  No decision points available yet. Gather more intel.
+                              <div className="text-xs text-slate-500 border border-dashed border-slate-700 p-4 text-center space-y-3">
+                                  <div>No decision points available yet. Gather more intel.</div>
+                                  <button
+                                      onClick={handleScenarioFallback}
+                                      className="px-4 py-2 border border-slate-600 text-slate-300 hover:border-amber-500 hover:text-amber-400 transition-colors"
+                                  >
+                                      Return to Desk
+                                  </button>
                               </div>
                           )}
 
@@ -695,6 +756,21 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen w-screen bg-black text-slate-200 flex flex-col overflow-hidden font-terminal">
+        {import.meta.env.DEV && (
+            <button
+                className="fixed top-2 right-2 z-[200] bg-slate-800 text-white text-[10px] px-3 py-1 border border-slate-600 rounded hover:bg-slate-700"
+                onClick={() => {
+                    resetGame();
+                    setBootComplete(false);
+                    setChatHistory(DEFAULT_CHAT);
+                    setSelectedNpcId('advisor');
+                    setToasts([]);
+                    addToast('Session reset.', 'success');
+                }}
+            >
+                Reset Game
+            </button>
+        )}
         {/* Mobile Status Bar / Safe Area Top */}
         <div className="pt-[env(safe-area-inset-top)] bg-slate-900 border-b border-slate-700 md:pt-0">
              {playerStats && <PlayerStatsDisplay stats={playerStats} marketVolatility={marketVolatility} />}
@@ -724,7 +800,7 @@ const App: React.FC = () => {
         {/* MOBILE LAYOUT (View Switcher) */}
         <div className="md:hidden flex-1 flex flex-col overflow-hidden relative">
             {activeMobileTab === 'COMMS' && (
-                <CommsTerminal 
+                <CommsTerminal
                     mode="MOBILE_EMBED"
                     isOpen={true}
                     npcList={npcs}
@@ -734,6 +810,8 @@ const App: React.FC = () => {
                     onSendMessageToNPC={handleSendMessageToNPC}
                     isLoadingAdvisor={isAdvisorLoading}
                     predefinedQuestions={PREDEFINED_QUESTIONS}
+                    onClose={handleChatBackToPortfolio}
+                    onBackToPortfolio={handleChatBackToPortfolio}
                 />
             )}
             
@@ -767,7 +845,10 @@ const App: React.FC = () => {
                              <span className="text-green-500">{playerStats?.level}</span>
                         </div>
                     </div>
-                    <button className="w-full border border-red-900 text-red-500 py-3 uppercase font-bold text-xs tracking-widest hover:bg-red-900/20">
+                    <button
+                        className="w-full border border-red-900 text-red-500 py-3 uppercase font-bold text-xs tracking-widest hover:bg-red-900/20"
+                        onClick={handleResetSimulation}
+                    >
                         Reset Simulation
                     </button>
                     <div className="pt-8 border-t border-slate-800">
@@ -797,6 +878,8 @@ const App: React.FC = () => {
                 onSendMessageToNPC={handleSendMessageToNPC}
                 isLoadingAdvisor={isAdvisorLoading}
                 predefinedQuestions={PREDEFINED_QUESTIONS}
+                onClose={handleChatBackToPortfolio}
+                onBackToPortfolio={handleChatBackToPortfolio}
             />
         </div>
 
