@@ -207,6 +207,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activeDeals, setActiveDeals] = useState<CompetitiveDeal[]>([]);
   const lastProcessedRivalTickRef = useRef<number | null>(null);
 
+  const addLogEntry = useCallback((message: string) => {
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const entry = `${timestamp} // ${message}`;
+      setActionLog(prev => [entry, ...prev].slice(0, 50));
+      console.log(`[Game Log]: ${message}`);
+  }, []);
+
   // --- CLOUD SAVE / LOAD ---
   useEffect(() => {
       if (!currentUser) {
@@ -867,7 +874,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addDeal = useCallback((deal: CompetitiveDeal) => {
       setActiveDeals(prev => [...prev, deal]);
       addLogEntry(`NEW DEAL: ${deal.companyName} ($${(deal.askingPrice / 1000000).toFixed(0)}M)`);
-  }, []);
+  }, [addLogEntry]);
 
   const removeDeal = useCallback((dealId: number) => {
       setActiveDeals(prev => prev.filter(d => d.id !== dealId));
