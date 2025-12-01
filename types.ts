@@ -171,6 +171,8 @@ export interface StatChanges {
   auditRisk?: number;
   score?: number;
   aum?: number; // New for Founder Mode
+  advanceDays?: number; // Advance game time by N days
+  advanceTimeSlots?: number; // Advance time slots within current day
   addPortfolioCompany?: Omit<PortfolioCompany, 'acquisitionDate' | 'eventHistory'>;
   portfolio?: PortfolioCompany[];
   portfolioImpact?: PortfolioImpact;
@@ -185,9 +187,8 @@ export interface StatChanges {
     change: number;
     trustChange?: number;
     moodChange?: number;
-    memory: NPCMemory | string;
+    memory?: NPCMemory | string;
     broadcastTo?: Array<'LP' | 'RIVAL'>;
-    memory: string;
   };
   factionReputation?: Partial<FactionReputation>;
   health?: number;
