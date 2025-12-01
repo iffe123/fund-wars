@@ -42,6 +42,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS);
   const [activeDeals, setActiveDeals] = useState<CompetitiveDeal[]>([]);
 
+  const addLogEntry = useCallback((message: string) => {
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const entry = `${timestamp} // ${message}`;
+      setActionLog(prev => [entry, ...prev].slice(0, 50));
+      console.log(`[Game Log]: ${message}`);
+  }, []);
+
   // --- CLOUD SAVE / LOAD ---
   useEffect(() => {
       if (!currentUser) {
@@ -222,6 +229,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // --- STAT UPDATES ---
   const updatePlayerStats = useCallback((changes: StatChanges) => {
+    let autoLoanLog: string | null = null;
+
     setPlayerStats(prevStats => {
         const baseStats = prevStats || DIFFICULTY_SETTINGS['Normal'].initialStats;
         const newStats: PlayerStats = {
@@ -229,8 +238,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             loanBalance: baseStats.loanBalance ?? 0,
             loanRate: baseStats.loanRate ?? 0,
         };
-        
-        if (typeof changes.cash === 'number') newStats.cash += changes.cash;
+
         if (typeof changes.reputation === 'number') newStats.reputation += changes.reputation;
         if (typeof changes.stress === 'number') newStats.stress = Math.max(0, Math.min(100, newStats.stress + changes.stress));
         if (typeof changes.energy === 'number') newStats.energy = Math.max(0, Math.min(100, newStats.energy + changes.energy));
@@ -251,6 +259,23 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             newStats.loanRate = Math.max(0, changes.loanRate);
         }
 
+        if (typeof changes.cash === 'number') {
+            const projectedCash = newStats.cash + changes.cash;
+            const isDebtPaydown = typeof changes.loanBalanceChange === 'number' && changes.loanBalanceChange < 0;
+
+            if (changes.cash < 0 && projectedCash < 0 && !isDebtPaydown) {
+                const deficit = Math.abs(projectedCash);
+                const loanSize = Math.max(25000, Math.ceil(deficit * 1.1));
+                newStats.loanBalance = Math.max(0, (newStats.loanBalance || 0) + loanSize);
+                newStats.loanRate = newStats.loanRate || 0.22;
+                newStats.cash = Math.max(0, projectedCash + loanSize);
+                newStats.stress = Math.min(100, newStats.stress + 2);
+                autoLoanLog = `Emergency loan issued for $${loanSize.toLocaleString()} to cover a cash shortfall.`;
+            } else {
+                newStats.cash = projectedCash;
+            }
+        }
+
         if (changes.addPortfolioCompany) {
              const finalCompany: PortfolioCompany = {
                   ...changes.addPortfolioCompany,
@@ -269,7 +294,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         if (changes.modifyCompany) {
-             newStats.portfolio = newStats.portfolio.map(p => 
+             newStats.portfolio = newStats.portfolio.map(p =>
                 p.id === changes.modifyCompany!.id ? { ...p, ...changes.modifyCompany!.updates } : p
              );
         }
@@ -279,21 +304,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 newStats.playerFlags[flag] = true;
             });
         }
-        
+
         if (changes.playedScenarioIds) {
             newStats.playedScenarioIds = Array.from(new Set([...newStats.playedScenarioIds, ...changes.playedScenarioIds]));
         }
-        
+
         if (changes.removeNpcId) {
              newStats.playerFlags[`NPC_REMOVED_${changes.removeNpcId}`] = true;
         }
 
-        // Prevent the player from running a negative balance unless a loan exists
-        if (newStats.loanBalance <= 0) {
-            newStats.loanBalance = 0;
-            newStats.loanRate = 0;
-            if (newStats.cash < 0) newStats.cash = 0;
-        }
+        newStats.cash = Math.max(0, newStats.cash);
+        newStats.loanBalance = Math.max(0, newStats.loanBalance || 0);
 
         return newStats;
     });
@@ -310,7 +331,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return npc;
         }));
     }
-  }, []);
+
+    if (autoLoanLog) {
+        addLogEntry(autoLoanLog);
+    }
+  }, [addLogEntry]);
 
   const handleActionOutcome = (outcome: { description: string; statChanges: StatChanges }, title: string) => {
       updatePlayerStats(outcome.statChanges);
@@ -328,13 +353,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
   };
 
-  const addLogEntry = (message: string) => {
-      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const entry = `${timestamp} // ${message}`;
-      setActionLog(prev => [entry, ...prev].slice(0, 50));
-      console.log(`[Game Log]: ${message}`);
-  };
-
   const setTutorialStepHandler = (step: number) => {
       setTutorialStep(step);
   };
@@ -350,7 +368,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addDeal = useCallback((deal: CompetitiveDeal) => {
       setActiveDeals(prev => [...prev, deal]);
       addLogEntry(`NEW DEAL: ${deal.companyName} ($${(deal.askingPrice / 1000000).toFixed(0)}M)`);
-  }, []);
+  }, [addLogEntry]);
 
   const removeDeal = useCallback((dealId: number) => {
       setActiveDeals(prev => prev.filter(d => d.id !== dealId));

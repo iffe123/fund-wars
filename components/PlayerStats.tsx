@@ -73,9 +73,13 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
                   <i className={`fas ${mktStyle.icon}`}></i>
                   <span>{marketVolatility}</span>
               </div>
-              
-              <div className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">
-                  FUND_OS v9.2 // {stats.level}
+
+              <div className="flex items-center space-x-4 text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                  <span>LEVEL {stats.level}</span>
+                  <span className="text-blue-400">Rating {stats.analystRating}</span>
+                  <span className="text-green-400">Energy {stats.energy}%</span>
+                  <span className="text-amber-400">Ethics {stats.ethics}</span>
+                  <span className="text-red-400">Audit {stats.auditRisk}%</span>
               </div>
           </div>
       </div>

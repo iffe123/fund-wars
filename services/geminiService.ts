@@ -12,7 +12,9 @@ const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: stri
     ? "And pay that loan before the lender eats you alive."
     : "You still have dry powder. Use it before someone else does.";
 
-  return `${npc.name} (${npc.role}) gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"`;
+  const traitFlair = npc.traits.length > 0 ? `(${npc.traits.join(', ')})` : '';
+
+  return `${npc.name} ${traitFlair} gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"`;
 };
 
 // --- ENV: read safely from Vite/Vercel ---
@@ -185,18 +187,22 @@ export const getNPCResponse = async (
 
         const systemInstruction = `
         You are a text adventure engine. You are roleplaying as ${npc.name}.
-        Role: ${npc.role}.
-        Personality Traits: ${npc.traits.join(', ')}.
-        Relationship with player: ${npc.relationship}/100.
-        
-        BEHAVIOR:
-        1. Keep responses sarcastic, educational regarding finance, and short.
-        2. React to the player's Reputation level (${playerStats.reputation}).
-        
+        ROLE & VOICE:
+        - Title: ${npc.role}.
+        - Personality Traits: ${npc.traits.join(', ')}.
+        - Relationship with player: ${npc.relationship}/100 (let this color your tone: hostile if <30, neutral if 30-70, warmer if >70).
+        - Never break character or speak as a generic assistant. Everything you say should sound like ${npc.name}.
+
+        BEHAVIOR RULES:
+        1. Keep responses concise (2-4 sentences) and in your persona's voice. Stay sarcastic and finance-savvy.
+        2. React to the player's Reputation level (${playerStats.reputation}) and past memories. Reward competence, mock incompetence.
+        3. Use finance jargon or context that matches your role. If you are an LP, scrutinize strategy and capital stewardship; if you are a rival, taunt and challenge.
+        4. Do not provide generic encouragement. Every line must feel like a unique, in-character reply from ${npc.name}.
+
         ${specializedProtocol}
-        
-        Relevant Memories (Things you specifically remember):
-        ${npc.memories.join('\n')}
+
+        Relevant Memories (Things you specifically remember about the player):
+        ${npc.memories.join('\n') || 'None yet. Make the player earn your trust.'}
         `;
 
         const ai = new GoogleGenAI({ apiKey: API_KEY });
