@@ -37,6 +37,7 @@ export interface PortfolioCompany {
   latestCeoReport: string;
   nextBoardMeeting: string;
   dealType: DealType;
+  sector?: IndustrySector;
   revenue: number;
   ebitda: number;
   debt: number;
@@ -46,7 +47,7 @@ export interface PortfolioCompany {
     month: number;
   };
   eventHistory: CompanyEvent[];
-  isAnalyzed?: boolean; 
+  isAnalyzed?: boolean;
   hasBoardCrisis?: boolean; // New for Activist Investor
 }
 
@@ -157,6 +158,14 @@ export interface PlayerStats {
   loanRate: number; // Annualized interest rate (e.g. 0.24 = 24%)
   knowledgeLog: KnowledgeEntry[];
   knowledgeFlags: string[];
+  // New: Achievement System
+  unlockedAchievements: string[]; // IDs of unlocked achievements
+  // New: Industry Specialization
+  sectorExpertise: SectorExpertise[];
+  primarySector?: IndustrySector;
+  // New: Exit Tracking
+  completedExits: ExitResult[];
+  totalRealizedGains: number;
 }
 
 export interface StatChanges {
@@ -200,6 +209,13 @@ export interface StatChanges {
   loanRate?: number; // Update the active loan's interest rate
   knowledgeGain?: Array<KnowledgeEntry | string>;
   knowledgeFlags?: string[];
+  // New: Achievement System
+  unlockAchievement?: string;
+  // New: Industry Specialization
+  sectorExperienceGain?: { sector: IndustrySector; amount: number };
+  setPrimarySector?: IndustrySector;
+  // New: Exit Tracking
+  addExitResult?: ExitResult;
 }
 
 export interface SkillCheck {
@@ -421,4 +437,96 @@ export interface AuctionBid {
   round: number;
   timestamp: number;
   wasBluff?: boolean;
+}
+
+// ==================== ACHIEVEMENT SYSTEM ====================
+
+export type AchievementCategory = 'CAREER' | 'DEALS' | 'RELATIONSHIPS' | 'ETHICS' | 'WEALTH' | 'SPECIAL';
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: AchievementCategory;
+  isSecret?: boolean;
+  unlockedAt?: string; // ISO timestamp when unlocked
+}
+
+export interface AchievementDefinition extends Omit<Achievement, 'unlockedAt'> {
+  condition: (stats: PlayerStats, npcs: NPC[], context: AchievementContext) => boolean;
+  reward?: StatChanges;
+}
+
+export interface AchievementContext {
+  totalDealsCompleted: number;
+  totalExits: number;
+  highestValuation: number;
+  gamePhase: GamePhase;
+  marketVolatility: MarketVolatility;
+}
+
+// ==================== INDUSTRY SPECIALIZATION ====================
+
+export type IndustrySector = 'TECH' | 'HEALTHCARE' | 'INDUSTRIALS' | 'CONSUMER' | 'ENERGY' | 'FINANCIAL_SERVICES';
+
+export interface SectorExpertise {
+  sector: IndustrySector;
+  level: number; // 0-100
+  dealsCompleted: number;
+}
+
+// ==================== EXIT STRATEGY SYSTEM ====================
+
+export type ExitType = 'IPO' | 'STRATEGIC_SALE' | 'SECONDARY_SALE' | 'DIVIDEND_RECAP' | 'LIQUIDATION';
+
+export interface ExitOption {
+  type: ExitType;
+  name: string;
+  description: string;
+  icon: string;
+  requirements: ExitRequirements;
+  baseMultiple: number; // Multiple of investment cost
+  varianceRange: [number, number]; // Min/max variance from base
+  timeToClose: number; // Months
+  risks: string[];
+}
+
+export interface ExitRequirements {
+  minOwnershipMonths?: number;
+  minValuation?: number;
+  minEbitda?: number;
+  minRevenueGrowth?: number;
+  minReputation?: number;
+  requiredMarketConditions?: MarketVolatility[];
+  minFinancialEngineering?: number;
+}
+
+export interface ExitResult {
+  exitType: ExitType;
+  companyName: string;
+  investmentCost: number;
+  exitValue: number;
+  multiple: number;
+  profit: number;
+  holdingPeriodMonths: number;
+}
+
+// ==================== FINANCIAL MODELING CHALLENGES ====================
+
+export type ModelingChallengeType = 'IRR_CALCULATION' | 'LEVERAGE_ANALYSIS' | 'VALUATION' | 'SENSITIVITY' | 'DEBT_CAPACITY';
+
+export interface ModelingChallenge {
+  id: string;
+  type: ModelingChallengeType;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  question: string;
+  context: string;
+  data: Record<string, number>;
+  correctAnswer: number;
+  tolerance: number; // Percentage tolerance for answer (e.g., 0.05 = 5%)
+  explanation: string;
+  timeLimit: number; // Seconds
+  reward: StatChanges;
+  penalty: StatChanges;
 }

@@ -40,6 +40,14 @@ const NORMAL_STATS: PlayerStats = {
   loanRate: 0,
   knowledgeLog: [],
   knowledgeFlags: [],
+  // New: Achievement System
+  unlockedAchievements: [],
+  // New: Industry Specialization
+  sectorExpertise: [],
+  primarySector: undefined,
+  // New: Exit Tracking
+  completedExits: [],
+  totalRealizedGains: 0,
 };
 
 export const INITIAL_NPCS: NPC[] = [

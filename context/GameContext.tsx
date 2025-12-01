@@ -600,6 +600,48 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setNpcs(prev => prev.filter(npc => npc.id !== changes.removeNpcId));
         }
 
+        // New: Achievement System - unlock achievement
+        if (changes.unlockAchievement) {
+            const existingAchievements = updatedStats.unlockedAchievements || [];
+            if (!existingAchievements.includes(changes.unlockAchievement)) {
+                updatedStats.unlockedAchievements = [...existingAchievements, changes.unlockAchievement];
+            }
+        }
+
+        // New: Industry Specialization - add sector experience
+        if (changes.sectorExperienceGain) {
+            const { sector, amount } = changes.sectorExperienceGain;
+            const existingExpertise = [...(updatedStats.sectorExpertise || [])];
+            const sectorIndex = existingExpertise.findIndex(e => e.sector === sector);
+
+            if (sectorIndex >= 0) {
+                existingExpertise[sectorIndex] = {
+                    ...existingExpertise[sectorIndex],
+                    level: clampStat(existingExpertise[sectorIndex].level + amount),
+                    dealsCompleted: existingExpertise[sectorIndex].dealsCompleted + 1,
+                };
+            } else {
+                existingExpertise.push({
+                    sector,
+                    level: clampStat(amount),
+                    dealsCompleted: 1,
+                });
+            }
+            updatedStats.sectorExpertise = existingExpertise;
+        }
+
+        // New: Set primary sector
+        if (changes.setPrimarySector) {
+            updatedStats.primarySector = changes.setPrimarySector;
+        }
+
+        // New: Exit Tracking - add exit result
+        if (changes.addExitResult) {
+            const existingExits = updatedStats.completedExits || [];
+            updatedStats.completedExits = [...existingExits, changes.addExitResult];
+            updatedStats.totalRealizedGains = (updatedStats.totalRealizedGains || 0) + changes.addExitResult.profit;
+        }
+
         return updatedStats;
     });
   }, [npcs, playerStats]);
