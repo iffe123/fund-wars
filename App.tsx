@@ -87,7 +87,7 @@ const App: React.FC = () => {
     ? currentScenario.choices
     : (currentScenario.structureOptions
         ? currentScenario.structureOptions.flatMap(option =>
-            option.followUpChoices.map(choice => ({
+            (option.followUpChoices || []).map(choice => ({
               ...choice,
               text: `${option.type}: ${choice.text}`,
               description: choice.description || option.description,
@@ -375,10 +375,17 @@ const App: React.FC = () => {
       setChatHistory(prev => [...prev, newMsg]);
       playSfx('KEYPRESS');
       setIsAdvisorLoading(true);
-      const response = await getAdvisorResponse(msg, chatHistory, playerStats, activeScenario);
-      setChatHistory(prev => [...prev, { sender: 'advisor', text: response }]);
-      playSfx('NOTIFICATION');
-      setIsAdvisorLoading(false);
+      try {
+          const response = await getAdvisorResponse(msg, chatHistory, playerStats, activeScenario);
+          setChatHistory(prev => [...prev, { sender: 'advisor', text: response }]);
+          playSfx('NOTIFICATION');
+      } catch (error) {
+          console.error('Advisor response error:', error);
+          setChatHistory(prev => [...prev, { sender: 'advisor', text: 'Connection error. The advisor is temporarily unavailable.' }]);
+          addToast('Advisor connection failed', 'error');
+      } finally {
+          setIsAdvisorLoading(false);
+      }
   };
 
   const handleSendMessageToNPC = async (npcId: string, msg: string) => {
@@ -388,7 +395,7 @@ const App: React.FC = () => {
 
       const targetNPC = npcs.find(n => n.id === npcId);
       if(targetNPC && playerStats) {
-           const updatedHistory = [...targetNPC.dialogueHistory, { sender: 'player', text: msg }];
+           const updatedHistory: ChatMessage[] = [...targetNPC.dialogueHistory, { sender: 'player' as const, text: msg }];
            // 2. Fetch AI Response
            try {
                const response = await getNPCResponse(msg, targetNPC, updatedHistory, playerStats, activeScenario);

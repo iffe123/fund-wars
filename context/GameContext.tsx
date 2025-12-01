@@ -74,10 +74,12 @@ const clampMemories = (memories: NPCMemory[]): NPCMemory[] => memories.slice(-12
 const normalizeKnowledgeEntry = (entry: KnowledgeEntry | string, fallbackSource?: string): KnowledgeEntry => {
     const base: KnowledgeEntry = typeof entry === 'string' ? { summary: entry } : entry;
     const timestamp = base.timestamp || new Date().toISOString();
-    const id = base.id || `${slugify(base.summary).slice(0, 40)}-${timestamp}`;
+    const summary = base.summary || '';
+    const id = base.id || `${slugify(summary).slice(0, 40)}-${timestamp}`;
     return {
         ...base,
         id,
+        summary,
         timestamp,
         source: base.source || fallbackSource,
         tags: base.tags || [],
@@ -425,7 +427,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 normalizeKnowledgeEntry({
                     summary: baseMemory.summary,
                     timestamp: baseMemory.timestamp,
-                    source: baseMemory.source || targetNpc?.name || npcImpact.npcId,
+                    source: targetNpc?.name || npcImpact.npcId,
                     tags: baseMemory.tags || ['npc'],
                 }, npcImpact.npcId)
             );
@@ -500,9 +502,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             updatedStats.portfolio = changes.portfolio;
         }
 
-        updatedStats.mood = clampStat((changes.mood ?? updatedStats.mood ?? updatedStats.reputation));
-        updatedStats.trust = clampStat((changes.trust ?? updatedStats.trust ?? updatedStats.reputation));
-
         const daysAdvanced = changes.advanceDays || 0;
         if (daysAdvanced !== 0) {
             const currentIndex = TIME_SLOTS.indexOf(playerTimeSlot);
@@ -534,14 +533,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             updatedStats.score = (updatedStats.score || 0) + changes.score;
         }
 
-        if (changes.riskAppetite !== undefined) {
-            updatedStats.riskAppetite = clampStat(changes.riskAppetite);
-        }
-
-        if (changes.dealPace !== undefined) {
-            updatedStats.dealPace = clampStat(changes.dealPace);
-        }
-
         if (changes.auditRisk !== undefined) {
             updatedStats.auditRisk = clampStat(changes.auditRisk);
         }
@@ -555,9 +546,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         if (changes.npcRelationshipUpdate && targetNpc) {
-            const change = changes.npcRelationshipUpdate.change || 0;
-            const moodChange = clampStat((targetNpc.mood ?? targetNpc.relationship) + change) - (targetNpc.mood ?? targetNpc.relationship);
-            const trustChange = clampStat((targetNpc.trust ?? targetNpc.relationship) + change) - (targetNpc.trust ?? targetNpc.relationship);
+            const npcUpdate = changes.npcRelationshipUpdate;
+            const change = npcUpdate.change || 0;
             const impact = Math.abs(change);
 
             setNpcs(prev => prev.map(npc => npc.id === targetNpc.id
@@ -566,7 +556,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     mood: clampStat((npc.mood ?? npc.relationship) + change),
                     trust: clampStat((npc.trust ?? npc.relationship) + change),
                     memories: clampMemories([...npc.memories, normalizeMemory({
-                        summary: npcImpact.memory || `Relationship changed by ${change}`,
+                        summary: (typeof npcUpdate.memory === 'string' ? npcUpdate.memory : npcUpdate.memory?.summary) || `Relationship changed by ${change}`,
                         sentiment: change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral',
                         impact,
                         sourceNpcId: targetNpc.id,
@@ -574,9 +564,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
                 : npc
             ));
-
-            updatedStats.mood = clampStat(updatedStats.mood + moodChange);
-            updatedStats.trust = clampStat(updatedStats.trust + trustChange);
         }
 
         return updatedStats;
@@ -602,10 +589,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updatePlayerStats({
           score: 10,
       });
-
-      decayNpcAffinities();
-
-      setPlayerStats(prev => prev ? ({ ...prev, gameYear: nextYear, gameMonth: finalMonth }) : null);
 
       decayNpcAffinities();
 
