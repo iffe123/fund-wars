@@ -168,6 +168,17 @@ const App: React.FC = () => {
       }
   }, [selectedNpcId]);
 
+  // Auto-complete boot sequence if loading saved game (playerStats exists but not in INTRO)
+  useEffect(() => {
+      if (!bootComplete && playerStats && gamePhase !== 'INTRO') {
+          // Small delay to show the loading message, then complete boot
+          const timer = setTimeout(() => {
+              setBootComplete(true);
+          }, 500);
+          return () => clearTimeout(timer);
+      }
+  }, [bootComplete, playerStats, gamePhase]);
+
   const handleLegalAccept = () => {
       localStorage.setItem('LEGAL_CONSENT', 'true');
       setLegalAccepted(true);
@@ -690,7 +701,7 @@ const App: React.FC = () => {
                                 if (tutorialStep === 1) setTutorialStep(2);
                                 playSfx('KEYPRESS');
                             }}
-                            className={tutorialStep === 1 ? 'bg-amber-500 text-black border-white animate-pulse shadow-[0_0_20px_rgba(245,158,11,0.6)]' : ''}
+                            className={tutorialStep === 1 ? '!bg-green-500 !text-black !border-green-300 animate-pulse shadow-[0_0_25px_rgba(34,197,94,0.8)] ring-2 ring-green-400' : ''}
                           />
                           <div className="mt-2">
                               <TerminalButton
@@ -757,8 +768,16 @@ const App: React.FC = () => {
       if (gamePhase === 'INTRO') return <IntroSequence onComplete={(s) => handleIntroComplete(s)} />;
       // If we loaded a game and are not in Intro, skip boot sequence
       if (playerStats) {
-          setBootComplete(true);
-          return null; // Will re-render with main UI
+          // Use useEffect pattern to avoid setting state during render
+          // Show a brief loading state while transitioning
+          return (
+              <div className="h-screen w-screen bg-black flex items-center justify-center">
+                  <div className="text-center">
+                      <div className="text-green-500 text-xl font-mono animate-pulse">RESTORING SESSION...</div>
+                      <div className="text-slate-500 text-xs mt-2">Loading portfolio data</div>
+                  </div>
+              </div>
+          );
       }
       return <SystemBoot onComplete={() => setBootComplete(true)} />;
   }
@@ -809,19 +828,22 @@ const App: React.FC = () => {
         {/* MOBILE LAYOUT (View Switcher) */}
         <div className="md:hidden flex-1 flex flex-col overflow-hidden relative">
             {activeMobileTab === 'COMMS' && (
-                <CommsTerminal
-                    mode="MOBILE_EMBED"
-                    isOpen={true}
-                    npcList={npcs}
-                    selectedNpcId={selectedNpcId} // Pass this prop
-                    advisorMessages={chatHistory}
-                    onSendMessageToAdvisor={handleSendMessageToAdvisor}
-                    onSendMessageToNPC={handleSendMessageToNPC}
-                    isLoadingAdvisor={isAdvisorLoading}
-                    predefinedQuestions={PREDEFINED_QUESTIONS}
-                    onClose={handleChatBackToPortfolio}
-                    onBackToPortfolio={handleChatBackToPortfolio}
-                />
+                <>
+                    <CommsTerminal
+                        mode="MOBILE_EMBED"
+                        isOpen={true}
+                        npcList={npcs}
+                        selectedNpcId={selectedNpcId} // Pass this prop
+                        advisorMessages={chatHistory}
+                        onSendMessageToAdvisor={handleSendMessageToAdvisor}
+                        onSendMessageToNPC={handleSendMessageToNPC}
+                        isLoadingAdvisor={isAdvisorLoading}
+                        predefinedQuestions={PREDEFINED_QUESTIONS}
+                        onClose={handleChatBackToPortfolio}
+                        onBackToPortfolio={handleChatBackToPortfolio}
+                    />
+                    <TutorialOverlay instruction={TUTORIAL_STEPS_TEXT[tutorialStep]} step={tutorialStep} />
+                </>
             )}
             
             {activeMobileTab === 'DESK' && (
