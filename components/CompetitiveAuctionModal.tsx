@@ -99,6 +99,7 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
       
       for (const rival of shuffledRivals) {
         const idx = updated.findIndex(r => r.fund.id === rival.fund.id);
+        if (idx === -1) continue; // Bug fix: Skip if rival not found to prevent array[-1] access
         if (updated[idx].hasDropped || !updated[idx].isActive) continue;
         
         const fund = rival.fund;
