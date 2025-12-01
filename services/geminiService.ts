@@ -54,8 +54,6 @@ const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: stri
   const intelNote = intelHit ? ` You logged: ${intelHit.summary}.` : '';
 
   return `${npc.name} ${traitFlair} ${trustCue} gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"${callback}${intelNote}`;
-
-  return `${npc.name} ${traitFlair} ${trustCue} gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"`;
 };
 
 // --- ENV: read safely from Vite/Vercel ---

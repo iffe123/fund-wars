@@ -207,13 +207,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activeDeals, setActiveDeals] = useState<CompetitiveDeal[]>([]);
   const lastProcessedRivalTickRef = useRef<number | null>(null);
 
-  const addLogEntry = useCallback((message: string) => {
-      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const entry = `${timestamp} // ${message}`;
-      setActionLog(prev => [entry, ...prev].slice(0, 50));
-      console.log(`[Game Log]: ${message}`);
-  }, []);
-
   // --- CLOUD SAVE / LOAD ---
   useEffect(() => {
       if (!currentUser) {
@@ -458,12 +451,45 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             factionReputation: { ...hydrateFactionReputation(newStats.factionReputation) },
         };
 
+        // Apply missing stat handlers (Bug fix: these were never applied before)
+        if (changes.energy !== undefined) {
+            updatedStats.energy = clampStat(newStats.energy + changes.energy);
+        }
+        if (changes.health !== undefined) {
+            updatedStats.health = clampStat(newStats.health + changes.health);
+        }
+        if (changes.dependency !== undefined) {
+            updatedStats.dependency = clampStat(newStats.dependency + changes.dependency);
+        }
+        if (changes.analystRating !== undefined) {
+            updatedStats.analystRating = clampStat(newStats.analystRating + changes.analystRating);
+        }
+        if (changes.financialEngineering !== undefined) {
+            updatedStats.financialEngineering = clampStat(newStats.financialEngineering + changes.financialEngineering);
+        }
+        if (changes.ethics !== undefined) {
+            updatedStats.ethics = clampStat(newStats.ethics + changes.ethics);
+        }
+        if (changes.level !== undefined) {
+            updatedStats.level = changes.level;
+        }
+        if (changes.employees !== undefined) {
+            updatedStats.employees = changes.employees;
+        }
+        if (changes.aum !== undefined) {
+            updatedStats.aum = (newStats.aum || 0) + changes.aum;
+        }
+
         // Apply portfolio mutations (add/modify)
         const currentPortfolio = Array.isArray(newStats.portfolio) ? newStats.portfolio : [];
         let portfolio = currentPortfolio;
 
         if (changes.addPortfolioCompany) {
-            portfolio = [...portfolio, { ...changes.addPortfolioCompany, acquisitionDate: { year: 1, month: 1 }, eventHistory: [] } as PortfolioCompany];
+            portfolio = [...portfolio, {
+                ...changes.addPortfolioCompany,
+                acquisitionDate: { year: baseStats.gameYear || 1, month: baseStats.gameMonth || 1 },
+                eventHistory: []
+            } as PortfolioCompany];
         }
 
         if (changes.modifyCompany) {
@@ -541,11 +567,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         if (changes.auditRisk !== undefined) {
-            updatedStats.auditRisk = clampStat(changes.auditRisk);
-        }
-
-        if (changes.portfolio) {
-            updatedStats.portfolio = changes.portfolio;
+            updatedStats.auditRisk = clampStat((updatedStats.auditRisk || 0) + changes.auditRisk);
         }
 
         if (changes.loanBalanceChange && updatedStats.cash < 0) {
@@ -571,6 +593,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
                 : npc
             ));
+        }
+
+        // Bug fix: Handle NPC removal (was declared in StatChanges but never implemented)
+        if (changes.removeNpcId) {
+            setNpcs(prev => prev.filter(npc => npc.id !== changes.removeNpcId));
         }
 
         return updatedStats;
@@ -692,8 +719,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
           setActiveScenario(nextScenario);
           setGamePhase('SCENARIO');
-          
-          updatePlayerStats({ playedScenarioIds: [nextScenario.id] });
+
+          // Bug fix: Append to existing playedScenarioIds instead of replacing the array
+          const existingIds = playerStats?.playedScenarioIds || [];
+          if (!existingIds.includes(nextScenario.id)) {
+              setPlayerStats(prev => prev ? { ...prev, playedScenarioIds: [...prev.playedScenarioIds, nextScenario.id] } : null);
+          }
           logEvent('scenario_triggered', { id: nextScenario.id, title: nextScenario.title });
           addLogEntry(`Event Triggered (${slotLabel}): ${nextScenario.title}`);
       } else {

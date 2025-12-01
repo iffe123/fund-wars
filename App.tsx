@@ -214,18 +214,27 @@ const App: React.FC = () => {
   };
 
   const handleStatChange = (changes: StatChanges) => {
+      let finalChanges = { ...changes };
+
+      // Bug fix: Merge auto-loan with original changes to avoid double-applying
       if (playerStats && typeof changes.cash === 'number' && changes.cash < 0) {
           const projectedCash = playerStats.cash + changes.cash;
           if (projectedCash < 0) {
               const deficit = Math.abs(projectedCash);
               const loanSize = Math.max(25000, Math.ceil(deficit * 1.1));
-              updatePlayerStats({ cash: loanSize, loanBalanceChange: loanSize, loanRate: 0.22 });
+              // Merge loan into changes: add loan amount to offset the deficit
+              finalChanges = {
+                  ...finalChanges,
+                  cash: (finalChanges.cash || 0) + loanSize,
+                  loanBalanceChange: (finalChanges.loanBalanceChange || 0) + loanSize,
+                  loanRate: 0.22
+              };
               addToast(`Auto-bridge loan wired: $${loanSize.toLocaleString()}`, 'info');
               addLogEntry('Emergency loan drawn to cover negative cash.');
           }
       }
 
-      updatePlayerStats(changes);
+      updatePlayerStats(finalChanges);
       if (changes.cash && changes.cash < 0) addToast(`Funds Debited: $${Math.abs(changes.cash)}`, 'info');
       if (changes.reputation && changes.reputation < 0) addToast(`Reputation Hit: ${changes.reputation}`, 'error');
   };
