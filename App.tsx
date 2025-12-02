@@ -516,12 +516,12 @@ const App: React.FC = () => {
   const renderCenterPanel = () => {
       // 1. Asset Manager View
       if (activeTab === 'ASSETS' && playerStats) {
-          // LIFT PANEL ABOVE OVERLAY DURING TUTORIAL STEPS 2, 3, 6
-          const isTutorialActive = tutorialStep === 2 || tutorialStep === 3 || tutorialStep === 6;
-          
+          // LIFT PANEL ABOVE OVERLAY FOR ALL TUTORIAL STEPS to prevent black screen during transitions
+          const isTutorialActive = tutorialStep >= 1 && tutorialStep <= 6;
+
           return (
-              <TerminalPanel 
-                title="ASSET_MANAGER" 
+              <TerminalPanel
+                title="ASSET_MANAGER"
                 className={`h-full ${isTutorialActive ? 'relative z-[100]' : ''}`}
               >
                   <PortfolioView
@@ -645,12 +645,12 @@ const App: React.FC = () => {
       }
 
       // 5. Downtime / Default Workspace
-      // LIFT PANEL ABOVE OVERLAY DURING TUTORIAL STEP 1
-      const isTutorialActive = tutorialStep === 1;
+      // LIFT PANEL ABOVE OVERLAY FOR ALL TUTORIAL STEPS to prevent black screen during transitions
+      const isTutorialActive = tutorialStep >= 1 && tutorialStep <= 6;
 
       return (
-          <TerminalPanel 
-            title="WORKSPACE_HOME" 
+          <TerminalPanel
+            title="WORKSPACE_HOME"
             className={`h-full flex flex-col p-4 bg-black ${isTutorialActive ? 'relative z-[100]' : ''}`}
           >
               {/* Hide Life Actions during Tutorial Step 1 to prevent pushing content down */}
@@ -858,7 +858,7 @@ const App: React.FC = () => {
             )}
             
             {activeMobileTab === 'DESK' && (
-                <div className="flex-1 overflow-hidden relative bg-black">
+                <div className={`flex-1 overflow-hidden relative bg-black ${(tutorialStep >= 1 && tutorialStep <= 6) ? 'z-[100]' : ''}`}>
                     {renderCenterPanel()}
                     <TutorialOverlay instruction={TUTORIAL_STEPS_TEXT[tutorialStep]} step={tutorialStep} />
                 </div>
