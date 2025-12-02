@@ -242,8 +242,8 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
           {selectedCompany && (
               <div className={`
                   md:w-1/2 flex flex-col bg-slate-900/50
-                  absolute inset-0 md:static bg-black md:bg-transparent
-                  ${(tutorialStep >= 3 && tutorialStep <= 6) ? 'z-[60] relative' : 'z-50 md:z-0'}
+                  absolute inset-0 md:static md:relative bg-black md:bg-transparent
+                  ${(tutorialStep >= 3 && tutorialStep <= 6) ? 'z-[60]' : 'z-50 md:z-0'}
               `}>
                   <div className="bg-slate-800 px-3 py-1 text-[10px] uppercase text-slate-400 font-bold border-b border-slate-700 flex justify-between items-center shrink-0">
                       <span>Asset_Detail :: {selectedCompany.name.toUpperCase()}</span>
