@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, Difficulty, GamePhase, PortfolioCompany, MarketVolatility, NPC, CompetitiveDeal } from './types';
+import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, GamePhase, PortfolioCompany, MarketVolatility, NPC, CompetitiveDeal } from './types';
 import { PlayerLevel, DealType } from './types';
 import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS, RIVAL_FUNDS } from './constants';
 import NewsTicker from './components/NewsTicker';
@@ -186,9 +186,9 @@ const App: React.FC = () => {
   };
 
   // --- HANDLERS ---
-  const handleIntroComplete = (stress: number, difficulty: Difficulty) => {
-      // Init Stats based on difficulty with mandatory PackFancy setup
-      const diffSettings = DIFFICULTY_SETTINGS[difficulty];
+  const handleIntroComplete = (stress: number) => {
+      // Init Stats with standard settings and mandatory PackFancy setup
+      const diffSettings = DIFFICULTY_SETTINGS['NORMAL'];
       const initialPortfolio: PortfolioCompany[] = [{
         id: 1,
         name: "PackFancy Inc.",
@@ -220,9 +220,9 @@ const App: React.FC = () => {
       setActiveTab('WORKSPACE'); // Ensure we are on the workspace tab
       setTutorialStep(1); // Start Tutorial
       setBootComplete(true);
-      logEvent('tutorial_start', { difficulty });
-      addLogEntry(`INIT: Career Sequence Started. Difficulty: ${diffSettings.name}. Role: Analyst.`);
-      setChatHistory(prev => [...prev, { sender: 'system', text: `[SYSTEM_LOG] Player accepted offer. Difficulty: ${diffSettings.name}. Starting stress: ${diffSettings.initialStats.stress + stress}` }]);
+      logEvent('tutorial_start');
+      addLogEntry(`INIT: Career Sequence Started. Role: Analyst.`);
+      setChatHistory(prev => [...prev, { sender: 'system', text: `[SYSTEM_LOG] Player accepted offer. Starting stress: ${diffSettings.initialStats.stress + stress}` }]);
       playSfx('BOOT');
   };
 
@@ -778,7 +778,7 @@ const App: React.FC = () => {
   if (!legalAccepted) return <LegalDisclaimer onAccept={handleLegalAccept} />;
 
   if (!bootComplete) {
-      if (gamePhase === 'INTRO') return <IntroSequence onComplete={(s, d) => handleIntroComplete(s, d)} />;
+      if (gamePhase === 'INTRO') return <IntroSequence onComplete={handleIntroComplete} />;
       // If we loaded a game and are not in Intro, skip boot sequence
       if (playerStats) {
           // Use useEffect pattern to avoid setting state during render
