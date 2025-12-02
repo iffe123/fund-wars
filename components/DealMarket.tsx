@@ -4,6 +4,7 @@ import { TerminalPanel, TerminalButton } from './TerminalUI';
 import type { CompetitiveDeal, RivalFund, PlayerStats } from '../types';
 import { DealType } from '../types';
 import { RIVAL_FUNDS } from '../constants';
+import { MAX_PORTFOLIO_SIZE } from '../context/GameContext';
 
 interface DealMarketProps {
   deals: CompetitiveDeal[];
@@ -39,6 +40,7 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
   };
 
   const canAfford = (deal: CompetitiveDeal) => playerStats.cash >= deal.askingPrice * 0.8;
+  const isPortfolioFull = playerStats.portfolio.length >= MAX_PORTFOLIO_SIZE;
 
   if (deals.length === 0) {
     return (
@@ -56,16 +58,29 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
 
   return (
     <TerminalPanel title="DEAL_FLOW // COMPETITIVE MARKET" className="h-full overflow-hidden flex flex-col">
-      <div className="p-2 bg-slate-800/50 border-b border-slate-700 flex items-center justify-between">
+      <div className="p-2 bg-slate-800/50 border-b border-slate-700 flex items-center justify-between flex-wrap gap-2">
         <span className="text-xs text-slate-400">
           <i className="fas fa-chart-line mr-2"></i>
           {deals.length} ACTIVE OPPORTUNITIES
         </span>
-        <span className="text-xs text-amber-400">
-          <i className="fas fa-coins mr-1"></i>
-          CASH: ${(playerStats.cash / 1000000).toFixed(1)}M
-        </span>
+        <div className="flex items-center gap-3">
+          <span className={`text-xs ${isPortfolioFull ? 'text-red-400' : 'text-slate-400'}`}>
+            <i className="fas fa-briefcase mr-1"></i>
+            PORTFOLIO: {playerStats.portfolio.length}/{MAX_PORTFOLIO_SIZE}
+          </span>
+          <span className="text-xs text-amber-400">
+            <i className="fas fa-coins mr-1"></i>
+            CASH: ${(playerStats.cash / 1000000).toFixed(1)}M
+          </span>
+        </div>
       </div>
+
+      {isPortfolioFull && (
+        <div className="p-2 bg-red-500/10 border-b border-red-500/30 text-xs text-red-400 text-center">
+          <i className="fas fa-exclamation-triangle mr-2"></i>
+          PORTFOLIO AT MAX CAPACITY - Exit a company before acquiring more
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-2 space-y-2">
         {deals.map(deal => {
@@ -181,10 +196,10 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
                   <div className="flex gap-2 pt-2">
                     <TerminalButton
                       variant="success"
-                      label={affordable ? "ENTER AUCTION" : "INSUFFICIENT FUNDS"}
+                      label={isPortfolioFull ? "PORTFOLIO FULL" : (affordable ? "ENTER AUCTION" : "INSUFFICIENT FUNDS")}
                       className="flex-1"
-                      onClick={() => affordable && onSelectDeal(deal)}
-                      disabled={!affordable}
+                      onClick={() => affordable && !isPortfolioFull && onSelectDeal(deal)}
+                      disabled={!affordable || isPortfolioFull}
                     />
                     <TerminalButton
                       variant="danger"
@@ -193,9 +208,14 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
                     />
                   </div>
 
-                  {!affordable && (
+                  {!affordable && !isPortfolioFull && (
                     <div className="text-xs text-red-400 text-center">
                       You need at least ${((deal.askingPrice * 0.8) / 1000000).toFixed(1)}M to enter this auction
+                    </div>
+                  )}
+                  {isPortfolioFull && (
+                    <div className="text-xs text-red-400 text-center">
+                      Exit a portfolio company before acquiring new ones
                     </div>
                   )}
                 </div>

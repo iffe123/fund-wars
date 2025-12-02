@@ -64,22 +64,33 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
   const [playerBids, setPlayerBids] = useState<number[]>([]);
   
   const [rivals, setRivals] = useState<RivalBidder[]>(() => {
-    return deal.interestedRivals.map(rivalId => {
-      const fund = RIVAL_FUNDS.find(f => f.id === rivalId)!;
-      const strategy = RIVAL_BID_STRATEGIES[fund.strategy];
-      const baseMax = deal.fairValue * strategy.baseMultiplier;
-      const maxWillingness = baseMax * (1 + strategy.maxOverbid * Math.random());
-      const isBluffing = Math.random() < strategy.bluffChance;
-      
-      return {
-        fund,
-        isActive: true,
-        lastBid: 0,
-        maxWillingness: isBluffing ? deal.fairValue * 0.9 : maxWillingness,
-        isBluffing,
-        hasDropped: false
-      };
-    });
+    return deal.interestedRivals
+      .map(rivalId => {
+        const fund = RIVAL_FUNDS.find(f => f.id === rivalId);
+        // Skip if rival fund not found to prevent crash
+        if (!fund) {
+          console.warn(`[AUCTION] Rival fund not found: ${rivalId}`);
+          return null;
+        }
+        const strategy = RIVAL_BID_STRATEGIES[fund.strategy];
+        if (!strategy) {
+          console.warn(`[AUCTION] Strategy not found for fund: ${fund.strategy}`);
+          return null;
+        }
+        const baseMax = deal.fairValue * strategy.baseMultiplier;
+        const maxWillingness = baseMax * (1 + strategy.maxOverbid * Math.random());
+        const isBluffing = Math.random() < strategy.bluffChance;
+
+        return {
+          fund,
+          isActive: true,
+          lastBid: 0,
+          maxWillingness: isBluffing ? deal.fairValue * 0.9 : maxWillingness,
+          isBluffing,
+          hasDropped: false
+        };
+      })
+      .filter((rival): rival is RivalBidder => rival !== null);
   });
 
   const bidIncrement = Math.max(deal.askingPrice * 0.05, 1000000);

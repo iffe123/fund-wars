@@ -147,14 +147,24 @@ export const calculateExitValue = (
   playerStats: PlayerStats,
   marketVolatility: MarketVolatility
 ): { exitValue: number; multiple: number; profit: number } => {
-  const investmentCost = company.investmentCost;
+  // Validate inputs to prevent NaN
+  const investmentCost = Math.max(0, company.investmentCost || 0);
+  const currentValuation = Math.max(1, company.currentValuation || 1); // Prevent division by zero
+  const revenueGrowth = typeof company.revenueGrowth === 'number' && !Number.isNaN(company.revenueGrowth)
+    ? company.revenueGrowth
+    : 0;
+  const debt = Math.max(0, company.debt || 0);
 
-  // Base calculation
-  let multiple = exitOption.baseMultiple;
+  // Base calculation with validation
+  let multiple = typeof exitOption.baseMultiple === 'number' && !Number.isNaN(exitOption.baseMultiple)
+    ? exitOption.baseMultiple
+    : 1.0;
 
-  // Apply variance
-  const variance = exitOption.varianceRange[0] +
-    Math.random() * (exitOption.varianceRange[1] - exitOption.varianceRange[0]);
+  // Apply variance with bounds checking
+  const varianceRange = exitOption.varianceRange || [-0.2, 0.2];
+  const rangeMin = typeof varianceRange[0] === 'number' ? varianceRange[0] : -0.2;
+  const rangeMax = typeof varianceRange[1] === 'number' ? varianceRange[1] : 0.2;
+  const variance = rangeMin + Math.random() * (rangeMax - rangeMin);
   multiple += variance;
 
   // Market condition adjustments
@@ -166,11 +176,11 @@ export const calculateExitValue = (
     multiple *= 0.6;
   }
 
-  // Financial engineering bonus
-  if (playerStats.financialEngineering >= 50) {
-    multiple *= 1.1;
-  } else if (playerStats.financialEngineering >= 75) {
+  // Financial engineering bonus (fixed logic: check higher threshold first)
+  if (playerStats.financialEngineering >= 75) {
     multiple *= 1.2;
+  } else if (playerStats.financialEngineering >= 50) {
+    multiple *= 1.1;
   }
 
   // Reputation bonus for IPO/Strategic
@@ -179,21 +189,28 @@ export const calculateExitValue = (
   }
 
   // Company performance adjustments
-  if (company.revenueGrowth > 0.20) {
+  if (revenueGrowth > 0.20) {
     multiple *= 1.15;
-  } else if (company.revenueGrowth < 0) {
+  } else if (revenueGrowth < 0) {
     multiple *= 0.85;
   }
 
-  // High debt penalty
-  const debtToValuation = company.debt / company.currentValuation;
+  // High debt penalty (with division-by-zero protection)
+  const debtToValuation = debt / currentValuation;
   if (debtToValuation > 0.7) {
     multiple *= 0.9;
   }
 
-  // Calculate final values
+  // Calculate final values with NaN protection
   multiple = Math.max(0.1, multiple); // Floor at 0.1x
-  const exitValue = Math.round(investmentCost * multiple);
+
+  // Final NaN check - if something went wrong, default to base multiple
+  if (Number.isNaN(multiple) || !Number.isFinite(multiple)) {
+    console.warn('[EXIT] NaN detected in multiple calculation, using fallback');
+    multiple = exitOption.baseMultiple || 1.0;
+  }
+
+  const exitValue = Math.round(Math.max(0, investmentCost * multiple));
   const profit = exitValue - investmentCost;
 
   return { exitValue, multiple, profit };

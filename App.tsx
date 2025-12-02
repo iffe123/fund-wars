@@ -284,9 +284,20 @@ const App: React.FC = () => {
       }
 
       if (playerStats.loanBalance > 0) {
-          const activeRate = playerStats.loanRate || 0.28;
-          const monthlyInterest = Math.ceil(playerStats.loanBalance * activeRate / 12);
-          updatePlayerStats({ loanBalanceChange: monthlyInterest, cash: -monthlyInterest, stress: +3 });
+          // Clamp loan rate to reasonable bounds (5% to 50% APR)
+          const activeRate = Math.max(0.05, Math.min(0.50, playerStats.loanRate || 0.28));
+          const rawMonthlyInterest = Math.ceil(playerStats.loanBalance * activeRate / 12);
+          // Cap monthly interest at 10% of loan balance to prevent runaway compounding
+          const maxMonthlyInterest = Math.ceil(playerStats.loanBalance * 0.10);
+          const monthlyInterest = Math.min(rawMonthlyInterest, maxMonthlyInterest);
+          // Only charge interest if player has enough cash, otherwise add to loan balance only
+          const cashToDeduct = Math.min(monthlyInterest, Math.max(0, playerStats.cash));
+          const interestToCapitalize = monthlyInterest - cashToDeduct;
+          updatePlayerStats({
+              loanBalanceChange: interestToCapitalize > 0 ? interestToCapitalize : undefined,
+              cash: cashToDeduct > 0 ? -cashToDeduct : undefined,
+              stress: +3
+          });
           addToast(`Interest Accrued: $${monthlyInterest.toLocaleString()}`, 'error');
           addLogEntry(`Loan interest compounded at ${(activeRate * 100).toFixed(1)}% APR`);
       }
