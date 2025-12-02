@@ -1,4 +1,5 @@
 import type { ExitOption, ExitType, PortfolioCompany, PlayerStats, MarketVolatility } from '../types';
+import { COMPENSATION_BY_LEVEL } from '../constants';
 
 export const EXIT_OPTIONS: ExitOption[] = [
   {
@@ -141,12 +142,34 @@ export const calculateOwnershipMonths = (
   return currentMonths - acquisitionMonths;
 };
 
+// Calculate carry (carried interest) that the player earns on exit profits
+// Carry is only available at VP level and above, with increasing percentages
+export const calculateCarry = (
+  profit: number,
+  playerStats: PlayerStats
+): { carryAmount: number; carryPercentage: number } => {
+  const compensation = COMPENSATION_BY_LEVEL[playerStats.level];
+  const carryPercentage = compensation?.carryPercentage || 0;
+
+  // Carry only applies to profits (not losses)
+  if (profit <= 0 || carryPercentage === 0) {
+    return { carryAmount: 0, carryPercentage: 0 };
+  }
+
+  // Standard PE carry: 20% of profits goes to GP, player gets their share
+  // The carryPercentage is the player's personal allocation of the GP carry pool
+  const gpCarryPool = profit * 0.20; // 20% of profits is carried interest
+  const personalCarry = Math.round(gpCarryPool * (carryPercentage / 100));
+
+  return { carryAmount: personalCarry, carryPercentage };
+};
+
 export const calculateExitValue = (
   company: PortfolioCompany,
   exitOption: ExitOption,
   playerStats: PlayerStats,
   marketVolatility: MarketVolatility
-): { exitValue: number; multiple: number; profit: number } => {
+): { exitValue: number; multiple: number; profit: number; carryAmount: number; carryPercentage: number } => {
   // Validate inputs to prevent NaN
   const investmentCost = Math.max(0, company.investmentCost || 0);
   const currentValuation = Math.max(1, company.currentValuation || 1); // Prevent division by zero
@@ -213,7 +236,10 @@ export const calculateExitValue = (
   const exitValue = Math.round(Math.max(0, investmentCost * multiple));
   const profit = exitValue - investmentCost;
 
-  return { exitValue, multiple, profit };
+  // Calculate carry (carried interest) for VP+ levels
+  const { carryAmount, carryPercentage } = calculateCarry(profit, playerStats);
+
+  return { exitValue, multiple, profit, carryAmount, carryPercentage };
 };
 
 export const EXIT_FLAVOR_TEXT: Record<ExitType, { success: string[]; failure: string[] }> = {
