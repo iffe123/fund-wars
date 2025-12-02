@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
+import type { Difficulty } from '../types';
 
 interface IntroSequenceProps {
-  onComplete: (stressLevel: number) => void;
+  onComplete: (stressLevel: number, difficulty: Difficulty) => void;
 }
 
 const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
   const [stage, setStage] = useState(0);
   const [textVisible, setTextVisible] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
 
   useEffect(() => {
     // Fade in text for current stage
@@ -22,11 +24,19 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
     }, 500);
   };
 
-  const handleChoice = (stress: number) => {
-    onComplete(stress);
+  const handleDifficultySelect = (diff: Difficulty) => {
+    setSelectedDifficulty(diff);
+    setTextVisible(false);
+    setTimeout(() => {
+      setStage(3); // Go to Chad encounter
+    }, 500);
   };
 
-  // Stage 1: The Glory
+  const handleChoice = (stress: number) => {
+    onComplete(stress, selectedDifficulty || 'Normal');
+  };
+
+  // Stage 0: The Glory
   if (stage === 0) {
     return (
       <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center p-8 z-50">
@@ -35,8 +45,8 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
           <p className="text-xl md:text-2xl font-light text-slate-300 mb-4">Valedictorian.</p>
           <p className="text-xl md:text-2xl font-light text-slate-300 mb-8">You survived 12 superdays. You beat 4,000 applicants.</p>
           <p className="text-lg text-slate-500 italic mb-12">They told you you were special. They told you you were a 'Master of the Universe'.</p>
-          
-          <button 
+
+          <button
             onClick={handleNext}
             className="border border-white/20 hover:bg-white/10 text-white font-light py-2 px-8 rounded-full transition-all tracking-widest uppercase text-sm"
           >
@@ -47,7 +57,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
     );
   }
 
-  // Stage 2: The Crash
+  // Stage 1: The Crash
   if (stage === 1) {
     return (
       <div className="fixed inset-0 bg-slate-900 text-slate-200 flex flex-col items-center justify-center p-8 z-50">
@@ -61,8 +71,8 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
           <p className="text-lg text-red-400 italic mb-12 border-l-2 border-red-500 pl-4">
             "You are not a Master. You are an Analyst. And you are late."
           </p>
-          
-          <button 
+
+          <button
             onClick={handleNext}
             className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded shadow-lg transition-all"
           >
@@ -73,8 +83,104 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
     );
   }
 
-  // Stage 3: The Encounter
+  // Stage 2: Difficulty Selection
   if (stage === 2) {
+    return (
+      <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center p-8 z-50">
+        <div className={`transition-opacity duration-1000 ${textVisible ? 'opacity-100' : 'opacity-0'} text-center max-w-4xl w-full`}>
+          <div className="mb-8">
+            <span className="font-mono text-amber-500 text-sm uppercase tracking-widest">SELECT YOUR ORIGIN</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Who are you?</h2>
+          <p className="text-lg text-slate-400 mb-12">Your background determines your starting resources and how forgiving Wall Street will be.</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Easy */}
+            <button
+              onClick={() => handleDifficultySelect('Easy')}
+              className="group text-left p-6 bg-slate-900/50 border-2 border-emerald-800/50 hover:border-emerald-500 hover:bg-emerald-950/30 rounded-xl transition-all duration-300"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-900/50 flex items-center justify-center border border-emerald-700/50">
+                  <i className="fas fa-crown text-emerald-400 text-xl"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-emerald-400 group-hover:text-emerald-300">Trust Fund Baby</h3>
+                  <span className="text-xs text-emerald-600 uppercase tracking-wider">Easy Mode</span>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm mb-4 leading-relaxed">
+                Your father is the Chairman of the Board. You start with a massive safety net, connections, and an innate sense of entitlement.
+              </p>
+              <div className="text-xs text-slate-500 space-y-1 border-t border-slate-800 pt-3">
+                <div className="flex justify-between"><span>Starting Cash:</span><span className="text-emerald-400">$100,000</span></div>
+                <div className="flex justify-between"><span>Starting Rep:</span><span className="text-emerald-400">20</span></div>
+                <div className="flex justify-between"><span>Financial Engineering:</span><span className="text-emerald-400">20</span></div>
+              </div>
+            </button>
+
+            {/* Normal */}
+            <button
+              onClick={() => handleDifficultySelect('Normal')}
+              className="group text-left p-6 bg-slate-900/50 border-2 border-blue-800/50 hover:border-blue-500 hover:bg-blue-950/30 rounded-xl transition-all duration-300 ring-2 ring-blue-500/20"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-700/50">
+                  <i className="fas fa-graduation-cap text-blue-400 text-xl"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">MBA Grad</h3>
+                  <span className="text-xs text-blue-600 uppercase tracking-wider">Normal Mode</span>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm mb-4 leading-relaxed">
+                You did everything right: top school, top grades, top internship. Now you're just another shark in a tank full of them.
+              </p>
+              <div className="text-xs text-slate-500 space-y-1 border-t border-slate-800 pt-3">
+                <div className="flex justify-between"><span>Starting Cash:</span><span className="text-blue-400">$25,000</span></div>
+                <div className="flex justify-between"><span>Starting Rep:</span><span className="text-blue-400">10</span></div>
+                <div className="flex justify-between"><span>Financial Engineering:</span><span className="text-blue-400">10</span></div>
+              </div>
+            </button>
+
+            {/* Hard */}
+            <button
+              onClick={() => handleDifficultySelect('Hard')}
+              className="group text-left p-6 bg-slate-900/50 border-2 border-red-800/50 hover:border-red-500 hover:bg-red-950/30 rounded-xl transition-all duration-300"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-900/50 flex items-center justify-center border border-red-700/50">
+                  <i className="fas fa-fist-raised text-red-400 text-xl"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-red-400 group-hover:text-red-300">State School Striver</h3>
+                  <span className="text-xs text-red-600 uppercase tracking-wider">Hard Mode</span>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm mb-4 leading-relaxed">
+                You clawed your way here with pure grit. Everyone is waiting for you to fail. One mistake and you're out.
+              </p>
+              <div className="text-xs text-slate-500 space-y-1 border-t border-slate-800 pt-3">
+                <div className="flex justify-between"><span>Starting Cash:</span><span className="text-red-400">$10,000</span></div>
+                <div className="flex justify-between"><span>Starting Rep:</span><span className="text-red-400">5</span></div>
+                <div className="flex justify-between"><span>Starting Stress:</span><span className="text-red-400">35</span></div>
+              </div>
+            </button>
+          </div>
+
+          <div className="mt-12 text-center">
+            <p className="text-xs text-slate-600 uppercase tracking-widest">
+              <i className="fas fa-trophy mr-2"></i>
+              Goal: Reach Partner level with $1M+ net worth, or build a $1B fund in Founder Mode
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Stage 3: The Encounter
+  if (stage === 3) {
     return (
       <div className="fixed inset-0 bg-white text-slate-900 flex flex-col items-center justify-center p-8 z-50">
         <div className={`transition-all duration-500 ${textVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'} max-w-2xl w-full bg-slate-50 border border-slate-200 p-8 rounded-xl shadow-2xl`}>
@@ -99,14 +205,14 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
           </div>
 
           <div className="grid grid-cols-1 gap-3">
-             <button 
+             <button
                 onClick={() => handleChoice(5)}
                 className="w-full text-left p-4 bg-white border border-slate-300 hover:border-blue-600 hover:shadow-md rounded-lg transition-all group"
              >
                 <span className="font-bold text-blue-700 block mb-1 group-hover:underline">"I'll crush it, Chad."</span>
                 <span className="text-xs text-slate-500">Effect: Chad sneers. "We'll see."</span>
              </button>
-             <button 
+             <button
                 onClick={() => handleChoice(25)}
                 className="w-full text-left p-4 bg-white border border-slate-300 hover:border-red-600 hover:shadow-md rounded-lg transition-all group"
              >

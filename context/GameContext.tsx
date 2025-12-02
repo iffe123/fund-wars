@@ -995,15 +995,19 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const availableDeals = COMPETITIVE_DEALS.filter(
           d => !activeDeals.some(ad => ad.id === d.id)
       );
-      
+
       if (availableDeals.length === 0) return;
-      
-      if (Math.random() > 0.4) return;
-      
-      const numDeals = Math.random() > 0.7 ? 2 : 1;
+
+      // Always generate at least one deal if the player has fewer than 2 active deals
+      // Otherwise, 60% chance to generate new deals (increased from 40%)
+      const shouldGenerate = activeDeals.length < 2 || Math.random() < 0.6;
+      if (!shouldGenerate) return;
+
+      // Generate 1-2 deals based on how few active deals exist
+      const numDeals = activeDeals.length === 0 ? 2 : (Math.random() > 0.6 ? 2 : 1);
       const shuffled = [...availableDeals].sort(() => Math.random() - 0.5);
       const newDeals = shuffled.slice(0, Math.min(numDeals, availableDeals.length));
-      
+
       newDeals.forEach(deal => {
           const interestedRivals = rivalFunds
               .filter(fund => {
@@ -1013,7 +1017,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   return Math.random() > 0.3;
               })
               .map(f => f.id);
-          
+
           addDeal({
               ...deal,
               interestedRivals,

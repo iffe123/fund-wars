@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import type { PortfolioCompany, PortfolioAction, PlayerStats } from '../types';
+import type { PortfolioCompany, PortfolioAction, PlayerStats, ExitResult, StatChanges } from '../types';
 import { PORTFOLIO_ACTIONS, MARKET_VOLATILITY_STYLES } from '../constants';
 import { TerminalButton, TerminalPanel, AsciiProgress, Badge } from './TerminalUI';
 import { useGame } from '../context/GameContext';
 import AuctionModal from './AuctionModal';
 import BlackBoxModal from './BlackBoxModal';
 import BoardBattleModal from './BoardBattleModal';
+import ExitStrategyModal from './ExitStrategyModal';
 
 interface PortfolioViewProps {
   playerStats: PlayerStats;
@@ -24,6 +25,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
   const [showAuction, setShowAuction] = useState<PortfolioCompany | null>(null);
   const [showBlackBox, setShowBlackBox] = useState(false);
   const [showBoardBattle, setShowBoardBattle] = useState<PortfolioCompany | null>(null);
+  const [showExitModal, setShowExitModal] = useState<PortfolioCompany | null>(null);
 
   const portfolio = playerStats.portfolio;
   const selectedCompany = portfolio.find(c => c.id === selectedId);
@@ -102,6 +104,13 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
     if (choice === 'WHISTLEBLOW') {
       updatePlayerStats({ setsFlags: ['WHISTLEBLOWER'] });
     }
+  };
+
+  const handleExecuteExit = (result: ExitResult, statChanges: StatChanges) => {
+    // Apply stat changes including removing company from portfolio
+    updatePlayerStats(statChanges);
+    setShowExitModal(null);
+    setSelectedId(null); // Deselect after exit
   };
 
   // Deal type styling
@@ -437,9 +446,19 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
                 <span className="text-[10px] font-bold uppercase tracking-wider">Analyze</span>
               </button>
 
-              <button className="border border-slate-700 bg-slate-800/30 text-slate-500 flex flex-col items-center justify-center p-4 rounded-lg opacity-50 cursor-not-allowed">
-                <i className="fas fa-calculator text-lg mb-2"></i>
-                <span className="text-[10px] font-bold uppercase tracking-wider">Model</span>
+              <button
+                onClick={() => selectedCompany.isAnalyzed && selectedCompany.ownershipPercentage > 0 && setShowExitModal(selectedCompany)}
+                disabled={!selectedCompany.isAnalyzed || selectedCompany.ownershipPercentage === 0}
+                className={`
+                  border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
+                  ${selectedCompany.isAnalyzed && selectedCompany.ownershipPercentage > 0
+                    ? 'bg-amber-950/30 border-amber-700/50 text-amber-400 hover:bg-amber-900/40 hover:border-amber-600'
+                    : 'border-slate-700 bg-slate-800/30 text-slate-500 opacity-50 cursor-not-allowed'
+                  }
+                `}
+              >
+                <i className="fas fa-door-open text-lg mb-2"></i>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Exit</span>
               </button>
 
               <button className="border border-slate-600 bg-slate-800/50 text-slate-300 flex flex-col items-center justify-center p-4 rounded-lg hover:bg-slate-700/50 hover:border-slate-500 transition-all">
@@ -495,6 +514,16 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
             if (success) updatePlayerStats({ reputation: +10, score: +200 });
             else updatePlayerStats({ reputation: -10, stress: +10 });
           }}
+        />
+      )}
+
+      {showExitModal && (
+        <ExitStrategyModal
+          company={showExitModal}
+          playerStats={playerStats}
+          marketVolatility={marketVolatility}
+          onExecuteExit={handleExecuteExit}
+          onClose={() => setShowExitModal(null)}
         />
       )}
     </div>

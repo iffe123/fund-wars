@@ -13,7 +13,7 @@ export const DEFAULT_FACTION_REPUTATION: FactionReputation = {
 // The "Rookie" Profile (Default State)
 const NORMAL_STATS: PlayerStats = {
   level: PlayerLevel.ASSOCIATE,
-  cash: 5000,
+  cash: 25000, // Increased from 5000 for better game balance
   reputation: 10,
   factionReputation: { ...DEFAULT_FACTION_REPUTATION },
   stress: 0,
@@ -205,7 +205,7 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
       ...NORMAL_STATS,
       cash: 100000,
       reputation: 20,
-      stress: 10,
+      stress: 0,
       financialEngineering: 20,
       portfolio: [],
     },
@@ -219,6 +219,10 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
     description: "You did everything right: top school, top grades, top internship. Now you're just another shark in a tank full of them. You have potential, but no protection. The pressure is on.",
     initialStats: {
         ...NORMAL_STATS,
+        cash: 25000,
+        reputation: 10,
+        stress: 0,
+        financialEngineering: 10,
         portfolio: [],
     },
     modifiers: {
@@ -231,7 +235,8 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
     description: "You clawed your way here with pure grit and a chip on your shoulder the size of a tombstone. Everyone is waiting for you to fail so they can say 'I told you so'. One mistake and you're out.",
     initialStats: {
       ...NORMAL_STATS,
-      cash: 25000,
+      cash: 10000,
+      reputation: 5,
       stress: 35,
       analystRating: 40,
       financialEngineering: 5,
@@ -1008,7 +1013,7 @@ export const LIFE_ACTIONS: LifeAction[] = [
     icon: 'fa-skull-crossbones',
     outcome: {
       description: "You sign a predatory term sheet. Cash hits the account fast, but the lender is circling for their pound of flesh.",
-      statChanges: { cash: +50000, stress: +8, loanBalanceChange: +50000, loanRate: 0.28, score: +75 },
+      statChanges: { cash: +50000, stress: +8, loanBalanceChange: +50000, loanRate: 0.15, score: +75 }, // Reduced from 28% to 15% for better balance
     },
   },
   {
