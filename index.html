@@ -14,77 +14,255 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
       :root {
-        --terminal-bg: #050505;
-        --terminal-text: #f8fafc;
-        --terminal-border: #475569;
-        --terminal-accent: #fbbf24; /* Amber */
-        --terminal-green: #34d399;
-        --terminal-red: #f87171;
+        /* Core Terminal Colors */
+        --terminal-bg: #030303;
+        --terminal-bg-elevated: #0a0a0a;
+        --terminal-bg-card: #0d1117;
+        --terminal-text: #e6edf3;
+        --terminal-text-muted: #8b949e;
+        --terminal-border: #30363d;
+        --terminal-border-highlight: #484f58;
+
+        /* Accent Colors */
+        --terminal-accent: #f59e0b;
+        --terminal-accent-glow: rgba(245, 158, 11, 0.4);
+        --terminal-green: #10b981;
+        --terminal-green-glow: rgba(16, 185, 129, 0.3);
+        --terminal-red: #ef4444;
+        --terminal-red-glow: rgba(239, 68, 68, 0.3);
+        --terminal-blue: #3b82f6;
+        --terminal-blue-glow: rgba(59, 130, 246, 0.3);
+        --terminal-purple: #a855f7;
+        --terminal-cyan: #06b6d4;
+
+        /* Gradient Presets */
+        --gradient-gold: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        --gradient-dark: linear-gradient(180deg, #0d1117 0%, #030303 100%);
       }
+
       body {
         font-family: 'Share Tech Mono', monospace;
-        font-size: 17px;
+        font-size: 16px;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        background-color: var(--terminal-bg);
+        background: var(--terminal-bg);
         color: var(--terminal-text);
-        overflow: hidden; /* App handles scrolling */
-        
+        overflow: hidden;
+
         /* Native App Feel */
-        overscroll-behavior-y: none; /* Prevents pull-to-refresh */
-        user-select: none; /* Prevents text highlighting */
-        -webkit-tap-highlight-color: transparent; /* Removes blue box on click */
+        overscroll-behavior-y: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
         -webkit-touch-callout: none;
       }
-      
+
       /* Terminal Scrollbar */
       ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
+        width: 8px;
+        height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #000; 
-        border-left: 1px solid #333;
+        background: var(--terminal-bg);
+        border-left: 1px solid var(--terminal-border);
       }
       ::-webkit-scrollbar-thumb {
-        background: #333; 
-        border: 1px solid #000;
+        background: var(--terminal-border);
+        border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #555; 
+        background: var(--terminal-border-highlight);
       }
-      
+
       .font-terminal {
         font-family: 'Share Tech Mono', monospace;
       }
-      
+
+      /* Enhanced Scanline Effect */
       .scanline {
-        background: linear-gradient(
-          to bottom,
-          rgba(255,255,255,0),
-          rgba(255,255,255,0) 50%,
-          rgba(0,0,0,0.2) 50%,
-          rgba(0,0,0,0.2)
+        background: repeating-linear-gradient(
+          0deg,
+          rgba(0, 0, 0, 0.15),
+          rgba(0, 0, 0, 0.15) 1px,
+          transparent 1px,
+          transparent 2px
         );
-        background-size: 100% 4px;
         position: fixed;
         pointer-events: none;
         inset: 0;
         z-index: 9999;
-        opacity: 0.15;
+        opacity: 0.3;
       }
 
+      /* Text Glow Effects */
       .text-glow {
-        text-shadow: 0 0 5px var(--terminal-accent);
+        text-shadow: 0 0 10px var(--terminal-accent), 0 0 20px var(--terminal-accent-glow);
+      }
+      .text-glow-green {
+        text-shadow: 0 0 10px var(--terminal-green), 0 0 20px var(--terminal-green-glow);
+      }
+      .text-glow-red {
+        text-shadow: 0 0 10px var(--terminal-red), 0 0 20px var(--terminal-red-glow);
+      }
+      .text-glow-blue {
+        text-shadow: 0 0 10px var(--terminal-blue), 0 0 20px var(--terminal-blue-glow);
       }
 
+      /* Enhanced Vignette */
       .vignette {
         position: fixed;
         inset: 0;
-        background: radial-gradient(circle, transparent 50%, black 150%);
+        background: radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(0,0,0,0.4) 100%);
         pointer-events: none;
         z-index: 9998;
-        opacity: 0.6;
+      }
+
+      /* Card Styles */
+      .card-glass {
+        background: linear-gradient(145deg, rgba(13, 17, 23, 0.9), rgba(3, 3, 3, 0.95));
+        border: 1px solid var(--terminal-border);
+        backdrop-filter: blur(10px);
+      }
+
+      .card-elevated {
+        background: var(--terminal-bg-card);
+        border: 1px solid var(--terminal-border);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Animations */
+      @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 0 5px var(--terminal-accent-glow); }
+        50% { box-shadow: 0 0 20px var(--terminal-accent-glow), 0 0 30px var(--terminal-accent-glow); }
+      }
+
+      @keyframes slide-in {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+
+      @keyframes slide-up {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+
+      @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+
+      @keyframes border-glow {
+        0%, 100% { border-color: var(--terminal-border); }
+        50% { border-color: var(--terminal-accent); }
+      }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+      }
+
+      .animate-slide-in { animation: slide-in 0.3s ease-out; }
+      .animate-slide-up { animation: slide-up 0.3s ease-out; }
+      .animate-fade-in { animation: fade-in 0.2s ease-out; }
+      .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+      .animate-border-glow { animation: border-glow 2s ease-in-out infinite; }
+      .animate-float { animation: float 3s ease-in-out infinite; }
+
+      .shimmer-bg {
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite;
+      }
+
+      /* Button Enhancements */
+      .btn-terminal {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.2s ease;
+      }
+
+      .btn-terminal::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .btn-terminal:hover::before {
+        opacity: 1;
+      }
+
+      .btn-terminal:active {
+        transform: translateY(1px);
+      }
+
+      /* Focus Styles */
+      .focus-ring:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px var(--terminal-bg), 0 0 0 4px var(--terminal-accent);
+      }
+
+      /* Gradient Borders */
+      .border-gradient {
+        position: relative;
+        background: var(--terminal-bg-card);
+      }
+
+      .border-gradient::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        padding: 1px;
+        background: linear-gradient(135deg, var(--terminal-accent), var(--terminal-green));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        border-radius: inherit;
+        pointer-events: none;
+      }
+
+      /* Status Indicators */
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+
+      .status-dot.online {
+        background: var(--terminal-green);
+        box-shadow: 0 0 10px var(--terminal-green-glow);
+      }
+
+      .status-dot.warning {
+        background: var(--terminal-accent);
+        box-shadow: 0 0 10px var(--terminal-accent-glow);
+      }
+
+      .status-dot.danger {
+        background: var(--terminal-red);
+        box-shadow: 0 0 10px var(--terminal-red-glow);
+      }
+
+      /* Dividers */
+      .divider-gradient {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--terminal-border), transparent);
+      }
+
+      /* Selection */
+      ::selection {
+        background: var(--terminal-accent);
+        color: var(--terminal-bg);
       }
     </style>
   <script type="importmap">
