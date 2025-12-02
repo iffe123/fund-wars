@@ -22,6 +22,20 @@ const GameContext = createContext<GameContextTypeExtended | undefined>(undefined
 
 const clampStat = (value: number, min = 0, max = 100) => Math.max(min, Math.min(max, value));
 
+// Generate unique portfolio company ID to prevent collisions
+let portfolioIdCounter = 0;
+const generateUniquePortfolioId = (existingIds: number[]): number => {
+    // Use timestamp + counter + random component for uniqueness
+    let newId: number;
+    do {
+        newId = Date.now() + (++portfolioIdCounter) + Math.floor(Math.random() * 1000);
+    } while (existingIds.includes(newId));
+    return newId;
+};
+
+// Maximum portfolio size to prevent performance issues and encourage exits
+export const MAX_PORTFOLIO_SIZE = 8;
+
 const slugify = (text: string) =>
     text
         .toLowerCase()
@@ -485,11 +499,32 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         let portfolio = currentPortfolio;
 
         if (changes.addPortfolioCompany) {
-            portfolio = [...portfolio, {
-                ...changes.addPortfolioCompany,
-                acquisitionDate: { year: baseStats.gameYear || 1, month: baseStats.gameMonth || 1 },
-                eventHistory: []
-            } as PortfolioCompany];
+            // Check portfolio size limit
+            if (portfolio.length >= MAX_PORTFOLIO_SIZE) {
+                console.warn(`[PORTFOLIO] Portfolio at max capacity (${MAX_PORTFOLIO_SIZE}). Exit a company before acquiring more.`);
+            } else {
+                const existingIds = portfolio.map(c => c.id);
+                const newCompanyId = changes.addPortfolioCompany.id;
+                // Generate unique ID if collision detected or if ID is missing
+                const uniqueId = (!newCompanyId || existingIds.includes(newCompanyId))
+                    ? generateUniquePortfolioId(existingIds)
+                    : newCompanyId;
+
+                // Prevent duplicate companies by name as a secondary check
+                const existingByName = portfolio.find(c =>
+                    c.name.toLowerCase() === changes.addPortfolioCompany!.name.toLowerCase()
+                );
+                if (existingByName) {
+                    console.warn(`[PORTFOLIO] Company "${changes.addPortfolioCompany.name}" already in portfolio, skipping`);
+                } else {
+                    portfolio = [...portfolio, {
+                        ...changes.addPortfolioCompany,
+                        id: uniqueId,
+                        acquisitionDate: { year: baseStats.gameYear || 1, month: baseStats.gameMonth || 1 },
+                        eventHistory: []
+                    } as PortfolioCompany];
+                }
+            }
         }
 
         if (changes.modifyCompany) {
@@ -528,7 +563,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         if (changes.loanRate !== undefined) {
-            updatedStats.loanRate = changes.loanRate;
+            // Clamp loan rate to reasonable bounds (5% to 50% APR)
+            // 0 is also valid (no interest / no loan)
+            const validatedRate = changes.loanRate === 0 ? 0 : Math.max(0.05, Math.min(0.50, changes.loanRate));
+            updatedStats.loanRate = validatedRate;
         }
 
         if (changes.portfolio) {
