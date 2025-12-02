@@ -5,6 +5,10 @@ import App from './App';
 import { GameProvider } from './context/GameContext';
 import { AuthProvider } from './context/AuthContext';
 import { AudioProvider } from './context/AudioContext';
+import { injectSpeedInsights } from '@vercel/speed-insights';
+
+// Initialize Vercel Speed Insights
+injectSpeedInsights();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
