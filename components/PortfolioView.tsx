@@ -142,7 +142,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
 
       <div className="flex-1 flex overflow-hidden relative">
           {/* ASSET LIST */}
-          <div className={`${selectedId ? 'md:w-1/2 hidden md:flex' : 'w-full flex'} border-r border-slate-700 flex-col transition-all bg-black overflow-hidden`}>
+          <div className={`${selectedId && selectedCompany ? 'md:w-1/2 hidden md:flex' : 'w-full flex'} border-r border-slate-700 flex-col transition-all bg-black overflow-hidden`}>
               <div className="bg-slate-800 px-3 py-1 text-[10px] uppercase text-slate-400 font-bold border-b border-slate-700 shrink-0">
                   Active_Holdings
               </div>
@@ -299,7 +299,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
                   <div className={`
                       p-3 bg-slate-900 border-t border-slate-700 grid grid-cols-2 md:grid-cols-4 gap-2
                       absolute bottom-0 left-0 right-0 md:relative
-                      ${(tutorialStep >= 3 && tutorialStep <= 6) ? 'z-[70] relative' : ''}
+                      ${(tutorialStep >= 3 && tutorialStep <= 6) ? 'z-[70]' : ''}
                       ${(tutorialStep === 3 || tutorialStep === 6) ? 'ring-t-2 ring-amber-500' : ''}
                   `}>
                       <button 
