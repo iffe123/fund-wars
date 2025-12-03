@@ -11,9 +11,11 @@ export const DEFAULT_FACTION_REPUTATION: FactionReputation = {
 };
 
 // The "Rookie" Profile (Default State)
+// Starting cash is intentionally low - you're a new associate living paycheck to paycheck
+// This creates tension where every expense matters and players must prioritize
 const NORMAL_STATS: PlayerStats = {
   level: PlayerLevel.ASSOCIATE,
-  cash: 5000,
+  cash: 1500,              // Reduced from 5000 - tight budget, first paycheck comes with advanceTime
   reputation: 10,
   factionReputation: { ...DEFAULT_FACTION_REPUTATION },
   stress: 0,
@@ -203,7 +205,7 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
     description: "Your father is the Chairman of the Board. You start with a massive safety net, a Rolodex of contacts, and an innate sense of entitlement. It's hard to fail when you were born on third base.",
     initialStats: {
       ...NORMAL_STATS,
-      cash: 100000,
+      cash: 50000,           // Reduced but still comfortable - daddy's allowance
       reputation: 20,
       stress: 10,
       financialEngineering: 20,
@@ -216,9 +218,11 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
   },
   Normal: {
     name: 'MBA Grad',
-    description: "You did everything right: top school, top grades, top internship. Now you're just another shark in a tank full of them. You have potential, but no protection. The pressure is on.",
+    description: "You did everything right: top school, top grades, top internship. Now you're just another shark in a tank full of them. You have potential, but no protection. Every dollar counts.",
     initialStats: {
         ...NORMAL_STATS,
+        // Starting with $1,500 - can barely afford golf with partners
+        // First salary payment comes with first advanceTime
         portfolio: [],
     },
     modifiers: {
@@ -231,7 +235,7 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
     description: "You clawed your way here with pure grit and a chip on your shoulder the size of a tombstone. Everyone is waiting for you to fail so they can say 'I told you so'. One mistake and you're out.",
     initialStats: {
       ...NORMAL_STATS,
-      cash: 25000,
+      cash: 500,             // Reduced from 25000 - you're broke and desperate
       stress: 35,
       analystRating: 40,
       financialEngineering: 5,
@@ -251,6 +255,81 @@ export const LEVEL_RANKS: Record<PlayerLevel, number> = {
   [PlayerLevel.PRINCIPAL]: 3,
   [PlayerLevel.PARTNER]: 4,
   [PlayerLevel.FOUNDER]: 5,
+};
+
+// ==================== COMPENSATION SYSTEM ====================
+// Progressive cash system: salary, bonus, and carry by level
+
+export interface CompensationTier {
+  weeklySalary: number;       // Weekly base salary (after taxes)
+  bonusMultiplier: number;    // Multiplier on base for annual bonus (0 = no bonus)
+  carryPercentage: number;    // Percentage of exit profits (0 = no carry)
+  canAccessLoan: boolean;     // Whether player can take bridge loans
+  loanLimit: number;          // Maximum loan amount available
+}
+
+export const COMPENSATION_BY_LEVEL: Record<PlayerLevel, CompensationTier> = {
+  [PlayerLevel.ASSOCIATE]: {
+    weeklySalary: 2000,       // ~$100k/year after taxes - tight budget
+    bonusMultiplier: 0.5,     // 50% of base as potential bonus
+    carryPercentage: 0,       // No carry at associate level
+    canAccessLoan: false,     // No loans - you're too junior
+    loanLimit: 0,
+  },
+  [PlayerLevel.SENIOR_ASSOCIATE]: {
+    weeklySalary: 3000,       // ~$150k/year
+    bonusMultiplier: 0.75,    // 75% of base as potential bonus
+    carryPercentage: 0,       // Still no carry
+    canAccessLoan: true,      // Can now access emergency loans
+    loanLimit: 25000,
+  },
+  [PlayerLevel.VICE_PRESIDENT]: {
+    weeklySalary: 4500,       // ~$225k/year
+    bonusMultiplier: 1.0,     // 100% of base as potential bonus
+    carryPercentage: 0.5,     // 0.5% carry on exits
+    canAccessLoan: true,
+    loanLimit: 50000,
+  },
+  [PlayerLevel.PRINCIPAL]: {
+    weeklySalary: 6000,       // ~$300k/year
+    bonusMultiplier: 1.5,     // 150% of base as potential bonus
+    carryPercentage: 2,       // 2% carry on exits
+    canAccessLoan: true,
+    loanLimit: 100000,
+  },
+  [PlayerLevel.PARTNER]: {
+    weeklySalary: 10000,      // ~$500k/year
+    bonusMultiplier: 3.0,     // 300% of base as potential bonus
+    carryPercentage: 10,      // 10% carry - this is where the money is
+    canAccessLoan: true,
+    loanLimit: 500000,
+  },
+  [PlayerLevel.FOUNDER]: {
+    weeklySalary: 0,          // No salary - you're the owner
+    bonusMultiplier: 0,       // No bonus - you take distributions
+    carryPercentage: 20,      // 20% carry on all fund exits
+    canAccessLoan: true,
+    loanLimit: 1000000,
+  },
+};
+
+// Bonus calculation factors
+export const BONUS_FACTORS = {
+  minReputationForBonus: 30,      // Need at least 30 reputation to get any bonus
+  fullBonusReputation: 80,        // Need 80+ reputation for full bonus
+  portfolioPerformanceWeight: 0.4, // 40% of bonus based on portfolio performance
+  reputationWeight: 0.3,           // 30% based on reputation
+  dealsClosedWeight: 0.3,          // 30% based on deals closed this year
+};
+
+// Activity cost thresholds - what feels "expensive" at each level
+export const AFFORDABILITY_THRESHOLDS: Record<PlayerLevel, number> = {
+  [PlayerLevel.ASSOCIATE]: 200,        // $200 feels expensive
+  [PlayerLevel.SENIOR_ASSOCIATE]: 500, // $500 feels expensive
+  [PlayerLevel.VICE_PRESIDENT]: 1000,
+  [PlayerLevel.PRINCIPAL]: 2000,
+  [PlayerLevel.PARTNER]: 5000,
+  [PlayerLevel.FOUNDER]: 10000,
 };
 
 // ... [Keep existing DueDiligence and Financing phases] ...

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, Difficulty, GamePhase, LifeAction, PortfolioAction, PortfolioCompany, MarketVolatility, NewsEvent, PortfolioImpact, UserProfile, CompanyEvent, NPC, QuizQuestion, CompetitiveDeal, RivalFund } from './types';
 import { PlayerLevel, DealType } from './types';
-import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS, RIVAL_FUNDS } from './constants';
+import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS, RIVAL_FUNDS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS } from './constants';
 import NewsTicker from './components/NewsTicker';
 import CommsTerminal from './components/CommsTerminal';
 import PortfolioView from './components/PortfolioView';
@@ -227,13 +227,40 @@ const App: React.FC = () => {
   const handleStatChange = (changes: StatChanges) => {
       let finalChanges = { ...changes };
 
-      // Bug fix: Merge auto-loan with original changes to avoid double-applying
+      // Check if player can access loans (Senior Associate+ only)
+      const compensation = playerStats ? COMPENSATION_BY_LEVEL[playerStats.level] : null;
+      const canAccessLoan = compensation?.canAccessLoan ?? false;
+      const loanLimit = compensation?.loanLimit ?? 0;
+      const currentLoanBalance = playerStats?.loanBalance ?? 0;
+      const availableLoanRoom = Math.max(0, loanLimit - currentLoanBalance);
+
+      // Handle negative cash scenarios
       if (playerStats && typeof changes.cash === 'number' && changes.cash < 0) {
           const projectedCash = playerStats.cash + changes.cash;
           if (projectedCash < 0) {
               const deficit = Math.abs(projectedCash);
+
+              if (!canAccessLoan) {
+                  // FIRED: Associates can't take loans and went negative
+                  addToast('INSUFFICIENT FUNDS. You cannot afford this.', 'error');
+                  addLogEntry('Expense rejected: insufficient funds and no loan access.');
+
+                  // Check if this would trigger firing (cash already very low)
+                  if (playerStats.cash < 100) {
+                      addToast('WARNING: You are nearly broke. Get promoted to access emergency loans.', 'error');
+                  }
+                  return; // Block the action
+              }
+
+              // Has loan access - check if within limit
               const loanSize = Math.max(25000, Math.ceil(deficit * 1.1));
-              // Merge loan into changes: add loan amount to offset the deficit
+              if (loanSize > availableLoanRoom) {
+                  addToast(`Loan limit exceeded. Max available: $${availableLoanRoom.toLocaleString()}`, 'error');
+                  addLogEntry('Emergency loan denied: credit limit reached.');
+                  return; // Block the action
+              }
+
+              // Merge loan into changes
               finalChanges = {
                   ...finalChanges,
                   cash: (finalChanges.cash || 0) + loanSize,
@@ -656,15 +683,41 @@ const App: React.FC = () => {
               {/* Hide Life Actions during Tutorial Step 1 to prevent pushing content down */}
               {tutorialStep !== 1 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    {LIFE_ACTIONS.map(action => (
+                    {LIFE_ACTIONS.map(action => {
+                        // Calculate affordability for this action
+                        const actionCost = Math.abs(action.outcome.statChanges.cash || 0);
+                        const canAfford = playerStats ? playerStats.cash >= actionCost : false;
+                        const expensiveThreshold = playerStats ? AFFORDABILITY_THRESHOLDS[playerStats.level] : 200;
+                        const feelsExpensive = actionCost >= expensiveThreshold;
+
+                        // Check loan access for bridge loan action
+                        const compensation = playerStats ? COMPENSATION_BY_LEVEL[playerStats.level] : null;
+                        const canAccessLoan = compensation?.canAccessLoan ?? false;
+                        const loanLimit = compensation?.loanLimit ?? 0;
+                        const currentLoanBalance = playerStats?.loanBalance ?? 0;
+                        const isLoanAction = action.id === 'hard_money_loan';
+                        const loanLocked = isLoanAction && !canAccessLoan;
+
+                        return (
                         <button
                             key={action.id}
                             onClick={() => {
                                 if (tutorialStep > 0) return; // Lock during tutorial
                                 if (!playerStats) return;
+
+                                // Bridge Loan - locked for Associates
                                 if (action.id === 'hard_money_loan') {
+                                    if (!canAccessLoan) {
+                                        addToast('Loan access locked. Get promoted to Senior Associate first.', 'error');
+                                        addLogEntry('Bridge loan denied: insufficient seniority.');
+                                        return;
+                                    }
                                     if (playerStats.loanBalance > 0) {
                                         addToast('Existing bridge loan outstanding.', 'error');
+                                        return;
+                                    }
+                                    if (currentLoanBalance + 50000 > loanLimit) {
+                                        addToast(`Loan would exceed your $${loanLimit.toLocaleString()} limit.`, 'error');
                                         return;
                                     }
                                     handleStatChange(action.outcome.statChanges);
@@ -672,6 +725,8 @@ const App: React.FC = () => {
                                     addLogEntry('Took a hard money bridge loan.');
                                     return;
                                 }
+
+                                // Loan payment
                                 if (action.id === 'loan_payment') {
                                     if (playerStats.loanBalance <= 0) {
                                         addToast('No lender breathing down your neck right now.', 'error');
@@ -687,16 +742,34 @@ const App: React.FC = () => {
                                     addLogEntry('Paid down high-interest debt.');
                                     return;
                                 }
+
+                                // Affordability check for all actions
+                                if (actionCost > 0 && !canAfford) {
+                                    addToast(`Can't afford this. Need $${actionCost.toLocaleString()}`, 'error');
+                                    return;
+                                }
+
+                                // Warning for expensive actions (but still allow)
+                                if (feelsExpensive && actionCost > 0) {
+                                    addToast(`Splurging $${actionCost.toLocaleString()} on ${action.text}`, 'info');
+                                }
+
                                 handleStatChange(action.outcome.statChanges);
                                 addToast(action.text, 'success');
                                 addLogEntry(`ACTION: ${action.text}`);
                             }}
-                            className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all active:scale-95 active:border-amber-500 active:shadow-[0_0_12px_rgba(245,158,11,0.4)] ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                            className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all active:scale-95 active:border-amber-500 active:shadow-[0_0_12px_rgba(245,158,11,0.4)] ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''} ${loanLocked ? 'opacity-40 border-red-900' : ''} ${!canAfford && actionCost > 0 ? 'opacity-50 border-slate-800' : ''}`}
                         >
-                            <i className={`fas ${action.icon} text-2xl mb-2 text-slate-500 group-hover:text-blue-500`}></i>
+                            <i className={`fas ${action.icon} text-2xl mb-2 ${loanLocked ? 'text-red-900' : !canAfford && actionCost > 0 ? 'text-slate-600' : feelsExpensive && actionCost > 0 ? 'text-amber-600' : 'text-slate-500'} group-hover:text-blue-500`}></i>
                             <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-white">{action.text}</span>
+                            {actionCost > 0 && (
+                                <span className={`text-[8px] ${!canAfford ? 'text-red-500' : feelsExpensive ? 'text-amber-500' : 'text-slate-600'}`}>
+                                    ${actionCost.toLocaleString()}
+                                </span>
+                            )}
+                            {loanLocked && <span className="text-[8px] text-red-500">LOCKED</span>}
                         </button>
-                    ))}
+                    );})}
                 </div>
               )}
               

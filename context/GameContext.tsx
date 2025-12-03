@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
 import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, FactionReputation, DayType, TimeSlot, KnowledgeEntry } from '../types';
 import { PlayerLevel, DealType } from '../types';
-import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS } from '../constants';
+import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS, COMPENSATION_BY_LEVEL, BONUS_FACTORS } from '../constants';
 import { useAuth } from './AuthContext';
 import { db } from '../services/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -684,6 +684,49 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   }, [npcs, playerStats]);
 
+  // --- COMPENSATION HELPERS ---
+  const calculateAnnualBonus = useCallback((stats: PlayerStats): number => {
+      const comp = COMPENSATION_BY_LEVEL[stats.level];
+      if (!comp || comp.bonusMultiplier === 0) return 0;
+
+      const baseBonus = comp.weeklySalary * 52 * comp.bonusMultiplier;
+
+      // Calculate performance factors
+      const reputationFactor = Math.max(0, Math.min(1,
+          (stats.reputation - BONUS_FACTORS.minReputationForBonus) /
+          (BONUS_FACTORS.fullBonusReputation - BONUS_FACTORS.minReputationForBonus)
+      ));
+
+      // Portfolio performance: average valuation gain
+      const portfolioGains = stats.portfolio.reduce((acc, co) => {
+          const gain = co.investmentCost > 0
+              ? (co.currentValuation - co.investmentCost) / co.investmentCost
+              : 0;
+          return acc + gain;
+      }, 0);
+      const avgPortfolioReturn = stats.portfolio.length > 0
+          ? portfolioGains / stats.portfolio.length
+          : 0;
+      const portfolioFactor = Math.max(0, Math.min(1, avgPortfolioReturn + 0.5)); // 0.5 baseline
+
+      // Deals closed this year (approximated by completed exits)
+      const dealsCompleted = stats.completedExits?.length || 0;
+      const dealsFactor = Math.min(1, dealsCompleted / 3); // 3 deals = full credit
+
+      // Weighted performance score
+      const performanceScore =
+          reputationFactor * BONUS_FACTORS.reputationWeight +
+          portfolioFactor * BONUS_FACTORS.portfolioPerformanceWeight +
+          dealsFactor * BONUS_FACTORS.dealsClosedWeight;
+
+      // No bonus if reputation too low
+      if (stats.reputation < BONUS_FACTORS.minReputationForBonus) {
+          return 0;
+      }
+
+      return Math.round(baseBonus * performanceScore);
+  }, []);
+
   // --- TIME ADVANCEMENT & SCENARIO TRIGGER ---
   const advanceTime = useCallback(() => {
       if (!playerStats) return;
@@ -700,9 +743,69 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { nextDayType, nextSlot } = getNextTimeState(currentDayType, currentTimeSlot);
       const nextTimeCursor = currentTimeCursor + 1;
 
+      // --- SALARY PAYMENT ---
+      // Players receive weekly salary based on their level
+      const compensation = COMPENSATION_BY_LEVEL[playerStats.level];
+      const weeklySalary = compensation?.weeklySalary || 0;
+
+      let salaryMessage = '';
+      if (weeklySalary > 0) {
+          salaryMessage = `Salary deposited: $${weeklySalary.toLocaleString()}`;
+      }
+
+      // --- ANNUAL BONUS CHECK ---
+      // If we're advancing to a new year (month goes from 12 to 1), pay bonus
+      let annualBonus = 0;
+      let bonusMessage = '';
+      if (nextMonth > 12) {
+          annualBonus = calculateAnnualBonus(playerStats);
+          if (annualBonus > 0) {
+              bonusMessage = `BONUS SEASON! Your performance bonus: $${annualBonus.toLocaleString()}`;
+          } else if (playerStats.reputation >= BONUS_FACTORS.minReputationForBonus) {
+              bonusMessage = 'Bonus season: Your performance was... noted. No bonus this year.';
+          } else {
+              bonusMessage = 'Bonus season: You need at least 30 reputation to qualify for bonuses.';
+          }
+      }
+
+      const totalCashInflow = weeklySalary + annualBonus;
+
       updatePlayerStats({
           score: 10,
+          cash: totalCashInflow > 0 ? totalCashInflow : undefined,
       });
+
+      // Log salary and bonus messages
+      if (salaryMessage) {
+          addLogEntry(salaryMessage);
+      }
+      if (bonusMessage) {
+          addLogEntry(bonusMessage);
+      }
+
+      // --- BANKRUPTCY / FIRING CHECK ---
+      // If player has negative cash after salary and can't access loans, they're fired
+      const projectedCash = playerStats.cash + totalCashInflow;
+      const canAccessLoan = compensation?.canAccessLoan ?? false;
+
+      if (projectedCash < 0 && !canAccessLoan) {
+          // GAME OVER - Fired for inability to manage personal finances
+          addLogEntry('TERMINATED: You couldn\'t even manage your own finances. How could you manage a portfolio?');
+          setGamePhase('GAME_OVER');
+          return;
+      }
+
+      // Additional firing condition: reputation too low for too long
+      if (playerStats.reputation < 5 && playerStats.timeCursor > 10) {
+          addLogEntry('TERMINATED: Your reputation is in the gutter. The partners have lost confidence.');
+          setGamePhase('GAME_OVER');
+          return;
+      }
+
+      // Stress-induced breakdown (optional warning, not game over)
+      if (playerStats.stress >= 95 && playerStats.health < 20) {
+          addLogEntry('WARNING: Your body is failing. Take a vacation or face the consequences.');
+      }
 
       decayNpcAffinities();
 
@@ -811,7 +914,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           addLogEntry(`Week advanced to ${slotLabel}. No critical incidents reported.`);
       }
 
-  }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments, marketVolatility, npcs]);
+  }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments, marketVolatility, npcs, calculateAnnualBonus, addLogEntry]);
   const handleActionOutcome = (outcome: { description: string; statChanges: StatChanges }, title: string) => {
       updatePlayerStats(outcome.statChanges);
   };
