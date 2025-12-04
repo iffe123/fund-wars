@@ -1,7 +1,21 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
-import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, DayType, TimeSlot, KnowledgeEntry } from '../types';
+import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, DayType, TimeSlot, KnowledgeEntry, AIState, RivalMindsetState, CoalitionStateData } from '../types';
 import { PlayerLevel, DealType } from '../types';
-import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS, COMPENSATION_BY_LEVEL, BONUS_FACTORS } from '../constants';
+import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS, COMPENSATION_BY_LEVEL, BONUS_FACTORS, COALITION_ANNOUNCEMENTS, PSYCHOLOGICAL_WARFARE_MESSAGES, VENDETTA_ESCALATION_MESSAGES, SURPRISE_ATTACK_MESSAGES } from '../constants';
+
+// Import Advanced AI System
+import {
+  calculateAdaptiveDifficulty,
+  generateRivalMindset,
+  decideTacticalMove,
+  checkCoalitionFormation,
+  generateSurpriseEvent,
+  calculateTacticalMoveEffects,
+  generateTacticalMoveMessage,
+  generateAIKnowledgeEntry,
+  getVendettaPhase,
+  VENDETTA_BEHAVIORS,
+} from '../utils/rivalAI';
 import { useAuth } from './AuthContext';
 import { db } from '../services/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -81,6 +95,20 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS.map(hydrateRivalFund));
   const [activeDeals, setActiveDeals] = useState<CompetitiveDeal[]>([]);
   const lastProcessedRivalTickRef = useRef<number | null>(null);
+
+  // --- ADVANCED AI STATE ---
+  const [aiState, setAIState] = useState<AIState>({
+    playerPatterns: {},
+    rivalMindsets: {},
+    coalitionState: null,
+    lastAnalysisUpdate: 0,
+    dealsWonByPlayer: [],
+    dealsLostByPlayer: [],
+    playerBidHistory: [],
+  });
+
+  // Track previous vendetta levels for escalation detection
+  const previousVendettaRef = useRef<Record<string, number>>({});
 
   // --- CLOUD SAVE / LOAD ---
   useEffect(() => {
@@ -812,7 +840,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setTutorialStep(step);
   };
 
-  // --- RIVAL ACTIONS ---
+  // --- ADVANCED RIVAL AI SYSTEM ---
 
   const processRivalMoves = useCallback(() => {
       if (!playerStats) return;
@@ -820,8 +848,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const currentTick = playerStats.timeCursor ?? 0;
       const rivalStanding = playerStats.factionReputation.RIVALS ?? DEFAULT_FACTION_REPUTATION.RIVALS;
       const hostility = Math.max(0, 65 - rivalStanding) / 100;
-      const stressBias = playerStats.stress > 70 ? 0.08 : 0;
-      const auditBias = playerStats.auditRisk > 55 ? 0.05 : 0;
 
       let workingFunds = rivalFunds.map(hydrateRivalFund);
       let workingDeals = [...activeDeals];
@@ -831,117 +857,350 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       let stressDelta = 0;
       let reputationDelta = 0;
       let rivalRepDelta = 0;
+      let auditRiskDelta = 0;
+      let energyDelta = 0;
       const knowledgeGain: KnowledgeEntry[] = [];
 
-      const sortedRivals = [...workingFunds].sort((a, b) => (b.aggressionLevel + (b.vendetta ?? 40)) - (a.aggressionLevel + (a.vendetta ?? 40)));
+      // Calculate adaptive difficulty based on player performance
+      const difficultyMultiplier = calculateAdaptiveDifficulty(playerStats, workingFunds);
 
+      // Update rival mindsets and check for vendetta escalation
+      const updatedMindsets: Record<string, RivalMindsetState> = { ...aiState.rivalMindsets };
+
+      for (const rival of workingFunds) {
+          const mindset = generateRivalMindset(rival, playerStats, aiState.playerPatterns);
+          updatedMindsets[rival.id] = mindset;
+
+          // Check for vendetta escalation
+          const previousVendetta = previousVendettaRef.current[rival.id] ?? 0;
+          const currentVendetta = rival.vendetta ?? 0;
+          const previousPhase = getVendettaPhase(previousVendetta);
+          const currentPhase = getVendettaPhase(currentVendetta);
+
+          if (currentPhase !== previousPhase && currentPhase !== 'COLD') {
+              const escalationMessages = VENDETTA_ESCALATION_MESSAGES[currentPhase];
+              if (escalationMessages) {
+                  const message = escalationMessages[Math.floor(Math.random() * escalationMessages.length)]
+                      .replace('${name}', rival.managingPartner);
+                  addLogEntry(`VENDETTA ESCALATION: ${message}`);
+                  stressDelta += 5;
+              }
+          }
+
+          previousVendettaRef.current[rival.id] = currentVendetta;
+      }
+
+      // Check for coalition formation
+      let coalitionState = aiState.coalitionState;
+      if (!coalitionState || coalitionState.expiresAtTick <= currentTick) {
+          const newCoalition = checkCoalitionFormation(workingFunds, playerStats, currentTick);
+          if (newCoalition) {
+              coalitionState = newCoalition;
+              const announcement = COALITION_ANNOUNCEMENTS[Math.floor(Math.random() * COALITION_ANNOUNCEMENTS.length)];
+              addLogEntry(`COALITION ALERT: ${announcement}`);
+              stressDelta += 10;
+              knowledgeGain.push(normalizeKnowledgeEntry({
+                  summary: 'Multiple rival funds are coordinating against you',
+                  faction: 'RIVALS',
+                  tags: ['coalition', 'rival', 'threat'],
+              }, 'coalition'));
+          }
+      }
+
+      // Sort rivals by threat level (aggression + vendetta + coalition membership)
+      const sortedRivals = [...workingFunds].sort((a, b) => {
+          const aScore = (b.aggressionLevel + (b.vendetta ?? 40)) *
+              (coalitionState?.members.includes(b.id) ? 1.5 : 1);
+          const bScore = (a.aggressionLevel + (a.vendetta ?? 40)) *
+              (coalitionState?.members.includes(a.id) ? 1.5 : 1);
+          return aScore - bScore;
+      });
+
+      // Process each rival's turn with advanced AI
       for (const rival of sortedRivals) {
           const cooldownReady = (rival.lastActionTick ?? -5) < currentTick - 1;
           if (!cooldownReady && Math.random() > 0.4) continue;
 
-      const vendetta = rival.vendetta ?? 40;
-      const candidateDeals = workingDeals
-          .filter(d => d.interestedRivals.includes(rival.id))
-          .sort((a, b) => (a.deadline - b.deadline) || (Number(b.isHot) - Number(a.isHot)));
+          const mindset = updatedMindsets[rival.id];
+          if (!mindset) continue;
 
-          const targetDeal = candidateDeals[0];
-          const poachChance = targetDeal
-              ? 0.18 + hostility + (vendetta / 150) + (targetDeal.isHot ? 0.08 : 0) + stressBias
-              : 0;
-          const rumorChance = 0.12 + hostility + vendetta / 180 + auditBias;
+          // Apply coalition bonus if active
+          const isInCoalition = coalitionState?.members.includes(rival.id) ?? false;
+          const coalitionBonus = isInCoalition ? 1.3 : 1.0;
 
-          if (targetDeal && Math.random() < poachChance) {
-              workingDeals = workingDeals.filter(d => d.id !== targetDeal.id);
-              dealsChanged = true;
+          // Decide tactical move using advanced AI
+          const decision = decideTacticalMove(
+              rival,
+              mindset,
+              playerStats,
+              workingDeals,
+              marketVolatility,
+              currentTick,
+              difficultyMultiplier * coalitionBonus
+          );
 
-              workingFunds = workingFunds.map(f => {
-                  if (f.id !== rival.id) return f;
+          if (!decision) continue;
 
-                  const portfolioEntry = {
-                      name: targetDeal.companyName,
-                      dealType: targetDeal.dealType,
-                      acquisitionPrice: targetDeal.askingPrice,
-                      currentValue: Math.round(targetDeal.askingPrice * 1.1),
-                      acquiredMonth: playerStats.gameMonth,
-                      acquiredYear: playerStats.gameYear,
-                  };
+          // Execute the tactical move
+          const successRoll = Math.random();
+          const success = successRoll < decision.successChance;
 
-                  fundsChanged = true;
-                  return {
-                      ...f,
-                      dryPowder: Math.max(0, f.dryPowder - Math.round(targetDeal.askingPrice * 0.6)),
-                      portfolio: [...f.portfolio, portfolioEntry],
-                      totalDeals: f.totalDeals + 1,
-                      winStreak: f.winStreak + 1,
-                      reputation: clampStat(f.reputation + 2),
-                      vendetta: clampStat(vendetta + 5),
-                      lastActionTick: currentTick,
-                  };
-              });
+          // Handle specific tactical moves
+          switch (decision.action) {
+              case 'POACH': {
+                  const vendetta = rival.vendetta ?? 40;
+                  const candidateDeals = workingDeals
+                      .filter(d => d.interestedRivals.includes(rival.id))
+                      .sort((a, b) => (a.deadline - b.deadline) || (Number(b.isHot) - Number(a.isHot)));
 
-              stressDelta += 8;
-              reputationDelta -= 2;
-              rivalRepDelta -= 2;
-              appendNpcMemory(rival.npcId, {
-                  summary: `Poached ${targetDeal.companyName} before you could move.`,
-                  sentiment: 'negative',
-                  tags: ['rival', 'deal', 'poach'],
-              });
-              knowledgeGain.push(normalizeKnowledgeEntry({
-                  summary: `${rival.name} poached ${targetDeal.companyName} before you could move.`,
-                  npcId: rival.npcId,
-                  faction: 'RIVALS',
-                  tags: ['rival', 'deal', 'poach'],
-              }, rival.id));
-              addLogEntry(`RIVAL MOVE: ${rival.name} swooped in and closed ${targetDeal.companyName} while you hesitated.`);
-              break;
-          }
+                  const targetDeal = candidateDeals[0];
+                  if (targetDeal && success) {
+                      workingDeals = workingDeals.filter(d => d.id !== targetDeal.id);
+                      dealsChanged = true;
 
-          if (Math.random() < rumorChance) {
-              workingFunds = workingFunds.map(f => f.id === rival.id
-                  ? {
-                      ...f,
-                      winStreak: Math.max(0, f.winStreak - 1),
-                      vendetta: clampStat(vendetta + 3),
-                      lastActionTick: currentTick,
+                      workingFunds = workingFunds.map(f => {
+                          if (f.id !== rival.id) return f;
+
+                          const portfolioEntry = {
+                              name: targetDeal.companyName,
+                              dealType: targetDeal.dealType,
+                              acquisitionPrice: targetDeal.askingPrice,
+                              currentValue: Math.round(targetDeal.askingPrice * 1.1),
+                              acquiredMonth: playerStats.gameMonth,
+                              acquiredYear: playerStats.gameYear,
+                          };
+
+                          fundsChanged = true;
+                          return {
+                              ...f,
+                              dryPowder: Math.max(0, f.dryPowder - Math.round(targetDeal.askingPrice * 0.6)),
+                              portfolio: [...f.portfolio, portfolioEntry],
+                              totalDeals: f.totalDeals + 1,
+                              winStreak: f.winStreak + 1,
+                              reputation: clampStat(f.reputation + 2),
+                              vendetta: clampStat(vendetta + 5),
+                              lastActionTick: currentTick,
+                          };
+                      });
+
+                      stressDelta += 8 + Math.round(decision.intensity / 10);
+                      reputationDelta -= 2;
+                      rivalRepDelta -= 2;
+
+                      appendNpcMemory(rival.npcId, {
+                          summary: `Poached ${targetDeal.companyName} before you could move.`,
+                          sentiment: 'negative',
+                          tags: ['rival', 'deal', 'poach'],
+                      });
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                      addLogEntry(generateTacticalMoveMessage(rival, decision, success));
                   }
-                  : f
-              );
-              fundsChanged = true;
+                  break;
+              }
 
-              const rumorPenalty = rival.aggressionLevel > 70 ? 2 : 1;
-              stressDelta += 4 + Math.round(vendetta / 50);
-              reputationDelta -= rumorPenalty;
-              rivalRepDelta -= 1;
-              appendNpcMemory(rival.npcId, {
-                  summary: `${rival.managingPartner} spread a rumor that you're reckless with diligence.`,
-                  sentiment: 'negative',
-                  tags: ['rival', 'rumor'],
-              });
-              knowledgeGain.push(normalizeKnowledgeEntry({
-                  summary: `${rival.managingPartner} spread a rumor that you're reckless with diligence.`,
-                  npcId: rival.npcId,
-                  faction: 'RIVALS',
-                  tags: ['rival', 'rumor'],
-              }, rival.id));
-              addLogEntry(`RIVAL RUMOR: ${rival.managingPartner} blasted you to LPs and bankers. Reputation took a hit.`);
-              break;
+              case 'RUMOR': {
+                  if (success) {
+                      const vendetta = rival.vendetta ?? 40;
+                      workingFunds = workingFunds.map(f => f.id === rival.id
+                          ? {
+                              ...f,
+                              winStreak: Math.max(0, f.winStreak - 1),
+                              vendetta: clampStat(vendetta + 3),
+                              lastActionTick: currentTick,
+                          }
+                          : f
+                      );
+                      fundsChanged = true;
+
+                      const effects = calculateTacticalMoveEffects(decision, success, rival);
+                      stressDelta += effects.stress || 0;
+                      reputationDelta += effects.reputation || 0;
+                      rivalRepDelta += effects.factionReputation?.RIVALS || 0;
+
+                      appendNpcMemory(rival.npcId, {
+                          summary: `${rival.managingPartner} spread damaging rumors about you.`,
+                          sentiment: 'negative',
+                          tags: ['rival', 'rumor', 'psychological'],
+                      });
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                      addLogEntry(generateTacticalMoveMessage(rival, decision, success));
+                  }
+                  break;
+              }
+
+              case 'PSYCHOLOGICAL_WARFARE': {
+                  if (success) {
+                      const message = PSYCHOLOGICAL_WARFARE_MESSAGES[Math.floor(Math.random() * PSYCHOLOGICAL_WARFARE_MESSAGES.length)]
+                          .replace('${name}', rival.managingPartner);
+
+                      const effects = calculateTacticalMoveEffects(decision, success, rival);
+                      stressDelta += effects.stress || 0;
+                      reputationDelta += effects.reputation || 0;
+                      auditRiskDelta += effects.auditRisk || 0;
+
+                      workingFunds = workingFunds.map(f => f.id === rival.id
+                          ? {
+                              ...f,
+                              vendetta: clampStat((f.vendetta ?? 40) + 4),
+                              lastActionTick: currentTick,
+                          }
+                          : f
+                      );
+                      fundsChanged = true;
+
+                      addLogEntry(`PSYCHOLOGICAL ATTACK: ${message}`);
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                  }
+                  break;
+              }
+
+              case 'SABOTAGE': {
+                  if (success && playerStats.portfolio.length > 0) {
+                      // Target a random portfolio company
+                      const targetCompany = playerStats.portfolio[Math.floor(Math.random() * playerStats.portfolio.length)];
+                      const effects = calculateTacticalMoveEffects(decision, success, rival);
+
+                      stressDelta += effects.stress || 0;
+                      reputationDelta += effects.reputation || 0;
+                      auditRiskDelta += effects.auditRisk || 0;
+
+                      workingFunds = workingFunds.map(f => f.id === rival.id
+                          ? {
+                              ...f,
+                              vendetta: clampStat((f.vendetta ?? 40) + 6),
+                              lastActionTick: currentTick,
+                          }
+                          : f
+                      );
+                      fundsChanged = true;
+
+                      appendNpcMemory(rival.npcId, {
+                          summary: `Attempted to sabotage your portfolio company ${targetCompany.name}.`,
+                          sentiment: 'negative',
+                          tags: ['rival', 'sabotage', 'portfolio'],
+                      });
+                      addLogEntry(`SABOTAGE ATTEMPT: ${rival.name} is attacking your investment in ${targetCompany.name}!`);
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                  }
+                  break;
+              }
+
+              case 'SURPRISE_BID': {
+                  if (success) {
+                      const surpriseMessage = SURPRISE_ATTACK_MESSAGES[Math.floor(Math.random() * SURPRISE_ATTACK_MESSAGES.length)]
+                          .replace('${name}', rival.name);
+
+                      stressDelta += 15;
+
+                      workingFunds = workingFunds.map(f => f.id === rival.id
+                          ? {
+                              ...f,
+                              vendetta: clampStat((f.vendetta ?? 40) + 8),
+                              aggressionLevel: clampStat(f.aggressionLevel + 5),
+                              lastActionTick: currentTick,
+                          }
+                          : f
+                      );
+                      fundsChanged = true;
+
+                      addLogEntry(`SURPRISE MOVE: ${surpriseMessage}`);
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+
+                      // Update AI state to record surprise move
+                      updatedMindsets[rival.id] = {
+                          ...updatedMindsets[rival.id],
+                          lastSurpriseMove: currentTick,
+                      };
+                  }
+                  break;
+              }
+
+              case 'COALITION': {
+                  if (success && coalitionState) {
+                      const effects = calculateTacticalMoveEffects(decision, success, rival);
+                      stressDelta += effects.stress || 0;
+                      reputationDelta += effects.reputation || 0;
+
+                      addLogEntry(`COALITION ATTACK: The rival funds are working together against you!`);
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                  }
+                  break;
+              }
+
+              case 'MARKET_MANIPULATION': {
+                  if (success) {
+                      const effects = calculateTacticalMoveEffects(decision, success, rival);
+                      stressDelta += effects.stress || 0;
+                      rivalRepDelta += effects.factionReputation?.RIVALS || 0;
+
+                      // Reduce quality of available deals
+                      workingDeals = workingDeals.map(d => ({
+                          ...d,
+                          fairValue: Math.round(d.fairValue * 0.9),
+                          isHot: false,
+                      }));
+                      dealsChanged = true;
+
+                      addLogEntry(`MARKET MANIPULATION: ${rival.name} is manipulating deal flow against you.`);
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                  }
+                  break;
+              }
+
+              case 'STRATEGIC_RETREAT': {
+                  // Rival is pulling back - reduce their vendetta slightly
+                  workingFunds = workingFunds.map(f => f.id === rival.id
+                      ? {
+                          ...f,
+                          vendetta: clampStat((f.vendetta ?? 40) - 5),
+                          lastActionTick: currentTick,
+                      }
+                      : f
+                  );
+                  fundsChanged = true;
+                  addLogEntry(`INTEL: ${rival.name} is pulling back. What are they planning?`);
+                  break;
+              }
           }
+
+          // Generate surprise event for heated rivalries
+          if (mindset.vendettaPhase !== 'COLD' && Math.random() < 0.15 * difficultyMultiplier) {
+              const surpriseEvent = generateSurpriseEvent(rival, mindset, playerStats);
+              if (surpriseEvent) {
+                  addLogEntry(`SURPRISE EVENT: ${rival.managingPartner} ${surpriseEvent.event.description}`);
+                  stressDelta += surpriseEvent.event.severity === 'HIGH' ? 12 :
+                                 surpriseEvent.event.severity === 'MEDIUM' ? 8 : 4;
+              }
+          }
+
+          // Only process one rival per tick to avoid overwhelming the player
+          if (success) break;
       }
 
+      // Update state
       if (fundsChanged) setRivalFunds(workingFunds.map(hydrateRivalFund));
       if (dealsChanged) setActiveDeals(workingDeals);
 
+      // Update AI state
+      setAIState(prev => ({
+          ...prev,
+          rivalMindsets: updatedMindsets,
+          coalitionState,
+      }));
+
+      // Apply stat changes
       const factionDelta = rivalRepDelta !== 0 ? { RIVALS: rivalRepDelta } : undefined;
-      if (stressDelta || reputationDelta || factionDelta || knowledgeGain.length) {
+      if (stressDelta || reputationDelta || auditRiskDelta || energyDelta || factionDelta || knowledgeGain.length) {
           updatePlayerStats({
               stress: stressDelta || undefined,
               reputation: reputationDelta || undefined,
+              auditRisk: auditRiskDelta || undefined,
+              energy: energyDelta || undefined,
               factionReputation: factionDelta,
               knowledgeGain: knowledgeGain.length ? knowledgeGain : undefined,
           });
       }
-  }, [playerStats, rivalFunds, activeDeals, addLogEntry, updatePlayerStats, appendNpcMemory]);
+  }, [playerStats, rivalFunds, activeDeals, aiState, marketVolatility, addLogEntry, updatePlayerStats, appendNpcMemory]);
 
   useEffect(() => {
       if (!playerStats || gamePhase === 'INTRO') return;

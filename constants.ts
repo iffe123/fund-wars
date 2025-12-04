@@ -1535,3 +1535,124 @@ export const RIVAL_FUND_NPCS: NPC[] = [
     goals: ['Prove scrappy funds can win', 'Leverage gossip to ambush you']
   }
 ];
+
+// ==================== ADVANCED AI CONFIGURATIONS ====================
+
+export const RIVAL_TAUNTS: Record<string, string[]> = {
+  hunter_capital: [
+    "Did you learn finance at community college?",
+    "My trust fund has generated more alpha than your entire career.",
+    "I don't compete with associates. I crush them.",
+    "Cute bid. Was that your entire fund?",
+    "The Vanderbilt name has survived three generations. You won't survive one.",
+    "I've forgotten more deals than you've ever seen.",
+  ],
+  meridian_partners: [
+    "We prefer disciplined capital allocation to emotional bidding.",
+    "Some of us still believe in fundamental value.",
+    "When this blows up, don't say we didn't warn you.",
+    "Interesting strategy. Our models say otherwise.",
+    "Victoria doesn't chase. She calculates.",
+    "We'll be here when you need a buyer for the wreckage.",
+  ],
+  apex_equity: [
+    "We came from nothing. What's your excuse?",
+    "Street smart beats book smart every time.",
+    "While you were in meetings, we closed the deal.",
+    "Scrappy beats silver spoon any day.",
+    "You think that's aggressive? You haven't seen anything.",
+    "The market doesn't care about your pedigree.",
+  ],
+};
+
+export const COALITION_ANNOUNCEMENTS = [
+  "Word on the street: rival funds are comparing notes on your strategy.",
+  "Unusual activity detected - competitors seem to be coordinating.",
+  "Your sources report a secret meeting between rival fund partners.",
+  "The game just changed. Your competitors are working together.",
+  "A coalition has formed. You're the target.",
+];
+
+export const PSYCHOLOGICAL_WARFARE_MESSAGES = [
+  "${name} hired a PR firm to spread doubt about your track record.",
+  "${name} is telling LPs you're 'over your skis' on leverage.",
+  "Rumors are swirling that ${name} has damaging information about you.",
+  "${name} publicly questioned your ethics at an industry dinner.",
+  "Your deal pipeline is mysteriously drying up. ${name} is smiling.",
+  "${name} sent a bottle of champagne with a note: 'For when you need to celebrate your exit from the industry.'",
+];
+
+export const SURPRISE_ATTACK_MESSAGES = [
+  "${name} just made an unexpected power play!",
+  "BREAKING: ${name} catches everyone off guard with aggressive move!",
+  "${name} has gone off-script. Expect chaos.",
+  "Intelligence suggests ${name} is planning something big.",
+  "${name} just burned their playbook. New strategy incoming.",
+];
+
+export const VENDETTA_ESCALATION_MESSAGES: Record<string, string[]> = {
+  WARMING: [
+    "${name} seems to have taken notice of you. Not in a good way.",
+    "You've gotten under ${name}'s skin. They're watching your moves closely.",
+    "${name} is starting to view you as a real threat.",
+  ],
+  HOT: [
+    "${name} has made this personal. Every deal is now a battleground.",
+    "The rivalry with ${name} is heating up. Expect fireworks.",
+    "${name} is actively working against your interests.",
+  ],
+  BLOOD_FEUD: [
+    "${name} has declared war. There will be collateral damage.",
+    "This has gone beyond business. ${name} wants to see you fail.",
+    "The vendetta with ${name} has reached dangerous levels.",
+  ],
+  TOTAL_WAR: [
+    "${name} is willing to burn everything to beat you. Including themselves.",
+    "DEFCON 1: ${name} has launched all-out war on your fund.",
+    "This is existential. Only one of you survives this rivalry.",
+  ],
+};
+
+export const AI_PERSONALITY_MODIFIERS: Record<string, {
+  aggressionBonus: number;
+  bluffMultiplier: number;
+  surpriseFrequency: number;
+  coalitionAffinity: number;
+}> = {
+  CALCULATING: {
+    aggressionBonus: 0,
+    bluffMultiplier: 0.5,
+    surpriseFrequency: 0.1,
+    coalitionAffinity: 0.3,
+  },
+  AGGRESSIVE: {
+    aggressionBonus: 20,
+    bluffMultiplier: 1.2,
+    surpriseFrequency: 0.3,
+    coalitionAffinity: 0.2,
+  },
+  OPPORTUNISTIC: {
+    aggressionBonus: 10,
+    bluffMultiplier: 1.5,
+    surpriseFrequency: 0.4,
+    coalitionAffinity: 0.5,
+  },
+  PARANOID: {
+    aggressionBonus: 5,
+    bluffMultiplier: 0.8,
+    surpriseFrequency: 0.2,
+    coalitionAffinity: 0.7,
+  },
+  UNPREDICTABLE: {
+    aggressionBonus: 15,
+    bluffMultiplier: 2.0,
+    surpriseFrequency: 0.6,
+    coalitionAffinity: 0.4,
+  },
+};
+
+export const ADAPTIVE_DIFFICULTY_THRESHOLDS = {
+  EASY: { playerWinRate: 0.7, wealthRatio: 2.0, reputationThreshold: 85 },
+  NORMAL: { playerWinRate: 0.5, wealthRatio: 1.5, reputationThreshold: 70 },
+  HARD: { playerWinRate: 0.3, wealthRatio: 1.0, reputationThreshold: 50 },
+};
