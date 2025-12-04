@@ -7,7 +7,6 @@ import NewsTicker from './components/NewsTicker';
 import CommsTerminal from './components/CommsTerminal';
 import PortfolioView from './components/PortfolioView';
 import FounderDashboard from './components/FounderDashboard';
-import ChallengeModal from './components/ChallengeModal';
 import SanityEffects from './components/SanityEffects';
 import IntroSequence from './components/IntroSequence';
 import SystemBoot from './components/SystemBoot';
@@ -16,12 +15,16 @@ import PlayerStatsDisplay from './components/PlayerStats';
 import BottomNav from './components/BottomNav';
 import LoginScreen from './components/LoginScreen';
 import LegalDisclaimer from './components/LegalDisclaimer';
-import { TerminalPanel, TerminalButton, TerminalToast, AsciiProgress } from './components/TerminalUI';
+import { TerminalPanel, TerminalButton, TerminalToast } from './components/TerminalUI';
+import NpcListPanel from './components/NpcListPanel';
+import WorkspacePanel from './components/WorkspacePanel';
+import ScenarioPanel from './components/ScenarioPanel';
 import { getAdvisorResponse, getNPCResponse } from './services/geminiService';
 import { useGame } from './context/GameContext';
 import { useAuth } from './context/AuthContext';
 import { useAudio } from './context/AudioContext';
 import { logEvent } from './services/analytics';
+import { useToast } from './hooks/useToast';
 import CompetitiveAuctionModal, { AuctionResult } from './components/CompetitiveAuctionModal';
 import DealMarket from './components/DealMarket';
 import RivalLeaderboard from './components/RivalLeaderboard';
@@ -29,15 +32,8 @@ import PortfolioCommandCenter from './components/PortfolioCommandCenter';
 
 declare global {
   interface Window {
-    google?: any;
+    google?: unknown;
   }
-}
-
-// Sarcastic Toast Interface
-interface Toast {
-    id: number;
-    message: string;
-    type: 'error' | 'success' | 'info';
 }
 
 const TUTORIAL_STEPS_TEXT = [
@@ -64,11 +60,11 @@ const App: React.FC = () => {
   
   const { loading: authLoading } = useAuth();
   const { playSfx, playAmbience } = useAudio();
+  const { toasts, addToast, removeToast } = useToast();
 
   // --- CORE STATE ---
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
   const [activeTab, setActiveTab] = useState<'WORKSPACE' | 'ASSETS' | 'FOUNDER' | 'DEALS'>('WORKSPACE');
   const [activeMobileTab, setActiveMobileTab] = useState<'COMMS' | 'DESK' | 'NEWS' | 'MENU'>('DESK');
   
@@ -95,14 +91,6 @@ const App: React.FC = () => {
           )
         : []);
   const founderUnlocked = playerStats ? playerStats.reputation >= 50 : false;
-
-  // --- SARCASTIC ERROR HANDLER ---
-  const addToast = (message: string, type: 'error' | 'success' | 'info' = 'info') => {
-      const id = Date.now();
-      setToasts(prev => [...prev, { id, message, type }]);
-      playSfx(type === 'error' ? 'ERROR' : type === 'success' ? 'SUCCESS' : 'NOTIFICATION');
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
-  };
 
   // Dev-only or explicit reset via query param
   useEffect(() => {
@@ -161,12 +149,6 @@ const App: React.FC = () => {
       }
   }, [tutorialStep, bootComplete, gamePhase, activeDeals.length, generateNewDeals]);
 
-  // Left Panel Sync Logic
-  useEffect(() => {
-      if (selectedNpcId && activeMobileTab !== 'COMMS') {
-          // If NPC selected from logic, ensure chat terminal knows about it
-      }
-  }, [selectedNpcId]);
 
   // Auto-complete boot sequence if loading saved game (playerStats exists but not in INTRO)
   useEffect(() => {
@@ -500,45 +482,14 @@ const App: React.FC = () => {
   };
 
   // --- RENDER HELPERS ---
-  const renderLeftPanel = () => (
-      <TerminalPanel 
-        title="COMMS_ARRAY" 
-        className={`h-full flex flex-col ${tutorialStep === 4 ? 'z-[100] relative ring-2 ring-amber-500' : ''}`}
-      >
-          <div className="flex-1 bg-black">
-              {npcs.map(npc => (
-                  <button
-                      key={npc.id}
-                      onClick={() => { 
-                          setSelectedNpcId(npc.id); 
-                          playSfx('KEYPRESS');
-                          // Tutorial Logic: If we click Sarah in Step 4, advance
-                          if (tutorialStep === 4 && npc.id === 'sarah') {
-                              setTutorialStep(5);
-                          }
-                      }}
-                      className={`w-full text-left p-3 border-b border-slate-800 hover:bg-slate-800 transition-colors flex items-center space-x-3 ${selectedNpcId === npc.id ? 'bg-slate-800 text-amber-500' : 'text-slate-400'}`}
-                  >
-                      <div className={`w-2 h-2 rounded-full ${npc.mood > 60 && npc.trust > 50 ? 'bg-green-500' : (npc.mood < 30 || npc.trust < 30) ? 'bg-red-500' : 'bg-amber-500'}`}></div>
-                      <div className="flex-1">
-                          <div className="font-bold text-xs">{npc.name}</div>
-                          <div className="text-[10px] opacity-70">{npc.role}</div>
-                      </div>
-                  </button>
-              ))}
-              <button 
-                onClick={() => { setSelectedNpcId('advisor'); playSfx('KEYPRESS'); }}
-                className={`w-full text-left p-3 border-b border-slate-800 hover:bg-slate-800 transition-colors flex items-center space-x-3 ${selectedNpcId === 'advisor' ? 'bg-slate-800 text-blue-400' : 'text-slate-400'}`}
-              >
-                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                  <div className="font-bold text-xs">MACHIAVELLI (AI)</div>
-              </button>
-          </div>
-          <div className="p-2 border-t border-slate-700 bg-slate-900 text-[10px] text-center text-slate-500">
-              SECURE_CHANNEL_ESTABLISHED
-          </div>
-      </TerminalPanel>
-  );
+  const handleNpcSelect = useCallback((npcId: string) => {
+    setSelectedNpcId(npcId);
+    playSfx('KEYPRESS');
+  }, [playSfx]);
+
+  const handleTutorialStep5 = useCallback(() => {
+    setTutorialStep(5);
+  }, [setTutorialStep]);
 
   const renderCenterPanel = () => {
       // 1. Asset Manager View
@@ -634,40 +585,12 @@ const App: React.FC = () => {
       // 4. Scenario Workspace
       if (gamePhase === 'SCENARIO') {
           return (
-              <TerminalPanel title={`CIM_READER :: ${currentScenario.title.toUpperCase()}`} className="h-full flex flex-col">
-                  <div className="p-6 overflow-y-auto flex-1 bg-black text-slate-300 font-mono">
-                      <div className="border-l-2 border-amber-500 pl-4 mb-6 text-lg italic text-amber-100">
-                          {currentScenario.description}
-                      </div>
-
-                      <div className="grid gap-3">
-                          {scenarioChoices.length === 0 && (
-                              <div className="text-xs text-slate-500 border border-dashed border-slate-700 p-4 text-center space-y-3">
-                                  <div>No decision points available yet. Gather more intel.</div>
-                                  <button
-                                      onClick={handleScenarioFallback}
-                                      className="px-4 py-2 border border-slate-600 text-slate-300 hover:border-amber-500 hover:text-amber-400 transition-colors"
-                                  >
-                                      Return to Desk
-                                  </button>
-                              </div>
-                          )}
-
-                          {scenarioChoices.map((choice, i) => (
-                              <button
-                                  key={i}
-                                  onClick={() => handleChoice(choice)}
-                                  className="text-left border border-slate-700 p-4 hover:bg-slate-800 hover:border-green-500 transition-all group"
-                              >
-                                  <div className="font-bold text-green-500 mb-1 group-hover:text-green-400">
-                                      {">"} OPTION_{i + 1}: {choice.text}
-                                  </div>
-                                  <div className="text-xs text-slate-500">{choice.description}</div>
-                              </button>
-                          ))}
-                      </div>
-                  </div>
-              </TerminalPanel>
+              <ScenarioPanel
+                  scenario={currentScenario}
+                  choices={scenarioChoices}
+                  onChoice={handleChoice}
+                  onFallback={handleScenarioFallback}
+              />
           );
       }
 
@@ -1037,7 +960,7 @@ const App: React.FC = () => {
         <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
 
         {/* TOAST LAYER */}
-        <TerminalToast toasts={toasts} removeToast={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
+        <TerminalToast toasts={toasts} removeToast={removeToast} />
 
         {/* GLITCH EFFECTS */}
         {playerStats && <SanityEffects stress={playerStats.stress} dependency={playerStats.dependency} />}

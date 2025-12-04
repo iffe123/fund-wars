@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import type { PortfolioCompany, PortfolioAction, PlayerStats } from '../types';
-import { PORTFOLIO_ACTIONS, MARKET_VOLATILITY_STYLES } from '../constants';
+import { MARKET_VOLATILITY_STYLES } from '../constants';
 import { TerminalButton, TerminalPanel, AsciiProgress, Badge } from './TerminalUI';
 import { useGame } from '../context/GameContext';
 import AuctionModal from './AuctionModal';
@@ -15,7 +15,7 @@ interface PortfolioViewProps {
   canAccessFounder?: boolean;
 }
 
-const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, onBack, onJumpShip, canAccessFounder = false }) => {
+const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onAction, onBack, onJumpShip, canAccessFounder = false }) => {
   const { tutorialStep, updatePlayerStats, setTutorialStep, marketVolatility } = useGame();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [analyzingIds, setAnalyzingIds] = useState<number[]>([]);
@@ -31,8 +31,9 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
   // Market Cycle Modifiers
   const isMarketPanic = marketVolatility === 'PANIC' || marketVolatility === 'CREDIT_CRUNCH';
 
-  const formatMoney = (val: number) => `$${(val / 1000000).toFixed(1)}M`;
-  const formatPercent = (val: number) => `${(val * 100).toFixed(1)}%`;
+  // Memoize formatting functions
+  const formatMoney = useCallback((val: number) => `$${(val / 1000000).toFixed(1)}M`, []);
+  const formatPercent = useCallback((val: number) => `${(val * 100).toFixed(1)}%`, []);
 
   const handleAnalyze = (companyId: number) => {
     setAnalyzingIds(prev => [...prev, companyId]);
@@ -104,8 +105,8 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
     }
   };
 
-  // Deal type styling
-  const getDealTypeStyle = (dealType: string) => {
+  // Memoize deal type styling function
+  const getDealTypeStyle = useCallback((dealType: string) => {
     switch (dealType) {
       case 'LBO': return 'bg-purple-900/30 text-purple-400 border-purple-700/50';
       case 'GROWTH': return 'bg-emerald-900/30 text-emerald-400 border-emerald-700/50';
@@ -113,7 +114,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
       case 'DEBT': return 'bg-amber-900/30 text-amber-400 border-amber-700/50';
       default: return 'bg-slate-800/50 text-slate-400 border-slate-600/50';
     }
-  };
+  }, []);
 
   return (
     <div className="h-full flex flex-col font-mono text-sm relative">
@@ -499,6 +500,8 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
       )}
     </div>
   );
-};
+});
+
+PortfolioView.displayName = 'PortfolioView';
 
 export default PortfolioView;

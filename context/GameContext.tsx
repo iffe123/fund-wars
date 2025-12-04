@@ -1,11 +1,30 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
-import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, FactionReputation, DayType, TimeSlot, KnowledgeEntry } from '../types';
+import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, DayType, TimeSlot, KnowledgeEntry } from '../types';
 import { PlayerLevel, DealType } from '../types';
 import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS, COMPENSATION_BY_LEVEL, BONUS_FACTORS } from '../constants';
 import { useAuth } from './AuthContext';
 import { db } from '../services/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { logEvent } from '../services/analytics';
+
+// Import extracted utilities
+import {
+  clampStat,
+  generateUniquePortfolioId,
+  TIME_SLOTS,
+  getNextTimeState,
+  hydrateFactionReputation,
+  normalizeMemory,
+  clampMemories,
+  normalizeKnowledgeEntry,
+  clampKnowledge,
+  sanitizeKnowledgeLog,
+  sanitizeKnowledgeFlags,
+  hydrateNpc,
+  hydrateRivalFund,
+  hydrateCompetitiveDeal,
+  MAX_PORTFOLIO_SIZE
+} from '../utils/gameUtils';
 
 interface GameContextTypeExtended extends GameContextType {
     advanceTime: () => void;
@@ -20,166 +39,8 @@ interface GameContextTypeExtended extends GameContextType {
 
 const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
 
-const clampStat = (value: number, min = 0, max = 100) => Math.max(min, Math.min(max, value));
-
-// Generate unique portfolio company ID to prevent collisions
-let portfolioIdCounter = 0;
-const generateUniquePortfolioId = (existingIds: number[]): number => {
-    // Use timestamp + counter + random component for uniqueness
-    let newId: number;
-    do {
-        newId = Date.now() + (++portfolioIdCounter) + Math.floor(Math.random() * 1000);
-    } while (existingIds.includes(newId));
-    return newId;
-};
-
-// Maximum portfolio size to prevent performance issues and encourage exits
-export const MAX_PORTFOLIO_SIZE = 8;
-
-const slugify = (text: string) =>
-    text
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '') || 'fact';
-
-const TIME_SLOTS: TimeSlot[] = ['MORNING', 'AFTERNOON', 'EVENING'];
-
-const getNextTimeState = (currentDayType: DayType, currentTimeSlot: TimeSlot) => {
-    const slotIndex = TIME_SLOTS.indexOf(currentTimeSlot);
-    const nextSlot = TIME_SLOTS[(slotIndex + 1) % TIME_SLOTS.length];
-    const nextDayType: DayType = nextSlot === 'MORNING'
-        ? currentDayType === 'WEEKDAY' ? 'WEEKEND' : 'WEEKDAY'
-        : currentDayType;
-    return { nextDayType, nextSlot };
-};
-
-const isNpcAvailable = (npc: NPC, dayType: DayType, timeSlot: TimeSlot) => {
-    const schedule = npc.schedule;
-    if (!schedule) return true;
-    const slots = dayType === 'WEEKDAY' ? schedule.weekday : schedule.weekend;
-    return slots.includes(timeSlot);
-};
-
-const hydrateFactionReputation = (factionRep?: FactionReputation): FactionReputation => {
-    const hydrated: FactionReputation = { ...DEFAULT_FACTION_REPUTATION };
-    if (!factionRep) return hydrated;
-
-    (Object.keys(hydrated) as Array<keyof FactionReputation>).forEach(key => {
-        hydrated[key] = clampStat(factionRep[key] ?? hydrated[key]);
-    });
-    return hydrated;
-};
-
-const normalizeMemory = (memory: NPCMemory | string, fallbackSourceId?: string): NPCMemory => {
-    const base: NPCMemory = typeof memory === 'string' ? { summary: memory } : memory;
-    const now = new Date().toISOString();
-    return {
-        summary: base.summary,
-        timestamp: base.timestamp || now,
-        sentiment: base.sentiment,
-        impact: base.impact,
-        tags: base.tags || [],
-        sourceNpcId: base.sourceNpcId || fallbackSourceId,
-    };
-};
-
-const clampMemories = (memories: NPCMemory[]): NPCMemory[] => memories.slice(-12);
-
-const normalizeKnowledgeEntry = (entry: KnowledgeEntry | string, fallbackSource?: string): KnowledgeEntry => {
-    const base: KnowledgeEntry = typeof entry === 'string' ? { summary: entry } : entry;
-    const timestamp = base.timestamp || new Date().toISOString();
-    const summary = base.summary || '';
-    const id = base.id || `${slugify(summary).slice(0, 40)}-${timestamp}`;
-    return {
-        ...base,
-        id,
-        summary,
-        timestamp,
-        source: base.source || fallbackSource,
-        tags: base.tags || [],
-    };
-};
-
-const clampKnowledge = (entries: KnowledgeEntry[]): KnowledgeEntry[] => entries.slice(-18);
-
-export const sanitizeKnowledgeLog = (entries?: unknown): KnowledgeEntry[] => {
-    if (!Array.isArray(entries)) return [];
-
-    const normalized = entries
-        .map(entry => normalizeKnowledgeEntry(entry as KnowledgeEntry | string))
-        .filter(entry => Boolean(entry.summary));
-
-    return clampKnowledge(normalized);
-};
-
-export const sanitizeKnowledgeFlags = (flags?: unknown): string[] => {
-    if (!Array.isArray(flags)) return [];
-    return flags.filter((flag): flag is string => typeof flag === 'string');
-};
-
-export const hydrateNpc = (npc: NPC): NPC => {
-    const hydratedMemories = Array.isArray(npc.memories)
-        ? clampMemories(npc.memories.map(m => normalizeMemory(m, npc.id)))
-        : [];
-
-    return {
-        ...npc,
-        mood: clampStat(typeof npc.mood === 'number' ? npc.mood : npc.relationship),
-        trust: clampStat(typeof npc.trust === 'number' ? npc.trust : npc.relationship),
-        dialogueHistory: npc.dialogueHistory || [],
-        memories: hydratedMemories,
-        lastContactTick: typeof npc.lastContactTick === 'number' ? npc.lastContactTick : 0,
-    };
-};
-
-export const hydrateRivalFund = (fund: RivalFund): RivalFund => ({
-    ...fund,
-    vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
-    lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
-});
-
-export const hydrateFund = (fund: RivalFund): RivalFund => ({
-    ...fund,
-    reputation: clampStat(typeof fund.reputation === 'number' ? fund.reputation : 50),
-    aggressionLevel: clampStat(typeof fund.aggressionLevel === 'number' ? fund.aggressionLevel : 50),
-    riskTolerance: clampStat(typeof fund.riskTolerance === 'number' ? fund.riskTolerance : 50),
-    vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
-    winStreak: typeof fund.winStreak === 'number' ? fund.winStreak : 0,
-    totalDeals: typeof fund.totalDeals === 'number' ? fund.totalDeals : 0,
-    dryPowder: typeof fund.dryPowder === 'number' ? fund.dryPowder : 0,
-    aum: typeof fund.aum === 'number' ? fund.aum : 0,
-    portfolio: Array.isArray(fund.portfolio) ? fund.portfolio : [],
-    lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
-});
-
-export const hydrateCompetitiveDeal = (deal: any): CompetitiveDeal | null => {
-    if (!deal || typeof deal !== 'object') return null;
-
-    const numeric = <T extends number>(value: any, fallback: T): T =>
-        typeof value === 'number' && !Number.isNaN(value) ? value as T : fallback;
-
-    return {
-        id: numeric(deal.id, Date.now()),
-        companyName: deal.companyName || 'Unknown Target',
-        sector: deal.sector || 'Misc',
-        description: deal.description || 'No description',
-        askingPrice: numeric(deal.askingPrice, 0),
-        fairValue: numeric(deal.fairValue, numeric(deal.askingPrice, 0)),
-        dealType: deal.dealType || DealType.LBO,
-        metrics: {
-            revenue: numeric(deal.metrics?.revenue, 0),
-            ebitda: numeric(deal.metrics?.ebitda, 0),
-            growth: numeric(deal.metrics?.growth, 0),
-            debt: numeric(deal.metrics?.debt, 0),
-        },
-        seller: deal.seller || 'Unknown Seller',
-        deadline: numeric(deal.deadline, 3),
-        interestedRivals: Array.isArray(deal.interestedRivals) ? deal.interestedRivals : [],
-        isHot: Boolean(deal.isHot),
-        hiddenRisk: deal.hiddenRisk,
-        hiddenUpside: deal.hiddenUpside,
-    };
-};
+// Re-export utilities for backward compatibility
+export { sanitizeKnowledgeLog, sanitizeKnowledgeFlags, hydrateNpc, hydrateRivalFund, hydrateCompetitiveDeal, MAX_PORTFOLIO_SIZE } from '../utils/gameUtils';
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
@@ -217,7 +78,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
   
   // --- RIVAL FUNDS & COMPETITIVE DEALS ---
-  const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS.map(hydrateFund));
+  const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS.map(hydrateRivalFund));
   const [activeDeals, setActiveDeals] = useState<CompetitiveDeal[]>([]);
   const lastProcessedRivalTickRef = useRef<number | null>(null);
 
@@ -258,7 +119,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                       const safeKnowledgeLog = sanitizeKnowledgeLog(data.playerStats?.knowledgeLog);
                       const safeKnowledgeFlags = sanitizeKnowledgeFlags(data.playerStats?.knowledgeFlags);
                       const safeNpcs = Array.isArray(data.npcs) ? data.npcs.map(hydrateNpc) : [...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc);
-                      const safeRivalFunds = Array.isArray(data.rivalFunds) ? data.rivalFunds.map(hydrateFund) : RIVAL_FUNDS.map(hydrateFund);
+                      const safeRivalFunds = Array.isArray(data.rivalFunds) ? data.rivalFunds.map(hydrateRivalFund) : RIVAL_FUNDS.map(hydrateRivalFund);
                       const safeActiveDeals = Array.isArray(data.activeDeals)
                         ? data.activeDeals
                             .map(hydrateCompetitiveDeal)
@@ -292,7 +153,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                       console.error('[CLOUD_LOAD] Save data malformed, resetting to defaults.', parseError);
                       setPlayerStats(null);
                       setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc));
-                      setRivalFunds(RIVAL_FUNDS.map(hydrateFund));
+                      setRivalFunds(RIVAL_FUNDS.map(hydrateRivalFund));
                       setGamePhase('INTRO');
                   }
 
@@ -962,7 +823,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const stressBias = playerStats.stress > 70 ? 0.08 : 0;
       const auditBias = playerStats.auditRisk > 55 ? 0.05 : 0;
 
-      let workingFunds = rivalFunds.map(hydrateFund);
+      let workingFunds = rivalFunds.map(hydrateRivalFund);
       let workingDeals = [...activeDeals];
 
       let fundsChanged = false;
@@ -1068,7 +929,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
       }
 
-      if (fundsChanged) setRivalFunds(workingFunds.map(hydrateFund));
+      if (fundsChanged) setRivalFunds(workingFunds.map(hydrateRivalFund));
       if (dealsChanged) setActiveDeals(workingDeals);
 
       const factionDelta = rivalRepDelta !== 0 ? { RIVALS: rivalRepDelta } : undefined;
@@ -1095,7 +956,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateRivalFund = useCallback((fundId: string, updates: Partial<RivalFund>) => {
       setRivalFunds(prev => prev.map(fund =>
-          fund.id === fundId ? hydrateFund({ ...fund, ...updates }) : hydrateFund(fund)
+          fund.id === fundId ? hydrateRivalFund({ ...fund, ...updates }) : hydrateRivalFund(fund)
       ));
   }, []);
 
@@ -1159,7 +1020,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setMarketVolatility('NORMAL');
       setTutorialStep(0);
       setActionLog([]);
-      setRivalFunds(RIVAL_FUNDS.map(hydrateFund));
+      setRivalFunds(RIVAL_FUNDS.map(hydrateRivalFund));
       setActiveDeals([]);
       logEvent('game_reset');
   }, []);
