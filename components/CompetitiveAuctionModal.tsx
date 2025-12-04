@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TerminalButton, TerminalPanel } from './TerminalUI';
 import { useHaptic } from '../hooks/useHaptic';
-import type { CompetitiveDeal, RivalFund, StatChanges, PortfolioCompany } from '../types';
+import type { CompetitiveDeal, RivalFund, StatChanges, PortfolioCompany, VendettaPhase } from '../types';
 import { DealType } from '../types';
-import { RIVAL_FUNDS, RIVAL_BID_STRATEGIES, HUNTER_WIN_TAUNTS, HUNTER_LOSS_REACTIONS } from '../constants';
+import { RIVAL_FUNDS, RIVAL_BID_STRATEGIES, HUNTER_WIN_TAUNTS, HUNTER_LOSS_REACTIONS, RIVAL_TAUNTS } from '../constants';
+import { getVendettaPhase, VENDETTA_BEHAVIORS } from '../utils/rivalAI';
 
 interface CompetitiveAuctionModalProps {
   deal: CompetitiveDeal;
@@ -33,6 +34,12 @@ interface RivalBidder {
   maxWillingness: number;
   isBluffing: boolean;
   hasDropped: boolean;
+  // Advanced AI properties
+  vendettaPhase: VendettaPhase;
+  currentMood: 'CONFIDENT' | 'DESPERATE' | 'VENGEFUL' | 'CAUTIOUS';
+  surpriseBidUsed: boolean;
+  psychWarfareUsed: boolean;
+  adaptedToPlayer: boolean;
 }
 
 const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
@@ -63,6 +70,10 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
   ]);
   const [playerBids, setPlayerBids] = useState<number[]>([]);
   
+  // Track player bid patterns for adaptive AI
+  const playerBidPatternRef = useRef<{ aggressive: number; conservative: number }>({ aggressive: 0, conservative: 0 });
+  const lastPlayerBidRef = useRef<number>(0);
+
   const [rivals, setRivals] = useState<RivalBidder[]>(() => {
     return deal.interestedRivals
       .map(rivalId => {
@@ -77,9 +88,25 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
           console.warn(`[AUCTION] Strategy not found for fund: ${fund.strategy}`);
           return null;
         }
-        const baseMax = deal.fairValue * strategy.baseMultiplier;
+
+        // Calculate vendetta phase and mood
+        const vendettaPhase = getVendettaPhase(fund.vendetta ?? 40);
+        const vendettaBehavior = VENDETTA_BEHAVIORS[vendettaPhase];
+
+        // Vendetta affects willingness to overpay
+        const vendettaMultiplier = 1 + ((fund.vendetta ?? 40) / 200);
+        const baseMax = deal.fairValue * strategy.baseMultiplier * vendettaMultiplier;
         const maxWillingness = baseMax * (1 + strategy.maxOverbid * Math.random());
-        const isBluffing = Math.random() < strategy.bluffChance;
+
+        // Higher vendetta = more likely to bluff aggressively
+        const adjustedBluffChance = strategy.bluffChance * (1 + vendettaBehavior.aggressionMultiplier * 0.3);
+        const isBluffing = Math.random() < adjustedBluffChance;
+
+        // Determine mood based on fund state
+        let currentMood: RivalBidder['currentMood'] = 'CAUTIOUS';
+        if (fund.winStreak > 2) currentMood = 'CONFIDENT';
+        else if ((fund.vendetta ?? 40) > 70) currentMood = 'VENGEFUL';
+        else if (fund.dryPowder < deal.askingPrice * 0.8) currentMood = 'DESPERATE';
 
         return {
           fund,
@@ -87,7 +114,12 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
           lastBid: 0,
           maxWillingness: isBluffing ? deal.fairValue * 0.9 : maxWillingness,
           isBluffing,
-          hasDropped: false
+          hasDropped: false,
+          vendettaPhase,
+          currentMood,
+          surpriseBidUsed: false,
+          psychWarfareUsed: false,
+          adaptedToPlayer: false,
         };
       })
       .filter((rival): rival is RivalBidder => rival !== null);
@@ -98,48 +130,126 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
 
   const processRivalBids = useCallback(() => {
     if (isComplete) return;
-    
+
     let newBid = currentBid;
     let newLeader = currentLeader;
     const newLog: string[] = [];
-    
-    const shuffledRivals = [...rivals].sort(() => Math.random() - 0.5);
-    
+
+    // Sort rivals by threat level (vendetta + aggression) with some randomness
+    const sortedRivals = [...rivals].sort((a, b) => {
+      const aScore = (a.fund.vendetta ?? 40) + a.fund.aggressionLevel + Math.random() * 20;
+      const bScore = (b.fund.vendetta ?? 40) + b.fund.aggressionLevel + Math.random() * 20;
+      return bScore - aScore;
+    });
+
     setRivals(prev => {
       const updated = [...prev];
-      
-      for (const rival of shuffledRivals) {
+
+      for (const rival of sortedRivals) {
         const idx = updated.findIndex(r => r.fund.id === rival.fund.id);
-        if (idx === -1) continue; // Bug fix: Skip if rival not found to prevent array[-1] access
+        if (idx === -1) continue;
         if (updated[idx].hasDropped || !updated[idx].isActive) continue;
-        
+
         const fund = rival.fund;
         const strategy = RIVAL_BID_STRATEGIES[fund.strategy];
-        const potentialBid = newBid + bidIncrement * (0.8 + Math.random() * 0.4);
-        const aggressionBonus = fund.aggressionLevel / 100 * bidIncrement * 0.5;
-        const rivalBid = potentialBid + (fund.strategy === 'PREDATORY' ? aggressionBonus : 0);
-        
-        if (rivalBid > updated[idx].maxWillingness) {
+        const vendettaBehavior = VENDETTA_BEHAVIORS[updated[idx].vendettaPhase];
+
+        // Check for surprise bid (unpredictable jump ahead)
+        const shouldSurpriseBid = !updated[idx].surpriseBidUsed &&
+          round > 1 &&
+          updated[idx].vendettaPhase !== 'COLD' &&
+          Math.random() < vendettaBehavior.surpriseChance &&
+          currentLeader === 'player';
+
+        let rivalBid: number;
+        let isSurprise = false;
+
+        if (shouldSurpriseBid) {
+          // Surprise bid: jump 15-30% above current bid
+          const jumpMultiplier = 1.15 + Math.random() * 0.15;
+          rivalBid = Math.round(newBid * jumpMultiplier);
+          isSurprise = true;
+          updated[idx].surpriseBidUsed = true;
+
+          // Log the surprise with dramatic effect
+          newLog.push(`> ⚡ ${fund.name.toUpperCase()} MAKES AGGRESSIVE MOVE!`);
+          newLog.push(`> ${fund.managingPartner}: "Did you think this would be easy?"`);
+        } else {
+          // Normal incremental bid with mood modifiers
+          const moodMultiplier = updated[idx].currentMood === 'VENGEFUL' ? 1.3 :
+                                 updated[idx].currentMood === 'DESPERATE' ? 1.2 :
+                                 updated[idx].currentMood === 'CONFIDENT' ? 1.1 : 1.0;
+
+          const potentialBid = newBid + bidIncrement * (0.8 + Math.random() * 0.4) * moodMultiplier;
+          const aggressionBonus = (fund.aggressionLevel / 100) * bidIncrement * 0.5;
+          const vendettaBonus = ((fund.vendetta ?? 40) / 100) * bidIncrement * 0.3;
+          rivalBid = potentialBid + aggressionBonus + vendettaBonus;
+        }
+
+        // Adaptive behavior: if player has been aggressive, be more cautious
+        if (!updated[idx].adaptedToPlayer && round > 2) {
+          const playerPattern = playerBidPatternRef.current;
+          if (playerPattern.aggressive > playerPattern.conservative) {
+            // Player is aggressive - be more strategic about when to push
+            if (Math.random() > 0.6) {
+              updated[idx].maxWillingness *= 0.95; // Reduce max to avoid overpaying
+            }
+          } else {
+            // Player is conservative - can push harder
+            updated[idx].maxWillingness *= 1.1;
+          }
+          updated[idx].adaptedToPlayer = true;
+        }
+
+        // Check if should drop out
+        const shouldDropOut = rivalBid > updated[idx].maxWillingness && !updated[idx].isBluffing;
+
+        if (shouldDropOut) {
           updated[idx].hasDropped = true;
           updated[idx].isActive = false;
-          newLog.push(`> ${fund.name.toUpperCase()} WITHDRAWS (${fund.strategy})`);
+
+          // Mood-based exit messages
+          if (updated[idx].currentMood === 'VENGEFUL') {
+            newLog.push(`> ${fund.name.toUpperCase()} WITHDRAWS RELUCTANTLY`);
+            newLog.push(`> ${fund.managingPartner}: "This isn't over."`);
+          } else if (updated[idx].currentMood === 'CONFIDENT') {
+            newLog.push(`> ${fund.name.toUpperCase()} WITHDRAWS (${fund.strategy})`);
+            newLog.push(`> ${fund.managingPartner}: "You overpaid. Enjoy the hangover."`);
+          } else {
+            newLog.push(`> ${fund.name.toUpperCase()} WITHDRAWS (${fund.strategy})`);
+          }
           triggerImpact('LIGHT');
         } else {
           updated[idx].lastBid = rivalBid;
           newBid = rivalBid;
           newLeader = fund.id;
-          newLog.push(`> ${fund.name.toUpperCase()} BIDS $${(rivalBid / 1000000).toFixed(1)}M`);
-          triggerImpact('MEDIUM');
+
+          // Add taunts based on vendetta level and mood
+          if (updated[idx].vendettaPhase !== 'COLD' && !updated[idx].psychWarfareUsed && Math.random() > 0.6) {
+            const fundTaunts = RIVAL_TAUNTS[fund.id];
+            if (fundTaunts && fundTaunts.length > 0) {
+              const taunt = fundTaunts[Math.floor(Math.random() * fundTaunts.length)];
+              newLog.push(`> ${fund.name.toUpperCase()} BIDS $${(rivalBid / 1000000).toFixed(1)}M`);
+              newLog.push(`> ${fund.managingPartner}: "${taunt}"`);
+              updated[idx].psychWarfareUsed = true;
+            } else {
+              newLog.push(`> ${fund.name.toUpperCase()} BIDS $${(rivalBid / 1000000).toFixed(1)}M`);
+            }
+          } else {
+            newLog.push(`> ${fund.name.toUpperCase()} BIDS $${(rivalBid / 1000000).toFixed(1)}M`);
+          }
+
+          triggerImpact(isSurprise ? 'HEAVY' : 'MEDIUM');
         }
       }
-      
+
       return updated;
     });
-    
+
     setCurrentBid(newBid);
     setCurrentLeader(newLeader);
     setBidLog(prev => [...prev, ...newLog]);
-    
+
     const activeRivals = rivals.filter(r => !r.hasDropped && r.isActive);
     if (activeRivals.length === 0 && playerHasBid) {
       handlePlayerWin(newBid);
@@ -147,7 +257,7 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
       setIsPlayerTurn(true);
       setRound(prev => prev + 1);
     }
-  }, [rivals, currentBid, currentLeader, isComplete, playerHasBid, bidIncrement]);
+  }, [rivals, currentBid, currentLeader, isComplete, playerHasBid, bidIncrement, round]);
 
   useEffect(() => {
     if (!isPlayerTurn || isComplete || showDueDiligence) return;
@@ -182,13 +292,24 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
 
   const handlePlayerBid = (multiplier: number = 1) => {
     const bidAmount = currentBid + (bidIncrement * multiplier);
-    
+
     if (bidAmount > playerCash) {
       setBidLog(prev => [...prev, `> ERROR: INSUFFICIENT_FUNDS`]);
       triggerImpact('HEAVY');
       return;
     }
-    
+
+    // Track player bid patterns for adaptive AI
+    if (lastPlayerBidRef.current > 0) {
+      const bidJump = (bidAmount - lastPlayerBidRef.current) / bidIncrement;
+      if (bidJump > 1.5) {
+        playerBidPatternRef.current.aggressive++;
+      } else {
+        playerBidPatternRef.current.conservative++;
+      }
+    }
+    lastPlayerBidRef.current = bidAmount;
+
     setCurrentBid(bidAmount);
     setCurrentLeader('player');
     setPlayerHasBid(true);
