@@ -829,7 +829,13 @@ const App: React.FC = () => {
         <div className="hidden md:grid flex-1 grid-cols-[250px_1fr_250px] overflow-hidden relative">
             {/* Left Panel (Comms) */}
             <div className={`border-r border-slate-700 bg-black ${tutorialStep === 4 ? 'z-[100] relative' : ''}`}>
-                {renderLeftPanel()}
+                <NpcListPanel
+                  npcs={npcs}
+                  selectedNpcId={selectedNpcId}
+                  onSelectNpc={handleNpcSelect}
+                  tutorialStep={tutorialStep}
+                  onTutorialAdvance={handleTutorialStep5}
+                />
             </div>
             
             {/* Center Column (Workspace) */}
