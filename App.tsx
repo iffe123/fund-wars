@@ -842,8 +842,22 @@ const App: React.FC = () => {
   };
 
   // --- MAIN RENDER ---
-  if (authLoading) return null;
-  
+  if (authLoading) {
+    return (
+      <div className="h-screen w-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-green-500 text-2xl font-mono animate-pulse">FUND WARS OS</div>
+          <div className="text-slate-500 text-xs mt-4">Initializing secure connection...</div>
+          <div className="mt-4 flex justify-center space-x-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) return <LoginScreen />;
 
   if (!legalAccepted) return <LegalDisclaimer onAccept={handleLegalAccept} />;

@@ -231,14 +231,23 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (!db) {
           console.log("[CLOUD_LOAD] Firestore not available. Using local session.");
-          setGamePhase('INTRO'); 
+          setGamePhase('INTRO');
           return;
       }
+
+      // Helper: wrap getDoc with timeout to prevent infinite loading
+      const getDocWithTimeout = async (docRef: ReturnType<typeof doc>, timeoutMs: number) => {
+          const timeoutPromise = new Promise<never>((_, reject) => {
+              setTimeout(() => reject(new Error('Firestore timeout')), timeoutMs);
+          });
+          return Promise.race([getDoc(docRef), timeoutPromise]);
+      };
 
       const loadGame = async () => {
           try {
               const docRef = doc(db, 'users', currentUser.uid, 'savegame', 'primary');
-              const docSnap = await getDoc(docRef);
+              // 10 second timeout to prevent infinite "RESTORING SESSION..." screen
+              const docSnap = await getDocWithTimeout(docRef, 10000);
 
               if (docSnap.exists()) {
                   // Cast to any to handle DocumentData being unknown
@@ -293,6 +302,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               }
           } catch (error) {
               console.error("Error loading save:", error);
+              // On any load failure (including timeout), start fresh game
+              // This prevents infinite "RESTORING SESSION..." screen
+              console.log("[CLOUD_LOAD] Load failed, starting fresh game.");
+              setPlayerStats(null);
+              setGamePhase('INTRO');
           }
       };
 
