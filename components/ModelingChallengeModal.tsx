@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { ModelingChallenge, StatChanges } from '../types';
 import {
   checkAnswer,
@@ -41,24 +41,7 @@ const ModelingChallengeModal: React.FC<ModelingChallengeModalProps> = ({
   );
   const [resultLine, setResultLine] = useState('');
 
-  // Timer countdown
-  useEffect(() => {
-    if (phase !== 'CHALLENGE' || timeRemaining <= 0) return;
-
-    const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleSubmit(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [phase, timeRemaining]);
-
+  // Define handleSubmit first, then use ref in timer
   const handleSubmit = useCallback((timedOut = false) => {
     if (phase === 'RESULT') return;
 
@@ -71,6 +54,28 @@ const ModelingChallengeModal: React.FC<ModelingChallengeModalProps> = ({
     const lines = correct ? CHALLENGE_SUCCESS_LINES : CHALLENGE_FAILURE_LINES;
     setResultLine(lines[Math.floor(Math.random() * lines.length)]);
   }, [userAnswer, challenge, phase]);
+
+  // Ref to always have latest handleSubmit
+  const handleSubmitRef = useRef(handleSubmit);
+  handleSubmitRef.current = handleSubmit;
+
+  // Timer countdown
+  useEffect(() => {
+    if (phase !== 'CHALLENGE' || timeRemaining <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleSubmitRef.current(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [phase, timeRemaining]);
 
   const handleComplete = () => {
     const statChanges = isCorrect ? challenge.reward : challenge.penalty;

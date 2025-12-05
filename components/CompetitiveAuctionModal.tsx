@@ -128,6 +128,13 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
   const bidIncrement = Math.max(deal.askingPrice * 0.05, 1000000);
   const impliedMultiple = currentBid / deal.metrics.ebitda;
 
+  // Define refs for handlers (to avoid stale closures in callbacks)
+  const handlePlayerWinRef = useRef<(finalPrice: number) => void>(() => {});
+  const handleRivalWinRef = useRef<(winner: RivalFund, finalPrice: number) => void>(() => {});
+  const handleDealCollapseRef = useRef<() => void>(() => {});
+  const handlePlayerPassRef = useRef<() => void>(() => {});
+  const processRivalBidsRef = useRef<() => void>(() => {});
+
   const processRivalBids = useCallback(() => {
     if (isComplete) return;
 
@@ -252,43 +259,46 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
 
     const activeRivals = rivals.filter(r => !r.hasDropped && r.isActive);
     if (activeRivals.length === 0 && playerHasBid) {
-      handlePlayerWin(newBid);
+      handlePlayerWinRef.current(newBid);
     } else {
       setIsPlayerTurn(true);
       setRound(prev => prev + 1);
     }
-  }, [rivals, currentBid, currentLeader, isComplete, playerHasBid, bidIncrement, round]);
+  }, [rivals, currentBid, currentLeader, isComplete, playerHasBid, bidIncrement, round, triggerImpact]);
+
+  // Update processRivalBids ref
+  processRivalBidsRef.current = processRivalBids;
 
   useEffect(() => {
     if (!isPlayerTurn || isComplete || showDueDiligence) return;
-    
+
     const interval = setInterval(() => {
       setTimer(prev => {
         if (prev <= 0) {
           clearInterval(interval);
           if (!playerHasBid) {
-            handlePlayerPass();
+            handlePlayerPassRef.current();
           } else {
             setIsPlayerTurn(false);
-            setTimeout(processRivalBids, 1000);
+            setTimeout(() => processRivalBidsRef.current(), 1000);
           }
           return 0;
         }
         return prev - 2;
       });
     }, 100);
-    
+
     return () => clearInterval(interval);
-  }, [isPlayerTurn, isComplete, playerHasBid, showDueDiligence, processRivalBids]);
+  }, [isPlayerTurn, isComplete, playerHasBid, showDueDiligence]);
 
   useEffect(() => {
     if (!isPlayerTurn && !isComplete) {
       const timeout = setTimeout(() => {
-        processRivalBids();
+        processRivalBidsRef.current();
       }, 1500);
       return () => clearTimeout(timeout);
     }
-  }, [isPlayerTurn, isComplete, processRivalBids]);
+  }, [isPlayerTurn, isComplete]);
 
   const handlePlayerBid = (multiplier: number = 1) => {
     const bidAmount = currentBid + (bidIncrement * multiplier);
@@ -320,30 +330,13 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
     setIsPlayerTurn(false);
   };
 
-  const handlePlayerPass = () => {
-    setBidLog(prev => [...prev, `> YOU PASS`]);
-    
-    if (!playerHasBid) {
-      const activeRivals = rivals.filter(r => !r.hasDropped);
-      if (activeRivals.length > 0) {
-        const winner = activeRivals.reduce((a, b) => a.lastBid > b.lastBid ? a : b);
-        handleRivalWin(winner.fund, winner.lastBid);
-      } else {
-        handleDealCollapse();
-      }
-    } else {
-      setIsPlayerTurn(false);
-      setTimeout(processRivalBids, 1000);
-    }
-  };
-
-  const handlePlayerWin = (finalPrice: number) => {
+  const handlePlayerWin = useCallback((finalPrice: number) => {
     setIsComplete(true);
     triggerImpact('HEAVY');
     setBidLog(prev => [...prev, `> ---`, `> AUCTION_COMPLETE`, `> WINNER: YOU`, `> FINAL_PRICE: $${(finalPrice / 1000000).toFixed(1)}M`]);
-    
+
     const hunterLost = rivals.some(r => r.fund.npcId === 'hunter' && r.hasDropped);
-    
+
     const result: AuctionResult = {
       won: true,
       deal,
@@ -374,17 +367,17 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
         revenueGrowth: deal.metrics.growth
       }
     };
-    
-    setTimeout(() => onComplete(result), 2000);
-  };
 
-  const handleRivalWin = (winner: RivalFund, finalPrice: number) => {
+    setTimeout(() => onComplete(result), 2000);
+  }, [deal, playerBids, rivals, onComplete, triggerImpact]);
+
+  const handleRivalWin = useCallback((winner: RivalFund, finalPrice: number) => {
     setIsComplete(true);
     triggerImpact('HEAVY');
     setBidLog(prev => [...prev, `> ---`, `> AUCTION_COMPLETE`, `> WINNER: ${winner.name.toUpperCase()}`, `> FINAL_PRICE: $${(finalPrice / 1000000).toFixed(1)}M`]);
-    
+
     const isHunter = winner.npcId === 'hunter';
-    
+
     const result: AuctionResult = {
       won: false,
       deal,
@@ -404,14 +397,14 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
         } : undefined
       }
     };
-    
-    setTimeout(() => onComplete(result), 2000);
-  };
 
-  const handleDealCollapse = () => {
+    setTimeout(() => onComplete(result), 2000);
+  }, [deal, playerBids, playerHasBid, onComplete, triggerImpact]);
+
+  const handleDealCollapse = useCallback(() => {
     setIsComplete(true);
     setBidLog(prev => [...prev, `> ---`, `> AUCTION_FAILED`, `> NO ACCEPTABLE BIDS`]);
-    
+
     const result: AuctionResult = {
       won: false,
       deal,
@@ -421,9 +414,34 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
       playerBidHistory: playerBids,
       statChanges: { score: 50 }
     };
-    
+
     setTimeout(() => onComplete(result), 2000);
-  };
+  }, [deal, playerBids, onComplete]);
+
+  // Update refs when handlers change
+  handlePlayerWinRef.current = handlePlayerWin;
+  handleRivalWinRef.current = handleRivalWin;
+  handleDealCollapseRef.current = handleDealCollapse;
+
+  const handlePlayerPass = useCallback(() => {
+    setBidLog(prev => [...prev, `> YOU PASS`]);
+
+    if (!playerHasBid) {
+      const activeRivals = rivals.filter(r => !r.hasDropped);
+      if (activeRivals.length > 0) {
+        const winner = activeRivals.reduce((a, b) => a.lastBid > b.lastBid ? a : b);
+        handleRivalWinRef.current(winner.fund, winner.lastBid);
+      } else {
+        handleDealCollapseRef.current();
+      }
+    } else {
+      setIsPlayerTurn(false);
+      setTimeout(() => processRivalBidsRef.current(), 1000);
+    }
+  }, [playerHasBid, rivals]);
+
+  // Update handlePlayerPass ref
+  handlePlayerPassRef.current = handlePlayerPass;
 
   const handleDueDiligence = () => {
     setShowDueDiligence(true);
