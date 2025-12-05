@@ -160,10 +160,15 @@ export const getAdvisorResponse = async (
     
     // Map the app's chat history to Gemini's history format
     // CRITICAL: Map 'system' messages to 'user' role so the model treats them as context it must respond to.
-    const geminiHistory = history.map(msg => ({
+    let geminiHistory = history.map(msg => ({
         role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
         parts: [{ text: msg.text }],
     }));
+
+    // Gemini requires history to start with a user turn - filter out leading model messages
+    while (geminiHistory.length > 0 && geminiHistory[0].role === 'model') {
+        geminiHistory = geminiHistory.slice(1);
+    }
 
     const chat = ai.chats.create({
       model: 'gemini-2.5-flash',
@@ -282,11 +287,16 @@ export const getNPCResponse = async (
         `;
 
         const ai = new GoogleGenAI({ apiKey: API_KEY });
-        
-        const geminiHistory = history.map(msg => ({
+
+        let geminiHistory = history.map(msg => ({
             role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
             parts: [{ text: msg.text }],
         }));
+
+        // Gemini requires history to start with a user turn - filter out leading model messages
+        while (geminiHistory.length > 0 && geminiHistory[0].role === 'model') {
+            geminiHistory = geminiHistory.slice(1);
+        }
 
         const chat = ai.chats.create({
             model: 'gemini-2.5-flash',
