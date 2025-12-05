@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TerminalButton, TerminalPanel } from './TerminalUI';
 import { useHaptic } from '../hooks/useHaptic';
 
@@ -20,6 +20,29 @@ const AuctionModal: React.FC<AuctionModalProps> = ({ companyName, initialBid, ri
   const [log, setLog] = useState<string[]>([`> AUCTION_INIT: ${companyName}`, `> OPENING_BID: $${(initialBid / 1000000).toFixed(1)}M`]);
   const [isOver, setIsOver] = useState(false);
 
+  // Define handlers first (before useEffects that use them)
+  const handleWin = useCallback(() => {
+      setIsOver(true);
+      triggerImpact('MEDIUM');
+      setLog(prev => [...prev, `> AUCTION CLOSED. WINNER: YOU`]);
+      setTimeout(() => onComplete(true, currentBid), 2000);
+  }, [currentBid, onComplete, triggerImpact]);
+
+  const handleLoss = useCallback(() => {
+      setIsOver(true);
+      triggerImpact('HEAVY'); // Losing hurts
+      setLog(prev => [...prev, `> AUCTION CLOSED. WINNER: ${rivalName.toUpperCase()}`]);
+      setTimeout(() => onComplete(false, currentBid), 2000);
+  }, [currentBid, onComplete, rivalName, triggerImpact]);
+
+  const handleBid = (amount: number) => {
+      const newBid = currentBid + amount;
+      setPlayerBid(newBid);
+      setCurrentBid(newBid);
+      setLog(prev => [...prev, `> YOU BID $${(newBid/1000000).toFixed(1)}M`]);
+      setTurn('RIVAL');
+  };
+
   // Rival AI Loop
   useEffect(() => {
     if (isOver) return;
@@ -32,7 +55,7 @@ const AuctionModal: React.FC<AuctionModalProps> = ({ companyName, initialBid, ri
         const bidIncrease = initialBid * 0.05; // 5% increments
         const multiplier = currentBid / initialBid;
         const foldChance = (multiplier - 1) * 2; // e.g. at 1.5x, 100% chance to fold
-        
+
         if (Math.random() > foldChance) {
              const newBid = currentBid + bidIncrease;
              setCurrentBid(newBid);
@@ -48,7 +71,7 @@ const AuctionModal: React.FC<AuctionModalProps> = ({ companyName, initialBid, ri
       }, thinkTime);
       return () => clearTimeout(timeout);
     }
-  }, [turn, currentBid, isOver, initialBid, rivalName]);
+  }, [turn, currentBid, isOver, initialBid, rivalName, triggerImpact, handleWin]);
 
   // Timer for Player Turn
   useEffect(() => {
@@ -68,29 +91,7 @@ const AuctionModal: React.FC<AuctionModalProps> = ({ companyName, initialBid, ri
     } else {
         setTimer(100); // Reset when not player turn
     }
-  }, [turn, isOver]);
-
-  const handleBid = (amount: number) => {
-      const newBid = currentBid + amount;
-      setPlayerBid(newBid);
-      setCurrentBid(newBid);
-      setLog(prev => [...prev, `> YOU BID $${(newBid/1000000).toFixed(1)}M`]);
-      setTurn('RIVAL');
-  };
-
-  const handleWin = () => {
-      setIsOver(true);
-      triggerImpact('MEDIUM');
-      setLog(prev => [...prev, `> AUCTION CLOSED. WINNER: YOU`]);
-      setTimeout(() => onComplete(true, currentBid), 2000);
-  };
-
-  const handleLoss = () => {
-      setIsOver(true);
-      triggerImpact('HEAVY'); // Losing hurts
-      setLog(prev => [...prev, `> AUCTION CLOSED. WINNER: ${rivalName.toUpperCase()}`]);
-      setTimeout(() => onComplete(false, currentBid), 2000);
-  };
+  }, [turn, isOver, handleLoss]);
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
