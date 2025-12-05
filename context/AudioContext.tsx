@@ -1,6 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useRef } from 'react';
-import { Howl, Howler } from 'howler';
+import React, { createContext, useContext, useEffect, useRef, useCallback } from 'react';
 
 interface AudioContextType {
   playSfx: (type: 'BOOT' | 'KEYPRESS' | 'NOTIFICATION' | 'ERROR' | 'SUCCESS') => void;
@@ -8,72 +7,242 @@ interface AudioContextType {
   mute: (muted: boolean) => void;
 }
 
-const AudioContext = createContext<AudioContextType | undefined>(undefined);
+const AudioContextReact = createContext<AudioContextType | undefined>(undefined);
+
+// Web Audio API based sound generator - no external dependencies
+class SoundGenerator {
+  private audioContext: AudioContext | null = null;
+  private masterGain: GainNode | null = null;
+  private ambienceOscillators: OscillatorNode[] = [];
+  private ambiencePlaying = false;
+  private muted = false;
+
+  private getContext(): AudioContext | null {
+    if (!this.audioContext) {
+      try {
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        this.masterGain = this.audioContext.createGain();
+        this.masterGain.connect(this.audioContext.destination);
+      } catch (e) {
+        console.warn('Web Audio API not supported');
+        return null;
+      }
+    }
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
+    return this.audioContext;
+  }
+
+  setMuted(muted: boolean) {
+    this.muted = muted;
+    if (this.masterGain) {
+      this.masterGain.gain.value = muted ? 0 : 1;
+    }
+  }
+
+  playBoot() {
+    const ctx = this.getContext();
+    if (!ctx || this.muted) return;
+
+    // Mechanical boot sound - rising tone with buzz
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(80, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    osc.connect(gain);
+    gain.connect(this.masterGain!);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.5);
+  }
+
+  playKeypress() {
+    const ctx = this.getContext();
+    if (!ctx || this.muted) return;
+
+    // Subtle click sound
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(800 + Math.random() * 200, ctx.currentTime);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    osc.connect(gain);
+    gain.connect(this.masterGain!);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.05);
+  }
+
+  playNotification() {
+    const ctx = this.getContext();
+    if (!ctx || this.muted) return;
+
+    // Pleasant chime - two tones
+    [523.25, 659.25].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.1);
+      gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + i * 0.1 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.3);
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start(ctx.currentTime + i * 0.1);
+      osc.stop(ctx.currentTime + i * 0.1 + 0.3);
+    });
+  }
+
+  playError() {
+    const ctx = this.getContext();
+    if (!ctx || this.muted) return;
+
+    // Harsh buzz sound
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, ctx.currentTime);
+    osc.frequency.setValueAtTime(120, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(this.masterGain!);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.2);
+  }
+
+  playSuccess() {
+    const ctx = this.getContext();
+    if (!ctx || this.muted) return;
+
+    // Ascending success chime
+    [392, 523.25, 659.25].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.08);
+      gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + i * 0.08 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.25);
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start(ctx.currentTime + i * 0.08);
+      osc.stop(ctx.currentTime + i * 0.08 + 0.25);
+    });
+  }
+
+  startAmbience() {
+    if (this.ambiencePlaying) return;
+    const ctx = this.getContext();
+    if (!ctx || this.muted) return;
+
+    this.ambiencePlaying = true;
+
+    // Create a subtle server room hum with multiple low frequencies
+    [60, 120, 180].forEach((freq) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.015, ctx.currentTime);
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start();
+      this.ambienceOscillators.push(osc);
+    });
+  }
+
+  stopAmbience() {
+    this.ambienceOscillators.forEach((osc) => {
+      try {
+        osc.stop();
+      } catch (e) {
+        // Already stopped
+      }
+    });
+    this.ambienceOscillators = [];
+    this.ambiencePlaying = false;
+  }
+
+  cleanup() {
+    this.stopAmbience();
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
+  }
+}
 
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const ambienceRef = useRef<Howl | null>(null);
-
-  // Load Sounds
-  const sfxRefs = useRef({
-    BOOT: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3'], volume: 0.5 }), // Mechanical hum
-    KEYPRESS: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3'], volume: 0.2 }), // Click
-    NOTIFICATION: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3'], volume: 0.4 }), // Chime
-    ERROR: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2575/2575-preview.mp3'], volume: 0.5 }), // Buzz
-    SUCCESS: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2576/2576-preview.mp3'], volume: 0.5 }), // Success chime
-  });
+  const soundGeneratorRef = useRef<SoundGenerator | null>(null);
 
   useEffect(() => {
-    // Ambience (Server Room Hum)
-    ambienceRef.current = new Howl({
-      src: ['https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3'], // Low hum
-      loop: true,
-      volume: 0.05,
-    });
-    
-    // Auto-start ambience on interaction (browser policy)
+    soundGeneratorRef.current = new SoundGenerator();
+
+    // Auto-start ambience on interaction (browser policy requires user gesture)
     const startAudio = () => {
-        if (ambienceRef.current && !ambienceRef.current.playing()) {
-            ambienceRef.current.play();
-        }
-        document.removeEventListener('click', startAudio);
-        document.removeEventListener('keydown', startAudio);
+      soundGeneratorRef.current?.startAmbience();
+      document.removeEventListener('click', startAudio);
+      document.removeEventListener('keydown', startAudio);
     };
-    
+
     document.addEventListener('click', startAudio);
     document.addEventListener('keydown', startAudio);
-    
+
     return () => {
-        ambienceRef.current?.unload();
+      document.removeEventListener('click', startAudio);
+      document.removeEventListener('keydown', startAudio);
+      soundGeneratorRef.current?.cleanup();
     };
   }, []);
 
-  const playSfx = (type: keyof typeof sfxRefs.current) => {
-    const sound = sfxRefs.current[type];
-    if (sound) {
-        // Randomize pitch slightly for organic feel
-        sound.rate(0.9 + Math.random() * 0.2);
-        sound.play();
+  const playSfx = useCallback((type: 'BOOT' | 'KEYPRESS' | 'NOTIFICATION' | 'ERROR' | 'SUCCESS') => {
+    const sg = soundGeneratorRef.current;
+    if (!sg) return;
+
+    switch (type) {
+      case 'BOOT':
+        sg.playBoot();
+        break;
+      case 'KEYPRESS':
+        sg.playKeypress();
+        break;
+      case 'NOTIFICATION':
+        sg.playNotification();
+        break;
+      case 'ERROR':
+        sg.playError();
+        break;
+      case 'SUCCESS':
+        sg.playSuccess();
+        break;
     }
-  };
+  }, []);
 
-  const playAmbience = (play: boolean) => {
-    if (play) ambienceRef.current?.play();
-    else ambienceRef.current?.pause();
-  };
+  const playAmbience = useCallback((play: boolean) => {
+    if (play) {
+      soundGeneratorRef.current?.startAmbience();
+    } else {
+      soundGeneratorRef.current?.stopAmbience();
+    }
+  }, []);
 
-  const mute = (muted: boolean) => {
-    Howler.mute(muted);
-  };
+  const mute = useCallback((muted: boolean) => {
+    soundGeneratorRef.current?.setMuted(muted);
+  }, []);
 
   return (
-    <AudioContext.Provider value={{ playSfx, playAmbience, mute }}>
+    <AudioContextReact.Provider value={{ playSfx, playAmbience, mute }}>
       {children}
-    </AudioContext.Provider>
+    </AudioContextReact.Provider>
   );
 };
 
 export const useAudio = () => {
-  const context = useContext(AudioContext);
+  const context = useContext(AudioContextReact);
   if (context === undefined) {
     throw new Error('useAudio must be used within an AudioProvider');
   }
