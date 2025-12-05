@@ -164,6 +164,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                           timeCursor: typeof data.playerStats.timeCursor === 'number' ? data.playerStats.timeCursor : 0,
                           knowledgeLog: safeKnowledgeLog,
                           knowledgeFlags: safeKnowledgeFlags,
+                          // Ensure new fields have proper defaults
+                          unlockedAchievements: data.playerStats.unlockedAchievements || [],
+                          sectorExpertise: data.playerStats.sectorExpertise || [],
+                          completedExits: data.playerStats.completedExits || [],
+                          totalRealizedGains: data.playerStats.totalRealizedGains ?? 0,
+                          portfolio: Array.isArray(data.playerStats.portfolio) ? data.playerStats.portfolio : [],
+                          playedScenarioIds: Array.isArray(data.playerStats.playedScenarioIds) ? data.playerStats.playedScenarioIds : [],
+                          playerFlags: data.playerStats.playerFlags || {},
+                          employees: data.playerStats.employees || [],
                       });
                       if (data.gamePhase) setGamePhase(data.gamePhase);
                       if (data.activeScenarioId) {
@@ -202,20 +211,41 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       loadGame();
   }, [currentUser]);
 
+  // Helper function to remove undefined values from objects for Firestore compatibility
+  const removeUndefined = useCallback(<T extends Record<string, unknown>>(obj: T): T => {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj)) {
+          if (value === undefined) continue;
+          if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+              result[key] = removeUndefined(value as Record<string, unknown>);
+          } else if (Array.isArray(value)) {
+              result[key] = value.map(item =>
+                  item !== null && typeof item === 'object' ? removeUndefined(item as Record<string, unknown>) : item
+              );
+          } else {
+              result[key] = value;
+          }
+      }
+      return result as T;
+  }, []);
+
   const saveGame = useCallback(async () => {
       if (!currentUser || !playerStats) return;
       if (!db) return;
 
+      // Sanitize playerStats to remove undefined values (Firestore doesn't accept undefined)
+      const sanitizedPlayerStats = removeUndefined(playerStats as unknown as Record<string, unknown>);
+
       const gameState = {
-          playerStats,
+          playerStats: sanitizedPlayerStats,
           gamePhase,
-          activeScenarioId: activeScenario?.id,
+          activeScenarioId: activeScenario?.id ?? null,
           marketVolatility,
-          npcs,
+          npcs: npcs.map(npc => removeUndefined(npc as unknown as Record<string, unknown>)),
           tutorialStep,
           actionLog,
-          rivalFunds,
-          activeDeals,
+          rivalFunds: rivalFunds.map(fund => removeUndefined(fund as unknown as Record<string, unknown>)),
+          activeDeals: activeDeals.map(deal => removeUndefined(deal as unknown as Record<string, unknown>)),
           lastSaved: new Date().toISOString()
       };
 
@@ -225,7 +255,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } catch (error) {
           console.error("Error saving game:", error);
       }
-  }, [currentUser, playerStats, gamePhase, activeScenario, marketVolatility, npcs, tutorialStep, actionLog, rivalFunds, activeDeals]);
+  }, [currentUser, playerStats, gamePhase, activeScenario, marketVolatility, npcs, tutorialStep, actionLog, rivalFunds, activeDeals, removeUndefined]);
 
   useEffect(() => {
       if (gamePhase !== 'INTRO' && gamePhase !== 'GAME_OVER') {
