@@ -206,31 +206,10 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
       }
   }, [tutorialStep, activeTab]);
 
-  // If in desktop mode and closed, show the launcher button
-  if (!isOpen && mode === 'DESKTOP_OVERLAY') {
-    return (
-        <button
-         onClick={openTerminal}
-         className={`fixed bottom-6 right-6 bg-amber-500 text-black font-mono text-sm py-3 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-40 flex items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-amber-400 rounded-md ${tutorialStep === 4 ? 'z-[100] animate-bounce ring-2 ring-white' : ''}`}
-        >
-          <div className="relative">
-             <i className="fas fa-terminal animate-pulse"></i>
-          </div>
-          <span className="font-bold tracking-widest">IB_CHAT // CONNECT</span>
-        </button>
-    )
-  }
-
-  // If in desktop mode and closed, but not using launcher logic (e.g. controlled externally), return null
-  if (!isOpen && mode !== 'DESKTOP_OVERLAY') return null;
-
-  const activeMessages = activeTab === 'ADVISOR' 
-    ? advisorMessages 
-    : npcList.find(n => n.id === activeTab)?.dialogueHistory || [];
-
+  // Compute activeNPC before useMemo so it can be in the dependency array
   const activeNPC = npcList.find(n => n.id === activeTab);
-  const isNpcLoading = activeTab !== 'ADVISOR' && loadingNpcs[activeTab];
 
+  // IMPORTANT: useMemo must be called before any early returns to avoid React hooks violation
   const npcQuickResponses = useMemo(() => {
       if (!playerStats) return ["Any updates on the deal?", "Just checking in."];
       const base: string[] = [];
@@ -258,6 +237,31 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
 
       return Array.from(new Set(base)).slice(0, 5);
   }, [playerStats, activeScenario, activeNPC]);
+
+  // If in desktop mode and closed, show the launcher button
+  if (!isOpen && mode === 'DESKTOP_OVERLAY') {
+    return (
+        <button
+         onClick={openTerminal}
+         className={`fixed bottom-6 right-6 bg-amber-500 text-black font-mono text-sm py-3 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-40 flex items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-amber-400 rounded-md ${tutorialStep === 4 ? 'z-[100] animate-bounce ring-2 ring-white' : ''}`}
+        >
+          <div className="relative">
+             <i className="fas fa-terminal animate-pulse"></i>
+          </div>
+          <span className="font-bold tracking-widest">IB_CHAT // CONNECT</span>
+        </button>
+    )
+  }
+
+  // If in desktop mode and closed, but not using launcher logic (e.g. controlled externally), return null
+  if (!isOpen && mode !== 'DESKTOP_OVERLAY') return null;
+
+  const activeMessages = activeTab === 'ADVISOR'
+    ? advisorMessages
+    : npcList.find(n => n.id === activeTab)?.dialogueHistory || [];
+
+  // activeNPC is now defined above (before early returns) to satisfy hooks rules
+  const isNpcLoading = activeTab !== 'ADVISOR' && loadingNpcs[activeTab];
 
   // Styling logic based on mode
   const containerClasses = mode === 'MOBILE_EMBED'
