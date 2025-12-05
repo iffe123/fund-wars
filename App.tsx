@@ -60,7 +60,7 @@ const App: React.FC = () => {
   
   const { loading: authLoading } = useAuth();
   const { playSfx, playAmbience } = useAudio();
-  const { toasts, addToast, removeToast } = useToast();
+  const { toasts, addToast, removeToast, clearToasts } = useToast();
 
   // --- CORE STATE ---
   const [legalAccepted, setLegalAccepted] = useState(false);
@@ -102,7 +102,7 @@ const App: React.FC = () => {
           setBootComplete(false);
           setChatHistory(DEFAULT_CHAT);
           setSelectedNpcId('advisor');
-          setToasts([]);
+          clearToasts();
           addToast('Session reset via query flag.', 'info');
 
           url.searchParams.delete('reset');
@@ -392,7 +392,7 @@ const App: React.FC = () => {
       setActiveMobileTab('DESK');
       setChatHistory(DEFAULT_CHAT);
       setSelectedNpcId('advisor');
-      setToasts([]);
+      clearToasts();
       addToast('Simulation reset. Rebooting intro...', 'info');
       addLogEntry('Simulation reset to cold open.');
   };
@@ -813,7 +813,7 @@ const App: React.FC = () => {
                     setBootComplete(false);
                     setChatHistory(DEFAULT_CHAT);
                     setSelectedNpcId('advisor');
-                    setToasts([]);
+                    clearToasts();
                     addToast('Session reset.', 'success');
                 }}
             >
