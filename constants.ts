@@ -207,7 +207,7 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
       ...NORMAL_STATS,
       cash: 50000,           // Reduced but still comfortable - daddy's allowance
       reputation: 20,
-      stress: 10,
+      stress: 0,
       financialEngineering: 20,
       portfolio: [],
     },
@@ -1087,7 +1087,7 @@ export const LIFE_ACTIONS: LifeAction[] = [
     icon: 'fa-skull-crossbones',
     outcome: {
       description: "You sign a predatory term sheet. Cash hits the account fast, but the lender is circling for their pound of flesh.",
-      statChanges: { cash: +50000, stress: +8, loanBalanceChange: +50000, loanRate: 0.28, score: +75 },
+      statChanges: { cash: +50000, stress: +8, loanBalanceChange: +50000, loanRate: 0.15, score: +75 }, // Reduced from 28% to 15% for better balance
     },
   },
   {

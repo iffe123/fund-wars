@@ -1,6 +1,7 @@
 import React, { memo, useMemo } from 'react';
 import type { PlayerStats, MarketVolatility } from '../types';
-import { MARKET_VOLATILITY_STYLES } from '../constants';
+import { PlayerLevel } from '../types';
+import { MARKET_VOLATILITY_STYLES, LEVEL_RANKS } from '../constants';
 
 interface PlayerStatsProps {
   stats: PlayerStats;
@@ -18,6 +19,20 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
     if (val >= 1000) return `$${(val / 1000).toFixed(0)}k`;
     return `$${val}`;
   }, []);
+
+  // Calculate net worth (cash + portfolio value - debt)
+  const portfolioValue = stats.portfolio.reduce((sum, c) => sum + (c.currentValuation * (c.ownershipPercentage / 100)), 0);
+  const netWorth = stats.cash + portfolioValue + stats.totalRealizedGains - stats.loanBalance;
+
+  // Win condition progress
+  const isPartner = LEVEL_RANKS[stats.level] >= LEVEL_RANKS[PlayerLevel.PARTNER];
+  const hasMillionDollars = netWorth >= 1000000;
+  const canUnlockFounder = stats.reputation >= 50;
+
+  // Progress percentages
+  const levelProgress = Math.min(100, (LEVEL_RANKS[stats.level] / LEVEL_RANKS[PlayerLevel.PARTNER]) * 100);
+  const wealthProgress = Math.min(100, (netWorth / 1000000) * 100);
+  const founderProgress = Math.min(100, (stats.reputation / 50) * 100);
 
   // Stress level indicator
   const getStressColor = (stress: number) => {
@@ -138,6 +153,21 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
             <div className="flex flex-col">
               <span className="text-[9px] text-blue-600 uppercase tracking-wider">Rep</span>
               <span className="font-bold text-blue-400 tabular-nums">{stats.reputation}</span>
+            </div>
+          </div>
+
+          {/* Net Worth */}
+          <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg border ${
+            hasMillionDollars
+              ? 'bg-amber-950/30 border-amber-800/40'
+              : 'bg-slate-800/30 border-slate-700/40'
+          }`}>
+            <i className={`fas fa-sack-dollar ${hasMillionDollars ? 'text-amber-400' : 'text-slate-500'}`}></i>
+            <div className="flex flex-col">
+              <span className={`text-[9px] uppercase tracking-wider ${hasMillionDollars ? 'text-amber-600' : 'text-slate-600'}`}>Net Worth</span>
+              <span className={`font-bold tabular-nums ${hasMillionDollars ? 'text-amber-400' : 'text-slate-400'}`}>
+                {formatMoney(netWorth)}
+              </span>
             </div>
           </div>
         </div>

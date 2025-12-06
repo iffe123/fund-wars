@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, Difficulty, GamePhase, LifeAction, PortfolioAction, PortfolioCompany, MarketVolatility, NewsEvent, PortfolioImpact, UserProfile, CompanyEvent, NPC, QuizQuestion, CompetitiveDeal, RivalFund } from './types';
+import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, GamePhase, PortfolioCompany, MarketVolatility, NPC, CompetitiveDeal } from './types';
 import { PlayerLevel, DealType } from './types';
 import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS, RIVAL_FUNDS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS } from './constants';
 import NewsTicker from './components/NewsTicker';
@@ -169,7 +169,8 @@ const App: React.FC = () => {
 
   // --- HANDLERS ---
   const handleIntroComplete = (stress: number) => {
-      // Init Rookie Stats with mandatory PackFancy setup
+      // Init Stats with standard settings and mandatory PackFancy setup
+      const diffSettings = DIFFICULTY_SETTINGS['NORMAL'];
       const initialPortfolio: PortfolioCompany[] = [{
         id: 1,
         name: "PackFancy Inc.",
@@ -189,9 +190,10 @@ const App: React.FC = () => {
         isAnalyzed: false
       }];
 
+      // Apply difficulty settings
       updatePlayerStats({
-          //...DIFFICULTY_SETTINGS['Normal'].initialStats,
-          stress,
+          ...diffSettings.initialStats,
+          stress: diffSettings.initialStats.stress + stress,
           playedScenarioIds: [SCENARIOS[0].id],
           portfolio: initialPortfolio
       });
@@ -201,8 +203,8 @@ const App: React.FC = () => {
       setTutorialStep(1); // Start Tutorial
       setBootComplete(true);
       logEvent('tutorial_start');
-      addLogEntry("INIT: Career Sequence Started. Role: Analyst.");
-      setChatHistory(prev => [...prev, { sender: 'system', text: "[SYSTEM_LOG] Player accepted offer. Career started at Stress Level: " + stress }]);
+      addLogEntry(`INIT: Career Sequence Started. Role: Analyst.`);
+      setChatHistory(prev => [...prev, { sender: 'system', text: `[SYSTEM_LOG] Player accepted offer. Starting stress: ${diffSettings.initialStats.stress + stress}` }]);
       playSfx('BOOT');
   };
 
@@ -790,7 +792,7 @@ const App: React.FC = () => {
   if (!legalAccepted) return <LegalDisclaimer onAccept={handleLegalAccept} />;
 
   if (!bootComplete) {
-      if (gamePhase === 'INTRO') return <IntroSequence onComplete={(s) => handleIntroComplete(s)} />;
+      if (gamePhase === 'INTRO') return <IntroSequence onComplete={handleIntroComplete} />;
       // If we loaded a game and are not in Intro, skip boot sequence
       if (playerStats) {
           // Use useEffect pattern to avoid setting state during render
