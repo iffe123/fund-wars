@@ -7,6 +7,7 @@ import AuctionModal from './AuctionModal';
 import BlackBoxModal from './BlackBoxModal';
 import BoardBattleModal from './BoardBattleModal';
 import ExitStrategyModal from './ExitStrategyModal';
+import { calculatePortfolioAnalytics, formatMoney as formatMoneyUtil } from '../utils/scenarioGating';
 
 interface PortfolioViewProps {
   playerStats: PlayerStats;
@@ -18,7 +19,7 @@ interface PortfolioViewProps {
 }
 
 const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onAction, onBack, onJumpShip, canAccessFounder = false, backDisabled = false }) => {
-  const { tutorialStep, updatePlayerStats, setTutorialStep, marketVolatility } = useGame();
+  const { tutorialStep, updatePlayerStats, setTutorialStep, marketVolatility, rivalFunds, useAction } = useGame();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [analyzingIds, setAnalyzingIds] = useState<number[]>([]);
 
@@ -30,6 +31,19 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
 
   const portfolio = playerStats.portfolio;
   const selectedCompany = portfolio.find(c => c.id === selectedId);
+  const currentWeek = playerStats.gameTime?.week || playerStats.timeCursor || 0;
+
+  // Calculate analytics for all portfolio companies
+  const portfolioAnalytics = useMemo(() => {
+    const analyticsMap = new Map<number, ReturnType<typeof calculatePortfolioAnalytics>>();
+    portfolio.forEach(company => {
+      analyticsMap.set(company.id, calculatePortfolioAnalytics(company, currentWeek, rivalFunds || []));
+    });
+    return analyticsMap;
+  }, [portfolio, currentWeek, rivalFunds]);
+
+  // Get analytics for selected company
+  const selectedAnalytics = selectedCompany ? portfolioAnalytics.get(selectedCompany.id) : null;
 
   // Market Cycle Modifiers
   const isMarketPanic = marketVolatility === 'PANIC' || marketVolatility === 'CREDIT_CRUNCH';
@@ -39,6 +53,11 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   const formatPercent = useCallback((val: number) => `${(val * 100).toFixed(1)}%`, []);
 
   const handleAnalyze = (companyId: number) => {
+    // Check if we have enough actions (skip during tutorial)
+    if (tutorialStep === 0 && !useAction('ANALYZE_DEAL')) {
+      return; // Not enough actions
+    }
+
     setAnalyzingIds(prev => [...prev, companyId]);
 
     // Simulate analysis delay
@@ -61,6 +80,11 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   };
 
   const handleSubmitIOI = (companyId: number) => {
+    // Check if we have enough actions (skip during tutorial)
+    if (tutorialStep === 0 && !useAction('SUBMIT_IOI')) {
+      return; // Not enough actions
+    }
+
     // TRIGGER LIVE AUCTION
     const company = portfolio.find(c => c.id === companyId);
     if (company && tutorialStep !== 6) { // Don't trigger auction on tutorial step
@@ -444,6 +468,97 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                 </div>
               </div>
 
+              {/* ANALYTICS SECTION */}
+              {selectedAnalytics && selectedCompany.dealClosed && (
+                <div className="space-y-3">
+                  {/* Unrealized P&L */}
+                  <div className={`p-3 rounded-lg border ${
+                    selectedAnalytics.unrealizedGainLoss >= 0
+                      ? 'bg-emerald-950/30 border-emerald-800/50'
+                      : 'bg-red-950/30 border-red-800/50'
+                  }`}>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <i className={`fas ${selectedAnalytics.unrealizedGainLoss >= 0 ? 'fa-arrow-trend-up text-emerald-400' : 'fa-arrow-trend-down text-red-400'}`}></i>
+                        <span className="text-xs text-slate-400 uppercase tracking-wider">Unrealized P&L</span>
+                      </div>
+                      <div className="text-right">
+                        <span className={`font-bold ${selectedAnalytics.unrealizedGainLoss >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {selectedAnalytics.unrealizedGainLoss >= 0 ? '+' : ''}
+                          {formatMoneyUtil(selectedAnalytics.unrealizedGainLoss)}
+                        </span>
+                        <span className={`text-xs ml-2 ${selectedAnalytics.unrealizedGainLoss >= 0 ? 'text-emerald-500/70' : 'text-red-500/70'}`}>
+                          ({selectedAnalytics.unrealizedGainLossPercent >= 0 ? '+' : ''}
+                          {selectedAnalytics.unrealizedGainLossPercent.toFixed(1)}%)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Analyst Sentiment */}
+                  <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                    <div className="flex items-center gap-2 mb-2">
+                      <i className={`fas fa-chart-line text-xs ${
+                        selectedAnalytics.analystSentiment === 'BULLISH' ? 'text-emerald-400' :
+                        selectedAnalytics.analystSentiment === 'BEARISH' ? 'text-red-400' : 'text-slate-400'
+                      }`}></i>
+                      <span className={`text-xs font-bold uppercase ${
+                        selectedAnalytics.analystSentiment === 'BULLISH' ? 'text-emerald-400' :
+                        selectedAnalytics.analystSentiment === 'BEARISH' ? 'text-red-400' : 'text-slate-400'
+                      }`}>
+                        {selectedAnalytics.analystSentiment} OUTLOOK
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 italic">{selectedAnalytics.analystNote}</p>
+                  </div>
+
+                  {/* Early Sale Penalty Warning */}
+                  {selectedAnalytics.earlySalePenalty > 0 && (
+                    <div className="p-3 bg-amber-950/30 rounded-lg border border-amber-800/30">
+                      <div className="flex items-center gap-2">
+                        <i className="fas fa-clock text-amber-500 text-xs"></i>
+                        <span className="text-xs text-amber-400">
+                          Early sale penalty: {(selectedAnalytics.earlySalePenalty * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Hold {26 - selectedAnalytics.holdingPeriodWeeks} more weeks to avoid penalty
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Rival Bidding Activity */}
+                  {selectedAnalytics.activeBidders.length > 0 && (
+                    <div className="p-3 bg-purple-950/30 rounded-lg border border-purple-800/30 animate-pulse">
+                      <div className="flex items-center gap-2">
+                        <i className="fas fa-gavel text-purple-400 text-xs"></i>
+                        <span className="text-xs text-purple-300">
+                          {selectedAnalytics.activeBidders.length} rival{selectedAnalytics.activeBidders.length > 1 ? 's' : ''} circling
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {selectedAnalytics.activeBidders.slice(0, 3).map((bidder, i) => (
+                          <span key={i} className="text-[10px] px-2 py-0.5 bg-purple-900/50 rounded text-purple-300 border border-purple-700/50">
+                            {bidder}
+                          </span>
+                        ))}
+                      </div>
+                      {selectedAnalytics.highestBid && (
+                        <p className="text-[10px] text-slate-500 mt-2">
+                          Highest indication: {formatMoneyUtil(selectedAnalytics.highestBid)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Holding Period */}
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 px-1">
+                    <span>Holding period: {selectedAnalytics.holdingPeriodWeeks} weeks</span>
+                    <span>Acquired: Y{selectedCompany.acquisitionDate.year} M{selectedCompany.acquisitionDate.month}</span>
+                  </div>
+                </div>
+              )}
+
             </div>
 
             {/* ACTION BAR (Sticky Footer on Mobile) */}
@@ -455,15 +570,16 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
             `}>
               <button
                 onClick={() => handleAnalyze(selectedCompany.id)}
-                disabled={analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed}
+                disabled={analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)}
                 className={`
                   relative border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
                   ${tutorialStep === 3
                     ? 'z-[70] bg-amber-950/50 border-amber-500 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.4)] animate-pulse-glow'
                     : 'bg-slate-800/50 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500'
                   }
-                  ${(analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed) ? 'opacity-40 cursor-not-allowed' : ''}
+                  ${(analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)) ? 'opacity-40 cursor-not-allowed' : ''}
                 `}
+                title={tutorialStep === 0 ? 'Costs 1 action' : undefined}
               >
                 {analyzingIds.includes(selectedCompany.id) ? (
                   <div className="w-5 h-5 border-2 border-slate-600 border-t-amber-500 rounded-full animate-spin"></div>
@@ -471,6 +587,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                   <i className="fas fa-microscope text-lg mb-2"></i>
                 )}
                 <span className="text-[10px] font-bold uppercase tracking-wider">Analyze</span>
+                {tutorialStep === 0 && <span className="text-[8px] text-slate-500 mt-0.5">(1 action)</span>}
               </button>
 
               <button
@@ -486,27 +603,31 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
               >
                 <i className="fas fa-door-open text-lg mb-2"></i>
                 <span className="text-[10px] font-bold uppercase tracking-wider">Exit</span>
+                {tutorialStep === 0 && <span className="text-[8px] text-slate-500 mt-0.5">(2 actions)</span>}
               </button>
 
               <button className="border border-slate-600 bg-slate-800/50 text-slate-300 flex flex-col items-center justify-center p-4 rounded-lg hover:bg-slate-700/50 hover:border-slate-500 transition-all">
                 <i className="fas fa-comments text-lg mb-2"></i>
                 <span className="text-[10px] font-bold uppercase tracking-wider">Discuss</span>
+                {tutorialStep === 0 && <span className="text-[8px] text-slate-500 mt-0.5">(free)</span>}
               </button>
 
               <button
                 onClick={() => handleSubmitIOI(selectedCompany.id)}
-                disabled={(!selectedCompany.isAnalyzed && tutorialStep !== 0) || isMarketPanic}
+                disabled={(!selectedCompany.isAnalyzed && tutorialStep !== 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)}
                 className={`
                   border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
                   ${tutorialStep === 6
                     ? 'z-[70] relative bg-emerald-900/50 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-pulse-glow'
                     : 'bg-emerald-950/30 border-emerald-700/50 text-emerald-400 hover:bg-emerald-900/40 hover:border-emerald-600'
                   }
-                  ${((!selectedCompany.isAnalyzed && tutorialStep !== 0) || isMarketPanic) ? 'opacity-30 grayscale cursor-not-allowed' : ''}
+                  ${((!selectedCompany.isAnalyzed && tutorialStep !== 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)) ? 'opacity-30 grayscale cursor-not-allowed' : ''}
                 `}
+                title={tutorialStep === 0 ? 'Costs 1 action' : undefined}
               >
                 <i className="fas fa-file-signature text-lg mb-2"></i>
                 <span className="text-[10px] font-bold uppercase tracking-wider">{isMarketPanic ? "Mkt Frozen" : "Submit IOI"}</span>
+                {tutorialStep === 0 && <span className="text-[8px] text-slate-500 mt-0.5">(1 action)</span>}
               </button>
             </div>
           </div>

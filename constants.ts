@@ -66,6 +66,16 @@ const NORMAL_STATS: PlayerStats = {
   dealAllocations: [],
   carryEligibleDeals: [],
   activeSkillInvestments: [],
+  // NEW: Time & Action System
+  gameTime: {
+    week: 1,
+    year: 1,
+    quarter: 1 as const,
+    actionsRemaining: 4,
+    maxActions: 4,
+    isNightGrinder: false,
+    actionsUsedThisWeek: [],
+  },
 };
 
 export const INITIAL_NPCS: NPC[] = [

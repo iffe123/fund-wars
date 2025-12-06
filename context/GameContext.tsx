@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
-import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, DayType, TimeSlot, KnowledgeEntry, AIState, RivalMindsetState, CoalitionStateData, PersonalFinances, LifestyleLevel, SkillInvestment, DealAllocation, Warning, NPCDrama, CompanyActiveEvent } from '../types';
-import { PlayerLevel, DealType } from '../types';
+import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, DayType, TimeSlot, KnowledgeEntry, AIState, RivalMindsetState, CoalitionStateData, PersonalFinances, LifestyleLevel, SkillInvestment, DealAllocation, Warning, NPCDrama, CompanyActiveEvent, ActionType, GameTime } from '../types';
+import { PlayerLevel, DealType, ACTION_COSTS } from '../types';
 
 // Import World Engine for living world system
 import { processWorldTick, generateWarnings, initializePortfolioCompanyFields } from '../utils/worldEngine';
@@ -65,6 +65,10 @@ interface GameContextTypeExtended extends GameContextType {
     setActiveDrama: (drama: NPCDrama | null) => void;
     setActiveCompanyEvent: (event: CompanyActiveEvent | null) => void;
     handleEventDecision: (eventId: string, optionId: string) => void;
+    // Time & Action System
+    useAction: (actionType: ActionType) => boolean;
+    endWeek: () => void;
+    toggleNightGrinder: () => void;
 }
 
 const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
@@ -949,6 +953,99 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setPendingDecision(null);
   }, [activeDrama, updatePlayerStats, addLogEntry]);
 
+  // --- TIME & ACTION SYSTEM ---
+  const useAction = useCallback((actionType: ActionType): boolean => {
+    if (!playerStats?.gameTime) return false;
+
+    const cost = ACTION_COSTS[actionType] || 1;
+    if (playerStats.gameTime.actionsRemaining < cost) {
+      addLogEntry(`Not enough actions for ${actionType.replace(/_/g, ' ')}`);
+      return false;
+    }
+
+    setPlayerStats(prev => {
+      if (!prev?.gameTime) return prev;
+      return {
+        ...prev,
+        gameTime: {
+          ...prev.gameTime,
+          actionsRemaining: prev.gameTime.actionsRemaining - cost,
+          actionsUsedThisWeek: [...prev.gameTime.actionsUsedThisWeek, actionType],
+        }
+      };
+    });
+
+    return true;
+  }, [playerStats, addLogEntry]);
+
+  const endWeek = useCallback(() => {
+    if (!playerStats?.gameTime) return;
+
+    // Advance the week
+    const currentWeek = playerStats.gameTime.week + 1;
+    const weeksInYear = 52;
+    const yearsPassed = Math.floor((currentWeek - 1) / weeksInYear);
+    const weekInYear = ((currentWeek - 1) % weeksInYear) + 1;
+    const quarter = Math.ceil(weekInYear / 13) as 1 | 2 | 3 | 4;
+
+    // Apply night grinder penalties if active
+    const nightGrinderPenalty = playerStats.gameTime.isNightGrinder
+      ? { energy: -15, health: -5 }
+      : {};
+
+    setPlayerStats(prev => {
+      if (!prev?.gameTime) return prev;
+      return {
+        ...prev,
+        energy: Math.max(0, (prev.energy || 100) + (nightGrinderPenalty.energy || 0)),
+        health: Math.max(0, (prev.health || 100) + (nightGrinderPenalty.health || 0)),
+        gameTime: {
+          week: currentWeek,
+          year: 1 + yearsPassed,
+          quarter,
+          actionsRemaining: prev.gameTime.maxActions,
+          maxActions: prev.gameTime.maxActions,
+          isNightGrinder: false,
+          actionsUsedThisWeek: [],
+        }
+      };
+    });
+
+    addLogEntry(`Week ${currentWeek} begins`);
+
+    // Trigger world tick (portfolio events, rival actions, etc.)
+    advanceTime();
+  }, [playerStats, addLogEntry, advanceTime]);
+
+  const toggleNightGrinder = useCallback(() => {
+    if (!playerStats?.gameTime) return;
+
+    const newIsNightGrinder = !playerStats.gameTime.isNightGrinder;
+
+    setPlayerStats(prev => {
+      if (!prev?.gameTime) return prev;
+      return {
+        ...prev,
+        gameTime: {
+          ...prev.gameTime,
+          isNightGrinder: newIsNightGrinder,
+          maxActions: newIsNightGrinder
+            ? prev.gameTime.maxActions + 1
+            : prev.gameTime.maxActions - 1,
+          actionsRemaining: newIsNightGrinder
+            ? prev.gameTime.actionsRemaining + 1
+            : Math.max(0, prev.gameTime.actionsRemaining - 1),
+        }
+      };
+    });
+
+    if (newIsNightGrinder) {
+      addLogEntry('Night Grinder mode activated. You will pay for this tomorrow.');
+    } else {
+      addLogEntry('Night Grinder mode deactivated.');
+    }
+  }, [playerStats, addLogEntry]);
+
   // --- TIME ADVANCEMENT & SCENARIO TRIGGER ---
   const advanceTime = useCallback(() => {
       if (!playerStats) return;
@@ -1801,6 +1898,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setActiveDrama,
       setActiveCompanyEvent,
       handleEventDecision,
+      // Time & Action System
+      useAction,
+      endWeek,
+      toggleNightGrinder,
     }}>
       {children}
     </GameContext.Provider>

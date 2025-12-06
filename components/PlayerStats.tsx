@@ -1,15 +1,41 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState, useCallback } from 'react';
 import type { PlayerStats, MarketVolatility } from '../types';
 import { PlayerLevel } from '../types';
 import { MARKET_VOLATILITY_STYLES, LEVEL_RANKS } from '../constants';
+import { useGame } from '../context/GameContext';
+import TimeActionBar from './TimeActionBar';
+import StatsExplainerModal from './StatsExplainerModal';
 
 interface PlayerStatsProps {
   stats: PlayerStats;
   marketVolatility: MarketVolatility;
   onStatsClick?: () => void;
+  showTimeActionBar?: boolean;
 }
 
-const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVolatility, onStatsClick }) => {
+const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVolatility, onStatsClick, showTimeActionBar = true }) => {
+  const { endWeek, toggleNightGrinder } = useGame();
+
+  // Modal state for stats explainer
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [focusedStatId, setFocusedStatId] = useState<string | null>(null);
+
+  // Handle individual stat click
+  const handleStatClick = useCallback((statId: string) => {
+    setFocusedStatId(statId);
+    setShowStatsModal(true);
+  }, []);
+
+  // Handle general stats click (fallback to showing modal without focus)
+  const handleGeneralStatsClick = useCallback(() => {
+    if (onStatsClick) {
+      onStatsClick();
+    } else {
+      setFocusedStatId(null);
+      setShowStatsModal(true);
+    }
+  }, [onStatsClick]);
+
   // Memoize computed values
   const mktStyle = useMemo(() => MARKET_VOLATILITY_STYLES[marketVolatility], [marketVolatility]);
   const factions = stats.factionReputation;
@@ -49,17 +75,31 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
   };
 
   return (
-    <div
-      onClick={onStatsClick}
-      className={`
-        h-14 bg-gradient-to-b from-slate-900 to-slate-900/95
-        border-b border-slate-700/80 flex items-center px-4 justify-between shrink-0
-        ${isPanic ? 'animate-pulse bg-red-950/20 border-red-900/50' : ''}
-        ${onStatsClick ? 'cursor-pointer hover:bg-slate-800/50 transition-colors active:bg-slate-800' : ''}
-      `}
-      role={onStatsClick ? 'button' : undefined}
-      tabIndex={onStatsClick ? 0 : undefined}
-    >
+    <>
+      {/* Time & Action Bar */}
+      {showTimeActionBar && stats.gameTime && (
+        <TimeActionBar
+          gameTime={stats.gameTime}
+          onEndWeek={endWeek}
+          onToggleNightGrinder={toggleNightGrinder}
+          playerEnergy={stats.energy}
+          playerHealth={stats.health}
+        />
+      )}
+
+      {/* Stats Header */}
+      <div
+        onClick={handleGeneralStatsClick}
+        className={`
+          h-14 bg-gradient-to-b from-slate-900 to-slate-900/95
+          border-b border-slate-700/80 flex items-center px-4 justify-between shrink-0
+          ${isPanic ? 'animate-pulse bg-red-950/20 border-red-900/50' : ''}
+          cursor-pointer hover:bg-slate-800/50 transition-colors active:bg-slate-800
+        `}
+        role="button"
+        tabIndex={0}
+        title="Click any stat for details"
+      >
       {/* MOBILE VIEW (< 768px) */}
       <div className="flex md:hidden items-center w-full justify-between gap-3">
         {/* Cash */}
@@ -267,6 +307,17 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         </div>
       </div>
     </div>
+
+    {/* Stats Explainer Modal */}
+    {showStatsModal && (
+      <StatsExplainerModal
+        stats={stats}
+        marketVolatility={marketVolatility}
+        onClose={() => setShowStatsModal(false)}
+        focusStatId={focusedStatId}
+      />
+    )}
+    </>
   );
 });
 
