@@ -54,7 +54,7 @@ interface GameContextTypeExtended extends GameContextType {
 const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
 
 // Re-export utilities for backward compatibility
-export { sanitizeKnowledgeLog, sanitizeKnowledgeFlags, hydrateNpc, hydrateRivalFund, hydrateCompetitiveDeal, MAX_PORTFOLIO_SIZE } from '../utils/gameUtils';
+export { sanitizeKnowledgeLog, sanitizeKnowledgeFlags, hydrateNpc, hydrateRivalFund, hydrateFund, hydrateCompetitiveDeal, MAX_PORTFOLIO_SIZE } from '../utils/gameUtils';
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();

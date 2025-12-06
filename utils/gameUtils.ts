@@ -168,6 +168,9 @@ export const hydrateRivalFund = (fund: RivalFund): RivalFund => ({
   lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
 });
 
+// Alias for backwards compatibility
+export const hydrateFund = hydrateRivalFund;
+
 // ==================== COMPETITIVE DEAL HYDRATION ====================
 
 export const hydrateCompetitiveDeal = (deal: unknown): CompetitiveDeal | null => {
