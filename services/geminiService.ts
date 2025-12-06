@@ -2,6 +2,96 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { ChatMessage, PlayerStats, Scenario, NPC, NPCMemory, KnowledgeEntry } from '../types';
 
+// Connection configuration
+const CONNECTION_CONFIG = {
+  timeout: 30000, // 30 seconds
+  maxRetries: 3,
+  retryDelays: [1000, 2000, 4000], // exponential backoff in ms
+};
+
+// Retry wrapper with exponential backoff
+const withRetry = async <T>(
+  operation: () => Promise<T>,
+  operationName: string
+): Promise<T> => {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= CONNECTION_CONFIG.maxRetries; attempt++) {
+    try {
+      // Create timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`${operationName} timed out after ${CONNECTION_CONFIG.timeout}ms`));
+        }, CONNECTION_CONFIG.timeout);
+      });
+
+      // Race between operation and timeout
+      return await Promise.race([operation(), timeoutPromise]);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Don't retry on certain errors (auth, quota, referrer restrictions)
+      const errorMessage = lastError.message.toLowerCase();
+      if (
+        errorMessage.includes('invalid api key') ||
+        errorMessage.includes('api key not valid') ||
+        errorMessage.includes('permission denied') ||
+        errorMessage.includes('permission_denied') ||
+        errorMessage.includes('referrer') ||
+        errorMessage.includes('http_referrer_blocked') ||
+        errorMessage.includes('api_key_http_referrer_blocked') ||
+        errorMessage.includes('quota exceeded') ||
+        errorMessage.includes('403')
+      ) {
+        throw lastError;
+      }
+
+      // Log and retry for transient errors
+      if (attempt < CONNECTION_CONFIG.maxRetries) {
+        const delay = CONNECTION_CONFIG.retryDelays[attempt] || 4000;
+        console.warn(
+          `${operationName} failed (attempt ${attempt + 1}/${CONNECTION_CONFIG.maxRetries + 1}): ${lastError.message}. Retrying in ${delay}ms...`
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error(`${operationName} failed after ${CONNECTION_CONFIG.maxRetries + 1} attempts`);
+};
+
+// Classify errors for better user feedback
+const classifyError = (error: Error): { type: string; message: string } => {
+  const msg = error.message.toLowerCase();
+
+  if (msg.includes('api key not valid') || msg.includes('invalid api key')) {
+    return { type: 'auth', message: 'Invalid API key. Please check your VITE_API_KEY configuration.' };
+  }
+  if (msg.includes('referrer') || msg.includes('http_referrer_blocked') || msg.includes('api_key_http_referrer_blocked')) {
+    return {
+      type: 'referrer',
+      message: 'API key referrer restriction error. The API key needs fundwars.app added to allowed referrers in Google Cloud Console.'
+    };
+  }
+  if (msg.includes('permission denied') || msg.includes('permission_denied') || msg.includes('403')) {
+    return { type: 'permission', message: 'API permission denied. Check API key configuration in Google Cloud Console.' };
+  }
+  if (msg.includes('quota exceeded') || msg.includes('rate limit')) {
+    return { type: 'quota', message: 'API quota exceeded. Please wait a moment and try again.' };
+  }
+  if (msg.includes('timed out')) {
+    return { type: 'timeout', message: 'Connection timed out. Please check your network and try again.' };
+  }
+  if (msg.includes('network') || msg.includes('fetch') || msg.includes('connection')) {
+    return { type: 'network', message: 'Network error. Please check your internet connection.' };
+  }
+  if (msg.includes('model') || msg.includes('not found')) {
+    return { type: 'model', message: 'AI model unavailable. Please try again later.' };
+  }
+
+  return { type: 'unknown', message: 'An unexpected error occurred. Please try again.' };
+};
+
 const summarizeMemories = (memories: NPCMemory[]): string => {
   if (!memories || memories.length === 0) return 'None yet. Make the player earn your trust.';
 
@@ -36,29 +126,108 @@ const summarizeKnowledge = (intel: KnowledgeEntry[], focusNpc?: NPC): string => 
     .join('\n');
 };
 
-const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: string) => {
+// Track whether we've warned about offline mode in console
+let offlineWarningShown = false;
+
+// Varied offline responses based on NPC personality and context
+const OFFLINE_RESPONSES = {
+  aggressive: [
+    "You want answers? Show me numbers first.",
+    "I don't have time for small talk. What's the angle?",
+    "Every second you waste is money left on the table.",
+    "Come back when you've got something worth my attention.",
+    "Talk is cheap. Results aren't.",
+  ],
+  analytical: [
+    "The data doesn't lie. Neither do I.",
+    "Let's look at this objectively.",
+    "Have you stress-tested those assumptions?",
+    "Run the numbers again. Something's off.",
+    "I need more information before I commit to anything.",
+  ],
+  cautious: [
+    "I've seen deals go sideways for less.",
+    "Let's not rush into anything we'll regret.",
+    "Due diligence isn't optional. It's survival.",
+    "The market rewards patience, not recklessness.",
+    "I've got concerns. Address them.",
+  ],
+  default: [
+    "Interesting. Tell me more.",
+    "I'm listening, but I'm not convinced.",
+    "What else have you got?",
+    "That's one way to look at it.",
+    "Keep talking. I'll decide if it's worth my time.",
+  ],
+};
+
+const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: string): string => {
+  // Log warning once per session
+  if (!offlineWarningShown) {
+    console.warn(
+      '%c⚠️ GEMINI API OFFLINE - NPCs using fallback responses.\n' +
+      'To enable AI-powered NPCs, set VITE_API_KEY in your .env file.\n' +
+      'See README.md for setup instructions.',
+      'color: #f59e0b; font-weight: bold; font-size: 14px;'
+    );
+    offlineWarningShown = true;
+  }
+
   const mood = npc.mood > 70 ? "almost warm" : npc.mood < 30 ? "cold" : "guarded";
-  const financeJab = npc.traits.includes('Aggressive')
-    ? "Stop hesitating. Close or kill the deal."
-    : "Bring me something with real upside or don't bother me.";
-
-  const loanWarning = playerStats.loanBalance > 0
-    ? "And pay that loan before the lender eats you alive."
-    : "You still have dry powder. Use it before someone else does.";
-
   const traitFlair = npc.traits.length > 0 ? `(${npc.traits.join(', ')})` : '';
   const trustCue = npc.trust < 30 ? "(barely trusts you)" : npc.trust > 70 ? "(expects you to deliver)" : "(watching you)";
-  const lastMemory = npc.memories[npc.memories.length - 1];
-  const callback = lastMemory ? ` They remember: ${lastMemory.summary}.` : '';
-  const intelHit = (playerStats.knowledgeLog || []).filter(k => k.npcId === npc.id || k.tags?.includes(npc.id)).slice(-1)[0];
-  const intelNote = intelHit ? ` You logged: ${intelHit.summary}.` : '';
 
-  return `${npc.name} ${traitFlair} ${trustCue} gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"${callback}${intelNote}`;
+  // Select response pool based on NPC traits
+  let responsePool = OFFLINE_RESPONSES.default;
+  if (npc.traits.includes('Aggressive') || npc.traits.includes('Competitive')) {
+    responsePool = OFFLINE_RESPONSES.aggressive;
+  } else if (npc.traits.includes('Analytical') || npc.traits.includes('Detail-Oriented')) {
+    responsePool = OFFLINE_RESPONSES.analytical;
+  } else if (npc.traits.includes('Cautious') || npc.traits.includes('Conservative')) {
+    responsePool = OFFLINE_RESPONSES.cautious;
+  }
+
+  // Pick a varied response using message hash for consistency
+  const messageHash = playerMessage.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const npcNameHash = npc.name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const responseIndex = (messageHash + npcNameHash + Date.now() % 1000) % responsePool.length;
+  const response = responsePool[responseIndex];
+
+  // Context-aware additions
+  const loanWarning = playerStats.loanBalance > 0
+    ? " And that loan hanging over you? Not a good look."
+    : "";
+  const lowCashWarning = playerStats.cash < 10000
+    ? " You look strapped for cash. Desperation is a bad negotiating position."
+    : "";
+  const lastMemory = npc.memories[npc.memories.length - 1];
+  const callback = lastMemory ? ` I remember what you said about ${lastMemory.summary.toLowerCase()}.` : '';
+
+  // Build the response
+  const intro = `${npc.name} ${traitFlair} ${trustCue} gives you a ${mood} look.`;
+  const contextNote = loanWarning || lowCashWarning || callback;
+
+  return `${intro} "${response}${contextNote}"`;
 };
 
 // --- ENV: read safely from Vite/Vercel ---
 // @ts-ignore
 const API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_API_KEY : undefined;
+
+// Lazy-initialized API client singleton
+let _aiClient: GoogleGenAI | null = null;
+const getAiClient = (): GoogleGenAI | null => {
+  if (!API_KEY) return null;
+  if (!_aiClient) {
+    _aiClient = new GoogleGenAI({ apiKey: API_KEY });
+  }
+  return _aiClient;
+};
+
+// Export function to check API status for UI components
+export const isGeminiApiConfigured = (): boolean => {
+  return !!API_KEY;
+};
 
 if (!API_KEY) {
   console.warn("Gemini API Key missing. Did you set VITE_API_KEY in Vercel (Production)?");
@@ -126,43 +295,42 @@ export const getAdvisorResponse = async (
   playerStats?: PlayerStats | null,
   currentScenario?: Scenario | null
 ): Promise<string> => {
-  if (!API_KEY) {
+  const ai = getAiClient();
+  if (!ai) {
     return "SYSTEM ERROR: API Key missing. Please configure VITE_API_KEY in your environment variables.";
   }
-  
+
   try {
     let currentSystemInstruction = advisorSystemInstruction;
-    
-        if (playerStats) {
-            currentSystemInstruction += `\n\nCURRENT PLAYER STATUS (Use this to tailor your insults/advice):\nLevel: ${playerStats.level}\nCash: $${playerStats.cash.toLocaleString()}\nReputation: ${playerStats.reputation}\nFaction Reputation -> MDs: ${playerStats.factionReputation.MANAGING_DIRECTORS}, LPs: ${playerStats.factionReputation.LIMITED_PARTNERS}, Regulators: ${playerStats.factionReputation.REGULATORS}, Analysts: ${playerStats.factionReputation.ANALYSTS}, Rivals: ${playerStats.factionReputation.RIVALS}\nStress: ${playerStats.stress}%\nAnalyst Rating: ${playerStats.analystRating}\nPortfolio Count: ${playerStats.portfolio.length}`;
-        
-        if (playerStats.portfolio.length > 0) {
-            currentSystemInstruction += `\nPORTFOLIO DETAILS: ${playerStats.portfolio.map(c => `${c.name} (Valuation: $${(c.currentValuation/1000000).toFixed(1)}M, Debt: $${(c.debt/1000000).toFixed(1)}M, Deal: ${c.dealType})`).join('; ')}`;
-        }
 
-        const knowledgeDigest = summarizeKnowledge(playerStats?.knowledgeLog || []);
-        const knowledgeFlags = playerStats?.knowledgeFlags || [];
-        currentSystemInstruction += `\n\nRECENT INTEL THE PLAYER BELIEVES:\n${knowledgeDigest}\nKnowledge flags: ${knowledgeFlags.join(', ') || 'None'}`;
+    if (playerStats) {
+      currentSystemInstruction += `\n\nCURRENT PLAYER STATUS (Use this to tailor your insults/advice):\nLevel: ${playerStats.level}\nCash: $${playerStats.cash.toLocaleString()}\nReputation: ${playerStats.reputation}\nFaction Reputation -> MDs: ${playerStats.factionReputation.MANAGING_DIRECTORS}, LPs: ${playerStats.factionReputation.LIMITED_PARTNERS}, Regulators: ${playerStats.factionReputation.REGULATORS}, Analysts: ${playerStats.factionReputation.ANALYSTS}, Rivals: ${playerStats.factionReputation.RIVALS}\nStress: ${playerStats.stress}%\nAnalyst Rating: ${playerStats.analystRating}\nPortfolio Count: ${playerStats.portfolio.length}`;
+
+      if (playerStats.portfolio.length > 0) {
+        currentSystemInstruction += `\nPORTFOLIO DETAILS: ${playerStats.portfolio.map(c => `${c.name} (Valuation: $${(c.currentValuation/1000000).toFixed(1)}M, Debt: $${(c.debt/1000000).toFixed(1)}M, Deal: ${c.dealType})`).join('; ')}`;
+      }
+
+      const knowledgeDigest = summarizeKnowledge(playerStats?.knowledgeLog || []);
+      const knowledgeFlags = playerStats?.knowledgeFlags || [];
+      currentSystemInstruction += `\n\nRECENT INTEL THE PLAYER BELIEVES:\n${knowledgeDigest}\nKnowledge flags: ${knowledgeFlags.join(', ') || 'None'}`;
     }
 
     if (currentScenario) {
-        currentSystemInstruction += `\n\nCURRENT SCENARIO CONTEXT (The player is facing this right now):\nTitle: "${currentScenario.title}"\nDescription: "${currentScenario.description}"`;
-        
-        if (currentScenario.choices) {
-            currentSystemInstruction += `\nAVAILABLE CHOICES:\n${currentScenario.choices.map((c, i) => `${i + 1}. ${c.text} (Hint: ${c.sarcasticGuidance})`).join('\n')}`;
-        }
-        if (currentScenario.structureOptions) {
-             currentSystemInstruction += `\nAVAILABLE DEAL STRUCTURES:\n${currentScenario.structureOptions.map((c, i) => `${i + 1}. ${c.type}: ${c.description}`).join('\n')}`;
-        }
+      currentSystemInstruction += `\n\nCURRENT SCENARIO CONTEXT (The player is facing this right now):\nTitle: "${currentScenario.title}"\nDescription: "${currentScenario.description}"`;
+
+      if (currentScenario.choices) {
+        currentSystemInstruction += `\nAVAILABLE CHOICES:\n${currentScenario.choices.map((c, i) => `${i + 1}. ${c.text} (Hint: ${c.sarcasticGuidance})`).join('\n')}`;
+      }
+      if (currentScenario.structureOptions) {
+        currentSystemInstruction += `\nAVAILABLE DEAL STRUCTURES:\n${currentScenario.structureOptions.map((c, i) => `${i + 1}. ${c.type}: ${c.description}`).join('\n')}`;
+      }
     }
 
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
-    
     // Map the app's chat history to Gemini's history format
     // CRITICAL: Map 'system' messages to 'user' role so the model treats them as context it must respond to.
     const geminiHistory = history.map(msg => ({
-        role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
-        parts: [{ text: msg.text }],
+      role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
+      parts: [{ text: msg.text }],
     }));
 
     const chat = ai.chats.create({
@@ -173,11 +341,31 @@ export const getAdvisorResponse = async (
       history: geminiHistory
     });
 
-    const response = await chat.sendMessage({ message: newPrompt });
+    // Use retry wrapper for resilient connection
+    const response = await withRetry(
+      () => chat.sendMessage({ message: newPrompt }),
+      'Advisor API call'
+    );
 
     return response.text || "I have nothing to say.";
   } catch (error) {
-    console.error("Error calling Gemini API:", error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    const classified = classifyError(err);
+    console.error(`Gemini API error (${classified.type}):`, err.message);
+
+    // Return user-friendly message based on error type
+    if (classified.type === 'auth') {
+      return "SYSTEM ERROR: API authentication failed. Check your API key configuration.";
+    }
+    if (classified.type === 'referrer' || classified.type === 'permission') {
+      return "SYSTEM ERROR: API access blocked. The API key needs the site domain added to allowed referrers in Google Cloud Console.";
+    }
+    if (classified.type === 'quota') {
+      return "Easy there, kid. Even Wall Street has limits. Wait a moment and try again.";
+    }
+    if (classified.type === 'timeout' || classified.type === 'network') {
+      return "The market's having connectivity issues. Check your network and try again, champ.";
+    }
     return "Looks like the market for good advice just crashed. Try again later, champ.";
   }
 };
@@ -281,8 +469,11 @@ export const getNPCResponse = async (
         ${knowledgeDigest}
         `;
 
-        const ai = new GoogleGenAI({ apiKey: API_KEY });
-        
+        const ai = getAiClient();
+        if (!ai) {
+            return { text: offlineNpcReply(npc, playerStats, playerMessage) };
+        }
+
         const geminiHistory = history.map(msg => ({
             role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
             parts: [{ text: msg.text }],
@@ -297,17 +488,33 @@ export const getNPCResponse = async (
             history: geminiHistory
         });
 
-        const response = await chat.sendMessage({ message: playerMessage });
-        
+        // Use retry wrapper for resilient connection
+        const response = await withRetry(
+            () => chat.sendMessage({ message: playerMessage }),
+            'NPC API call'
+        );
+
         // Extract tool calls if any
         const functionCalls = response.functionCalls;
 
-        return { 
+        return {
             text: response.text || "(Actions speak louder than words...)",
             functionCalls: functionCalls
         };
     } catch (error) {
-        console.error("Error calling Gemini API for NPC:", error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        const classified = classifyError(err);
+        console.error(`Gemini NPC API error (${classified.type}):`, err.message);
+
+        // Log specific guidance for referrer errors
+        if (classified.type === 'referrer' || classified.type === 'permission') {
+            console.error(
+                '%c⚠️ API KEY REFERRER ERROR: Add https://fundwars.app/* to the allowed HTTP referrers in Google Cloud Console → APIs & Services → Credentials → [Your API Key] → Application restrictions',
+                'color: #ef4444; font-weight: bold;'
+            );
+        }
+
+        // Fall back to offline responses
         return { text: offlineNpcReply(npc, playerStats, playerMessage) };
     }
 };
@@ -316,17 +523,29 @@ export const getPortfolioAdvice = async (
     playerStats: PlayerStats,
     npcId: string
 ): Promise<string> => {
-     if (!API_KEY) return "I can't talk right now.";
-     
-     const npcName = npcId === 'chad' ? 'Chad' : npcId === 'hunter' ? 'Hunter' : 'Sarah';
-     const prompt = `Review my portfolio companies: ${playerStats.portfolio.map(c => c.name).join(', ')}. Give me one specific, actionable piece of advice or gossip about one of them. Keep it in character as ${npcName}.`;
-     
-     const ai = new GoogleGenAI({ apiKey: API_KEY });
-     const chat = ai.chats.create({
-         model: 'gemini-2.5-flash',
-         config: { systemInstruction: "You are a Private Equity simulator engine." }
-     });
-     
-     const response = await chat.sendMessage({ message: prompt });
-     return response.text || "Nothing to report.";
+    const ai = getAiClient();
+    if (!ai) return "I can't talk right now.";
+
+    try {
+        const npcName = npcId === 'chad' ? 'Chad' : npcId === 'hunter' ? 'Hunter' : 'Sarah';
+        const prompt = `Review my portfolio companies: ${playerStats.portfolio.map(c => c.name).join(', ')}. Give me one specific, actionable piece of advice or gossip about one of them. Keep it in character as ${npcName}.`;
+
+        const chat = ai.chats.create({
+            model: 'gemini-2.5-flash',
+            config: { systemInstruction: "You are a Private Equity simulator engine." }
+        });
+
+        // Use retry wrapper for resilient connection
+        const response = await withRetry(
+            () => chat.sendMessage({ message: prompt }),
+            'Portfolio advice API call'
+        );
+
+        return response.text || "Nothing to report.";
+    } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        const classified = classifyError(err);
+        console.error(`Gemini Portfolio API error (${classified.type}):`, err.message);
+        return "I can't talk right now.";
+    }
 }

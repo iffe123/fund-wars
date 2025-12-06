@@ -530,3 +530,68 @@ export interface ModelingChallenge {
   reward: StatChanges;
   penalty: StatChanges;
 }
+
+// ==================== ADVANCED AI SYSTEM ====================
+
+export type AIPersonality = 'CALCULATING' | 'AGGRESSIVE' | 'OPPORTUNISTIC' | 'PARANOID' | 'UNPREDICTABLE';
+export type VendettaPhase = 'COLD' | 'WARMING' | 'HOT' | 'BLOOD_FEUD' | 'TOTAL_WAR';
+export type TacticalMove = 'POACH' | 'RUMOR' | 'COALITION' | 'SABOTAGE' | 'MARKET_MANIPULATION' | 'PSYCHOLOGICAL_WARFARE' | 'SURPRISE_BID' | 'STRATEGIC_RETREAT';
+
+export interface PlayerPatternData {
+  averageBidAggressiveness: number;
+  preferredSectors: string[];
+  bidDropoutThreshold: number;
+  riskTolerance: number;
+  responseToBluffs: 'FOLDS' | 'CALLS' | 'RAISES';
+  dealClosingRate: number;
+  weaknesses: string[];
+  lastUpdated: number;
+}
+
+export interface AIState {
+  playerPatterns: Partial<PlayerPatternData>;
+  rivalMindsets: Record<string, RivalMindsetState>;
+  coalitionState: CoalitionStateData | null;
+  lastAnalysisUpdate: number;
+  dealsWonByPlayer: number[];
+  dealsLostByPlayer: number[];
+  playerBidHistory: number[];
+}
+
+export interface RivalMindsetState {
+  fundId: string;
+  personality: AIPersonality;
+  currentMood: 'CONFIDENT' | 'CAUTIOUS' | 'DESPERATE' | 'VENGEFUL' | 'OPPORTUNISTIC';
+  fearLevel: number;
+  respectLevel: number;
+  vendettaPhase: VendettaPhase;
+  recentLosses: number;
+  recentWins: number;
+  isInCoalition: boolean;
+  lastSurpriseMove: number;
+}
+
+export interface CoalitionStateData {
+  isActive: boolean;
+  members: string[];
+  target: 'PLAYER' | string;
+  expiresAtTick: number;
+  strength: number;
+}
+
+export interface AITacticalDecision {
+  action: TacticalMove;
+  target?: string;
+  intensity: number;
+  reasoning: string;
+  successChance: number;
+  riskLevel: number;
+}
+
+export interface AuctionAIBehavior {
+  bid: number;
+  isBluff: boolean;
+  dropOut: boolean;
+  taunt?: string;
+  surpriseBid?: boolean;
+}

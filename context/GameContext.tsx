@@ -1,11 +1,44 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
-import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, FactionReputation, DayType, TimeSlot, KnowledgeEntry } from '../types';
+import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, DayType, TimeSlot, KnowledgeEntry, AIState, RivalMindsetState, CoalitionStateData } from '../types';
 import { PlayerLevel, DealType } from '../types';
-import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS } from '../constants';
+import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS, COMPENSATION_BY_LEVEL, BONUS_FACTORS, COALITION_ANNOUNCEMENTS, PSYCHOLOGICAL_WARFARE_MESSAGES, VENDETTA_ESCALATION_MESSAGES, SURPRISE_ATTACK_MESSAGES } from '../constants';
+
+// Import Advanced AI System
+import {
+  calculateAdaptiveDifficulty,
+  generateRivalMindset,
+  decideTacticalMove,
+  checkCoalitionFormation,
+  generateSurpriseEvent,
+  calculateTacticalMoveEffects,
+  generateTacticalMoveMessage,
+  generateAIKnowledgeEntry,
+  getVendettaPhase,
+  VENDETTA_BEHAVIORS,
+} from '../utils/rivalAI';
 import { useAuth } from './AuthContext';
 import { db } from '../services/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { logEvent } from '../services/analytics';
+
+// Import extracted utilities
+import {
+  clampStat,
+  generateUniquePortfolioId,
+  TIME_SLOTS,
+  getNextTimeState,
+  hydrateFactionReputation,
+  normalizeMemory,
+  clampMemories,
+  normalizeKnowledgeEntry,
+  clampKnowledge,
+  sanitizeKnowledgeLog,
+  sanitizeKnowledgeFlags,
+  hydrateNpc,
+  hydrateRivalFund,
+  hydrateCompetitiveDeal,
+  MAX_PORTFOLIO_SIZE
+} from '../utils/gameUtils';
 
 interface GameContextTypeExtended extends GameContextType {
     advanceTime: () => void;
@@ -20,166 +53,8 @@ interface GameContextTypeExtended extends GameContextType {
 
 const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
 
-const clampStat = (value: number, min = 0, max = 100) => Math.max(min, Math.min(max, value));
-
-// Generate unique portfolio company ID to prevent collisions
-let portfolioIdCounter = 0;
-const generateUniquePortfolioId = (existingIds: number[]): number => {
-    // Use timestamp + counter + random component for uniqueness
-    let newId: number;
-    do {
-        newId = Date.now() + (++portfolioIdCounter) + Math.floor(Math.random() * 1000);
-    } while (existingIds.includes(newId));
-    return newId;
-};
-
-// Maximum portfolio size to prevent performance issues and encourage exits
-export const MAX_PORTFOLIO_SIZE = 8;
-
-const slugify = (text: string) =>
-    text
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '') || 'fact';
-
-const TIME_SLOTS: TimeSlot[] = ['MORNING', 'AFTERNOON', 'EVENING'];
-
-const getNextTimeState = (currentDayType: DayType, currentTimeSlot: TimeSlot) => {
-    const slotIndex = TIME_SLOTS.indexOf(currentTimeSlot);
-    const nextSlot = TIME_SLOTS[(slotIndex + 1) % TIME_SLOTS.length];
-    const nextDayType: DayType = nextSlot === 'MORNING'
-        ? currentDayType === 'WEEKDAY' ? 'WEEKEND' : 'WEEKDAY'
-        : currentDayType;
-    return { nextDayType, nextSlot };
-};
-
-const isNpcAvailable = (npc: NPC, dayType: DayType, timeSlot: TimeSlot) => {
-    const schedule = npc.schedule;
-    if (!schedule) return true;
-    const slots = dayType === 'WEEKDAY' ? schedule.weekday : schedule.weekend;
-    return slots.includes(timeSlot);
-};
-
-const hydrateFactionReputation = (factionRep?: FactionReputation): FactionReputation => {
-    const hydrated: FactionReputation = { ...DEFAULT_FACTION_REPUTATION };
-    if (!factionRep) return hydrated;
-
-    (Object.keys(hydrated) as Array<keyof FactionReputation>).forEach(key => {
-        hydrated[key] = clampStat(factionRep[key] ?? hydrated[key]);
-    });
-    return hydrated;
-};
-
-const normalizeMemory = (memory: NPCMemory | string, fallbackSourceId?: string): NPCMemory => {
-    const base: NPCMemory = typeof memory === 'string' ? { summary: memory } : memory;
-    const now = new Date().toISOString();
-    return {
-        summary: base.summary,
-        timestamp: base.timestamp || now,
-        sentiment: base.sentiment,
-        impact: base.impact,
-        tags: base.tags || [],
-        sourceNpcId: base.sourceNpcId || fallbackSourceId,
-    };
-};
-
-const clampMemories = (memories: NPCMemory[]): NPCMemory[] => memories.slice(-12);
-
-const normalizeKnowledgeEntry = (entry: KnowledgeEntry | string, fallbackSource?: string): KnowledgeEntry => {
-    const base: KnowledgeEntry = typeof entry === 'string' ? { summary: entry } : entry;
-    const timestamp = base.timestamp || new Date().toISOString();
-    const summary = base.summary || '';
-    const id = base.id || `${slugify(summary).slice(0, 40)}-${timestamp}`;
-    return {
-        ...base,
-        id,
-        summary,
-        timestamp,
-        source: base.source || fallbackSource,
-        tags: base.tags || [],
-    };
-};
-
-const clampKnowledge = (entries: KnowledgeEntry[]): KnowledgeEntry[] => entries.slice(-18);
-
-export const sanitizeKnowledgeLog = (entries?: unknown): KnowledgeEntry[] => {
-    if (!Array.isArray(entries)) return [];
-
-    const normalized = entries
-        .map(entry => normalizeKnowledgeEntry(entry as KnowledgeEntry | string))
-        .filter(entry => Boolean(entry.summary));
-
-    return clampKnowledge(normalized);
-};
-
-export const sanitizeKnowledgeFlags = (flags?: unknown): string[] => {
-    if (!Array.isArray(flags)) return [];
-    return flags.filter((flag): flag is string => typeof flag === 'string');
-};
-
-export const hydrateNpc = (npc: NPC): NPC => {
-    const hydratedMemories = Array.isArray(npc.memories)
-        ? clampMemories(npc.memories.map(m => normalizeMemory(m, npc.id)))
-        : [];
-
-    return {
-        ...npc,
-        mood: clampStat(typeof npc.mood === 'number' ? npc.mood : npc.relationship),
-        trust: clampStat(typeof npc.trust === 'number' ? npc.trust : npc.relationship),
-        dialogueHistory: npc.dialogueHistory || [],
-        memories: hydratedMemories,
-        lastContactTick: typeof npc.lastContactTick === 'number' ? npc.lastContactTick : 0,
-    };
-};
-
-export const hydrateRivalFund = (fund: RivalFund): RivalFund => ({
-    ...fund,
-    vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
-    lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
-});
-
-export const hydrateFund = (fund: RivalFund): RivalFund => ({
-    ...fund,
-    reputation: clampStat(typeof fund.reputation === 'number' ? fund.reputation : 50),
-    aggressionLevel: clampStat(typeof fund.aggressionLevel === 'number' ? fund.aggressionLevel : 50),
-    riskTolerance: clampStat(typeof fund.riskTolerance === 'number' ? fund.riskTolerance : 50),
-    vendetta: clampStat(typeof fund.vendetta === 'number' ? fund.vendetta : 40),
-    winStreak: typeof fund.winStreak === 'number' ? fund.winStreak : 0,
-    totalDeals: typeof fund.totalDeals === 'number' ? fund.totalDeals : 0,
-    dryPowder: typeof fund.dryPowder === 'number' ? fund.dryPowder : 0,
-    aum: typeof fund.aum === 'number' ? fund.aum : 0,
-    portfolio: Array.isArray(fund.portfolio) ? fund.portfolio : [],
-    lastActionTick: typeof fund.lastActionTick === 'number' ? fund.lastActionTick : -1,
-});
-
-export const hydrateCompetitiveDeal = (deal: any): CompetitiveDeal | null => {
-    if (!deal || typeof deal !== 'object') return null;
-
-    const numeric = <T extends number>(value: any, fallback: T): T =>
-        typeof value === 'number' && !Number.isNaN(value) ? value as T : fallback;
-
-    return {
-        id: numeric(deal.id, Date.now()),
-        companyName: deal.companyName || 'Unknown Target',
-        sector: deal.sector || 'Misc',
-        description: deal.description || 'No description',
-        askingPrice: numeric(deal.askingPrice, 0),
-        fairValue: numeric(deal.fairValue, numeric(deal.askingPrice, 0)),
-        dealType: deal.dealType || DealType.LBO,
-        metrics: {
-            revenue: numeric(deal.metrics?.revenue, 0),
-            ebitda: numeric(deal.metrics?.ebitda, 0),
-            growth: numeric(deal.metrics?.growth, 0),
-            debt: numeric(deal.metrics?.debt, 0),
-        },
-        seller: deal.seller || 'Unknown Seller',
-        deadline: numeric(deal.deadline, 3),
-        interestedRivals: Array.isArray(deal.interestedRivals) ? deal.interestedRivals : [],
-        isHot: Boolean(deal.isHot),
-        hiddenRisk: deal.hiddenRisk,
-        hiddenUpside: deal.hiddenUpside,
-    };
-};
+// Re-export utilities for backward compatibility
+export { sanitizeKnowledgeLog, sanitizeKnowledgeFlags, hydrateNpc, hydrateRivalFund, hydrateFund, hydrateCompetitiveDeal, MAX_PORTFOLIO_SIZE } from '../utils/gameUtils';
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
@@ -217,9 +92,23 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
   
   // --- RIVAL FUNDS & COMPETITIVE DEALS ---
-  const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS.map(hydrateFund));
+  const [rivalFunds, setRivalFunds] = useState<RivalFund[]>(RIVAL_FUNDS.map(hydrateRivalFund));
   const [activeDeals, setActiveDeals] = useState<CompetitiveDeal[]>([]);
   const lastProcessedRivalTickRef = useRef<number | null>(null);
+
+  // --- ADVANCED AI STATE ---
+  const [aiState, setAIState] = useState<AIState>({
+    playerPatterns: {},
+    rivalMindsets: {},
+    coalitionState: null,
+    lastAnalysisUpdate: 0,
+    dealsWonByPlayer: [],
+    dealsLostByPlayer: [],
+    playerBidHistory: [],
+  });
+
+  // Track previous vendetta levels for escalation detection
+  const previousVendettaRef = useRef<Record<string, number>>({});
 
   // --- CLOUD SAVE / LOAD ---
   useEffect(() => {
@@ -231,14 +120,30 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (!db) {
           console.log("[CLOUD_LOAD] Firestore not available. Using local session.");
-          setGamePhase('INTRO'); 
+          setGamePhase('INTRO');
           return;
       }
+
+      // Skip cloud load for guest users (they have fake UIDs that Firebase rejects)
+      if (currentUser.uid.startsWith('guest_')) {
+          console.log("[CLOUD_LOAD] Guest mode - starting fresh game.");
+          setGamePhase('INTRO');
+          return;
+      }
+
+      // Helper: wrap getDoc with timeout to prevent infinite loading
+      const getDocWithTimeout = async (docRef: ReturnType<typeof doc>, timeoutMs: number) => {
+          const timeoutPromise = new Promise<never>((_, reject) => {
+              setTimeout(() => reject(new Error('Firestore timeout')), timeoutMs);
+          });
+          return Promise.race([getDoc(docRef), timeoutPromise]);
+      };
 
       const loadGame = async () => {
           try {
               const docRef = doc(db, 'users', currentUser.uid, 'savegame', 'primary');
-              const docSnap = await getDoc(docRef);
+              // 10 second timeout to prevent infinite "RESTORING SESSION..." screen
+              const docSnap = await getDocWithTimeout(docRef, 10000);
 
               if (docSnap.exists()) {
                   // Cast to any to handle DocumentData being unknown
@@ -249,7 +154,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                       const safeKnowledgeLog = sanitizeKnowledgeLog(data.playerStats?.knowledgeLog);
                       const safeKnowledgeFlags = sanitizeKnowledgeFlags(data.playerStats?.knowledgeFlags);
                       const safeNpcs = Array.isArray(data.npcs) ? data.npcs.map(hydrateNpc) : [...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc);
-                      const safeRivalFunds = Array.isArray(data.rivalFunds) ? data.rivalFunds.map(hydrateFund) : RIVAL_FUNDS.map(hydrateFund);
+                      const safeRivalFunds = Array.isArray(data.rivalFunds) ? data.rivalFunds.map(hydrateRivalFund) : RIVAL_FUNDS.map(hydrateRivalFund);
                       const safeActiveDeals = Array.isArray(data.activeDeals)
                         ? data.activeDeals
                             .map(hydrateCompetitiveDeal)
@@ -266,6 +171,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                           timeCursor: typeof data.playerStats.timeCursor === 'number' ? data.playerStats.timeCursor : 0,
                           knowledgeLog: safeKnowledgeLog,
                           knowledgeFlags: safeKnowledgeFlags,
+                          // Ensure new fields have proper defaults
+                          unlockedAchievements: data.playerStats.unlockedAchievements || [],
+                          sectorExpertise: data.playerStats.sectorExpertise || [],
+                          completedExits: data.playerStats.completedExits || [],
+                          totalRealizedGains: data.playerStats.totalRealizedGains ?? 0,
+                          portfolio: Array.isArray(data.playerStats.portfolio) ? data.playerStats.portfolio : [],
+                          playedScenarioIds: Array.isArray(data.playerStats.playedScenarioIds) ? data.playerStats.playedScenarioIds : [],
+                          playerFlags: data.playerStats.playerFlags || {},
+                          employees: data.playerStats.employees || [],
                       });
                       if (data.gamePhase) setGamePhase(data.gamePhase);
                       if (data.activeScenarioId) {
@@ -283,7 +197,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                       console.error('[CLOUD_LOAD] Save data malformed, resetting to defaults.', parseError);
                       setPlayerStats(null);
                       setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc));
-                      setRivalFunds(RIVAL_FUNDS.map(hydrateFund));
+                      setRivalFunds(RIVAL_FUNDS.map(hydrateRivalFund));
                       setGamePhase('INTRO');
                   }
 
@@ -293,26 +207,58 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               }
           } catch (error) {
               console.error("Error loading save:", error);
+              // On any load failure (including timeout), start fresh game
+              // This prevents infinite "RESTORING SESSION..." screen
+              console.log("[CLOUD_LOAD] Load failed, starting fresh game.");
+              setPlayerStats(null);
+              setGamePhase('INTRO');
           }
       };
 
       loadGame();
   }, [currentUser]);
 
+  // Helper function to remove undefined values from objects for Firestore compatibility
+  const removeUndefined = useCallback(<T extends Record<string, unknown>>(obj: T): T => {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj)) {
+          if (value === undefined) continue;
+          if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+              result[key] = removeUndefined(value as Record<string, unknown>);
+          } else if (Array.isArray(value)) {
+              result[key] = value.map(item =>
+                  item !== null && typeof item === 'object' ? removeUndefined(item as Record<string, unknown>) : item
+              );
+          } else {
+              result[key] = value;
+          }
+      }
+      return result as T;
+  }, []);
+
   const saveGame = useCallback(async () => {
       if (!currentUser || !playerStats) return;
       if (!db) return;
 
+      // Skip cloud save for guest users (they have fake UIDs that Firebase rejects)
+      if (currentUser.uid.startsWith('guest_')) {
+          console.log("[CLOUD_SAVE] Guest mode - skipping cloud save.");
+          return;
+      }
+
+      // Sanitize playerStats to remove undefined values (Firestore doesn't accept undefined)
+      const sanitizedPlayerStats = removeUndefined(playerStats as unknown as Record<string, unknown>);
+
       const gameState = {
-          playerStats,
+          playerStats: sanitizedPlayerStats,
           gamePhase,
-          activeScenarioId: activeScenario?.id,
+          activeScenarioId: activeScenario?.id ?? null,
           marketVolatility,
-          npcs,
+          npcs: npcs.map(npc => removeUndefined(npc as unknown as Record<string, unknown>)),
           tutorialStep,
           actionLog,
-          rivalFunds,
-          activeDeals,
+          rivalFunds: rivalFunds.map(fund => removeUndefined(fund as unknown as Record<string, unknown>)),
+          activeDeals: activeDeals.map(deal => removeUndefined(deal as unknown as Record<string, unknown>)),
           lastSaved: new Date().toISOString()
       };
 
@@ -322,7 +268,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } catch (error) {
           console.error("Error saving game:", error);
       }
-  }, [currentUser, playerStats, gamePhase, activeScenario, marketVolatility, npcs, tutorialStep, actionLog, rivalFunds, activeDeals]);
+  }, [currentUser, playerStats, gamePhase, activeScenario, marketVolatility, npcs, tutorialStep, actionLog, rivalFunds, activeDeals, removeUndefined]);
 
   useEffect(() => {
       if (gamePhase !== 'INTRO' && gamePhase !== 'GAME_OVER') {
@@ -684,6 +630,49 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   }, [npcs, playerStats]);
 
+  // --- COMPENSATION HELPERS ---
+  const calculateAnnualBonus = useCallback((stats: PlayerStats): number => {
+      const comp = COMPENSATION_BY_LEVEL[stats.level];
+      if (!comp || comp.bonusMultiplier === 0) return 0;
+
+      const baseBonus = comp.weeklySalary * 52 * comp.bonusMultiplier;
+
+      // Calculate performance factors
+      const reputationFactor = Math.max(0, Math.min(1,
+          (stats.reputation - BONUS_FACTORS.minReputationForBonus) /
+          (BONUS_FACTORS.fullBonusReputation - BONUS_FACTORS.minReputationForBonus)
+      ));
+
+      // Portfolio performance: average valuation gain
+      const portfolioGains = stats.portfolio.reduce((acc, co) => {
+          const gain = co.investmentCost > 0
+              ? (co.currentValuation - co.investmentCost) / co.investmentCost
+              : 0;
+          return acc + gain;
+      }, 0);
+      const avgPortfolioReturn = stats.portfolio.length > 0
+          ? portfolioGains / stats.portfolio.length
+          : 0;
+      const portfolioFactor = Math.max(0, Math.min(1, avgPortfolioReturn + 0.5)); // 0.5 baseline
+
+      // Deals closed this year (approximated by completed exits)
+      const dealsCompleted = stats.completedExits?.length || 0;
+      const dealsFactor = Math.min(1, dealsCompleted / 3); // 3 deals = full credit
+
+      // Weighted performance score
+      const performanceScore =
+          reputationFactor * BONUS_FACTORS.reputationWeight +
+          portfolioFactor * BONUS_FACTORS.portfolioPerformanceWeight +
+          dealsFactor * BONUS_FACTORS.dealsClosedWeight;
+
+      // No bonus if reputation too low
+      if (stats.reputation < BONUS_FACTORS.minReputationForBonus) {
+          return 0;
+      }
+
+      return Math.round(baseBonus * performanceScore);
+  }, []);
+
   // --- TIME ADVANCEMENT & SCENARIO TRIGGER ---
   const advanceTime = useCallback(() => {
       if (!playerStats) return;
@@ -700,9 +689,69 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { nextDayType, nextSlot } = getNextTimeState(currentDayType, currentTimeSlot);
       const nextTimeCursor = currentTimeCursor + 1;
 
+      // --- SALARY PAYMENT ---
+      // Players receive weekly salary based on their level
+      const compensation = COMPENSATION_BY_LEVEL[playerStats.level];
+      const weeklySalary = compensation?.weeklySalary || 0;
+
+      let salaryMessage = '';
+      if (weeklySalary > 0) {
+          salaryMessage = `Salary deposited: $${weeklySalary.toLocaleString()}`;
+      }
+
+      // --- ANNUAL BONUS CHECK ---
+      // If we're advancing to a new year (month goes from 12 to 1), pay bonus
+      let annualBonus = 0;
+      let bonusMessage = '';
+      if (nextMonth > 12) {
+          annualBonus = calculateAnnualBonus(playerStats);
+          if (annualBonus > 0) {
+              bonusMessage = `BONUS SEASON! Your performance bonus: $${annualBonus.toLocaleString()}`;
+          } else if (playerStats.reputation >= BONUS_FACTORS.minReputationForBonus) {
+              bonusMessage = 'Bonus season: Your performance was... noted. No bonus this year.';
+          } else {
+              bonusMessage = 'Bonus season: You need at least 30 reputation to qualify for bonuses.';
+          }
+      }
+
+      const totalCashInflow = weeklySalary + annualBonus;
+
       updatePlayerStats({
           score: 10,
+          cash: totalCashInflow > 0 ? totalCashInflow : undefined,
       });
+
+      // Log salary and bonus messages
+      if (salaryMessage) {
+          addLogEntry(salaryMessage);
+      }
+      if (bonusMessage) {
+          addLogEntry(bonusMessage);
+      }
+
+      // --- BANKRUPTCY / FIRING CHECK ---
+      // If player has negative cash after salary and can't access loans, they're fired
+      const projectedCash = playerStats.cash + totalCashInflow;
+      const canAccessLoan = compensation?.canAccessLoan ?? false;
+
+      if (projectedCash < 0 && !canAccessLoan) {
+          // GAME OVER - Fired for inability to manage personal finances
+          addLogEntry('TERMINATED: You couldn\'t even manage your own finances. How could you manage a portfolio?');
+          setGamePhase('GAME_OVER');
+          return;
+      }
+
+      // Additional firing condition: reputation too low for too long
+      if (playerStats.reputation < 5 && playerStats.timeCursor > 10) {
+          addLogEntry('TERMINATED: Your reputation is in the gutter. The partners have lost confidence.');
+          setGamePhase('GAME_OVER');
+          return;
+      }
+
+      // Stress-induced breakdown (optional warning, not game over)
+      if (playerStats.stress >= 95 && playerStats.health < 20) {
+          addLogEntry('WARNING: Your body is failing. Take a vacation or face the consequences.');
+      }
 
       decayNpcAffinities();
 
@@ -811,7 +860,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           addLogEntry(`Week advanced to ${slotLabel}. No critical incidents reported.`);
       }
 
-  }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments, marketVolatility, npcs]);
+  }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments, marketVolatility, npcs, calculateAnnualBonus, addLogEntry]);
   const handleActionOutcome = (outcome: { description: string; statChanges: StatChanges }, title: string) => {
       updatePlayerStats(outcome.statChanges);
   };
@@ -834,7 +883,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setTutorialStep(step);
   };
 
-  // --- RIVAL ACTIONS ---
+  // --- ADVANCED RIVAL AI SYSTEM ---
 
   const processRivalMoves = useCallback(() => {
       if (!playerStats) return;
@@ -842,10 +891,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const currentTick = playerStats.timeCursor ?? 0;
       const rivalStanding = playerStats.factionReputation.RIVALS ?? DEFAULT_FACTION_REPUTATION.RIVALS;
       const hostility = Math.max(0, 65 - rivalStanding) / 100;
-      const stressBias = playerStats.stress > 70 ? 0.08 : 0;
-      const auditBias = playerStats.auditRisk > 55 ? 0.05 : 0;
 
-      let workingFunds = rivalFunds.map(hydrateFund);
+      let workingFunds = rivalFunds.map(hydrateRivalFund);
       let workingDeals = [...activeDeals];
 
       let fundsChanged = false;
@@ -853,117 +900,350 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       let stressDelta = 0;
       let reputationDelta = 0;
       let rivalRepDelta = 0;
+      let auditRiskDelta = 0;
+      let energyDelta = 0;
       const knowledgeGain: KnowledgeEntry[] = [];
 
-      const sortedRivals = [...workingFunds].sort((a, b) => (b.aggressionLevel + (b.vendetta ?? 40)) - (a.aggressionLevel + (a.vendetta ?? 40)));
+      // Calculate adaptive difficulty based on player performance
+      const difficultyMultiplier = calculateAdaptiveDifficulty(playerStats, workingFunds);
 
+      // Update rival mindsets and check for vendetta escalation
+      const updatedMindsets: Record<string, RivalMindsetState> = { ...aiState.rivalMindsets };
+
+      for (const rival of workingFunds) {
+          const mindset = generateRivalMindset(rival, playerStats, aiState.playerPatterns);
+          updatedMindsets[rival.id] = mindset;
+
+          // Check for vendetta escalation
+          const previousVendetta = previousVendettaRef.current[rival.id] ?? 0;
+          const currentVendetta = rival.vendetta ?? 0;
+          const previousPhase = getVendettaPhase(previousVendetta);
+          const currentPhase = getVendettaPhase(currentVendetta);
+
+          if (currentPhase !== previousPhase && currentPhase !== 'COLD') {
+              const escalationMessages = VENDETTA_ESCALATION_MESSAGES[currentPhase];
+              if (escalationMessages) {
+                  const message = escalationMessages[Math.floor(Math.random() * escalationMessages.length)]
+                      .replace('${name}', rival.managingPartner);
+                  addLogEntry(`VENDETTA ESCALATION: ${message}`);
+                  stressDelta += 5;
+              }
+          }
+
+          previousVendettaRef.current[rival.id] = currentVendetta;
+      }
+
+      // Check for coalition formation
+      let coalitionState = aiState.coalitionState;
+      if (!coalitionState || coalitionState.expiresAtTick <= currentTick) {
+          const newCoalition = checkCoalitionFormation(workingFunds, playerStats, currentTick);
+          if (newCoalition) {
+              coalitionState = newCoalition;
+              const announcement = COALITION_ANNOUNCEMENTS[Math.floor(Math.random() * COALITION_ANNOUNCEMENTS.length)];
+              addLogEntry(`COALITION ALERT: ${announcement}`);
+              stressDelta += 10;
+              knowledgeGain.push(normalizeKnowledgeEntry({
+                  summary: 'Multiple rival funds are coordinating against you',
+                  faction: 'RIVALS',
+                  tags: ['coalition', 'rival', 'threat'],
+              }, 'coalition'));
+          }
+      }
+
+      // Sort rivals by threat level (aggression + vendetta + coalition membership)
+      const sortedRivals = [...workingFunds].sort((a, b) => {
+          const aScore = (b.aggressionLevel + (b.vendetta ?? 40)) *
+              (coalitionState?.members.includes(b.id) ? 1.5 : 1);
+          const bScore = (a.aggressionLevel + (a.vendetta ?? 40)) *
+              (coalitionState?.members.includes(a.id) ? 1.5 : 1);
+          return aScore - bScore;
+      });
+
+      // Process each rival's turn with advanced AI
       for (const rival of sortedRivals) {
           const cooldownReady = (rival.lastActionTick ?? -5) < currentTick - 1;
           if (!cooldownReady && Math.random() > 0.4) continue;
 
-      const vendetta = rival.vendetta ?? 40;
-      const candidateDeals = workingDeals
-          .filter(d => d.interestedRivals.includes(rival.id))
-          .sort((a, b) => (a.deadline - b.deadline) || (Number(b.isHot) - Number(a.isHot)));
+          const mindset = updatedMindsets[rival.id];
+          if (!mindset) continue;
 
-          const targetDeal = candidateDeals[0];
-          const poachChance = targetDeal
-              ? 0.18 + hostility + (vendetta / 150) + (targetDeal.isHot ? 0.08 : 0) + stressBias
-              : 0;
-          const rumorChance = 0.12 + hostility + vendetta / 180 + auditBias;
+          // Apply coalition bonus if active
+          const isInCoalition = coalitionState?.members.includes(rival.id) ?? false;
+          const coalitionBonus = isInCoalition ? 1.3 : 1.0;
 
-          if (targetDeal && Math.random() < poachChance) {
-              workingDeals = workingDeals.filter(d => d.id !== targetDeal.id);
-              dealsChanged = true;
+          // Decide tactical move using advanced AI
+          const decision = decideTacticalMove(
+              rival,
+              mindset,
+              playerStats,
+              workingDeals,
+              marketVolatility,
+              currentTick,
+              difficultyMultiplier * coalitionBonus
+          );
 
-              workingFunds = workingFunds.map(f => {
-                  if (f.id !== rival.id) return f;
+          if (!decision) continue;
 
-                  const portfolioEntry = {
-                      name: targetDeal.companyName,
-                      dealType: targetDeal.dealType,
-                      acquisitionPrice: targetDeal.askingPrice,
-                      currentValue: Math.round(targetDeal.askingPrice * 1.1),
-                      acquiredMonth: playerStats.gameMonth,
-                      acquiredYear: playerStats.gameYear,
-                  };
+          // Execute the tactical move
+          const successRoll = Math.random();
+          const success = successRoll < decision.successChance;
 
-                  fundsChanged = true;
-                  return {
-                      ...f,
-                      dryPowder: Math.max(0, f.dryPowder - Math.round(targetDeal.askingPrice * 0.6)),
-                      portfolio: [...f.portfolio, portfolioEntry],
-                      totalDeals: f.totalDeals + 1,
-                      winStreak: f.winStreak + 1,
-                      reputation: clampStat(f.reputation + 2),
-                      vendetta: clampStat(vendetta + 5),
-                      lastActionTick: currentTick,
-                  };
-              });
+          // Handle specific tactical moves
+          switch (decision.action) {
+              case 'POACH': {
+                  const vendetta = rival.vendetta ?? 40;
+                  const candidateDeals = workingDeals
+                      .filter(d => d.interestedRivals.includes(rival.id))
+                      .sort((a, b) => (a.deadline - b.deadline) || (Number(b.isHot) - Number(a.isHot)));
 
-              stressDelta += 8;
-              reputationDelta -= 2;
-              rivalRepDelta -= 2;
-              appendNpcMemory(rival.npcId, {
-                  summary: `Poached ${targetDeal.companyName} before you could move.`,
-                  sentiment: 'negative',
-                  tags: ['rival', 'deal', 'poach'],
-              });
-              knowledgeGain.push(normalizeKnowledgeEntry({
-                  summary: `${rival.name} poached ${targetDeal.companyName} before you could move.`,
-                  npcId: rival.npcId,
-                  faction: 'RIVALS',
-                  tags: ['rival', 'deal', 'poach'],
-              }, rival.id));
-              addLogEntry(`RIVAL MOVE: ${rival.name} swooped in and closed ${targetDeal.companyName} while you hesitated.`);
-              break;
-          }
+                  const targetDeal = candidateDeals[0];
+                  if (targetDeal && success) {
+                      workingDeals = workingDeals.filter(d => d.id !== targetDeal.id);
+                      dealsChanged = true;
 
-          if (Math.random() < rumorChance) {
-              workingFunds = workingFunds.map(f => f.id === rival.id
-                  ? {
-                      ...f,
-                      winStreak: Math.max(0, f.winStreak - 1),
-                      vendetta: clampStat(vendetta + 3),
-                      lastActionTick: currentTick,
+                      workingFunds = workingFunds.map(f => {
+                          if (f.id !== rival.id) return f;
+
+                          const portfolioEntry = {
+                              name: targetDeal.companyName,
+                              dealType: targetDeal.dealType,
+                              acquisitionPrice: targetDeal.askingPrice,
+                              currentValue: Math.round(targetDeal.askingPrice * 1.1),
+                              acquiredMonth: playerStats.gameMonth,
+                              acquiredYear: playerStats.gameYear,
+                          };
+
+                          fundsChanged = true;
+                          return {
+                              ...f,
+                              dryPowder: Math.max(0, f.dryPowder - Math.round(targetDeal.askingPrice * 0.6)),
+                              portfolio: [...f.portfolio, portfolioEntry],
+                              totalDeals: f.totalDeals + 1,
+                              winStreak: f.winStreak + 1,
+                              reputation: clampStat(f.reputation + 2),
+                              vendetta: clampStat(vendetta + 5),
+                              lastActionTick: currentTick,
+                          };
+                      });
+
+                      stressDelta += 8 + Math.round(decision.intensity / 10);
+                      reputationDelta -= 2;
+                      rivalRepDelta -= 2;
+
+                      appendNpcMemory(rival.npcId, {
+                          summary: `Poached ${targetDeal.companyName} before you could move.`,
+                          sentiment: 'negative',
+                          tags: ['rival', 'deal', 'poach'],
+                      });
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                      addLogEntry(generateTacticalMoveMessage(rival, decision, success));
                   }
-                  : f
-              );
-              fundsChanged = true;
+                  break;
+              }
 
-              const rumorPenalty = rival.aggressionLevel > 70 ? 2 : 1;
-              stressDelta += 4 + Math.round(vendetta / 50);
-              reputationDelta -= rumorPenalty;
-              rivalRepDelta -= 1;
-              appendNpcMemory(rival.npcId, {
-                  summary: `${rival.managingPartner} spread a rumor that you're reckless with diligence.`,
-                  sentiment: 'negative',
-                  tags: ['rival', 'rumor'],
-              });
-              knowledgeGain.push(normalizeKnowledgeEntry({
-                  summary: `${rival.managingPartner} spread a rumor that you're reckless with diligence.`,
-                  npcId: rival.npcId,
-                  faction: 'RIVALS',
-                  tags: ['rival', 'rumor'],
-              }, rival.id));
-              addLogEntry(`RIVAL RUMOR: ${rival.managingPartner} blasted you to LPs and bankers. Reputation took a hit.`);
-              break;
+              case 'RUMOR': {
+                  if (success) {
+                      const vendetta = rival.vendetta ?? 40;
+                      workingFunds = workingFunds.map(f => f.id === rival.id
+                          ? {
+                              ...f,
+                              winStreak: Math.max(0, f.winStreak - 1),
+                              vendetta: clampStat(vendetta + 3),
+                              lastActionTick: currentTick,
+                          }
+                          : f
+                      );
+                      fundsChanged = true;
+
+                      const effects = calculateTacticalMoveEffects(decision, success, rival);
+                      stressDelta += effects.stress || 0;
+                      reputationDelta += effects.reputation || 0;
+                      rivalRepDelta += effects.factionReputation?.RIVALS || 0;
+
+                      appendNpcMemory(rival.npcId, {
+                          summary: `${rival.managingPartner} spread damaging rumors about you.`,
+                          sentiment: 'negative',
+                          tags: ['rival', 'rumor', 'psychological'],
+                      });
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                      addLogEntry(generateTacticalMoveMessage(rival, decision, success));
+                  }
+                  break;
+              }
+
+              case 'PSYCHOLOGICAL_WARFARE': {
+                  if (success) {
+                      const message = PSYCHOLOGICAL_WARFARE_MESSAGES[Math.floor(Math.random() * PSYCHOLOGICAL_WARFARE_MESSAGES.length)]
+                          .replace('${name}', rival.managingPartner);
+
+                      const effects = calculateTacticalMoveEffects(decision, success, rival);
+                      stressDelta += effects.stress || 0;
+                      reputationDelta += effects.reputation || 0;
+                      auditRiskDelta += effects.auditRisk || 0;
+
+                      workingFunds = workingFunds.map(f => f.id === rival.id
+                          ? {
+                              ...f,
+                              vendetta: clampStat((f.vendetta ?? 40) + 4),
+                              lastActionTick: currentTick,
+                          }
+                          : f
+                      );
+                      fundsChanged = true;
+
+                      addLogEntry(`PSYCHOLOGICAL ATTACK: ${message}`);
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                  }
+                  break;
+              }
+
+              case 'SABOTAGE': {
+                  if (success && playerStats.portfolio.length > 0) {
+                      // Target a random portfolio company
+                      const targetCompany = playerStats.portfolio[Math.floor(Math.random() * playerStats.portfolio.length)];
+                      const effects = calculateTacticalMoveEffects(decision, success, rival);
+
+                      stressDelta += effects.stress || 0;
+                      reputationDelta += effects.reputation || 0;
+                      auditRiskDelta += effects.auditRisk || 0;
+
+                      workingFunds = workingFunds.map(f => f.id === rival.id
+                          ? {
+                              ...f,
+                              vendetta: clampStat((f.vendetta ?? 40) + 6),
+                              lastActionTick: currentTick,
+                          }
+                          : f
+                      );
+                      fundsChanged = true;
+
+                      appendNpcMemory(rival.npcId, {
+                          summary: `Attempted to sabotage your portfolio company ${targetCompany.name}.`,
+                          sentiment: 'negative',
+                          tags: ['rival', 'sabotage', 'portfolio'],
+                      });
+                      addLogEntry(`SABOTAGE ATTEMPT: ${rival.name} is attacking your investment in ${targetCompany.name}!`);
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                  }
+                  break;
+              }
+
+              case 'SURPRISE_BID': {
+                  if (success) {
+                      const surpriseMessage = SURPRISE_ATTACK_MESSAGES[Math.floor(Math.random() * SURPRISE_ATTACK_MESSAGES.length)]
+                          .replace('${name}', rival.name);
+
+                      stressDelta += 15;
+
+                      workingFunds = workingFunds.map(f => f.id === rival.id
+                          ? {
+                              ...f,
+                              vendetta: clampStat((f.vendetta ?? 40) + 8),
+                              aggressionLevel: clampStat(f.aggressionLevel + 5),
+                              lastActionTick: currentTick,
+                          }
+                          : f
+                      );
+                      fundsChanged = true;
+
+                      addLogEntry(`SURPRISE MOVE: ${surpriseMessage}`);
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+
+                      // Update AI state to record surprise move
+                      updatedMindsets[rival.id] = {
+                          ...updatedMindsets[rival.id],
+                          lastSurpriseMove: currentTick,
+                      };
+                  }
+                  break;
+              }
+
+              case 'COALITION': {
+                  if (success && coalitionState) {
+                      const effects = calculateTacticalMoveEffects(decision, success, rival);
+                      stressDelta += effects.stress || 0;
+                      reputationDelta += effects.reputation || 0;
+
+                      addLogEntry(`COALITION ATTACK: The rival funds are working together against you!`);
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                  }
+                  break;
+              }
+
+              case 'MARKET_MANIPULATION': {
+                  if (success) {
+                      const effects = calculateTacticalMoveEffects(decision, success, rival);
+                      stressDelta += effects.stress || 0;
+                      rivalRepDelta += effects.factionReputation?.RIVALS || 0;
+
+                      // Reduce quality of available deals
+                      workingDeals = workingDeals.map(d => ({
+                          ...d,
+                          fairValue: Math.round(d.fairValue * 0.9),
+                          isHot: false,
+                      }));
+                      dealsChanged = true;
+
+                      addLogEntry(`MARKET MANIPULATION: ${rival.name} is manipulating deal flow against you.`);
+                      knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                  }
+                  break;
+              }
+
+              case 'STRATEGIC_RETREAT': {
+                  // Rival is pulling back - reduce their vendetta slightly
+                  workingFunds = workingFunds.map(f => f.id === rival.id
+                      ? {
+                          ...f,
+                          vendetta: clampStat((f.vendetta ?? 40) - 5),
+                          lastActionTick: currentTick,
+                      }
+                      : f
+                  );
+                  fundsChanged = true;
+                  addLogEntry(`INTEL: ${rival.name} is pulling back. What are they planning?`);
+                  break;
+              }
           }
+
+          // Generate surprise event for heated rivalries
+          if (mindset.vendettaPhase !== 'COLD' && Math.random() < 0.15 * difficultyMultiplier) {
+              const surpriseEvent = generateSurpriseEvent(rival, mindset, playerStats);
+              if (surpriseEvent) {
+                  addLogEntry(`SURPRISE EVENT: ${rival.managingPartner} ${surpriseEvent.event.description}`);
+                  stressDelta += surpriseEvent.event.severity === 'HIGH' ? 12 :
+                                 surpriseEvent.event.severity === 'MEDIUM' ? 8 : 4;
+              }
+          }
+
+          // Only process one rival per tick to avoid overwhelming the player
+          if (success) break;
       }
 
-      if (fundsChanged) setRivalFunds(workingFunds.map(hydrateFund));
+      // Update state
+      if (fundsChanged) setRivalFunds(workingFunds.map(hydrateRivalFund));
       if (dealsChanged) setActiveDeals(workingDeals);
 
+      // Update AI state
+      setAIState(prev => ({
+          ...prev,
+          rivalMindsets: updatedMindsets,
+          coalitionState,
+      }));
+
+      // Apply stat changes
       const factionDelta = rivalRepDelta !== 0 ? { RIVALS: rivalRepDelta } : undefined;
-      if (stressDelta || reputationDelta || factionDelta || knowledgeGain.length) {
+      if (stressDelta || reputationDelta || auditRiskDelta || energyDelta || factionDelta || knowledgeGain.length) {
           updatePlayerStats({
               stress: stressDelta || undefined,
               reputation: reputationDelta || undefined,
+              auditRisk: auditRiskDelta || undefined,
+              energy: energyDelta || undefined,
               factionReputation: factionDelta,
               knowledgeGain: knowledgeGain.length ? knowledgeGain : undefined,
           });
       }
-  }, [playerStats, rivalFunds, activeDeals, addLogEntry, updatePlayerStats, appendNpcMemory]);
+  }, [playerStats, rivalFunds, activeDeals, aiState, marketVolatility, addLogEntry, updatePlayerStats, appendNpcMemory]);
 
   useEffect(() => {
       if (!playerStats || gamePhase === 'INTRO') return;
@@ -978,7 +1258,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateRivalFund = useCallback((fundId: string, updates: Partial<RivalFund>) => {
       setRivalFunds(prev => prev.map(fund =>
-          fund.id === fundId ? hydrateFund({ ...fund, ...updates }) : hydrateFund(fund)
+          fund.id === fundId ? hydrateRivalFund({ ...fund, ...updates }) : hydrateRivalFund(fund)
       ));
   }, []);
 
@@ -1046,7 +1326,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setMarketVolatility('NORMAL');
       setTutorialStep(0);
       setActionLog([]);
-      setRivalFunds(RIVAL_FUNDS.map(hydrateFund));
+      setRivalFunds(RIVAL_FUNDS.map(hydrateRivalFund));
       setActiveDeals([]);
       logEvent('game_reset');
   }, []);

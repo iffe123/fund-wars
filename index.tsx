@@ -5,6 +5,7 @@ import App from './App';
 import { GameProvider } from './context/GameContext';
 import { AuthProvider } from './context/AuthContext';
 import { AudioProvider } from './context/AudioContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import { injectSpeedInsights } from '@vercel/speed-insights';
 
 // Initialize Vercel Speed Insights
@@ -18,12 +19,14 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <AudioProvider>
-          <GameProvider>
-            <App />
-          </GameProvider>
-      </AudioProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AudioProvider>
+            <GameProvider>
+              <App />
+            </GameProvider>
+        </AudioProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

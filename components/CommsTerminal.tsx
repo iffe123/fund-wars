@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { ChatMessage, NPC } from '../types';
 import { useGame } from '../context/GameContext';
+import { isGeminiApiConfigured } from '../services/geminiService';
 
 interface CommsTerminalProps {
   npcList: NPC[];
@@ -206,31 +207,10 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
       }
   }, [tutorialStep, activeTab]);
 
-  // If in desktop mode and closed, show the launcher button
-  if (!isOpen && mode === 'DESKTOP_OVERLAY') {
-    return (
-        <button
-         onClick={openTerminal}
-         className={`fixed bottom-6 right-6 bg-amber-500 text-black font-mono text-sm py-3 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-40 flex items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-amber-400 rounded-md ${tutorialStep === 4 ? 'z-[100] animate-bounce ring-2 ring-white' : ''}`}
-        >
-          <div className="relative">
-             <i className="fas fa-terminal animate-pulse"></i>
-          </div>
-          <span className="font-bold tracking-widest">IB_CHAT // CONNECT</span>
-        </button>
-    )
-  }
-
-  // If in desktop mode and closed, but not using launcher logic (e.g. controlled externally), return null
-  if (!isOpen && mode !== 'DESKTOP_OVERLAY') return null;
-
-  const activeMessages = activeTab === 'ADVISOR' 
-    ? advisorMessages 
-    : npcList.find(n => n.id === activeTab)?.dialogueHistory || [];
-
+  // Compute activeNPC before useMemo so it can be in the dependency array
   const activeNPC = npcList.find(n => n.id === activeTab);
-  const isNpcLoading = activeTab !== 'ADVISOR' && loadingNpcs[activeTab];
 
+  // IMPORTANT: useMemo must be called before any early returns to avoid React hooks violation
   const npcQuickResponses = useMemo(() => {
       if (!playerStats) return ["Any updates on the deal?", "Just checking in."];
       const base: string[] = [];
@@ -259,10 +239,36 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
       return Array.from(new Set(base)).slice(0, 5);
   }, [playerStats, activeScenario, activeNPC]);
 
+  // If in desktop mode and closed, show the launcher button
+  if (!isOpen && mode === 'DESKTOP_OVERLAY') {
+    return (
+        <button
+         onClick={openTerminal}
+         className={`fixed bottom-6 right-6 bg-amber-500 text-black font-mono text-sm py-3 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-40 flex items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-amber-400 rounded-md ${tutorialStep === 4 ? 'z-[100] animate-bounce ring-2 ring-white' : ''}`}
+        >
+          <div className="relative">
+             <i className="fas fa-terminal animate-pulse"></i>
+          </div>
+          <span className="font-bold tracking-widest">IB_CHAT // CONNECT</span>
+        </button>
+    )
+  }
+
+  // If in desktop mode and closed, but not using launcher logic (e.g. controlled externally), return null
+  if (!isOpen && mode !== 'DESKTOP_OVERLAY') return null;
+
+  const activeMessages = activeTab === 'ADVISOR'
+    ? advisorMessages
+    : npcList.find(n => n.id === activeTab)?.dialogueHistory || [];
+
+  // activeNPC is now defined above (before early returns) to satisfy hooks rules
+  const isNpcLoading = activeTab !== 'ADVISOR' && loadingNpcs[activeTab];
+
   // Styling logic based on mode
+  // CommsTerminal should always float above content panels (z-[150] > z-[100] for tutorial panels)
   const containerClasses = mode === 'MOBILE_EMBED'
       ? "w-full h-full flex flex-col bg-slate-900"
-      : `fixed w-[90vw] md:w-[600px] h-[70vh] flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-50 border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'z-[100] ring-2 ring-amber-500' : ''}`;
+      : `fixed w-[90vw] md:w-[600px] h-[70vh] flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-[150] border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'ring-2 ring-amber-500' : ''}`;
 
   const containerStyle = mode === 'DESKTOP_OVERLAY'
       ? { top: dragPosition.y, left: dragPosition.x }
@@ -300,8 +306,8 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                     >
                         Back to Portfolio
                     </button>
-                    <button onClick={() => { onBackToPortfolio?.(); closeTerminal(); }} className="text-slate-500 hover:text-amber-500">
-                        <i className="fas fa-times"></i>
+                    <button onClick={closeTerminal} className="text-slate-500 hover:text-amber-500" title="Minimize chat">
+                        <i className="fas fa-minus"></i>
                     </button>
                 </div>
             </div>
@@ -502,7 +508,10 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                     </div>
                     {activeTab !== 'ADVISOR' && (
                         <div className="text-[10px] text-slate-500 mb-2 uppercase tracking-wide">
-                            Gemini-driven replies adapt to your stats, debt, and the current case file. Toss sharper prompts for spicier intel.
+                            {isGeminiApiConfigured()
+                                ? "Gemini-driven replies adapt to your stats, debt, and the current case file. Toss sharper prompts for spicier intel."
+                                : <span className="text-amber-500"><i className="fas fa-exclamation-triangle mr-1"></i>OFFLINE MODE - AI not configured. NPCs use scripted responses. Set VITE_API_KEY to enable Gemini AI.</span>
+                            }
                         </div>
                     )}
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import type { PlayerStats, MarketVolatility } from '../types';
 import { PlayerLevel } from '../types';
 import { MARKET_VOLATILITY_STYLES, LEVEL_RANKS } from '../constants';
@@ -8,16 +8,17 @@ interface PlayerStatsProps {
   marketVolatility: MarketVolatility;
 }
 
-const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatility }) => {
-  const mktStyle = MARKET_VOLATILITY_STYLES[marketVolatility];
+const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVolatility }) => {
+  // Memoize computed values
+  const mktStyle = useMemo(() => MARKET_VOLATILITY_STYLES[marketVolatility], [marketVolatility]);
   const factions = stats.factionReputation;
   const isPanic = marketVolatility === 'PANIC';
 
-  const formatMoney = (val: number) => {
+  const formatMoney = useMemo(() => (val: number) => {
     if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
     if (val >= 1000) return `$${(val / 1000).toFixed(0)}k`;
     return `$${val}`;
-  };
+  }, []);
 
   // Calculate net worth (cash + portfolio value - debt)
   const portfolioValue = stats.portfolio.reduce((sum, c) => sum + (c.currentValuation * (c.ownershipPercentage / 100)), 0);
@@ -253,6 +254,8 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
       </div>
     </div>
   );
-};
+});
+
+PlayerStatsDisplay.displayName = 'PlayerStatsDisplay';
 
 export default PlayerStatsDisplay;
