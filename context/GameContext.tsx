@@ -5,7 +5,6 @@ import { PlayerLevel, DealType, ACTION_COSTS } from '../types';
 // Import World Engine for living world system
 import { processWorldTick, generateWarnings, initializePortfolioCompanyFields } from '../utils/worldEngine';
 import { generateCompanyEvent } from '../constants/companyEvents';
-import { checkForNPCDrama } from '../constants/npcDramas';
 import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS, COMPENSATION_BY_LEVEL, BONUS_FACTORS, COALITION_ANNOUNCEMENTS, PSYCHOLOGICAL_WARFARE_MESSAGES, VENDETTA_ESCALATION_MESSAGES, SURPRISE_ATTACK_MESSAGES, FAMILY_NPCS, LIFESTYLE_TIERS, DEFAULT_PERSONAL_FINANCES, SKILL_INVESTMENTS } from '../constants';
 
 // Import Advanced AI System

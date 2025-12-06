@@ -519,7 +519,7 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
               ${(currentBid / 1000000).toFixed(1)}M
             </div>
             <div className={`text-sm mt-2 font-bold ${currentLeader === 'player' ? 'text-green-500' : currentLeader === 'none' ? 'text-slate-500' : 'text-red-500'}`}>
-              {currentLeader === 'player' ? '✓ YOU ARE LEADING' : currentLeader === 'none' ? 'NO BIDS YET' : `${rivals.find(r => r.fund.id === currentLeader)?.fund.name.toUpperCase()} LEADING`}
+              {currentLeader === 'player' ? '✓ YOU ARE LEADING' : currentLeader === 'none' ? 'NO BIDS YET' : `${rivals.find(r => r.fund.id === currentLeader)?.fund.name?.toUpperCase() || 'RIVAL'} LEADING`}
             </div>
           </div>
 
