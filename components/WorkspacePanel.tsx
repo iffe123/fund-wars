@@ -126,10 +126,10 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
                 onClick={() => handleLifeAction(action)}
                 className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all active:scale-95 active:border-amber-500 active:shadow-[0_0_12px_rgba(245,158,11,0.4)] ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''} ${loanLocked ? 'opacity-40 border-red-900' : ''} ${!canAfford && actionCost > 0 ? 'opacity-50 border-slate-800' : ''}`}
               >
-                <i className={`fas ${action.icon} text-2xl mb-2 ${loanLocked ? 'text-red-900' : !canAfford && actionCost > 0 ? 'text-slate-600' : feelsExpensive && actionCost > 0 ? 'text-amber-600' : 'text-slate-500'} group-hover:text-blue-500`}></i>
+                <i className={`fas ${action.icon} text-2xl mb-2 ${loanLocked ? 'text-red-900' : !canAfford && actionCost > 0 ? 'text-slate-400' : feelsExpensive && actionCost > 0 ? 'text-amber-600' : 'text-slate-500'} group-hover:text-blue-500`}></i>
                 <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-white">{action.text}</span>
                 {actionCost > 0 && (
-                  <span className={`text-[8px] ${!canAfford ? 'text-red-500' : feelsExpensive ? 'text-amber-500' : 'text-slate-600'}`}>
+                  <span className={`text-[8px] ${!canAfford ? 'text-red-500' : feelsExpensive ? 'text-amber-500' : 'text-slate-400'}`}>
                     ${actionCost.toLocaleString()}
                   </span>
                 )}
@@ -173,7 +173,7 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
           </div>
         )}
 
-        <div className="text-slate-600 text-sm italic mb-4">
+        <div className="text-slate-400 text-sm italic mb-4">
           {tutorialStep > 0 ? "URGENT: Review PackFancy Deal Memo." : "Review portfolio or advance timeline."}
         </div>
 

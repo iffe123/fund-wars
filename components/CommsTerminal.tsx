@@ -315,7 +315,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
 
         <div className="flex flex-1 overflow-hidden">
             {/* Sidebar (Contacts) */}
-            <div className={`${mode === 'MOBILE_EMBED' ? 'w-16 md:w-48' : 'w-48'} bg-slate-950 border-r border-slate-800 flex flex-col`}>
+            <div className={`${mode === 'MOBILE_EMBED' ? 'w-16 md:w-48' : 'w-48'} bg-slate-950 border-r border-slate-800 flex flex-col ${tutorialStep === 4 ? 'relative z-[80]' : ''}`}>
                 <div className="p-2 text-xs text-slate-500 uppercase tracking-wider font-bold border-b border-slate-800 bg-slate-900 hidden md:block">
                     Contacts
                 </div>
@@ -346,19 +346,25 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                             className={`
                                 w-full text-left p-3 flex items-center space-x-3 transition-colors border-l-4 relative
                                 ${activeTab === npc.id ? 'bg-blue-900/30 border-blue-400 text-blue-200 shadow-inner' : 'border-transparent text-slate-200 hover:bg-slate-900 hover:text-white'}
-                                ${isTutorialTarget ? 'z-[70] bg-slate-800 border-amber-500 ring-2 ring-amber-500' : ''}
+                                ${isTutorialTarget ? 'z-[100] bg-amber-900/40 border-amber-400 ring-2 ring-amber-400 animate-pulse shadow-[0_0_20px_rgba(251,191,36,0.5)]' : ''}
                             `}
                         >
-                            <i className={`fas ${npc.avatar} ${npc.isRival ? 'text-red-500' : 'text-slate-500'} text-lg`}></i>
+                            <i className={`fas ${npc.avatar} ${npc.isRival ? 'text-red-500' : isTutorialTarget ? 'text-amber-400' : 'text-slate-500'} text-lg`}></i>
                             <div className="flex-1 truncate hidden md:block">
-                                <span className="font-bold block">{npc.name}</span>
+                                <span className={`font-bold block ${isTutorialTarget ? 'text-amber-200' : ''}`}>{npc.name}</span>
                                 <span className="text-[10px] opacity-70 truncate">{npc.role}</span>
                                 <span className="text-[10px] text-slate-500 truncate">Mood {npc.mood}/100 • Trust {npc.trust}/100</span>
-                                <span className={`text-[9px] uppercase block ${isAvailable ? 'text-emerald-400' : 'text-slate-600'}`}>
+                                <span className={`text-[9px] uppercase block ${isAvailable ? 'text-emerald-400' : 'text-slate-400'}`}>
                                     {isAvailable ? 'Available' : 'Off-hours'}
                                 </span>
                             </div>
-                            {isCold && <i className="fas fa-circle-exclamation text-red-500 text-[10px] absolute top-1 right-1"></i>}
+                            {isCold && !isTutorialTarget && <i className="fas fa-circle-exclamation text-red-500 text-[10px] absolute top-1 right-1"></i>}
+                            {isTutorialTarget && (
+                              <div className="absolute -right-2 top-1/2 -translate-y-1/2 bg-amber-500 text-black text-[10px] font-bold px-2 py-1 rounded-l animate-bounce z-[101]">
+                                <i className="fas fa-arrow-left mr-1"></i>
+                                CLICK
+                              </div>
+                            )}
                         </button>
                     )})}
                 </div>
@@ -535,7 +541,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                         <button
                             onClick={handleSend}
                             disabled={(isLoadingAdvisor && activeTab === 'ADVISOR') || input.trim().length === 0}
-                            className="bg-amber-500 hover:bg-amber-400 text-black w-16 flex items-center justify-center rounded-sm shadow-sm disabled:bg-slate-800 disabled:text-slate-600 transition-all font-bold"
+                            className="bg-amber-500 hover:bg-amber-400 text-black w-16 flex items-center justify-center rounded-sm shadow-sm disabled:bg-slate-800 disabled:text-slate-400 transition-all font-bold"
                         >
                             <i className="fas fa-paper-plane"></i>
                         </button>

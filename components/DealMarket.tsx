@@ -120,23 +120,23 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
                     
                     <div className="flex flex-wrap gap-3 text-xs">
                       <div>
-                        <span className="text-slate-500">ASK:</span>
-                        <span className="text-white ml-1 font-mono">${(deal.askingPrice / 1000000).toFixed(0)}M</span>
+                        <span className="text-slate-400">ASK:</span>
+                        <span className="text-white ml-1 font-mono font-bold">${(deal.askingPrice / 1000000).toFixed(0)}M</span>
                       </div>
                       <div>
-                        <span className="text-slate-500">EBITDA:</span>
-                        <span className="text-white ml-1 font-mono">${(deal.metrics.ebitda / 1000000).toFixed(1)}M</span>
+                        <span className="text-slate-400">EBITDA:</span>
+                        <span className="text-emerald-400 ml-1 font-mono font-bold">${(deal.metrics.ebitda / 1000000).toFixed(1)}M</span>
                       </div>
                       <div>
-                        <span className="text-slate-500">MULT:</span>
-                        <span className={`ml-1 font-mono ${multiple > 12 ? 'text-red-400' : multiple > 8 ? 'text-amber-400' : 'text-green-400'}`}>
+                        <span className="text-slate-400">MULT:</span>
+                        <span className={`ml-1 font-mono font-bold ${multiple > 12 ? 'text-red-400' : multiple > 8 ? 'text-amber-400' : 'text-green-400'}`}>
                           {multiple.toFixed(1)}x
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-500">GROWTH:</span>
-                        <span className={`ml-1 font-mono ${deal.metrics.growth > 0.2 ? 'text-green-400' : deal.metrics.growth < 0 ? 'text-red-400' : 'text-slate-300'}`}>
-                          {(deal.metrics.growth * 100).toFixed(0)}%
+                        <span className="text-slate-400">GROWTH:</span>
+                        <span className={`ml-1 font-mono font-bold ${deal.metrics.growth > 0.2 ? 'text-green-400' : deal.metrics.growth < 0 ? 'text-red-400' : 'text-slate-300'}`}>
+                          {deal.metrics.growth > 0 ? '+' : ''}{(deal.metrics.growth * 100).toFixed(0)}%
                         </span>
                       </div>
                     </div>
@@ -146,32 +146,32 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
                     <div className={`text-xs font-bold ${competition.color}`}>
                       {competition.icon} {competition.text}
                     </div>
-                    <div className="text-[10px] text-slate-500 mt-1">
+                    <div className="text-[10px] text-slate-400 mt-1">
                       {deal.interestedRivals.length} BIDDER{deal.interestedRivals.length !== 1 ? 'S' : ''}
                     </div>
-                    <div className="text-[10px] text-slate-600 mt-1">
+                    <div className={`text-[10px] mt-1 ${deal.deadline <= 2 ? 'text-red-400 font-bold' : 'text-slate-300'}`}>
                       ⏱️ {deal.deadline} WEEKS
                     </div>
                   </div>
                 </div>
 
                 <div className="text-center mt-2">
-                  <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-slate-600 text-xs`}></i>
+                  <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-slate-400 text-xs`}></i>
                 </div>
               </div>
 
               {isExpanded && (
-                <div className="border-t border-slate-700 p-3 space-y-3">
-                  <p className="text-xs text-slate-300 leading-relaxed">{deal.description}</p>
-                  
+                <div className="border-t border-slate-700 p-3 space-y-3 bg-slate-900/50">
+                  <p className="text-sm text-slate-200 leading-relaxed">{deal.description}</p>
+
                   <div className="text-xs">
-                    <span className="text-slate-500">SELLER:</span>
-                    <span className="text-slate-300 ml-2">{deal.seller}</span>
+                    <span className="text-slate-400 font-bold">SELLER:</span>
+                    <span className="text-slate-200 ml-2">{deal.seller}</span>
                   </div>
 
                   {rivalNames.length > 0 && (
                     <div>
-                      <div className="text-xs text-slate-500 mb-1">COMPETING FUNDS:</div>
+                      <div className="text-xs text-slate-400 font-bold mb-1">COMPETING FUNDS:</div>
                       <div className="flex flex-wrap gap-1">
                         {rivalNames.map((name, i) => {
                           const fund = RIVAL_FUNDS.find(f => f.name === name);

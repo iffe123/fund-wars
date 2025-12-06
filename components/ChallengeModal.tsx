@@ -60,7 +60,7 @@ const ChallengeModal: React.FC<ChallengeModalProps> = ({ isOpen, question, onClo
                                         : 'bg-slate-50 border-slate-200 text-slate-400'
                                 : selectedOption === index
                                     ? 'bg-blue-50 border-blue-600 text-blue-800'
-                                    : 'bg-white border-slate-200 hover:border-slate-400 text-slate-700'
+                                    : 'bg-white border-slate-200 hover:border-slate-400 text-slate-500'
                         }`}
                     >
                         <span className="font-medium">{option}</span>
@@ -75,7 +75,7 @@ const ChallengeModal: React.FC<ChallengeModalProps> = ({ isOpen, question, onClo
                     <p className={`font-bold mb-1 ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
                         {isCorrect ? 'ACCESS GRANTED' : 'ACCESS DENIED'}
                     </p>
-                    <p className="text-sm text-slate-700">{question.explanation}</p>
+                    <p className="text-sm text-slate-500">{question.explanation}</p>
                 </div>
             )}
         </div>

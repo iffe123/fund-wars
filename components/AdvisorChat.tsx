@@ -91,7 +91,7 @@ const AdvisorChat: React.FC<AdvisorChatProps> = ({ messages, onSendMessage, isLo
               <button
                 key={q}
                 onClick={() => handlePredefinedSend(q)}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1 rounded-full transition-colors"
+                className="bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs px-3 py-1 rounded-full transition-colors"
               >
                 {q}
               </button>

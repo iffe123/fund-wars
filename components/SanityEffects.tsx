@@ -94,7 +94,7 @@ const SanityEffects: React.FC<SanityEffectsProps> = ({ stress, dependency }) => 
 
       {/* Ghost Notification */}
       {ghostNotification && (
-          <div className="absolute top-10 right-10 bg-black/80 text-red-500 font-mono p-4 rounded border border-red-500 animate-bounce">
+          <div className="absolute top-10 right-10 bg-black/60 text-red-500 font-mono p-4 rounded border border-red-500 animate-bounce">
               <i className="fas fa-exclamation-triangle mr-2"></i>
               {ghostNotification}
           </div>

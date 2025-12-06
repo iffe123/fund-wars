@@ -74,7 +74,7 @@ class ErrorBoundary extends Component<Props, State> {
               </button>
             </div>
 
-            <div className="text-slate-600 text-xs mt-6">
+            <div className="text-slate-400 text-xs mt-6">
               If this error persists, try clearing your browser cache or using Guest Mode.
             </div>
           </div>

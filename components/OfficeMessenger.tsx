@@ -92,7 +92,7 @@ const OfficeMessenger: React.FC<OfficeMessengerProps> = ({
                         className={`w-10 h-10 rounded-full flex items-center justify-center relative transition-all ${activeTab === npc.id ? 'bg-white border-2 border-blue-500 shadow-md' : 'bg-white border border-slate-200 hover:bg-slate-50'}`}
                         title={`${npc.name} (${npc.role})`}
                     >
-                         <i className={`fas ${npc.avatar} ${npc.isRival ? 'text-red-500' : 'text-slate-600'}`}></i>
+                         <i className={`fas ${npc.avatar} ${npc.isRival ? 'text-red-500' : 'text-slate-400'}`}></i>
                          {/* Status Indicator */}
                          <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white ${npc.relationship < 30 ? 'bg-red-500' : npc.relationship > 70 ? 'bg-green-500' : 'bg-amber-500'}`}></div>
                     </button>
@@ -102,11 +102,11 @@ const OfficeMessenger: React.FC<OfficeMessengerProps> = ({
             {/* Chat Area */}
             <div className="flex-1 flex flex-col bg-white">
                 <div className="p-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                    <span className="font-bold text-slate-700 text-sm">
+                    <span className="font-bold text-slate-500 text-sm">
                         {activeTab === 'ADVISOR' ? 'Machiavelli (Advisor)' : npcList.find(n => n.id === activeTab)?.name}
                     </span>
                     {activeTab !== 'ADVISOR' && (
-                        <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded-full text-slate-600">
+                        <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded-full text-slate-400">
                              Rel: {npcList.find(n => n.id === activeTab)?.relationship}%
                         </span>
                     )}

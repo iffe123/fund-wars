@@ -34,7 +34,7 @@ const BlackBoxModal: React.FC<BlackBoxModalProps> = ({ onClose, onResolve }) => 
                     className="border border-slate-700 p-4 hover:bg-slate-900 text-left group transition-all"
                  >
                      <div className="text-slate-500 font-bold group-hover:text-white mb-1">IGNORE. DELETE.</div>
-                     <div className="text-[10px] text-slate-600">Loyalty +20. You saw nothing.</div>
+                     <div className="text-[10px] text-slate-400">Loyalty +20. You saw nothing.</div>
                  </button>
                  <button 
                     onClick={() => onResolve('LEVERAGE')}

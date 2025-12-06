@@ -218,7 +218,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[120] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="w-full max-w-6xl">
         <TerminalPanel title="PORTFOLIO_COMMAND_CENTER" className="h-auto">
           <div className="p-4 space-y-4">
@@ -244,7 +244,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto custom-scrollbar">
               {actionGrid.map(({ company, actions, status }) => (
-                <div key={company.id} className="border border-slate-700 bg-black/70 p-3 rounded space-y-2 shadow-lg">
+                <div key={company.id} className="border border-slate-700 bg-black/50 p-3 rounded space-y-2 shadow-lg">
                   {/* Status Header */}
                   <div className="flex justify-between items-start">
                     <span className={`text-[10px] px-2 py-0.5 rounded border ${statusColors[status]}`}>{status}</span>
@@ -288,7 +288,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
 
                   {/* CEO info */}
                   <div className="text-[11px] text-slate-500 flex items-center gap-2">
-                    <i className="fas fa-user-tie text-slate-600"></i>
+                    <i className="fas fa-user-tie text-slate-400"></i>
                     CEO: {company.ceo}
                     {company.ceoPerformance !== undefined && (
                       <span className={`ml-auto ${company.ceoPerformance > 70 ? 'text-green-400' : company.ceoPerformance < 40 ? 'text-red-400' : 'text-amber-400'}`}>
@@ -320,7 +320,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
                         title={action.tooltip}
                         className={`border px-3 py-2 text-left text-[11px] uppercase tracking-wide rounded transition-all flex items-center gap-2 ${
                           action.disabled
-                            ? 'border-slate-800 bg-slate-900 text-slate-600 cursor-not-allowed'
+                            ? 'border-slate-800 bg-slate-900 text-slate-400 cursor-not-allowed'
                             : action.highlight
                             ? 'border-red-500/60 bg-red-900/20 hover:border-red-400 hover:bg-red-900/30 text-red-400'
                             : 'border-amber-500/60 bg-slate-900 hover:border-amber-400 hover:bg-amber-900/20 text-amber-400'

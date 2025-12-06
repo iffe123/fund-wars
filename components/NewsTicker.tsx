@@ -100,7 +100,7 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [] }) => {
                       <span className="uppercase tracking-wider">Sector Update</span>
                       <i className={`fas ${getSentimentIcon(sentiment)} text-[8px]`}></i>
                     </div>
-                    <span className="text-slate-600">{getTimeAgo(i)}</span>
+                    <span className="text-slate-400">{getTimeAgo(i)}</span>
                   </div>
                   <div className="text-xs text-slate-200 leading-relaxed hover:text-white transition-colors">
                     {e.headline}
@@ -127,7 +127,7 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [] }) => {
                 <div className="text-xs text-slate-300 leading-relaxed italic">
                   "Tech sector looking frothy. Pizza party approved for Q3."
                 </div>
-                <div className="text-[9px] text-slate-600 mt-2 uppercase tracking-wider">
+                <div className="text-[9px] text-slate-400 mt-2 uppercase tracking-wider">
                   — Senior Analyst, 2h ago
                 </div>
               </div>

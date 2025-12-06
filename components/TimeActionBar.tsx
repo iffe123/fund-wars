@@ -87,7 +87,7 @@ const TimeActionBar: React.FC<TimeActionBarProps> = memo(({
                 </span>
               ))}
               {actionsUsedThisWeek.length > 5 && (
-                <span className="text-slate-600">+{actionsUsedThisWeek.length - 5} more</span>
+                <span className="text-slate-400">+{actionsUsedThisWeek.length - 5} more</span>
               )}
             </div>
           </div>
