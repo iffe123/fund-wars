@@ -136,6 +136,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Track previous vendetta levels for escalation detection
   const previousVendettaRef = useRef<Record<string, number>>({});
 
+  // Ref to hold advanceTime function for endWeek (avoids circular dependency)
+  const advanceTimeRef = useRef<(() => void) | undefined>();
+
   // --- CLOUD SAVE / LOAD ---
   useEffect(() => {
       if (!currentUser) {
@@ -1023,8 +1026,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addLogEntry(`Week ${currentWeek} begins`);
 
     // Trigger world tick (portfolio events, rival actions, etc.)
-    advanceTime();
-  }, [playerStats, addLogEntry, advanceTime]);
+    // Use ref to avoid circular dependency with advanceTime
+    advanceTimeRef.current?.();
+  }, [playerStats, addLogEntry]);
 
   const toggleNightGrinder = useCallback(() => {
     if (!playerStats?.gameTime) return;
@@ -1395,6 +1399,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
   }, [playerStats, decayNpcAffinities, updatePlayerStats, applyMissedAppointments, marketVolatility, npcs, calculateAnnualBonus, addLogEntry]);
+
+  // Keep the ref updated with the latest advanceTime function
+  useEffect(() => {
+    advanceTimeRef.current = advanceTime;
+  }, [advanceTime]);
+
   const handleActionOutcome = (outcome: { description: string; statChanges: StatChanges }, title: string) => {
       updatePlayerStats(outcome.statChanges);
   };
