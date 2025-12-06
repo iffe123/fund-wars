@@ -13,9 +13,10 @@ interface PortfolioViewProps {
   onBack: () => void;
   onJumpShip?: () => void;
   canAccessFounder?: boolean;
+  backDisabled?: boolean;
 }
 
-const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onAction, onBack, onJumpShip, canAccessFounder = false }) => {
+const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onAction, onBack, onJumpShip, canAccessFounder = false, backDisabled = false }) => {
   const { tutorialStep, updatePlayerStats, setTutorialStep, marketVolatility } = useGame();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [analyzingIds, setAnalyzingIds] = useState<number[]>([]);
@@ -157,7 +158,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
               }}
             />
           )}
-          <TerminalButton label="CLOSE" icon="fa-xmark" size="sm" onClick={onBack} />
+          <TerminalButton label="BACK" icon="fa-arrow-left" size="sm" onClick={onBack} disabled={backDisabled} />
         </div>
       </div>
 
