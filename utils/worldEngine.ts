@@ -6,12 +6,12 @@ import type {
   MarketVolatility,
   WorldTickResult,
   Warning,
-  NPCDrama,
   RivalAction,
   MarketChange,
   CompanyActiveEvent,
   CompanyEventType,
 } from '../types';
+import { checkForNPCDrama } from '../constants/npcDramas';
 
 /**
  * World Progression Engine
@@ -71,7 +71,7 @@ export const processWorldTick = (
 
   // 3. Check for NPC drama (10% chance per tick if conditions are met)
   if (Math.random() < 0.10) {
-    const drama = checkForNPCDramas(npcs, currentWeek);
+    const drama = checkForNPCDrama(npcs, currentWeek);
     if (drama) {
       result.npcDramas.push(drama);
     }
@@ -431,177 +431,6 @@ export const generateWarnings = (playerStats: PlayerStats, currentWeek: number):
   });
 
   return warnings;
-};
-
-// Check for NPC drama triggers
-const checkForNPCDramas = (npcs: NPC[], currentWeek: number): NPCDrama | null => {
-  // Find NPCs with high relationship levels (potential for drama)
-  const relevantNpcs = npcs.filter(npc =>
-    npc.relationship >= 40 && !npc.isRival
-  );
-
-  if (relevantNpcs.length < 2) return null;
-
-  // Check for specific drama conditions
-  const sarah = npcs.find(n => n.id === 'sarah');
-  const hunter = npcs.find(n => n.id === 'hunter');
-  const chad = npcs.find(n => n.id === 'chad');
-  const emma = npcs.find(n => n.id === 'girlfriend_emma');
-
-  // Sarah vs Hunter rivalry
-  if (sarah && hunter && sarah.relationship >= 40 && hunter.relationship >= 40) {
-    if (Math.random() > 0.7) {
-      return {
-        id: 'sarah_hunter_rivalry',
-        title: 'Office Politics Erupts',
-        description: `Sarah storms into your office. "Hunter is taking credit for MY model work on the PackFancy deal. I've been here until 2am for weeks while he schmoozed clients. Now he's telling Chad HE ran the analysis?" She's furious. Hunter's version is... different.`,
-        involvedNpcs: ['sarah', 'hunter'],
-        playerMustChooseSide: true,
-        urgency: 'MEDIUM',
-        expiresWeek: currentWeek + 2,
-        choices: [
-          {
-            text: 'Back Sarah',
-            description: 'Tell Chad the truth. Sarah did the work.',
-            outcome: {
-              description: 'Sarah is vindicated. Hunter is humiliated—and now your enemy.',
-              statChanges: {
-                npcRelationshipUpdate: { npcId: 'sarah', change: 25, memory: 'Defended me when it mattered' },
-                npcRelationshipUpdate2: { npcId: 'hunter', change: -30, memory: 'Sided against me in front of Chad' },
-              },
-            },
-          },
-          {
-            text: 'Back Hunter',
-            description: 'Tell Chad they were both involved. Give Hunter the win.',
-            outcome: {
-              description: 'Hunter owes you one. Sarah looks at you differently now.',
-              statChanges: {
-                npcRelationshipUpdate: { npcId: 'hunter', change: 20, memory: 'Had my back in the credit dispute' },
-                npcRelationshipUpdate2: { npcId: 'sarah', change: -20, trustChange: -15, memory: 'Threw me under the bus' },
-              },
-            },
-          },
-          {
-            text: 'Stay out of it',
-            description: "Not your circus, not your monkeys.",
-            outcome: {
-              description: "Both feel abandoned. But at least you didn't make an enemy.",
-              statChanges: {
-                npcRelationshipUpdate: { npcId: 'sarah', change: -10, memory: "Wouldn't stand up for me" },
-                npcRelationshipUpdate2: { npcId: 'hunter', change: -5, memory: 'Too weak to pick a side' },
-                reputation: -5,
-              },
-            },
-          },
-        ],
-      };
-    }
-  }
-
-  // Chad's secret
-  if (chad && chad.relationship >= 30 && Math.random() > 0.8) {
-    return {
-      id: 'chad_secret',
-      title: "Chad's Little Problem",
-      description: `Late night at the office. Chad pulls you aside. He's been drinking. "Listen, kid. I made a mistake. Told an LP we have a deal in exclusivity when... we don't. The meeting is tomorrow. I need you to make it look real. Create a fake data room. Just for 24 hours." He looks desperate.`,
-      involvedNpcs: ['chad'],
-      playerMustChooseSide: true,
-      urgency: 'HIGH',
-      expiresWeek: currentWeek + 1,
-      choices: [
-        {
-          text: 'Cover for him',
-          description: 'Build the fake data room. Help Chad save face.',
-          outcome: {
-            description: "The LP is fooled. Chad owes you everything. But you've crossed a line.",
-            statChanges: {
-              ethics: -30,
-              auditRisk: +20,
-              npcRelationshipUpdate: { npcId: 'chad', change: 40, trustChange: 30, memory: 'Saved my career when I needed it' },
-              setsFlags: ['COVERED_FOR_CHAD'],
-            },
-          },
-        },
-        {
-          text: "I can't do that",
-          description: 'Tell Chad he needs to come clean.',
-          outcome: {
-            description: 'Chad stares at you coldly. "Remember this moment." He finds another way. Your ethics intact, your career at risk.',
-            statChanges: {
-              ethics: +20,
-              npcRelationshipUpdate: { npcId: 'chad', change: -35, trustChange: -20, memory: 'Abandoned me in my hour of need' },
-              reputation: -10,
-            },
-          },
-        },
-        {
-          text: 'Anonymous compliance tip',
-          description: 'Protect yourself. Report to the compliance hotline.',
-          outcome: {
-            description: "Compliance investigates. Chad is put on leave. You're safe... for now. But someone will figure out it was you.",
-            statChanges: {
-              ethics: +30,
-              reputation: +15,
-              auditRisk: -20,
-              npcRelationshipUpdate: { npcId: 'chad', change: -50, memory: 'The rat who ended my career' },
-              setsFlags: ['WHISTLEBLOWER_CHAD'],
-            },
-          },
-        },
-      ],
-    };
-  }
-
-  // Emma jealousy
-  if (emma && sarah && emma.relationship >= 50 && sarah.relationship >= 60 && Math.random() > 0.85) {
-    return {
-      id: 'emma_jealousy',
-      title: 'Emma Suspects Something',
-      description: `Emma scrolls through your phone. "Who's Sarah? Why are you texting at midnight about 'models'?" She's not buying the "work colleague" explanation. Meanwhile, Sarah has been staying late specifically when you're in the office...`,
-      involvedNpcs: ['girlfriend_emma', 'sarah'],
-      playerMustChooseSide: false,
-      urgency: 'MEDIUM',
-      expiresWeek: currentWeek + 3,
-      choices: [
-        {
-          text: 'Prove your commitment to Emma',
-          description: 'Plan a special weekend. Distance yourself from Sarah at work.',
-          outcome: {
-            description: 'Emma feels loved. Sarah notices the cold shoulder and focuses on work.',
-            statChanges: {
-              npcRelationshipUpdate: { npcId: 'girlfriend_emma', change: 20, trustChange: 15, memory: 'Chose me over everything' },
-              npcRelationshipUpdate2: { npcId: 'sarah', change: -10, memory: 'Suddenly became distant' },
-              cash: -3000,
-            },
-          },
-        },
-        {
-          text: 'Better at compartmentalizing',
-          description: 'Keep both relationships but be more careful about communication.',
-          outcome: {
-            description: "You're walking a tightrope. Nothing changes, but everything feels fragile.",
-            statChanges: {
-              stress: +15,
-            },
-          },
-        },
-        {
-          text: 'Examine your feelings',
-          description: 'Maybe there IS something with Sarah...',
-          outcome: {
-            description: "You spend a long night thinking. The answer isn't clear, but the question is now real.",
-            statChanges: {
-              stress: +10,
-              setsFlags: ['CONSIDERING_SARAH'],
-            },
-          },
-        },
-      ],
-    };
-  }
-
-  return null;
 };
 
 // Simulate a rival fund action
