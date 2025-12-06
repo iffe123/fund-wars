@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { PlayerStats, MarketVolatility } from '../types';
 import { MARKET_VOLATILITY_STYLES } from '../constants';
 
@@ -7,6 +7,7 @@ interface StatsExplainerModalProps {
   marketVolatility: MarketVolatility;
   onClose: () => void;
   isFirstTime?: boolean;
+  focusStatId?: string | null;
 }
 
 const STAT_EXPLANATIONS = [
@@ -122,8 +123,24 @@ const StatsExplainerModal: React.FC<StatsExplainerModalProps> = ({
   stats,
   marketVolatility,
   onClose,
-  isFirstTime = false
+  isFirstTime = false,
+  focusStatId = null
 }) => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to focused stat when modal opens
+  useEffect(() => {
+    if (focusStatId && scrollContainerRef.current) {
+      const element = scrollContainerRef.current.querySelector(`#stat-${focusStatId}`);
+      if (element) {
+        // Small delay to ensure layout is complete
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    }
+  }, [focusStatId]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'critical': return 'text-red-400';
@@ -184,14 +201,18 @@ const StatsExplainerModal: React.FC<StatsExplainerModalProps> = ({
         )}
 
         {/* Stats Grid */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {STAT_EXPLANATIONS.map(stat => {
               const status = stat.getStatus(stats);
+              const isFocused = focusStatId === stat.id;
               return (
                 <div
                   key={stat.id}
-                  className={`p-4 rounded-lg border ${stat.bgColor} ${stat.borderColor} transition-all hover:scale-[1.02]`}
+                  id={`stat-${stat.id}`}
+                  className={`p-4 rounded-lg border ${stat.bgColor} ${stat.borderColor} transition-all hover:scale-[1.02] ${
+                    isFocused ? 'ring-2 ring-amber-500 shadow-lg shadow-amber-500/20' : ''
+                  }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">

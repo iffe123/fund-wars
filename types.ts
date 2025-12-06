@@ -327,6 +327,45 @@ export interface SkillInvestment {
   completed: boolean;
 }
 
+// ==================== TIME & ACTION SYSTEM ====================
+
+export type ActionType =
+  | 'ANALYZE_DEAL'
+  | 'SUBMIT_IOI'
+  | 'BOARD_MEETING'
+  | 'NETWORK_EVENT'
+  | 'SCOUT_TALENT'
+  | 'PORTFOLIO_REVIEW'
+  | 'EXIT_PLANNING'
+  | 'SKILL_TRAINING'
+  | 'REST'
+  | 'CONSULT_ADVISOR'
+  | 'HANDLE_EVENT';
+
+export const ACTION_COSTS: Record<ActionType, number> = {
+  ANALYZE_DEAL: 1,
+  SUBMIT_IOI: 1,
+  BOARD_MEETING: 2,
+  NETWORK_EVENT: 1,
+  SCOUT_TALENT: 1,
+  PORTFOLIO_REVIEW: 1,
+  EXIT_PLANNING: 2,
+  SKILL_TRAINING: 1,
+  REST: 1,
+  CONSULT_ADVISOR: 0,  // Free - encourages using the advisor
+  HANDLE_EVENT: 1,
+};
+
+export interface GameTime {
+  week: number;
+  year: number;
+  quarter: 1 | 2 | 3 | 4;
+  actionsRemaining: number;
+  maxActions: number;
+  isNightGrinder: boolean;
+  actionsUsedThisWeek: ActionType[];
+}
+
 export interface PlayerStats {
   level: PlayerLevel;
   cash: number;  // Legacy: now derived from personalFinances.bankBalance
@@ -371,6 +410,9 @@ export interface PlayerStats {
   dealAllocations: DealAllocation[];  // Deals player is staffed on
   carryEligibleDeals: number[];       // Portfolio company IDs player has carry in
   activeSkillInvestments: SkillInvestment[];  // Skills currently being learned
+
+  // NEW: Time & Action System
+  gameTime: GameTime;
 }
 
 export interface StatChanges {
@@ -600,6 +642,10 @@ export interface GameContextType {
   setActiveDrama: (drama: NPCDrama | null) => void;
   setActiveCompanyEvent: (event: CompanyActiveEvent | null) => void;
   handleEventDecision: (eventId: string, optionId: string) => void;
+  // NEW: Time & Action System Methods
+  useAction: (actionType: ActionType) => boolean;
+  endWeek: () => void;
+  toggleNightGrinder: () => void;
 }
 
 // ==================== COMPETITOR FUNDS SYSTEM ====================
