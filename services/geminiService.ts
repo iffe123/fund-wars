@@ -36,29 +36,98 @@ const summarizeKnowledge = (intel: KnowledgeEntry[], focusNpc?: NPC): string => 
     .join('\n');
 };
 
-const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: string) => {
+// Track whether we've warned about offline mode in console
+let offlineWarningShown = false;
+
+// Varied offline responses based on NPC personality and context
+const OFFLINE_RESPONSES = {
+  aggressive: [
+    "You want answers? Show me numbers first.",
+    "I don't have time for small talk. What's the angle?",
+    "Every second you waste is money left on the table.",
+    "Come back when you've got something worth my attention.",
+    "Talk is cheap. Results aren't.",
+  ],
+  analytical: [
+    "The data doesn't lie. Neither do I.",
+    "Let's look at this objectively.",
+    "Have you stress-tested those assumptions?",
+    "Run the numbers again. Something's off.",
+    "I need more information before I commit to anything.",
+  ],
+  cautious: [
+    "I've seen deals go sideways for less.",
+    "Let's not rush into anything we'll regret.",
+    "Due diligence isn't optional. It's survival.",
+    "The market rewards patience, not recklessness.",
+    "I've got concerns. Address them.",
+  ],
+  default: [
+    "Interesting. Tell me more.",
+    "I'm listening, but I'm not convinced.",
+    "What else have you got?",
+    "That's one way to look at it.",
+    "Keep talking. I'll decide if it's worth my time.",
+  ],
+};
+
+const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: string): string => {
+  // Log warning once per session
+  if (!offlineWarningShown) {
+    console.warn(
+      '%c⚠️ GEMINI API OFFLINE - NPCs using fallback responses.\n' +
+      'To enable AI-powered NPCs, set VITE_API_KEY in your .env file.\n' +
+      'See README.md for setup instructions.',
+      'color: #f59e0b; font-weight: bold; font-size: 14px;'
+    );
+    offlineWarningShown = true;
+  }
+
   const mood = npc.mood > 70 ? "almost warm" : npc.mood < 30 ? "cold" : "guarded";
-  const financeJab = npc.traits.includes('Aggressive')
-    ? "Stop hesitating. Close or kill the deal."
-    : "Bring me something with real upside or don't bother me.";
-
-  const loanWarning = playerStats.loanBalance > 0
-    ? "And pay that loan before the lender eats you alive."
-    : "You still have dry powder. Use it before someone else does.";
-
   const traitFlair = npc.traits.length > 0 ? `(${npc.traits.join(', ')})` : '';
   const trustCue = npc.trust < 30 ? "(barely trusts you)" : npc.trust > 70 ? "(expects you to deliver)" : "(watching you)";
-  const lastMemory = npc.memories[npc.memories.length - 1];
-  const callback = lastMemory ? ` They remember: ${lastMemory.summary}.` : '';
-  const intelHit = (playerStats.knowledgeLog || []).filter(k => k.npcId === npc.id || k.tags?.includes(npc.id)).slice(-1)[0];
-  const intelNote = intelHit ? ` You logged: ${intelHit.summary}.` : '';
 
-  return `${npc.name} ${traitFlair} ${trustCue} gives you a ${mood} look. "${playerMessage}? ${financeJab} ${loanWarning}"${callback}${intelNote}`;
+  // Select response pool based on NPC traits
+  let responsePool = OFFLINE_RESPONSES.default;
+  if (npc.traits.includes('Aggressive') || npc.traits.includes('Competitive')) {
+    responsePool = OFFLINE_RESPONSES.aggressive;
+  } else if (npc.traits.includes('Analytical') || npc.traits.includes('Detail-Oriented')) {
+    responsePool = OFFLINE_RESPONSES.analytical;
+  } else if (npc.traits.includes('Cautious') || npc.traits.includes('Conservative')) {
+    responsePool = OFFLINE_RESPONSES.cautious;
+  }
+
+  // Pick a varied response using message hash for consistency
+  const messageHash = playerMessage.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const npcNameHash = npc.name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const responseIndex = (messageHash + npcNameHash + Date.now() % 1000) % responsePool.length;
+  const response = responsePool[responseIndex];
+
+  // Context-aware additions
+  const loanWarning = playerStats.loanBalance > 0
+    ? " And that loan hanging over you? Not a good look."
+    : "";
+  const lowCashWarning = playerStats.cash < 10000
+    ? " You look strapped for cash. Desperation is a bad negotiating position."
+    : "";
+  const lastMemory = npc.memories[npc.memories.length - 1];
+  const callback = lastMemory ? ` I remember what you said about ${lastMemory.summary.toLowerCase()}.` : '';
+
+  // Build the response
+  const intro = `${npc.name} ${traitFlair} ${trustCue} gives you a ${mood} look.`;
+  const contextNote = loanWarning || lowCashWarning || callback;
+
+  return `${intro} "${response}${contextNote}"`;
 };
 
 // --- ENV: read safely from Vite/Vercel ---
 // @ts-ignore
 const API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_API_KEY : undefined;
+
+// Export function to check API status for UI components
+export const isGeminiApiConfigured = (): boolean => {
+  return !!API_KEY;
+};
 
 if (!API_KEY) {
   console.warn("Gemini API Key missing. Did you set VITE_API_KEY in Vercel (Production)?");
