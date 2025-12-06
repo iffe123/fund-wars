@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
-import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, DayType, TimeSlot, KnowledgeEntry, AIState, RivalMindsetState, CoalitionStateData } from '../types';
+import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, DayType, TimeSlot, KnowledgeEntry, AIState, RivalMindsetState, CoalitionStateData, PersonalFinances, LifestyleLevel, SkillInvestment, DealAllocation } from '../types';
 import { PlayerLevel, DealType } from '../types';
-import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS, COMPENSATION_BY_LEVEL, BONUS_FACTORS, COALITION_ANNOUNCEMENTS, PSYCHOLOGICAL_WARFARE_MESSAGES, VENDETTA_ESCALATION_MESSAGES, SURPRISE_ATTACK_MESSAGES } from '../constants';
+import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS, COMPENSATION_BY_LEVEL, BONUS_FACTORS, COALITION_ANNOUNCEMENTS, PSYCHOLOGICAL_WARFARE_MESSAGES, VENDETTA_ESCALATION_MESSAGES, SURPRISE_ATTACK_MESSAGES, FAMILY_NPCS, LIFESTYLE_TIERS, DEFAULT_PERSONAL_FINANCES, SKILL_INVESTMENTS } from '../constants';
 
 // Import Advanced AI System
 import {
@@ -67,7 +67,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   } : null;
 
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
-  const [npcs, setNpcs] = useState<NPC[]>([...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc));
+  const [npcs, setNpcs] = useState<NPC[]>([...INITIAL_NPCS, ...RIVAL_FUND_NPCS, ...FAMILY_NPCS].map(hydrateNpc));
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(SCENARIOS[0]);
   const [gamePhase, setGamePhase] = useState<GamePhase>('INTRO');
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
@@ -153,7 +153,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   try {
                       const safeKnowledgeLog = sanitizeKnowledgeLog(data.playerStats?.knowledgeLog);
                       const safeKnowledgeFlags = sanitizeKnowledgeFlags(data.playerStats?.knowledgeFlags);
-                      const safeNpcs = Array.isArray(data.npcs) ? data.npcs.map(hydrateNpc) : [...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc);
+                      const safeNpcs = Array.isArray(data.npcs) ? data.npcs.map(hydrateNpc) : [...INITIAL_NPCS, ...RIVAL_FUND_NPCS, ...FAMILY_NPCS].map(hydrateNpc);
                       const safeRivalFunds = Array.isArray(data.rivalFunds) ? data.rivalFunds.map(hydrateRivalFund) : RIVAL_FUNDS.map(hydrateRivalFund);
                       const safeActiveDeals = Array.isArray(data.activeDeals)
                         ? data.activeDeals
@@ -161,26 +161,59 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                             .filter((deal): deal is CompetitiveDeal => Boolean(deal))
                         : [];
 
-                      if (data.playerStats) setPlayerStats({
-                          ...data.playerStats,
-                          loanBalance: data.playerStats.loanBalance ?? 0,
-                          loanRate: data.playerStats.loanRate ?? 0,
-                          factionReputation: hydrateFactionReputation(data.playerStats.factionReputation),
-                          currentDayType: data.playerStats.currentDayType || 'WEEKDAY',
-                          currentTimeSlot: data.playerStats.currentTimeSlot || 'MORNING',
-                          timeCursor: typeof data.playerStats.timeCursor === 'number' ? data.playerStats.timeCursor : 0,
-                          knowledgeLog: safeKnowledgeLog,
-                          knowledgeFlags: safeKnowledgeFlags,
-                          // Ensure new fields have proper defaults
-                          unlockedAchievements: data.playerStats.unlockedAchievements || [],
-                          sectorExpertise: data.playerStats.sectorExpertise || [],
-                          completedExits: data.playerStats.completedExits || [],
-                          totalRealizedGains: data.playerStats.totalRealizedGains ?? 0,
-                          portfolio: Array.isArray(data.playerStats.portfolio) ? data.playerStats.portfolio : [],
-                          playedScenarioIds: Array.isArray(data.playerStats.playedScenarioIds) ? data.playerStats.playedScenarioIds : [],
-                          playerFlags: data.playerStats.playerFlags || {},
-                          employees: data.playerStats.employees || [],
-                      });
+                      if (data.playerStats) {
+                          // Hydrate personal finances with backward compatibility
+                          const savedPersonalFinances = data.playerStats.personalFinances;
+                          const hydratedPersonalFinances: PersonalFinances = savedPersonalFinances ? {
+                            bankBalance: savedPersonalFinances.bankBalance ?? data.playerStats.cash ?? 1500,
+                            totalEarnings: savedPersonalFinances.totalEarnings ?? 0,
+                            salaryYTD: savedPersonalFinances.salaryYTD ?? 0,
+                            bonusYTD: savedPersonalFinances.bonusYTD ?? 0,
+                            carryReceived: savedPersonalFinances.carryReceived ?? 0,
+                            outstandingLoans: savedPersonalFinances.outstandingLoans ?? data.playerStats.loanBalance ?? 0,
+                            loanInterestRate: savedPersonalFinances.loanInterestRate ?? data.playerStats.loanRate ?? 0,
+                            monthlyBurn: savedPersonalFinances.monthlyBurn ?? 2000,
+                            lifestyleLevel: savedPersonalFinances.lifestyleLevel ?? 'BROKE_ASSOCIATE',
+                          } : {
+                            // Migrate from legacy cash system
+                            bankBalance: data.playerStats.cash ?? 1500,
+                            totalEarnings: 0,
+                            salaryYTD: 0,
+                            bonusYTD: 0,
+                            carryReceived: 0,
+                            outstandingLoans: data.playerStats.loanBalance ?? 0,
+                            loanInterestRate: data.playerStats.loanRate ?? 0,
+                            monthlyBurn: 2000,
+                            lifestyleLevel: 'BROKE_ASSOCIATE',
+                          };
+
+                          setPlayerStats({
+                            ...data.playerStats,
+                            loanBalance: data.playerStats.loanBalance ?? 0,
+                            loanRate: data.playerStats.loanRate ?? 0,
+                            factionReputation: hydrateFactionReputation(data.playerStats.factionReputation),
+                            currentDayType: data.playerStats.currentDayType || 'WEEKDAY',
+                            currentTimeSlot: data.playerStats.currentTimeSlot || 'MORNING',
+                            timeCursor: typeof data.playerStats.timeCursor === 'number' ? data.playerStats.timeCursor : 0,
+                            knowledgeLog: safeKnowledgeLog,
+                            knowledgeFlags: safeKnowledgeFlags,
+                            // Ensure new fields have proper defaults
+                            unlockedAchievements: data.playerStats.unlockedAchievements || [],
+                            sectorExpertise: data.playerStats.sectorExpertise || [],
+                            completedExits: data.playerStats.completedExits || [],
+                            totalRealizedGains: data.playerStats.totalRealizedGains ?? 0,
+                            portfolio: Array.isArray(data.playerStats.portfolio) ? data.playerStats.portfolio : [],
+                            playedScenarioIds: Array.isArray(data.playerStats.playedScenarioIds) ? data.playerStats.playedScenarioIds : [],
+                            playerFlags: data.playerStats.playerFlags || {},
+                            employees: data.playerStats.employees || [],
+                            // NEW: Personal & Fund Finances
+                            personalFinances: hydratedPersonalFinances,
+                            fundFinances: data.playerStats.fundFinances ?? null,
+                            dealAllocations: data.playerStats.dealAllocations || [],
+                            carryEligibleDeals: data.playerStats.carryEligibleDeals || [],
+                            activeSkillInvestments: data.playerStats.activeSkillInvestments || [],
+                          });
+                      }
                       if (data.gamePhase) setGamePhase(data.gamePhase);
                       if (data.activeScenarioId) {
                           const scen = SCENARIOS.find(s => s.id === data.activeScenarioId);
@@ -196,7 +229,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   } catch (parseError) {
                       console.error('[CLOUD_LOAD] Save data malformed, resetting to defaults.', parseError);
                       setPlayerStats(null);
-                      setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc));
+                      setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS, ...FAMILY_NPCS].map(hydrateNpc));
                       setRivalFunds(RIVAL_FUNDS.map(hydrateRivalFund));
                       setGamePhase('INTRO');
                   }
@@ -626,6 +659,133 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             updatedStats.totalRealizedGains = (updatedStats.totalRealizedGains || 0) + changes.addExitResult.profit;
         }
 
+        // ==================== NEW: PERSONAL FINANCE SYSTEM ====================
+
+        // Initialize personal finances if missing (migration from legacy)
+        if (!updatedStats.personalFinances) {
+            updatedStats.personalFinances = {
+                bankBalance: updatedStats.cash || 1500,
+                totalEarnings: 0,
+                salaryYTD: 0,
+                bonusYTD: 0,
+                carryReceived: 0,
+                outstandingLoans: updatedStats.loanBalance || 0,
+                loanInterestRate: updatedStats.loanRate || 0,
+                monthlyBurn: 2000,
+                lifestyleLevel: 'BROKE_ASSOCIATE',
+            };
+        }
+
+        // Handle personalCash changes (direct bank balance adjustment)
+        if (changes.personalCash !== undefined) {
+            updatedStats.personalFinances = {
+                ...updatedStats.personalFinances,
+                bankBalance: updatedStats.personalFinances.bankBalance + changes.personalCash,
+            };
+            // Keep legacy cash in sync
+            updatedStats.cash = updatedStats.personalFinances.bankBalance;
+        }
+
+        // Handle lifestyle level changes
+        if (changes.lifestyleLevel !== undefined) {
+            const newLifestyle = LIFESTYLE_TIERS[changes.lifestyleLevel];
+            if (newLifestyle) {
+                updatedStats.personalFinances = {
+                    ...updatedStats.personalFinances,
+                    lifestyleLevel: changes.lifestyleLevel,
+                    monthlyBurn: newLifestyle.monthlyBurn,
+                };
+            }
+        }
+
+        // Handle carry distribution from exits
+        if (changes.carryDistribution !== undefined && changes.carryDistribution > 0) {
+            updatedStats.personalFinances = {
+                ...updatedStats.personalFinances,
+                bankBalance: updatedStats.personalFinances.bankBalance + changes.carryDistribution,
+                carryReceived: updatedStats.personalFinances.carryReceived + changes.carryDistribution,
+                totalEarnings: updatedStats.personalFinances.totalEarnings + changes.carryDistribution,
+            };
+            // Keep legacy cash in sync
+            updatedStats.cash = updatedStats.personalFinances.bankBalance;
+        }
+
+        // Handle deal allocation (staffing on deals for carry eligibility)
+        if (changes.dealAllocation) {
+            const existingAllocations = updatedStats.dealAllocations || [];
+            const existingIndex = existingAllocations.findIndex(
+                a => a.companyId === changes.dealAllocation!.companyId
+            );
+            if (existingIndex >= 0) {
+                // Update existing allocation
+                existingAllocations[existingIndex] = {
+                    ...existingAllocations[existingIndex],
+                    ...changes.dealAllocation,
+                };
+                updatedStats.dealAllocations = existingAllocations;
+            } else {
+                // Add new allocation
+                updatedStats.dealAllocations = [...existingAllocations, changes.dealAllocation];
+            }
+        }
+
+        // Handle skill investment (start learning a new skill)
+        if (changes.skillInvestment) {
+            const skillDef = SKILL_INVESTMENTS.find(s => s.id === changes.skillInvestment);
+            if (skillDef) {
+                const currentTick = updatedStats.timeCursor || 0;
+                const newInvestment: SkillInvestment = {
+                    id: skillDef.id,
+                    name: skillDef.name,
+                    cost: skillDef.cost,
+                    timeWeeks: skillDef.timeWeeks,
+                    startedWeek: currentTick,
+                    completed: false,
+                };
+                const existingInvestments = updatedStats.activeSkillInvestments || [];
+                // Don't add duplicates
+                if (!existingInvestments.some(s => s.id === skillDef.id)) {
+                    updatedStats.activeSkillInvestments = [...existingInvestments, newInvestment];
+                    // Deduct cost from bank balance
+                    updatedStats.personalFinances = {
+                        ...updatedStats.personalFinances,
+                        bankBalance: updatedStats.personalFinances.bankBalance - skillDef.cost,
+                    };
+                    updatedStats.cash = updatedStats.personalFinances.bankBalance;
+                }
+            }
+        }
+
+        // Handle second NPC relationship update (for scenarios affecting multiple NPCs)
+        if (changes.npcRelationshipUpdate2) {
+            const npcUpdate2 = changes.npcRelationshipUpdate2;
+            const targetNpc2 = npcs.find(n => n.id === npcUpdate2.npcId);
+            if (targetNpc2) {
+                const change = npcUpdate2.change || 0;
+                const impact = Math.abs(change);
+                setNpcs(prev => prev.map(npc => npc.id === targetNpc2.id
+                    ? {
+                        ...npc,
+                        mood: clampStat((npc.mood ?? npc.relationship) + change),
+                        trust: clampStat((npc.trust ?? npc.relationship) + (npcUpdate2.trustChange ?? change)),
+                        memories: clampMemories([...npc.memories, normalizeMemory({
+                            summary: (typeof npcUpdate2.memory === 'string' ? npcUpdate2.memory : npcUpdate2.memory?.summary) || `Relationship changed by ${change}`,
+                            sentiment: change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral',
+                            impact,
+                            sourceNpcId: targetNpc2.id,
+                        }, npc.id)]),
+                    }
+                    : npc
+                ));
+            }
+        }
+
+        // Sync legacy fields with personal finances
+        // This ensures backward compatibility with existing code that uses playerStats.cash
+        updatedStats.cash = updatedStats.personalFinances.bankBalance;
+        updatedStats.loanBalance = updatedStats.personalFinances.outstandingLoans;
+        updatedStats.loanRate = updatedStats.personalFinances.loanInterestRate;
+
         return updatedStats;
     });
   }, [npcs, playerStats]);
@@ -689,6 +849,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { nextDayType, nextSlot } = getNextTimeState(currentDayType, currentTimeSlot);
       const nextTimeCursor = currentTimeCursor + 1;
 
+      // --- PERSONAL FINANCES PROCESSING ---
+      const personalFinances = playerStats.personalFinances || DEFAULT_PERSONAL_FINANCES;
+      const lifestyleTier = LIFESTYLE_TIERS[personalFinances.lifestyleLevel] || LIFESTYLE_TIERS.BROKE_ASSOCIATE;
+
       // --- SALARY PAYMENT ---
       // Players receive weekly salary based on their level
       const compensation = COMPENSATION_BY_LEVEL[playerStats.level];
@@ -696,8 +860,24 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       let salaryMessage = '';
       if (weeklySalary > 0) {
-          salaryMessage = `Salary deposited: $${weeklySalary.toLocaleString()}`;
+          salaryMessage = `PAYROLL: +$${weeklySalary.toLocaleString()} salary deposited`;
       }
+
+      // --- LIFESTYLE COSTS ---
+      // Weekly burn rate (monthly burn / 4)
+      const weeklyBurn = Math.round(lifestyleTier.monthlyBurn / 4);
+      const lifestyleMessage = weeklyBurn > 0 ? `LIFESTYLE: -$${weeklyBurn.toLocaleString()} (${lifestyleTier.name})` : '';
+
+      // --- LOAN INTEREST ---
+      // Weekly interest accrual
+      const weeklyInterest = personalFinances.outstandingLoans > 0
+          ? Math.round((personalFinances.outstandingLoans * personalFinances.loanInterestRate) / 52)
+          : 0;
+      const interestMessage = weeklyInterest > 0 ? `INTEREST: -$${weeklyInterest.toLocaleString()} (loan interest)` : '';
+
+      // --- LIFESTYLE STRESS MODIFIER ---
+      // Apply weekly stress from lifestyle tier
+      const weeklyLifestyleStress = Math.round(lifestyleTier.stressModifier / 4);
 
       // --- ANNUAL BONUS CHECK ---
       // If we're advancing to a new year (month goes from 12 to 1), pay bonus
@@ -714,24 +894,99 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
       }
 
+      // Calculate net weekly cash flow
       const totalCashInflow = weeklySalary + annualBonus;
+      const totalCashOutflow = weeklyBurn + weeklyInterest;
+      const netCashFlow = totalCashInflow - totalCashOutflow;
 
-      updatePlayerStats({
-          score: 10,
-          cash: totalCashInflow > 0 ? totalCashInflow : undefined,
+      // --- SKILL INVESTMENT PROGRESS ---
+      // Check for completed skill investments
+      const activeSkills = playerStats.activeSkillInvestments || [];
+      const completedSkills: string[] = [];
+      const skillStatChanges: StatChanges = {};
+
+      activeSkills.forEach(skill => {
+          if (!skill.completed && skill.startedWeek !== undefined) {
+              const weeksElapsed = nextTimeCursor - skill.startedWeek;
+              if (weeksElapsed >= skill.timeWeeks) {
+                  completedSkills.push(skill.name);
+                  // Find skill definition and apply benefits
+                  const skillDef = SKILL_INVESTMENTS.find(s => s.id === skill.id);
+                  if (skillDef?.benefits) {
+                      if (skillDef.benefits.analystRating) {
+                          skillStatChanges.analystRating = (skillStatChanges.analystRating || 0) + skillDef.benefits.analystRating;
+                      }
+                      if (skillDef.benefits.financialEngineering) {
+                          skillStatChanges.financialEngineering = (skillStatChanges.financialEngineering || 0) + skillDef.benefits.financialEngineering;
+                      }
+                      if (skillDef.benefits.reputation) {
+                          skillStatChanges.reputation = (skillStatChanges.reputation || 0) + skillDef.benefits.reputation;
+                      }
+                      if (skillDef.benefits.setsFlags) {
+                          skillStatChanges.setsFlags = [...(skillStatChanges.setsFlags || []), ...skillDef.benefits.setsFlags];
+                      }
+                  }
+              }
+          }
       });
 
-      // Log salary and bonus messages
-      if (salaryMessage) {
-          addLogEntry(salaryMessage);
+      // Apply weekly stat changes
+      updatePlayerStats({
+          score: 10,
+          cash: netCashFlow !== 0 ? netCashFlow : undefined,
+          stress: weeklyLifestyleStress !== 0 ? weeklyLifestyleStress : undefined,
+          ...skillStatChanges,
+      });
+
+      // Update personal finances tracking
+      if (weeklySalary > 0 || annualBonus > 0) {
+          setPlayerStats(prev => prev ? {
+              ...prev,
+              personalFinances: {
+                  ...prev.personalFinances,
+                  salaryYTD: prev.personalFinances.salaryYTD + weeklySalary,
+                  bonusYTD: annualBonus > 0 ? prev.personalFinances.bonusYTD + annualBonus : prev.personalFinances.bonusYTD,
+                  totalEarnings: prev.personalFinances.totalEarnings + weeklySalary + annualBonus,
+              },
+              // Mark completed skills
+              activeSkillInvestments: prev.activeSkillInvestments?.map(skill =>
+                  completedSkills.some(name => skill.name === name)
+                      ? { ...skill, completed: true }
+                      : skill
+              ) || [],
+          } : null);
+      }
+
+      // Reset YTD counters at year boundary
+      if (nextMonth > 12) {
+          setPlayerStats(prev => prev ? {
+              ...prev,
+              personalFinances: {
+                  ...prev.personalFinances,
+                  salaryYTD: 0,
+                  bonusYTD: 0,
+              },
+          } : null);
+      }
+
+      // Log financial messages
+      const financialLog: string[] = [];
+      if (salaryMessage) financialLog.push(salaryMessage);
+      if (lifestyleMessage) financialLog.push(lifestyleMessage);
+      if (interestMessage) financialLog.push(interestMessage);
+      if (financialLog.length > 0) {
+          addLogEntry(financialLog.join(' | '));
       }
       if (bonusMessage) {
           addLogEntry(bonusMessage);
       }
+      if (completedSkills.length > 0) {
+          addLogEntry(`SKILL COMPLETED: ${completedSkills.join(', ')} - Benefits applied!`);
+      }
 
       // --- BANKRUPTCY / FIRING CHECK ---
-      // If player has negative cash after salary and can't access loans, they're fired
-      const projectedCash = playerStats.cash + totalCashInflow;
+      // If player has negative cash after salary minus lifestyle, they're in trouble
+      const projectedCash = playerStats.cash + netCashFlow;
       const canAccessLoan = compensation?.canAccessLoan ?? false;
 
       if (projectedCash < 0 && !canAccessLoan) {
@@ -1319,7 +1574,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const resetGame = useCallback(() => {
       localStorage.clear();
       setPlayerStats(null);
-      setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS].map(hydrateNpc));
+      setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS, ...FAMILY_NPCS].map(hydrateNpc));
       setActiveScenario(SCENARIOS[0]);
       setGamePhase('INTRO');
       setDifficulty(null);

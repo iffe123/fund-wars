@@ -129,17 +129,90 @@ export interface NPC {
 
 export type NPCRelationshipType = 'WORK' | 'PARTNER' | 'FAMILY' | 'WILDCARD';
 
+// ==================== PERSONAL & FUND FINANCES SYSTEM ====================
+
+// Lifestyle levels with escalating monthly costs
+export type LifestyleLevel =
+  | 'BROKE_ASSOCIATE'      // $2k/mo - studio apartment, ramen
+  | 'COMFORTABLE'          // $5k/mo - decent 1BR, Uber sometimes
+  | 'ASPIRATIONAL'         // $10k/mo - nice apartment, dating expenses
+  | 'BALLER'               // $25k/mo - luxury apartment, bottle service
+  | 'MASTER_OF_UNIVERSE';  // $50k/mo - penthouse, cars, art
+
+// Fund-level finances (for the PE firm - Founder mode)
+export interface FundFinances {
+  totalCommitments: number;      // Total LP commitments
+  calledCapital: number;         // Capital called from LPs
+  dryPowder: number;             // Available for new investments
+  deployedCapital: number;       // Invested in portfolio
+  realizedProceeds: number;      // Cash from exits
+  managementFeePool: number;     // Accumulated mgmt fees
+  carryPool: number;             // Accumulated carried interest pool
+}
+
+// Personal finances (for the player)
+export interface PersonalFinances {
+  bankBalance: number;           // Current cash in bank
+  totalEarnings: number;         // Lifetime earnings
+  salaryYTD: number;             // Salary earned this year
+  bonusYTD: number;              // Bonus earned this year
+  carryReceived: number;         // Total carry received lifetime
+  outstandingLoans: number;      // Personal debt
+  loanInterestRate: number;      // Current loan rate
+  monthlyBurn: number;           // Monthly lifestyle cost
+  lifestyleLevel: LifestyleLevel;
+}
+
+// Deal allocation tracking for carry eligibility
+export interface DealAllocation {
+  companyId: number;
+  role: 'LEAD' | 'SUPPORT' | 'OBSERVER';
+  carryPoints: number;  // Personal carry allocation (basis points)
+  hoursWorked: number;
+}
+
+// Family request types for family NPC events
+export interface FamilyRequest {
+  id: string;
+  type: 'MONEY' | 'TIME' | 'ADVICE' | 'VISIT';
+  amount?: number;               // For money requests
+  urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'EMERGENCY';
+  description: string;
+  deadline?: number;             // Game week deadline
+  consequenceIfIgnored: string;
+}
+
+// Extended NPC for family members
+export interface FamilyMember extends NPC {
+  relationshipType: 'FAMILY';
+  familyRole: 'PARENT' | 'SIBLING' | 'PARTNER' | 'CHILD';
+  financialNeed: number;         // 0-100, how much they need money
+  emotionalNeed: number;         // 0-100, how much they need attention
+  lastContactWeek: number;       // Game week of last contact
+  pendingRequest?: FamilyRequest;
+}
+
+// Skill investment for personal development
+export interface SkillInvestment {
+  id: string;
+  name: string;
+  cost: number;
+  timeWeeks: number;
+  startedWeek?: number;          // When the investment was started
+  completed: boolean;
+}
+
 export interface PlayerStats {
   level: PlayerLevel;
-  cash: number;
+  cash: number;  // Legacy: now derived from personalFinances.bankBalance
   reputation: number;
   factionReputation: FactionReputation;
   stress: number;
   energy: number;
   analystRating: number;
   financialEngineering: number;
-  ethics: number; // New: 0 (Sociopath) to 100 (Saint)
-  auditRisk: number; // New: 0 (Safe) to 100 (Indicted)
+  ethics: number; // 0 (Sociopath) to 100 (Saint)
+  auditRisk: number; // 0 (Safe) to 100 (Indicted)
   score: number;
   portfolio: PortfolioCompany[];
   playerFlags: Record<string, boolean>;
@@ -154,18 +227,25 @@ export interface PlayerStats {
   health: number; // 0-100
   dependency: number; // 0-100
   tutorialStep: number; // 0=Done, 1..N=Active Step
-  loanBalance: number; // Outstanding debt balance
-  loanRate: number; // Annualized interest rate (e.g. 0.24 = 24%)
+  loanBalance: number; // Legacy: now derived from personalFinances.outstandingLoans
+  loanRate: number; // Legacy: now derived from personalFinances.loanInterestRate
   knowledgeLog: KnowledgeEntry[];
   knowledgeFlags: string[];
-  // New: Achievement System
-  unlockedAchievements: string[]; // IDs of unlocked achievements
-  // New: Industry Specialization
+  // Achievement System
+  unlockedAchievements: string[];
+  // Industry Specialization
   sectorExpertise: SectorExpertise[];
   primarySector?: IndustrySector;
-  // New: Exit Tracking
+  // Exit Tracking
   completedExits: ExitResult[];
   totalRealizedGains: number;
+
+  // NEW: Personal & Fund Finances System
+  personalFinances: PersonalFinances;
+  fundFinances: FundFinances | null;  // null for non-Founders, populated for Founder
+  dealAllocations: DealAllocation[];  // Deals player is staffed on
+  carryEligibleDeals: number[];       // Portfolio company IDs player has carry in
+  activeSkillInvestments: SkillInvestment[];  // Skills currently being learned
 }
 
 export interface StatChanges {
@@ -214,8 +294,28 @@ export interface StatChanges {
   // New: Industry Specialization
   sectorExperienceGain?: { sector: IndustrySector; amount: number };
   setPrimarySector?: IndustrySector;
-  // New: Exit Tracking
+  // Exit Tracking
   addExitResult?: ExitResult;
+
+  // NEW: Personal Finance Changes
+  personalCash?: number;          // Direct change to personal bank balance
+  lifestyleLevel?: LifestyleLevel; // Change lifestyle tier
+  carryDistribution?: number;      // Carry payout from exit
+  dealAllocation?: DealAllocation; // Add deal allocation
+  skillInvestment?: string;        // Start a skill investment by ID
+  familyRequestResponse?: {
+    npcId: string;
+    accepted: boolean;
+    amount?: number;
+  };
+  // Multiple NPC relationship updates (for scenarios affecting multiple NPCs)
+  npcRelationshipUpdate2?: {
+    npcId: string;
+    change: number;
+    trustChange?: number;
+    moodChange?: number;
+    memory?: NPCMemory | string;
+  };
 }
 
 export interface SkillCheck {
