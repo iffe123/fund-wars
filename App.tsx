@@ -89,7 +89,7 @@ const App: React.FC = () => {
     return localStorage.getItem('HAS_SEEN_STATS_TUTORIAL') === 'true';
   });
 
-  const currentScenario = activeScenario || SCENARIOS[0];
+  const currentScenario = activeScenario || SCENARIOS?.[0] || { id: 0, title: 'Loading...', description: '', choices: [], structureOptions: [] };
   const scenarioChoices = (currentScenario.choices && currentScenario.choices.length > 0)
     ? currentScenario.choices
     : (currentScenario.structureOptions
@@ -159,7 +159,7 @@ const App: React.FC = () => {
       if (tutorialStep === 5 && !sarahProactiveMessageSent) {
           // Check if Sarah's chat doesn't already have many messages
           const sarah = npcs.find(n => n.id === 'sarah');
-          if (sarah && sarah.dialogueHistory.length <= 2) {
+          if (sarah && sarah.dialogueHistory && sarah.dialogueHistory.length <= 2) {
               // Send Sarah's proactive message
               sendNpcMessage('sarah', "Hey! Perfect timing. I've been in the data room all night. Found something weird on page 40 of the CIM - there's a patent reference they buried in the footnotes. PATENT #8829. Hydrophobic coating tech. If this is real, it could be a game-changer. Want me to dig deeper?", 'npc', 'Sarah');
               setSarahProactiveMessageSent(true);
@@ -233,7 +233,7 @@ const App: React.FC = () => {
       updatePlayerStats({
           ...diffSettings.initialStats,
           stress: diffSettings.initialStats.stress + stress,
-          playedScenarioIds: [SCENARIOS[0].id],
+          playedScenarioIds: [SCENARIOS?.[0]?.id ?? 1],
           portfolio: initialPortfolio
       });
 
@@ -533,7 +533,7 @@ const App: React.FC = () => {
       playSfx('KEYPRESS');
 
       const targetNPC = npcs.find(n => n.id === npcId);
-      if(targetNPC && playerStats) {
+      if(targetNPC && targetNPC.dialogueHistory && playerStats) {
            const updatedHistory: ChatMessage[] = [...targetNPC.dialogueHistory, { sender: 'player' as const, text: msg }];
            // 2. Fetch AI Response
            try {
@@ -569,8 +569,8 @@ const App: React.FC = () => {
                   });
                }
                
-                 const npcReply = response.text || `${targetNPC.name} stares and slowly nods.`;
-                 sendNpcMessage(npcId, npcReply, 'npc', targetNPC.name);
+                 const npcReply = response.text || `${targetNPC?.name || 'NPC'} stares and slowly nods.`;
+                 sendNpcMessage(npcId, npcReply, 'npc', targetNPC?.name || 'NPC');
                  addToast(`${targetNPC.name} responded`, 'info');
 
            } catch (e) {

@@ -88,7 +88,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
   const [npcs, setNpcs] = useState<NPC[]>([...INITIAL_NPCS, ...RIVAL_FUND_NPCS, ...FAMILY_NPCS].map(hydrateNpc));
-  const [activeScenario, setActiveScenario] = useState<Scenario | null>(SCENARIOS[0]);
+  const [activeScenario, setActiveScenario] = useState<Scenario | null>(SCENARIOS?.[0] ?? null);
   const [gamePhase, setGamePhase] = useState<GamePhase>('INTRO');
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [marketVolatility, setMarketVolatility] = useState<MarketVolatility>('NORMAL');
@@ -892,7 +892,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Check if it's a company event
     if (activeCompanyEvent?.id === eventId) {
       // Find which company has this event
-      const company = playerStats.portfolio.find(c => c.activeEvent?.id === eventId);
+      const company = playerStats?.portfolio?.find(c => c.activeEvent?.id === eventId);
       if (company) {
         companyId = company.id;
       }
@@ -1268,7 +1268,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (worldResult.newEvents.length > 0) {
         // Generate full events with options from the event library
         const fullEvents = worldResult.newEvents.map(event => {
-          const company = playerStats.portfolio.find(c => c.activeEvent?.id === event.id);
+          const company = playerStats?.portfolio?.find(c => c.activeEvent?.id === event.id);
           if (company) {
             return generateCompanyEvent(company, event.type);
           }
@@ -1855,7 +1855,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.clear();
       setPlayerStats(null);
       setNpcs([...INITIAL_NPCS, ...RIVAL_FUND_NPCS, ...FAMILY_NPCS].map(hydrateNpc));
-      setActiveScenario(SCENARIOS[0]);
+      setActiveScenario(SCENARIOS?.[0] ?? null);
       setGamePhase('INTRO');
       setDifficulty(null);
       setMarketVolatility('NORMAL');

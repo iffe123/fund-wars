@@ -190,7 +190,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({ playerStats, npcs, 
                           </div>
                       ) : (
                           availableHires.map(npc => {
-                              const isHirable = npc.relationship >= 50;
+                              const isHirable = (npc.relationship ?? 0) >= 50;
                               return (
                                 <div key={npc.id} className="flex justify-between items-center bg-slate-800 p-3 rounded border border-slate-700">
                                     <div className="flex items-center space-x-3">

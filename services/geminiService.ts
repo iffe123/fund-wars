@@ -173,17 +173,17 @@ const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: stri
     offlineWarningShown = true;
   }
 
-  const mood = npc.mood > 70 ? "almost warm" : npc.mood < 30 ? "cold" : "guarded";
-  const traitFlair = npc.traits.length > 0 ? `(${npc.traits.join(', ')})` : '';
-  const trustCue = npc.trust < 30 ? "(barely trusts you)" : npc.trust > 70 ? "(expects you to deliver)" : "(watching you)";
+  const mood = (npc.mood ?? 50) > 70 ? "almost warm" : (npc.mood ?? 50) < 30 ? "cold" : "guarded";
+  const traitFlair = npc.traits && npc.traits.length > 0 ? `(${npc.traits.join(', ')})` : '';
+  const trustCue = (npc.trust ?? 50) < 30 ? "(barely trusts you)" : (npc.trust ?? 50) > 70 ? "(expects you to deliver)" : "(watching you)";
 
   // Select response pool based on NPC traits
   let responsePool = OFFLINE_RESPONSES.default;
-  if (npc.traits.includes('Aggressive') || npc.traits.includes('Competitive')) {
+  if (npc.traits?.includes('Aggressive') || npc.traits?.includes('Competitive')) {
     responsePool = OFFLINE_RESPONSES.aggressive;
-  } else if (npc.traits.includes('Analytical') || npc.traits.includes('Detail-Oriented')) {
+  } else if (npc.traits?.includes('Analytical') || npc.traits?.includes('Detail-Oriented')) {
     responsePool = OFFLINE_RESPONSES.analytical;
-  } else if (npc.traits.includes('Cautious') || npc.traits.includes('Conservative')) {
+  } else if (npc.traits?.includes('Cautious') || npc.traits?.includes('Conservative')) {
     responsePool = OFFLINE_RESPONSES.cautious;
   }
 
@@ -200,7 +200,7 @@ const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: stri
   const lowCashWarning = playerStats.cash < 10000
     ? " You look strapped for cash. Desperation is a bad negotiating position."
     : "";
-  const lastMemory = npc.memories[npc.memories.length - 1];
+  const lastMemory = npc.memories && npc.memories.length > 0 ? npc.memories[npc.memories.length - 1] : null;
   const callback = lastMemory ? ` I remember what you said about ${lastMemory.summary.toLowerCase()}.` : '';
 
   // Build the response
