@@ -6,9 +6,10 @@ import { MARKET_VOLATILITY_STYLES, LEVEL_RANKS } from '../constants';
 interface PlayerStatsProps {
   stats: PlayerStats;
   marketVolatility: MarketVolatility;
+  onStatsClick?: () => void;
 }
 
-const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVolatility }) => {
+const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVolatility, onStatsClick }) => {
   // Memoize computed values
   const mktStyle = useMemo(() => MARKET_VOLATILITY_STYLES[marketVolatility], [marketVolatility]);
   const factions = stats.factionReputation;
@@ -48,11 +49,17 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
   };
 
   return (
-    <div className={`
-      h-14 bg-gradient-to-b from-slate-900 to-slate-900/95
-      border-b border-slate-700/80 flex items-center px-4 justify-between shrink-0
-      ${isPanic ? 'animate-pulse bg-red-950/20 border-red-900/50' : ''}
-    `}>
+    <div
+      onClick={onStatsClick}
+      className={`
+        h-14 bg-gradient-to-b from-slate-900 to-slate-900/95
+        border-b border-slate-700/80 flex items-center px-4 justify-between shrink-0
+        ${isPanic ? 'animate-pulse bg-red-950/20 border-red-900/50' : ''}
+        ${onStatsClick ? 'cursor-pointer hover:bg-slate-800/50 transition-colors active:bg-slate-800' : ''}
+      `}
+      role={onStatsClick ? 'button' : undefined}
+      tabIndex={onStatsClick ? 0 : undefined}
+    >
       {/* MOBILE VIEW (< 768px) */}
       <div className="flex md:hidden items-center w-full justify-between gap-3">
         {/* Cash */}
@@ -96,6 +103,13 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         <div className="px-2 py-1 rounded bg-amber-950/30 border border-amber-800/30">
           <span className="text-amber-400 text-[10px] font-bold uppercase tracking-wider">L{stats.level}</span>
         </div>
+
+        {/* Stats Info Hint (Mobile) */}
+        {onStatsClick && (
+          <div className="w-6 h-6 rounded-full bg-slate-800/80 border border-slate-600/50 flex items-center justify-center">
+            <i className="fas fa-info text-slate-400 text-[10px]"></i>
+          </div>
+        )}
       </div>
 
       {/* DESKTOP VIEW (>= 768px) */}

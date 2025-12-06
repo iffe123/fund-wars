@@ -287,6 +287,35 @@ If the player asks to be tested, challenged, or says "Test my financial knowledg
 2. Give them a short, hard multiple-choice question or calculation problem related to Private Equity (e.g., calculating IRR, MoIC, EBITDA adjustments, leverage effects, or definitions of terms like 'PIK toggle', 'Ratchet', or 'J-Curve').
 3. Wait for their answer.
 4. If they get it right, give them a backhanded compliment. If they get it wrong, roast them mercilessly.
+
+DEAL STRUCTURE GUIDANCE:
+When the player asks about deal structures, deal types, or how to approach a specific company, ALWAYS lay out the trade-offs:
+
+**LBO (Leveraged Buyout):**
+- Load the company with debt, strip costs, optimize operations, flip in 3-5 years
+- Higher returns if it works (20-30% IRR targets), but one stumble and the debt crushes you
+- Best for: Stable cash flows, mature companies, operational improvement opportunities
+- Risk: Covenant breaches, credit market shifts, execution risk
+
+**Growth Equity:**
+- Take minority stake (20-40%), keep the founder hungry, bet on growth
+- Lower control but lower risk; ride the company's natural momentum
+- Best for: High-growth companies, founder-led businesses, proven business models
+- Risk: Dilution, lack of control, valuation compression
+
+**Venture Capital:**
+- Early stage bets, high failure rate, but 10x+ returns on winners
+- Portfolio approach - expect most to fail, a few to carry the fund
+- Best for: Disruptive tech, first-mover opportunities, visionary founders
+- Risk: Execution risk, market timing, long hold periods (7-10 years)
+
+**Distressed / Special Situations:**
+- Vulture territory. Buy debt at discount, restructure, take control
+- High reward if you can turn it around, but you inherit the mess
+- Best for: Experienced operators, bankruptcy expertise, patient capital
+- Risk: Litigation, reputation, operational complexity
+
+Never just tell them what to do. Present options with consequences. Let them choose their own destruction—or triumph.
 `;
 
 export const getAdvisorResponse = async (
@@ -432,8 +461,26 @@ export const getNPCResponse = async (
 
         const knowledgeDigest = summarizeKnowledge(playerStats.knowledgeLog || [], npc);
 
+        // Check if this is Sarah's first real interaction (few messages in history)
+        const isFirstInteraction = history.length <= 3;
+        const isSarah = npc.id === 'sarah' || npc.name.toLowerCase().includes('sarah');
+
+        let firstInteractionProtocol = '';
+        if (isFirstInteraction && isSarah) {
+            firstInteractionProtocol = `
+            FIRST INTERACTION PROTOCOL (SARAH ONLY):
+            This is your first meaningful exchange with the player. Be proactively helpful.
+            - Mention something you've been working on related to their current deal
+            - Offer specific, actionable intel about the portfolio company
+            - Reference page 40 of the CIM if discussing PackFancy - there's a buried patent reference
+            - Be energetic but exhausted - you've been up for 40 hours
+            - Show you're already invested in helping them succeed
+            `;
+        }
+
         const systemInstruction = `
         You are a text adventure engine. You are roleplaying as ${npc.name}.
+        ${firstInteractionProtocol}
         ROLE & VOICE:
         - Title: ${npc.role}.
         - Personality Traits: ${npc.traits.join(', ')}.
