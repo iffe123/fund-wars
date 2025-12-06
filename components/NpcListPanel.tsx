@@ -37,7 +37,7 @@ const NpcListPanel: React.FC<NpcListPanelProps> = memo(({
             onClick={() => handleNpcClick(npc)}
             className={`w-full text-left p-3 border-b border-slate-800 hover:bg-slate-800 transition-colors flex items-center space-x-3 ${selectedNpcId === npc.id ? 'bg-slate-800 text-amber-500' : 'text-slate-400'}`}
           >
-            <div className={`w-2 h-2 rounded-full ${npc.mood > 60 && npc.trust > 50 ? 'bg-green-500' : (npc.mood < 30 || npc.trust < 30) ? 'bg-red-500' : 'bg-amber-500'}`}></div>
+            <div className={`w-2 h-2 rounded-full ${(npc.mood ?? 50) > 60 && (npc.trust ?? 50) > 50 ? 'bg-green-500' : ((npc.mood ?? 50) < 30 || (npc.trust ?? 50) < 30) ? 'bg-red-500' : 'bg-amber-500'}`}></div>
             <div className="flex-1">
               <div className="font-bold text-xs">{npc.name}</div>
               <div className="text-[10px] opacity-70">{npc.role}</div>

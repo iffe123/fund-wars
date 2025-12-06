@@ -215,7 +215,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
       if (!playerStats) return ["Any updates on the deal?", "Just checking in."];
       const base: string[] = [];
 
-      const targetCompany = playerStats.portfolio.find(p => !p.isAnalyzed) || playerStats.portfolio[0];
+      const targetCompany = playerStats.portfolio.find(p => !p.isAnalyzed) || playerStats.portfolio?.[0];
       if (targetCompany) {
           base.push(`Pressure test ${targetCompany.name}`);
       }
@@ -334,7 +334,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                     {npcList.map(npc => {
                         // TUTORIAL RAIL: Step 4 highlights Sarah
                         const isTutorialTarget = tutorialStep === 4 && npc.id === 'sarah';
-                        const isCold = (npc.mood ?? 0) < 30 || (npc.trust ?? 0) < 30;
+                        const isCold = (npc.mood ?? 50) < 30 || (npc.trust ?? 50) < 30;
                         const isAvailable = npcAvailable(npc);
                         return (
                         <button

@@ -94,7 +94,7 @@ const OfficeMessenger: React.FC<OfficeMessengerProps> = ({
                     >
                          <i className={`fas ${npc.avatar} ${npc.isRival ? 'text-red-500' : 'text-slate-400'}`}></i>
                          {/* Status Indicator */}
-                         <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white ${npc.relationship < 30 ? 'bg-red-500' : npc.relationship > 70 ? 'bg-green-500' : 'bg-amber-500'}`}></div>
+                         <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white ${(npc.relationship ?? 50) < 30 ? 'bg-red-500' : (npc.relationship ?? 50) > 70 ? 'bg-green-500' : 'bg-amber-500'}`}></div>
                     </button>
                 ))}
             </div>
@@ -107,7 +107,7 @@ const OfficeMessenger: React.FC<OfficeMessengerProps> = ({
                     </span>
                     {activeTab !== 'ADVISOR' && (
                         <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded-full text-slate-400">
-                             Rel: {npcList.find(n => n.id === activeTab)?.relationship}%
+                             Rel: {npcList.find(n => n.id === activeTab)?.relationship ?? 0}%
                         </span>
                     )}
                 </div>
