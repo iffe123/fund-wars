@@ -91,10 +91,10 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
       <div
         onClick={handleGeneralStatsClick}
         className={`
-          h-14 bg-gradient-to-b from-slate-900 to-slate-900/95
-          border-b border-slate-700/80 flex items-center px-4 justify-between shrink-0
+          h-14 bg-gradient-to-b from-slate-800 to-slate-900
+          border-b border-slate-600 flex items-center px-4 justify-between shrink-0
           ${isPanic ? 'animate-pulse bg-red-950/20 border-red-900/50' : ''}
-          cursor-pointer hover:bg-slate-800/50 transition-colors active:bg-slate-800
+          cursor-pointer hover:bg-slate-700/50 transition-colors active:bg-slate-700
         `}
         role="button"
         tabIndex={0}
@@ -108,7 +108,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
             <i className="fas fa-wallet text-emerald-400 text-sm"></i>
           </div>
           <div className="flex flex-col">
-            <span className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Cash</span>
+            <span className="text-[9px] text-slate-400 uppercase tracking-wider font-bold">Cash</span>
             <span className="text-emerald-400 font-bold text-sm tabular-nums">{formatMoney(stats.cash)}</span>
           </div>
         </div>
@@ -173,7 +173,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           }`}>
             <i className={`fas fa-handshake-slash ${stats.loanBalance > 0 ? 'text-red-400' : 'text-slate-500'}`}></i>
             <div className="flex flex-col">
-              <span className={`text-[9px] uppercase tracking-wider ${stats.loanBalance > 0 ? 'text-red-600' : 'text-slate-600'}`}>Debt</span>
+              <span className={`text-[9px] uppercase tracking-wider ${stats.loanBalance > 0 ? 'text-red-600' : 'text-slate-400'}`}>Debt</span>
               <span className={`font-bold tabular-nums ${stats.loanBalance > 0 ? 'text-red-400' : 'text-slate-500'}`}>
                 {stats.loanBalance > 0
                   ? `${formatMoney(stats.loanBalance)} @ ${(stats.loanRate * 100).toFixed(1)}%`
@@ -186,7 +186,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-slate-800/30 border border-slate-700/40">
             <i className={`fas fa-brain ${getStressColor(stats.stress)}`}></i>
             <div className="flex flex-col min-w-[80px]">
-              <span className="text-[9px] text-slate-600 uppercase tracking-wider">Stress</span>
+              <span className="text-[9px] text-slate-400 uppercase tracking-wider">Stress</span>
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
                   <div
@@ -218,7 +218,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           }`}>
             <i className={`fas fa-sack-dollar ${hasMillionDollars ? 'text-amber-400' : 'text-slate-500'}`}></i>
             <div className="flex flex-col">
-              <span className={`text-[9px] uppercase tracking-wider ${hasMillionDollars ? 'text-amber-600' : 'text-slate-600'}`}>Net Worth</span>
+              <span className={`text-[9px] uppercase tracking-wider ${hasMillionDollars ? 'text-amber-600' : 'text-slate-400'}`}>Net Worth</span>
               <span className={`font-bold tabular-nums ${hasMillionDollars ? 'text-amber-400' : 'text-slate-400'}`}>
                 {formatMoney(netWorth)}
               </span>
@@ -280,7 +280,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
 
           {/* Factions */}
           <div className="flex items-center gap-3 text-[10px] font-bold">
-            <span className="uppercase tracking-widest text-slate-600 text-[9px]">Factions</span>
+            <span className="uppercase tracking-widest text-slate-400 text-[9px]">Factions</span>
             <div className="flex items-center gap-2">
               <span className="text-blue-300 flex items-center gap-1" title="Managing Directors">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>

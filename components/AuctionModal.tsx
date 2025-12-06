@@ -94,7 +94,7 @@ const AuctionModal: React.FC<AuctionModalProps> = ({ companyName, initialBid, ri
   }, [turn, isOver, handleLoss]);
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4">
         <div className="w-full max-w-lg border-2 border-red-500 bg-slate-900 shadow-[0_0_50px_rgba(239,68,68,0.4)]">
             <div className="bg-red-500 text-black px-3 py-2 font-bold flex justify-between items-center animate-pulse">
                 <span><i className="fas fa-gavel mr-2"></i>LIVE AUCTION IN PROGRESS</span>

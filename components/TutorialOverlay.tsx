@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 
 interface TutorialOverlayProps {
@@ -9,6 +9,14 @@ interface TutorialOverlayProps {
 const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) => {
   const { setTutorialStep } = useGame();
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+  const [showStuckHint, setShowStuckHint] = useState(false);
+
+  // Show hint after 10 seconds on same step
+  useEffect(() => {
+    setShowStuckHint(false);
+    const timer = setTimeout(() => setShowStuckHint(true), 10000);
+    return () => clearTimeout(timer);
+  }, [step]);
 
   if (step === 0) return null;
 
@@ -43,7 +51,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) 
     <>
       {/* Full Screen Mask - Visual only, does not block underlying interactions */}
       <div
-        className="fixed inset-0 bg-black/70 z-50 pointer-events-none backdrop-blur-[2px] transition-opacity duration-500"
+        className="fixed inset-0 bg-black/40 z-50 pointer-events-none backdrop-blur-[1px] transition-opacity duration-500"
       ></div>
 
       {/* Sys_Admin Instruction Box */}
@@ -96,6 +104,20 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) 
                         <span className="mr-2 text-amber-300">{'>'}</span>
                         {instruction}
                     </p>
+
+                    {/* Stuck hint - shows after 10 seconds */}
+                    {showStuckHint && (
+                      <div className="mt-3 p-2 bg-red-900/30 border border-red-500/50 rounded text-xs text-red-300">
+                        <i className="fas fa-exclamation-triangle mr-2"></i>
+                        Stuck? Look for the <span className="text-amber-400 font-bold">glowing button</span> or
+                        <button
+                          onClick={() => setTutorialStep(step + 1)}
+                          className="ml-2 underline text-amber-400 hover:text-amber-300 pointer-events-auto cursor-pointer"
+                        >
+                          click here to skip this step
+                        </button>
+                      </div>
+                    )}
                 </div>
             </div>
         </div>

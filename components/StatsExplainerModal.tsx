@@ -162,7 +162,7 @@ const StatsExplainerModal: React.FC<StatsExplainerModalProps> = ({
   const netWorth = stats.cash + portfolioValue + stats.totalRealizedGains - stats.loanBalance;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="w-full max-w-2xl max-h-[90vh] bg-slate-900 border border-slate-700 rounded-lg shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-slate-800 to-slate-800/80 p-4 border-b border-slate-700 flex justify-between items-center shrink-0">

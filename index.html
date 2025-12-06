@@ -46,14 +46,14 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
       :root {
-        /* Core Terminal Colors */
-        --terminal-bg: #030303;
-        --terminal-bg-elevated: #0a0a0a;
-        --terminal-bg-card: #0d1117;
-        --terminal-text: #e6edf3;
-        --terminal-text-muted: #8b949e;
-        --terminal-border: #30363d;
-        --terminal-border-highlight: #484f58;
+        /* Core Terminal Colors - IMPROVED CONTRAST */
+        --terminal-bg: #0a0f14;
+        --terminal-bg-elevated: #121a24;
+        --terminal-bg-card: #1a2332;
+        --terminal-text: #f0f4f8;
+        --terminal-text-muted: #9ca3af;
+        --terminal-border: #374151;
+        --terminal-border-highlight: #6b7280;
 
         /* Accent Colors */
         --terminal-accent: #f59e0b;
@@ -151,11 +151,11 @@
         text-shadow: 0 0 10px var(--terminal-blue), 0 0 20px var(--terminal-blue-glow);
       }
 
-      /* Enhanced Vignette */
+      /* Enhanced Vignette - Reduced for better visibility */
       .vignette {
         position: fixed;
         inset: 0;
-        background: radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(0,0,0,0.4) 100%);
+        background: radial-gradient(ellipse at center, transparent 0%, transparent 60%, rgba(0,0,0,0.2) 100%);
         pointer-events: none;
         z-index: 9998;
       }

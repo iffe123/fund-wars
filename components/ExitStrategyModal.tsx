@@ -105,7 +105,7 @@ const ExitStrategyModal: React.FC<ExitStrategyModalProps> = ({
   const isAvailable = (type: ExitType) => availableExits.some(e => e.type === type);
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 rounded-xl border border-slate-700 w-full max-w-3xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="p-6 border-b border-slate-800 bg-gradient-to-r from-slate-900 to-slate-800 sticky top-0">
@@ -215,7 +215,7 @@ const ExitStrategyModal: React.FC<ExitStrategyModalProps> = ({
                               ~{option.baseMultiple.toFixed(1)}x base multiple
                             </span>
                           </div>
-                          <p className={`text-sm mt-1 ${available ? 'text-slate-400' : 'text-slate-600'}`}>
+                          <p className={`text-sm mt-1 ${available ? 'text-slate-400' : 'text-slate-400'}`}>
                             {option.description}
                           </p>
                           {!available && (

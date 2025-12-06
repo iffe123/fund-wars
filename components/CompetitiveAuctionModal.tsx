@@ -529,7 +529,7 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
                 key={rival.fund.id}
                 className={`px-3 py-1 rounded text-xs font-mono border ${
                   rival.hasDropped 
-                    ? 'border-slate-700 text-slate-600 line-through' 
+                    ? 'border-slate-700 text-slate-400 line-through' 
                     : rival.fund.id === currentLeader 
                       ? 'border-red-500 text-red-400 bg-red-500/10' 
                       : 'border-slate-600 text-slate-400'
@@ -612,7 +612,7 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
                 key={i} 
                 className={`${
                   line.includes('YOU BID') ? 'text-green-400' :
-                  line.includes('WITHDRAWS') ? 'text-slate-600' :
+                  line.includes('WITHDRAWS') ? 'text-slate-400' :
                   line.includes('WINNER: YOU') ? 'text-green-500 font-bold' :
                   line.includes('WINNER:') ? 'text-red-500 font-bold' :
                   line.includes('BIDS') ? 'text-amber-400' :

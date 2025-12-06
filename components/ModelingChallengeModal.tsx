@@ -96,7 +96,7 @@ const ModelingChallengeModal: React.FC<ModelingChallengeModalProps> = ({
   const timerColor = timeRemaining <= 10 ? 'red' : timeRemaining <= 30 ? 'amber' : 'slate';
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 rounded-xl border border-slate-700 w-full max-w-2xl overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="p-6 border-b border-slate-800 bg-gradient-to-r from-slate-900 to-slate-800">

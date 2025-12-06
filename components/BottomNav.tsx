@@ -77,7 +77,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, unreadCom
             {/* Label */}
             <span className={`
               text-[9px] font-bold tracking-widest uppercase transition-all duration-200
-              ${isActive ? item.activeColor : 'text-slate-600'}
+              ${isActive ? item.activeColor : 'text-slate-400'}
             `}>
               {item.label}
             </span>

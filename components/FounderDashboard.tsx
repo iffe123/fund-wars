@@ -95,7 +95,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({ playerStats, npcs, 
                  </div>
                  
                  {playerStats.employees.length === 0 ? (
-                     <div className="text-center py-8 text-slate-600 text-sm border-2 border-dashed border-slate-800 rounded-lg">
+                     <div className="text-center py-8 text-slate-400 text-sm border-2 border-dashed border-slate-800 rounded-lg">
                          <p>One-person shop.</p>
                          <p className="text-xs mt-2">Hiring adds $15k/mo to burn.</p>
                      </div>
@@ -176,7 +176,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({ playerStats, npcs, 
 
       {/* Recruitment Modal */}
       {showRecruitModal && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
               <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md shadow-2xl">
                   <div className="p-4 border-b border-slate-800 flex justify-between items-center">
                       <h3 className="text-white font-bold">Scout Talent</h3>
@@ -185,7 +185,7 @@ const FounderDashboard: React.FC<FounderDashboardProps> = ({ playerStats, npcs, 
                   <div className="p-4 space-y-3">
                       {availableHires.length === 0 ? (
                           <div className="text-center py-8">
-                             <i className="fas fa-user-slash text-slate-600 text-3xl mb-2"></i>
+                             <i className="fas fa-user-slash text-slate-400 text-3xl mb-2"></i>
                              <p className="text-slate-500">The talent pool is dry.</p>
                           </div>
                       ) : (

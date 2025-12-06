@@ -58,7 +58,7 @@ const LoginScreen: React.FC = () => {
             </button>
         </div>
         
-        <div className="mt-8 text-center text-[10px] text-slate-600 border-t border-slate-800 pt-4">
+        <div className="mt-8 text-center text-[10px] text-slate-400 border-t border-slate-800 pt-4">
             SECURE CONNECTION // ENCRYPTION: AES-256 // SERVER: US-EAST
         </div>
       </div>

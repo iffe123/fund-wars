@@ -242,10 +242,10 @@ const RivalLeaderboard: React.FC<RivalLeaderboardProps> = ({ rivalFunds, playerS
                         style={{ width: `${fund.reputation}%` }}
                       ></div>
                     </div>
-                    <div className="text-[9px] text-slate-600 text-center mt-0.5">REP</div>
+                    <div className="text-[9px] text-slate-400 text-center mt-0.5">REP</div>
                   </div>
 
-                  <div className="text-slate-600">
+                  <div className="text-slate-400">
                     <i className={`fas ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-[10px]`}></i>
                   </div>
                 </div>

@@ -89,7 +89,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
           </div>
 
           <div className="space-y-4 mb-8">
-            <p className="text-lg italic text-slate-600">"Nice suit, rookie. Did your mommy buy it?"</p>
+            <p className="text-lg italic text-slate-400">"Nice suit, rookie. Did your mommy buy it?"</p>
             <div className="animate-bounce text-center py-4">
                 <i className="fas fa-file-contract text-4xl text-blue-800"></i>
                 <span className="block text-xs font-bold mt-2">THUD</span>
@@ -110,7 +110,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
                 onClick={() => handleChoice(25)}
                 className="w-full text-left p-4 bg-white border border-slate-300 hover:border-red-600 hover:shadow-md rounded-lg transition-all group"
              >
-                <span className="font-bold text-slate-700 block mb-1 group-hover:text-red-600">"Cardboard? Really?"</span>
+                <span className="font-bold text-slate-500 block mb-1 group-hover:text-red-600">"Cardboard? Really?"</span>
                 <span className="text-xs text-slate-500">Effect: Chad stares silently. Stress +20 immediately.</span>
              </button>
           </div>

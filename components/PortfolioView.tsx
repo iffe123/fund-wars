@@ -204,7 +204,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
               {portfolio.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
                   <div className="w-20 h-20 rounded-full bg-slate-800/50 flex items-center justify-center mb-4 border border-slate-700/50">
-                    <i className="fas fa-folder-open text-4xl text-slate-600"></i>
+                    <i className="fas fa-folder-open text-4xl text-slate-400"></i>
                   </div>
                   <h3 className="text-lg font-bold text-slate-300 mb-2">Portfolio Empty</h3>
                   <p className="text-slate-500 text-sm max-w-xs mb-6">
@@ -298,7 +298,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                     <td colSpan={5} className="p-8">
                       <div className="flex flex-col items-center justify-center text-center">
                         <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4 border border-slate-700/50">
-                          <i className="fas fa-folder-open text-3xl text-slate-600"></i>
+                          <i className="fas fa-folder-open text-3xl text-slate-400"></i>
                         </div>
                         <h3 className="text-lg font-bold text-slate-300 mb-2">Portfolio Empty</h3>
                         <p className="text-slate-500 text-sm max-w-md mb-4">

@@ -48,7 +48,7 @@ const LegalDisclaimer: React.FC<LegalDisclaimerProps> = ({ onAccept }) => {
             </button>
         </div>
       </div>
-      <div className="mt-4 text-[10px] text-slate-600">
+      <div className="mt-4 text-[10px] text-slate-400">
           FUND_WARS_OS // COMPLIANCE_LAYER_V1.0
       </div>
     </div>
