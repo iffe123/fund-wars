@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, GamePhase, PortfolioCompany, MarketVolatility, NPC, CompetitiveDeal } from './types';
+import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, GamePhase, PortfolioCompany, MarketVolatility, NPC, CompetitiveDeal, CompanyActiveEvent, NPCDrama } from './types';
 import { PlayerLevel, DealType } from './types';
 import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS, RIVAL_FUNDS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS } from './constants';
 import NewsTicker from './components/NewsTicker';
@@ -30,6 +30,7 @@ import DealMarket from './components/DealMarket';
 import RivalLeaderboard from './components/RivalLeaderboard';
 import PortfolioCommandCenter from './components/PortfolioCommandCenter';
 import StatsExplainerModal from './components/StatsExplainerModal';
+import WarningPanel from './components/WarningPanel';
 
 declare global {
   interface Window {
@@ -56,7 +57,10 @@ const App: React.FC = () => {
   const {
     user, playerStats, npcs, activeScenario, gamePhase, difficulty, marketVolatility, tutorialStep, actionLog,
     setGamePhase, updatePlayerStats, sendNpcMessage, setTutorialStep, advanceTime, addLogEntry,
-    rivalFunds, activeDeals, updateRivalFund, removeDeal, generateNewDeals, resetGame
+    rivalFunds, activeDeals, updateRivalFund, removeDeal, generateNewDeals, resetGame,
+    // Living World System
+    activeWarnings, activeDrama, activeCompanyEvent, eventQueue, pendingDecision,
+    dismissWarning, handleWarningAction, setActiveDrama, setActiveCompanyEvent, handleEventDecision,
   } = useGame();
   
   const { loading: authLoading } = useAuth();
@@ -191,7 +195,7 @@ const App: React.FC = () => {
   // --- HANDLERS ---
   const handleIntroComplete = (stress: number) => {
       // Init Stats with standard settings and mandatory PackFancy setup
-      const diffSettings = DIFFICULTY_SETTINGS['NORMAL'];
+      const diffSettings = DIFFICULTY_SETTINGS['Normal'];
       const initialPortfolio: PortfolioCompany[] = [{
         id: 1,
         name: "PackFancy Inc.",
@@ -208,7 +212,21 @@ const App: React.FC = () => {
         revenueGrowth: 0.02,
         acquisitionDate: { year: 1, month: 1 },
         eventHistory: [],
-        isAnalyzed: false
+        isAnalyzed: false,
+        // Enhanced Living World fields
+        employeeCount: 450,
+        employeeGrowth: 0.01,
+        ebitdaMargin: 0.125,
+        cashBalance: 8000000,
+        runwayMonths: 18,
+        customerChurn: 0.05,
+        ceoPerformance: 70,
+        boardAlignment: 65,
+        managementTeam: [],
+        dealClosed: false,
+        isInExitProcess: false,
+        nextBoardMeetingWeek: 12,
+        lastFinancialUpdate: 0
       }];
 
       // Apply difficulty settings
@@ -424,6 +442,52 @@ const App: React.FC = () => {
       removeDeal(dealId);
       addToast("DEAL DISMISSED", 'info');
       playSfx('KEYPRESS');
+  };
+
+  // --- LIVING WORLD HANDLERS ---
+  const handleConsultMachiavelli = async (event: CompanyActiveEvent | NPCDrama) => {
+    // Pre-populate advisor with context about the decision
+    const contextMessage = `[DECISION REQUIRED: ${event.title}] ${event.description}`;
+    const optionsContext = 'options' in event
+      ? event.options.map((opt: { label: string; description: string }) => `Option: ${opt.label} - ${opt.description}`).join('\n')
+      : event.choices.map((choice: Choice) => `Option: ${choice.text} - ${choice.description || ''}`).join('\n');
+
+    const advisorQuery = `I need your counsel on this situation:\n\n${event.description}\n\nMy options are:\n${optionsContext}\n\nWhat would you advise?`;
+
+    // Navigate to advisor chat
+    setSelectedNpcId('advisor');
+    if (window.innerWidth < 768) setActiveMobileTab('COMMS');
+
+    // Send the query to advisor
+    await handleSendMessageToAdvisor(advisorQuery);
+
+    addLogEntry(`Consulting advisor about: ${event.title}`);
+  };
+
+  const handleWarningActionWithNavigation = (warning: typeof activeWarnings[0]) => {
+    handleWarningAction(warning);
+
+    // Navigate based on warning type
+    switch (warning.type) {
+      case 'PORTFOLIO':
+        setActiveTab('ASSETS');
+        if (window.innerWidth < 768) setActiveMobileTab('DESK');
+        break;
+      case 'CASH':
+      case 'LOAN':
+        // Could open financial modal here if we had one
+        addToast('Check the workspace for financial options', 'info');
+        break;
+      case 'HEALTH':
+      case 'STRESS':
+        // Could navigate to life actions
+        addToast('Consider taking time off or reducing workload', 'info');
+        break;
+      case 'DEADLINE':
+        setActiveTab('ASSETS');
+        if (window.innerWidth < 768) setActiveMobileTab('DESK');
+        break;
+    }
   };
 
   const handleChatBackToPortfolio = () => {
@@ -1039,6 +1103,134 @@ const App: React.FC = () => {
 
         {/* MOBILE BOTTOM NAV */}
         <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
+
+        {/* WARNING PANEL - Living World System */}
+        <WarningPanel
+            warnings={activeWarnings}
+            onDismiss={dismissWarning}
+            onAction={handleWarningActionWithNavigation}
+        />
+
+        {/* COMPANY EVENT DECISION MODAL */}
+        {activeCompanyEvent && (
+            <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="w-full max-w-lg bg-slate-900 border border-amber-500/50 rounded-lg shadow-2xl">
+                    <div className="p-4 border-b border-amber-500/30 bg-amber-500/10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                <i className="fas fa-exclamation-triangle text-amber-400"></i>
+                            </div>
+                            <div>
+                                <div className="text-xs text-amber-400/70 uppercase tracking-wider">Company Event</div>
+                                <div className="text-lg font-bold text-white">{activeCompanyEvent.title}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-4">
+                        <p className="text-sm text-slate-300 mb-4">{activeCompanyEvent.description}</p>
+                        <div className="space-y-2">
+                            {activeCompanyEvent.options.map((option, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        handleEventDecision(activeCompanyEvent.id, option.id);
+                                        addToast(option.outcomeText, option.risk === 'high' ? 'error' : 'success');
+                                        addLogEntry(`EVENT: ${activeCompanyEvent.title} - Chose: ${option.label}`);
+                                    }}
+                                    className={`w-full text-left p-3 border rounded transition-all ${
+                                        option.risk === 'high'
+                                            ? 'border-red-500/50 hover:border-red-400 hover:bg-red-900/20'
+                                            : option.risk === 'medium'
+                                            ? 'border-amber-500/50 hover:border-amber-400 hover:bg-amber-900/20'
+                                            : 'border-green-500/50 hover:border-green-400 hover:bg-green-900/20'
+                                    }`}
+                                >
+                                    <div className="text-sm font-bold text-white">{option.label}</div>
+                                    <div className="text-xs text-slate-400 mt-1">{option.description}</div>
+                                    <div className={`text-[10px] mt-1 ${
+                                        option.risk === 'high' ? 'text-red-400' : option.risk === 'medium' ? 'text-amber-400' : 'text-green-400'
+                                    }`}>
+                                        Risk: {option.risk.toUpperCase()}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => handleConsultMachiavelli(activeCompanyEvent)}
+                            className="w-full mt-4 p-3 border border-purple-500/50 hover:border-purple-400 hover:bg-purple-900/20 rounded text-purple-400 text-sm flex items-center justify-center gap-2"
+                        >
+                            <i className="fas fa-user-secret"></i>
+                            Consult Machiavelli
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* NPC DRAMA DECISION MODAL */}
+        {activeDrama && (
+            <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="w-full max-w-lg bg-slate-900 border border-purple-500/50 rounded-lg shadow-2xl">
+                    <div className="p-4 border-b border-purple-500/30 bg-purple-500/10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                <i className="fas fa-theater-masks text-purple-400"></i>
+                            </div>
+                            <div>
+                                <div className="text-xs text-purple-400/70 uppercase tracking-wider">Office Drama</div>
+                                <div className="text-lg font-bold text-white">{activeDrama.title}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-4">
+                        <p className="text-sm text-slate-300 mb-4">{activeDrama.description}</p>
+                        {activeDrama.involvedNpcs && activeDrama.involvedNpcs.length > 0 && (
+                            <div className="text-xs text-slate-500 mb-3">
+                                <i className="fas fa-users mr-1"></i>
+                                Involved: {activeDrama.involvedNpcs.join(', ')}
+                            </div>
+                        )}
+                        <div className="space-y-2">
+                            {activeDrama.choices.map((choice, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        updatePlayerStats(choice.outcome.statChanges);
+                                        if (choice.outcome.npcEffects) {
+                                            choice.outcome.npcEffects.forEach(effect => {
+                                                updatePlayerStats({
+                                                    npcRelationshipUpdate: {
+                                                        npcId: effect.npcId,
+                                                        change: effect.relationshipChange,
+                                                        memory: `Drama: ${activeDrama.title} - ${choice.text}`
+                                                    }
+                                                });
+                                            });
+                                        }
+                                        setActiveDrama(null);
+                                        addToast(choice.outcome.description, 'info');
+                                        addLogEntry(`DRAMA: ${activeDrama.title} - Chose: ${choice.text}`);
+                                    }}
+                                    className="w-full text-left p-3 border border-slate-600 hover:border-purple-400 hover:bg-purple-900/10 rounded transition-all"
+                                >
+                                    <div className="text-sm font-bold text-white">{choice.text}</div>
+                                    {choice.description && (
+                                        <div className="text-xs text-slate-400 mt-1">{choice.description}</div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => handleConsultMachiavelli(activeDrama)}
+                            className="w-full mt-4 p-3 border border-purple-500/50 hover:border-purple-400 hover:bg-purple-900/20 rounded text-purple-400 text-sm flex items-center justify-center gap-2"
+                        >
+                            <i className="fas fa-user-secret"></i>
+                            Consult Machiavelli
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
 
         {/* TOAST LAYER */}
         <TerminalToast toasts={toasts} removeToast={removeToast} />

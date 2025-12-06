@@ -27,6 +27,105 @@ export interface CompanyEvent {
   description: string;
 }
 
+// ==================== LIVING WORLD SYSTEM ====================
+
+export type CompanyEventType =
+  | 'REVENUE_DROP'
+  | 'KEY_CUSTOMER_LOSS'
+  | 'MANAGEMENT_DEPARTURE'
+  | 'COMPETITOR_THREAT'
+  | 'ACQUISITION_OPPORTUNITY'
+  | 'REGULATORY_ISSUE'
+  | 'UNION_DISPUTE'
+  | 'SUPPLY_CHAIN_CRISIS'
+  | 'ACTIVIST_INVESTOR'
+  | 'IPO_WINDOW'
+  | 'STRATEGIC_BUYER_INTEREST';
+
+export type CompanyStatus = 'PIPELINE' | 'OWNED' | 'EXITING';
+
+export interface ManagementMember {
+  role: 'CEO' | 'CFO' | 'COO' | 'CTO' | 'CMO';
+  name: string;
+  performance: number;  // 0-100
+  loyalty: number;      // 0-100
+  poachRisk: number;    // 0-100, risk of being recruited away
+}
+
+export interface EventOption {
+  id: string;
+  label: string;
+  description: string;
+  statChanges: StatChanges;
+  companyChanges: Partial<PortfolioCompany>;
+  outcomeText: string;
+  risk?: number;  // 0-100, chance of negative outcome
+}
+
+export interface CompanyActiveEvent {
+  id: string;
+  type: CompanyEventType;
+  title: string;
+  description: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  options: EventOption[];
+  expiresWeek: number;  // Must decide by this week
+  consultWithMachiavelli?: boolean;  // Flag to suggest advisor consultation
+}
+
+export interface StrategicDecision {
+  id: string;
+  title: string;
+  description: string;
+  options: EventOption[];
+  deadline: number;  // Game week
+  companyImpact: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+
+export interface Warning {
+  id: string;
+  type: 'CASH' | 'HEALTH' | 'STRESS' | 'REPUTATION' | 'PORTFOLIO' | 'LOAN' | 'DEADLINE';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  title: string;
+  message: string;
+  threshold?: number;
+  currentValue?: number;
+  suggestedAction?: string;
+}
+
+export interface NPCDrama {
+  id: string;
+  title: string;
+  description: string;
+  involvedNpcs: string[];  // NPC IDs
+  playerMustChooseSide: boolean;
+  urgency: 'LOW' | 'MEDIUM' | 'HIGH';
+  choices: Choice[];
+  expiresWeek: number;
+}
+
+export interface RivalAction {
+  rivalId: string;
+  action: string;
+  target?: string;
+  impact: string;
+}
+
+export interface MarketChange {
+  type: 'VOLATILITY_SHIFT' | 'SECTOR_ROTATION' | 'INTEREST_RATE' | 'CREDIT_CONDITIONS';
+  description: string;
+  impact: Partial<StatChanges>;
+}
+
+export interface WorldTickResult {
+  portfolioUpdates: Map<number, Partial<PortfolioCompany>>;
+  newEvents: CompanyActiveEvent[];
+  warnings: Warning[];
+  npcDramas: NPCDrama[];
+  rivalActions: RivalAction[];
+  marketChanges: MarketChange[];
+}
+
 export interface PortfolioCompany {
   id: number;
   name: string;
@@ -48,7 +147,33 @@ export interface PortfolioCompany {
   };
   eventHistory: CompanyEvent[];
   isAnalyzed?: boolean;
-  hasBoardCrisis?: boolean; // New for Activist Investor
+  hasBoardCrisis?: boolean;
+
+  // NEW: Company Health Metrics
+  employeeCount: number;
+  employeeGrowth: number;        // % change per quarter
+  ebitdaMargin: number;          // EBITDA / Revenue
+  cashBalance: number;           // Company's own cash
+  runwayMonths: number;          // Months of cash left (for growth companies)
+  customerChurn: number;         // For SaaS/subscription businesses
+
+  // NEW: Management & Governance
+  ceoPerformance: number;        // 0-100
+  boardAlignment: number;        // 0-100, how aligned board is
+  managementTeam: ManagementMember[];
+
+  // NEW: Deal Status
+  dealClosed: boolean;           // True once IOI is accepted and deal closes
+  isInExitProcess: boolean;
+  exitType?: ExitType;
+
+  // NEW: Active Events
+  activeEvent?: CompanyActiveEvent;
+  pendingDecisions: StrategicDecision[];
+
+  // NEW: Timeline
+  nextBoardMeetingWeek: number;  // Game week of next board meeting
+  lastFinancialUpdate: number;   // Game week of last update
 }
 
 export interface PortfolioAction {
@@ -455,6 +580,12 @@ export interface GameContextType {
   marketVolatility: MarketVolatility;
   tutorialStep: number;
   actionLog: string[];
+  // NEW: Living World State
+  activeWarnings: Warning[];
+  activeDrama: NPCDrama | null;
+  activeCompanyEvent: CompanyActiveEvent | null;
+  eventQueue: CompanyActiveEvent[];
+  pendingDecision: { event: CompanyActiveEvent | NPCDrama; awaitingAdvisorResponse: boolean } | null;
   setGamePhase: (phase: GamePhase) => void;
   updatePlayerStats: (changes: StatChanges) => void;
   handleActionOutcome: (outcome: { description: string; statChanges: StatChanges }, title: string) => void;
@@ -463,6 +594,12 @@ export interface GameContextType {
   setTutorialStep: (step: number) => void;
   advanceTime: () => void;
   resetGame: () => void;
+  // NEW: Living World Methods
+  dismissWarning: (id: string) => void;
+  handleWarningAction: (warning: Warning) => void;
+  setActiveDrama: (drama: NPCDrama | null) => void;
+  setActiveCompanyEvent: (event: CompanyActiveEvent | null) => void;
+  handleEventDecision: (eventId: string, optionId: string) => void;
 }
 
 // ==================== COMPETITOR FUNDS SYSTEM ====================

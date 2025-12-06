@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
-import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, DayType, TimeSlot, KnowledgeEntry, AIState, RivalMindsetState, CoalitionStateData, PersonalFinances, LifestyleLevel, SkillInvestment, DealAllocation } from '../types';
+import type { GameContextType, PlayerStats, GamePhase, Difficulty, MarketVolatility, UserProfile, NPC, NPCMemory, Scenario, StatChanges, PortfolioCompany, RivalFund, CompetitiveDeal, DayType, TimeSlot, KnowledgeEntry, AIState, RivalMindsetState, CoalitionStateData, PersonalFinances, LifestyleLevel, SkillInvestment, DealAllocation, Warning, NPCDrama, CompanyActiveEvent } from '../types';
 import { PlayerLevel, DealType } from '../types';
+
+// Import World Engine for living world system
+import { processWorldTick, generateWarnings, initializePortfolioCompanyFields } from '../utils/worldEngine';
+import { generateCompanyEvent } from '../constants/companyEvents';
+import { checkForNPCDrama } from '../constants/npcDramas';
 import { DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, INITIAL_NPCS, SCENARIOS, RIVAL_FUNDS, COMPETITIVE_DEALS, RIVAL_FUND_NPCS, COMPENSATION_BY_LEVEL, BONUS_FACTORS, COALITION_ANNOUNCEMENTS, PSYCHOLOGICAL_WARFARE_MESSAGES, VENDETTA_ESCALATION_MESSAGES, SURPRISE_ATTACK_MESSAGES, FAMILY_NPCS, LIFESTYLE_TIERS, DEFAULT_PERSONAL_FINANCES, SKILL_INVESTMENTS } from '../constants';
 
 // Import Advanced AI System
@@ -49,6 +54,17 @@ interface GameContextTypeExtended extends GameContextType {
     removeDeal: (dealId: number) => void;
     generateNewDeals: () => void;
     resetGame: () => void;
+    // Living World System
+    activeWarnings: Warning[];
+    activeDrama: NPCDrama | null;
+    activeCompanyEvent: CompanyActiveEvent | null;
+    eventQueue: CompanyActiveEvent[];
+    pendingDecision: { event: CompanyActiveEvent | NPCDrama; awaitingAdvisorResponse: boolean } | null;
+    dismissWarning: (id: string) => void;
+    handleWarningAction: (warning: Warning) => void;
+    setActiveDrama: (drama: NPCDrama | null) => void;
+    setActiveCompanyEvent: (event: CompanyActiveEvent | null) => void;
+    handleEventDecision: (eventId: string, optionId: string) => void;
 }
 
 const GameContext = createContext<GameContextTypeExtended | undefined>(undefined);
@@ -74,6 +90,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [marketVolatility, setMarketVolatility] = useState<MarketVolatility>('NORMAL');
   const [tutorialStep, setTutorialStep] = useState<number>(0);
   const [actionLog, setActionLog] = useState<string[]>([]);
+
+  // Living World System State
+  const [activeWarnings, setActiveWarnings] = useState<Warning[]>([]);
+  const [activeDrama, setActiveDrama] = useState<NPCDrama | null>(null);
+  const [activeCompanyEvent, setActiveCompanyEvent] = useState<CompanyActiveEvent | null>(null);
+  const [eventQueue, setEventQueue] = useState<CompanyActiveEvent[]>([]);
+  const [pendingDecision, setPendingDecision] = useState<{ event: CompanyActiveEvent | NPCDrama; awaitingAdvisorResponse: boolean } | null>(null);
 
   const addLogEntry = useCallback((message: string) => {
       const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -833,6 +856,99 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return Math.round(baseBonus * performanceScore);
   }, []);
 
+  // --- LIVING WORLD SYSTEM HANDLERS ---
+  const dismissWarning = useCallback((id: string) => {
+    setActiveWarnings(prev => prev.filter(w => w.id !== id));
+  }, []);
+
+  const handleWarningAction = useCallback((warning: Warning) => {
+    // Navigate to appropriate section based on warning type
+    // This is handled in the UI component through callbacks
+    addLogEntry(`Acting on warning: ${warning.title}`);
+    dismissWarning(warning.id);
+  }, [addLogEntry, dismissWarning]);
+
+  const handleEventDecision = useCallback((eventId: string, optionId: string) => {
+    if (!playerStats) return;
+
+    // Find the event (could be company event or drama)
+    let event: CompanyActiveEvent | null = activeCompanyEvent;
+    let companyId: number | null = null;
+
+    // Check if it's a company event
+    if (activeCompanyEvent?.id === eventId) {
+      // Find which company has this event
+      const company = playerStats.portfolio.find(c => c.activeEvent?.id === eventId);
+      if (company) {
+        companyId = company.id;
+      }
+    }
+
+    if (!event) {
+      addLogEntry('Event not found or already resolved.');
+      return;
+    }
+
+    // Find the selected option
+    const selectedOption = event.options.find(o => o.id === optionId);
+    if (!selectedOption) {
+      addLogEntry('Invalid option selected.');
+      return;
+    }
+
+    // Apply stat changes
+    updatePlayerStats(selectedOption.statChanges);
+
+    // Apply company changes if applicable
+    if (companyId !== null && Object.keys(selectedOption.companyChanges).length > 0) {
+      updatePlayerStats({
+        modifyCompany: { id: companyId, updates: { ...selectedOption.companyChanges, activeEvent: undefined } },
+      });
+    }
+
+    // Log the outcome
+    addLogEntry(`Decision: ${selectedOption.label} - ${selectedOption.outcomeText}`);
+
+    // Check for risky outcome
+    if (selectedOption.risk && Math.random() * 100 < selectedOption.risk) {
+      addLogEntry('WARNING: The risky outcome has occurred. Things may get worse.');
+    }
+
+    // Clear the active event
+    setActiveCompanyEvent(null);
+    setPendingDecision(null);
+
+    // Process next event in queue if any
+    if (eventQueue.length > 0) {
+      const [nextEvent, ...remaining] = eventQueue;
+      setActiveCompanyEvent(nextEvent);
+      setEventQueue(remaining);
+    }
+  }, [playerStats, activeCompanyEvent, eventQueue, updatePlayerStats, addLogEntry]);
+
+  const handleDramaDecision = useCallback((dramaId: string, choiceIndex: number) => {
+    if (!activeDrama || activeDrama.id !== dramaId) {
+      addLogEntry('Drama not found or already resolved.');
+      return;
+    }
+
+    const choice = activeDrama.choices[choiceIndex];
+    if (!choice) {
+      addLogEntry('Invalid choice selected.');
+      return;
+    }
+
+    // Apply stat changes from the choice
+    updatePlayerStats(choice.outcome.statChanges);
+
+    // Log the outcome
+    addLogEntry(`${activeDrama.title}: ${choice.text} - ${choice.outcome.description}`);
+
+    // Clear the active drama
+    setActiveDrama(null);
+    setPendingDecision(null);
+  }, [activeDrama, updatePlayerStats, addLogEntry]);
+
   // --- TIME ADVANCEMENT & SCENARIO TRIGGER ---
   const advanceTime = useCallback(() => {
       if (!playerStats) return;
@@ -1018,6 +1134,63 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           currentTimeSlot: nextSlot,
           timeCursor: nextTimeCursor,
       }) : null);
+
+      // --- LIVING WORLD SYSTEM PROCESSING ---
+      // Process world tick to update portfolio companies, generate events, etc.
+      const worldResult = processWorldTick(
+        playerStats,
+        rivalFunds,
+        npcs,
+        nextTimeCursor,
+        marketVolatility
+      );
+
+      // Apply portfolio updates from world engine
+      if (worldResult.portfolioUpdates.size > 0) {
+        worldResult.portfolioUpdates.forEach((updates, companyId) => {
+          updatePlayerStats({
+            modifyCompany: { id: companyId, updates },
+          });
+        });
+      }
+
+      // Update warnings
+      setActiveWarnings(worldResult.warnings);
+
+      // Process new company events
+      if (worldResult.newEvents.length > 0) {
+        // Generate full events with options from the event library
+        const fullEvents = worldResult.newEvents.map(event => {
+          const company = playerStats.portfolio.find(c => c.activeEvent?.id === event.id);
+          if (company) {
+            return generateCompanyEvent(company, event.type);
+          }
+          return event;
+        });
+
+        // Set first event as active, queue the rest
+        if (fullEvents.length > 0) {
+          setActiveCompanyEvent(fullEvents[0]);
+          setEventQueue(fullEvents.slice(1));
+          addLogEntry(`COMPANY EVENT: ${fullEvents[0].title} at one of your portfolio companies`);
+        }
+      }
+
+      // Process NPC dramas
+      if (worldResult.npcDramas.length > 0) {
+        setActiveDrama(worldResult.npcDramas[0]);
+        addLogEntry(`DRAMA: ${worldResult.npcDramas[0].title}`);
+      }
+
+      // Log rival actions
+      worldResult.rivalActions.forEach(action => {
+        addLogEntry(`RIVAL: ${action.impact}`);
+      });
+
+      // Log market changes
+      worldResult.marketChanges.forEach(change => {
+        addLogEntry(`MARKET: ${change.description}`);
+      });
 
       const totalPortfolioValue = playerStats.portfolio.reduce((acc, co) => acc + (co.currentValuation || 0), 0);
       const availableScenarios = SCENARIOS.filter(s => {
@@ -1583,6 +1756,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setActionLog([]);
       setRivalFunds(RIVAL_FUNDS.map(hydrateRivalFund));
       setActiveDeals([]);
+      // Reset Living World state
+      setActiveWarnings([]);
+      setActiveDrama(null);
+      setActiveCompanyEvent(null);
+      setEventQueue([]);
+      setPendingDecision(null);
       logEvent('game_reset');
   }, []);
 
@@ -1610,7 +1789,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addDeal,
       removeDeal,
       generateNewDeals,
-      resetGame
+      resetGame,
+      // Living World System
+      activeWarnings,
+      activeDrama,
+      activeCompanyEvent,
+      eventQueue,
+      pendingDecision,
+      dismissWarning,
+      handleWarningAction,
+      setActiveDrama,
+      setActiveCompanyEvent,
+      handleEventDecision,
     }}>
       {children}
     </GameContext.Provider>
