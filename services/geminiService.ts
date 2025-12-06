@@ -2,6 +2,82 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { ChatMessage, PlayerStats, Scenario, NPC, NPCMemory, KnowledgeEntry } from '../types';
 
+// Connection configuration
+const CONNECTION_CONFIG = {
+  timeout: 30000, // 30 seconds
+  maxRetries: 3,
+  retryDelays: [1000, 2000, 4000], // exponential backoff in ms
+};
+
+// Retry wrapper with exponential backoff
+const withRetry = async <T>(
+  operation: () => Promise<T>,
+  operationName: string
+): Promise<T> => {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= CONNECTION_CONFIG.maxRetries; attempt++) {
+    try {
+      // Create timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`${operationName} timed out after ${CONNECTION_CONFIG.timeout}ms`));
+        }, CONNECTION_CONFIG.timeout);
+      });
+
+      // Race between operation and timeout
+      return await Promise.race([operation(), timeoutPromise]);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Don't retry on certain errors
+      const errorMessage = lastError.message.toLowerCase();
+      if (
+        errorMessage.includes('invalid api key') ||
+        errorMessage.includes('api key not valid') ||
+        errorMessage.includes('permission denied') ||
+        errorMessage.includes('quota exceeded')
+      ) {
+        throw lastError;
+      }
+
+      // Log and retry for transient errors
+      if (attempt < CONNECTION_CONFIG.maxRetries) {
+        const delay = CONNECTION_CONFIG.retryDelays[attempt] || 4000;
+        console.warn(
+          `${operationName} failed (attempt ${attempt + 1}/${CONNECTION_CONFIG.maxRetries + 1}): ${lastError.message}. Retrying in ${delay}ms...`
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error(`${operationName} failed after ${CONNECTION_CONFIG.maxRetries + 1} attempts`);
+};
+
+// Classify errors for better user feedback
+const classifyError = (error: Error): { type: string; message: string } => {
+  const msg = error.message.toLowerCase();
+
+  if (msg.includes('api key not valid') || msg.includes('invalid api key')) {
+    return { type: 'auth', message: 'Invalid API key. Please check your VITE_API_KEY configuration.' };
+  }
+  if (msg.includes('quota exceeded') || msg.includes('rate limit')) {
+    return { type: 'quota', message: 'API quota exceeded. Please wait a moment and try again.' };
+  }
+  if (msg.includes('timed out')) {
+    return { type: 'timeout', message: 'Connection timed out. Please check your network and try again.' };
+  }
+  if (msg.includes('network') || msg.includes('fetch') || msg.includes('connection')) {
+    return { type: 'network', message: 'Network error. Please check your internet connection.' };
+  }
+  if (msg.includes('model') || msg.includes('not found')) {
+    return { type: 'model', message: 'AI model unavailable. Please try again later.' };
+  }
+
+  return { type: 'unknown', message: 'An unexpected error occurred. Please try again.' };
+};
+
 const summarizeMemories = (memories: NPCMemory[]): string => {
   if (!memories || memories.length === 0) return 'None yet. Make the player earn your trust.';
 
@@ -124,6 +200,16 @@ const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: stri
 // @ts-ignore
 const API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_API_KEY : undefined;
 
+// Lazy-initialized API client singleton
+let _aiClient: GoogleGenAI | null = null;
+const getAiClient = (): GoogleGenAI | null => {
+  if (!API_KEY) return null;
+  if (!_aiClient) {
+    _aiClient = new GoogleGenAI({ apiKey: API_KEY });
+  }
+  return _aiClient;
+};
+
 // Export function to check API status for UI components
 export const isGeminiApiConfigured = (): boolean => {
   return !!API_KEY;
@@ -195,43 +281,42 @@ export const getAdvisorResponse = async (
   playerStats?: PlayerStats | null,
   currentScenario?: Scenario | null
 ): Promise<string> => {
-  if (!API_KEY) {
+  const ai = getAiClient();
+  if (!ai) {
     return "SYSTEM ERROR: API Key missing. Please configure VITE_API_KEY in your environment variables.";
   }
-  
+
   try {
     let currentSystemInstruction = advisorSystemInstruction;
-    
-        if (playerStats) {
-            currentSystemInstruction += `\n\nCURRENT PLAYER STATUS (Use this to tailor your insults/advice):\nLevel: ${playerStats.level}\nCash: $${playerStats.cash.toLocaleString()}\nReputation: ${playerStats.reputation}\nFaction Reputation -> MDs: ${playerStats.factionReputation.MANAGING_DIRECTORS}, LPs: ${playerStats.factionReputation.LIMITED_PARTNERS}, Regulators: ${playerStats.factionReputation.REGULATORS}, Analysts: ${playerStats.factionReputation.ANALYSTS}, Rivals: ${playerStats.factionReputation.RIVALS}\nStress: ${playerStats.stress}%\nAnalyst Rating: ${playerStats.analystRating}\nPortfolio Count: ${playerStats.portfolio.length}`;
-        
-        if (playerStats.portfolio.length > 0) {
-            currentSystemInstruction += `\nPORTFOLIO DETAILS: ${playerStats.portfolio.map(c => `${c.name} (Valuation: $${(c.currentValuation/1000000).toFixed(1)}M, Debt: $${(c.debt/1000000).toFixed(1)}M, Deal: ${c.dealType})`).join('; ')}`;
-        }
 
-        const knowledgeDigest = summarizeKnowledge(playerStats?.knowledgeLog || []);
-        const knowledgeFlags = playerStats?.knowledgeFlags || [];
-        currentSystemInstruction += `\n\nRECENT INTEL THE PLAYER BELIEVES:\n${knowledgeDigest}\nKnowledge flags: ${knowledgeFlags.join(', ') || 'None'}`;
+    if (playerStats) {
+      currentSystemInstruction += `\n\nCURRENT PLAYER STATUS (Use this to tailor your insults/advice):\nLevel: ${playerStats.level}\nCash: $${playerStats.cash.toLocaleString()}\nReputation: ${playerStats.reputation}\nFaction Reputation -> MDs: ${playerStats.factionReputation.MANAGING_DIRECTORS}, LPs: ${playerStats.factionReputation.LIMITED_PARTNERS}, Regulators: ${playerStats.factionReputation.REGULATORS}, Analysts: ${playerStats.factionReputation.ANALYSTS}, Rivals: ${playerStats.factionReputation.RIVALS}\nStress: ${playerStats.stress}%\nAnalyst Rating: ${playerStats.analystRating}\nPortfolio Count: ${playerStats.portfolio.length}`;
+
+      if (playerStats.portfolio.length > 0) {
+        currentSystemInstruction += `\nPORTFOLIO DETAILS: ${playerStats.portfolio.map(c => `${c.name} (Valuation: $${(c.currentValuation/1000000).toFixed(1)}M, Debt: $${(c.debt/1000000).toFixed(1)}M, Deal: ${c.dealType})`).join('; ')}`;
+      }
+
+      const knowledgeDigest = summarizeKnowledge(playerStats?.knowledgeLog || []);
+      const knowledgeFlags = playerStats?.knowledgeFlags || [];
+      currentSystemInstruction += `\n\nRECENT INTEL THE PLAYER BELIEVES:\n${knowledgeDigest}\nKnowledge flags: ${knowledgeFlags.join(', ') || 'None'}`;
     }
 
     if (currentScenario) {
-        currentSystemInstruction += `\n\nCURRENT SCENARIO CONTEXT (The player is facing this right now):\nTitle: "${currentScenario.title}"\nDescription: "${currentScenario.description}"`;
-        
-        if (currentScenario.choices) {
-            currentSystemInstruction += `\nAVAILABLE CHOICES:\n${currentScenario.choices.map((c, i) => `${i + 1}. ${c.text} (Hint: ${c.sarcasticGuidance})`).join('\n')}`;
-        }
-        if (currentScenario.structureOptions) {
-             currentSystemInstruction += `\nAVAILABLE DEAL STRUCTURES:\n${currentScenario.structureOptions.map((c, i) => `${i + 1}. ${c.type}: ${c.description}`).join('\n')}`;
-        }
+      currentSystemInstruction += `\n\nCURRENT SCENARIO CONTEXT (The player is facing this right now):\nTitle: "${currentScenario.title}"\nDescription: "${currentScenario.description}"`;
+
+      if (currentScenario.choices) {
+        currentSystemInstruction += `\nAVAILABLE CHOICES:\n${currentScenario.choices.map((c, i) => `${i + 1}. ${c.text} (Hint: ${c.sarcasticGuidance})`).join('\n')}`;
+      }
+      if (currentScenario.structureOptions) {
+        currentSystemInstruction += `\nAVAILABLE DEAL STRUCTURES:\n${currentScenario.structureOptions.map((c, i) => `${i + 1}. ${c.type}: ${c.description}`).join('\n')}`;
+      }
     }
 
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
-    
     // Map the app's chat history to Gemini's history format
     // CRITICAL: Map 'system' messages to 'user' role so the model treats them as context it must respond to.
     const geminiHistory = history.map(msg => ({
-        role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
-        parts: [{ text: msg.text }],
+      role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
+      parts: [{ text: msg.text }],
     }));
 
     const chat = ai.chats.create({
@@ -242,11 +327,28 @@ export const getAdvisorResponse = async (
       history: geminiHistory
     });
 
-    const response = await chat.sendMessage({ message: newPrompt });
+    // Use retry wrapper for resilient connection
+    const response = await withRetry(
+      () => chat.sendMessage({ message: newPrompt }),
+      'Advisor API call'
+    );
 
     return response.text || "I have nothing to say.";
   } catch (error) {
-    console.error("Error calling Gemini API:", error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    const classified = classifyError(err);
+    console.error(`Gemini API error (${classified.type}):`, err.message);
+
+    // Return user-friendly message based on error type
+    if (classified.type === 'auth') {
+      return "SYSTEM ERROR: API authentication failed. Check your API key configuration.";
+    }
+    if (classified.type === 'quota') {
+      return "Easy there, kid. Even Wall Street has limits. Wait a moment and try again.";
+    }
+    if (classified.type === 'timeout' || classified.type === 'network') {
+      return "The market's having connectivity issues. Check your network and try again, champ.";
+    }
     return "Looks like the market for good advice just crashed. Try again later, champ.";
   }
 };
@@ -350,8 +452,11 @@ export const getNPCResponse = async (
         ${knowledgeDigest}
         `;
 
-        const ai = new GoogleGenAI({ apiKey: API_KEY });
-        
+        const ai = getAiClient();
+        if (!ai) {
+            return { text: offlineNpcReply(npc, playerStats, playerMessage) };
+        }
+
         const geminiHistory = history.map(msg => ({
             role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
             parts: [{ text: msg.text }],
@@ -366,17 +471,25 @@ export const getNPCResponse = async (
             history: geminiHistory
         });
 
-        const response = await chat.sendMessage({ message: playerMessage });
-        
+        // Use retry wrapper for resilient connection
+        const response = await withRetry(
+            () => chat.sendMessage({ message: playerMessage }),
+            'NPC API call'
+        );
+
         // Extract tool calls if any
         const functionCalls = response.functionCalls;
 
-        return { 
+        return {
             text: response.text || "(Actions speak louder than words...)",
             functionCalls: functionCalls
         };
     } catch (error) {
-        console.error("Error calling Gemini API for NPC:", error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        const classified = classifyError(err);
+        console.error(`Gemini NPC API error (${classified.type}):`, err.message);
+
+        // Fall back to offline responses
         return { text: offlineNpcReply(npc, playerStats, playerMessage) };
     }
 };
@@ -385,17 +498,29 @@ export const getPortfolioAdvice = async (
     playerStats: PlayerStats,
     npcId: string
 ): Promise<string> => {
-     if (!API_KEY) return "I can't talk right now.";
-     
-     const npcName = npcId === 'chad' ? 'Chad' : npcId === 'hunter' ? 'Hunter' : 'Sarah';
-     const prompt = `Review my portfolio companies: ${playerStats.portfolio.map(c => c.name).join(', ')}. Give me one specific, actionable piece of advice or gossip about one of them. Keep it in character as ${npcName}.`;
-     
-     const ai = new GoogleGenAI({ apiKey: API_KEY });
-     const chat = ai.chats.create({
-         model: 'gemini-2.5-flash',
-         config: { systemInstruction: "You are a Private Equity simulator engine." }
-     });
-     
-     const response = await chat.sendMessage({ message: prompt });
-     return response.text || "Nothing to report.";
+    const ai = getAiClient();
+    if (!ai) return "I can't talk right now.";
+
+    try {
+        const npcName = npcId === 'chad' ? 'Chad' : npcId === 'hunter' ? 'Hunter' : 'Sarah';
+        const prompt = `Review my portfolio companies: ${playerStats.portfolio.map(c => c.name).join(', ')}. Give me one specific, actionable piece of advice or gossip about one of them. Keep it in character as ${npcName}.`;
+
+        const chat = ai.chats.create({
+            model: 'gemini-2.5-flash',
+            config: { systemInstruction: "You are a Private Equity simulator engine." }
+        });
+
+        // Use retry wrapper for resilient connection
+        const response = await withRetry(
+            () => chat.sendMessage({ message: prompt }),
+            'Portfolio advice API call'
+        );
+
+        return response.text || "Nothing to report.";
+    } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        const classified = classifyError(err);
+        console.error(`Gemini Portfolio API error (${classified.type}):`, err.message);
+        return "I can't talk right now.";
+    }
 }
