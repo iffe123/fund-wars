@@ -1,2 +1,7 @@
 node_modules/
 dist/
+
+# Environment variables (API keys - NEVER commit these!)
+.env
+.env.local
+.env.*.local
