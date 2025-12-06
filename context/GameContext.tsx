@@ -124,6 +124,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return;
       }
 
+      // Skip cloud load for guest users (they have fake UIDs that Firebase rejects)
+      if (currentUser.uid.startsWith('guest_')) {
+          console.log("[CLOUD_LOAD] Guest mode - starting fresh game.");
+          setGamePhase('INTRO');
+          return;
+      }
+
       // Helper: wrap getDoc with timeout to prevent infinite loading
       const getDocWithTimeout = async (docRef: ReturnType<typeof doc>, timeoutMs: number) => {
           const timeoutPromise = new Promise<never>((_, reject) => {
@@ -232,6 +239,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const saveGame = useCallback(async () => {
       if (!currentUser || !playerStats) return;
       if (!db) return;
+
+      // Skip cloud save for guest users (they have fake UIDs that Firebase rejects)
+      if (currentUser.uid.startsWith('guest_')) {
+          console.log("[CLOUD_SAVE] Guest mode - skipping cloud save.");
+          return;
+      }
 
       // Sanitize playerStats to remove undefined values (Firestore doesn't accept undefined)
       const sanitizedPlayerStats = removeUndefined(playerStats as unknown as Record<string, unknown>);
