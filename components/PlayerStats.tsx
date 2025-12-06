@@ -1,22 +1,39 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import type { PlayerStats, MarketVolatility } from '../types';
-import { MARKET_VOLATILITY_STYLES } from '../constants';
+import { PlayerLevel } from '../types';
+import { MARKET_VOLATILITY_STYLES, LEVEL_RANKS } from '../constants';
 
 interface PlayerStatsProps {
   stats: PlayerStats;
   marketVolatility: MarketVolatility;
+  onStatsClick?: () => void;
 }
 
-const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatility }) => {
-  const mktStyle = MARKET_VOLATILITY_STYLES[marketVolatility];
+const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVolatility, onStatsClick }) => {
+  // Memoize computed values
+  const mktStyle = useMemo(() => MARKET_VOLATILITY_STYLES[marketVolatility], [marketVolatility]);
   const factions = stats.factionReputation;
   const isPanic = marketVolatility === 'PANIC';
 
-  const formatMoney = (val: number) => {
+  const formatMoney = useMemo(() => (val: number) => {
     if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
     if (val >= 1000) return `$${(val / 1000).toFixed(0)}k`;
     return `$${val}`;
-  };
+  }, []);
+
+  // Calculate net worth (cash + portfolio value - debt)
+  const portfolioValue = stats.portfolio.reduce((sum, c) => sum + (c.currentValuation * (c.ownershipPercentage / 100)), 0);
+  const netWorth = stats.cash + portfolioValue + stats.totalRealizedGains - stats.loanBalance;
+
+  // Win condition progress
+  const isPartner = LEVEL_RANKS[stats.level] >= LEVEL_RANKS[PlayerLevel.PARTNER];
+  const hasMillionDollars = netWorth >= 1000000;
+  const canUnlockFounder = stats.reputation >= 50;
+
+  // Progress percentages
+  const levelProgress = Math.min(100, (LEVEL_RANKS[stats.level] / LEVEL_RANKS[PlayerLevel.PARTNER]) * 100);
+  const wealthProgress = Math.min(100, (netWorth / 1000000) * 100);
+  const founderProgress = Math.min(100, (stats.reputation / 50) * 100);
 
   // Stress level indicator
   const getStressColor = (stress: number) => {
@@ -32,11 +49,17 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
   };
 
   return (
-    <div className={`
-      h-14 bg-gradient-to-b from-slate-900 to-slate-900/95
-      border-b border-slate-700/80 flex items-center px-4 justify-between shrink-0
-      ${isPanic ? 'animate-pulse bg-red-950/20 border-red-900/50' : ''}
-    `}>
+    <div
+      onClick={onStatsClick}
+      className={`
+        h-14 bg-gradient-to-b from-slate-900 to-slate-900/95
+        border-b border-slate-700/80 flex items-center px-4 justify-between shrink-0
+        ${isPanic ? 'animate-pulse bg-red-950/20 border-red-900/50' : ''}
+        ${onStatsClick ? 'cursor-pointer hover:bg-slate-800/50 transition-colors active:bg-slate-800' : ''}
+      `}
+      role={onStatsClick ? 'button' : undefined}
+      tabIndex={onStatsClick ? 0 : undefined}
+    >
       {/* MOBILE VIEW (< 768px) */}
       <div className="flex md:hidden items-center w-full justify-between gap-3">
         {/* Cash */}
@@ -80,6 +103,13 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
         <div className="px-2 py-1 rounded bg-amber-950/30 border border-amber-800/30">
           <span className="text-amber-400 text-[10px] font-bold uppercase tracking-wider">L{stats.level}</span>
         </div>
+
+        {/* Stats Info Hint (Mobile) */}
+        {onStatsClick && (
+          <div className="w-6 h-6 rounded-full bg-slate-800/80 border border-slate-600/50 flex items-center justify-center">
+            <i className="fas fa-info text-slate-400 text-[10px]"></i>
+          </div>
+        )}
       </div>
 
       {/* DESKTOP VIEW (>= 768px) */}
@@ -137,6 +167,21 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
             <div className="flex flex-col">
               <span className="text-[9px] text-blue-600 uppercase tracking-wider">Rep</span>
               <span className="font-bold text-blue-400 tabular-nums">{stats.reputation}</span>
+            </div>
+          </div>
+
+          {/* Net Worth */}
+          <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg border ${
+            hasMillionDollars
+              ? 'bg-amber-950/30 border-amber-800/40'
+              : 'bg-slate-800/30 border-slate-700/40'
+          }`}>
+            <i className={`fas fa-sack-dollar ${hasMillionDollars ? 'text-amber-400' : 'text-slate-500'}`}></i>
+            <div className="flex flex-col">
+              <span className={`text-[9px] uppercase tracking-wider ${hasMillionDollars ? 'text-amber-600' : 'text-slate-600'}`}>Net Worth</span>
+              <span className={`font-bold tabular-nums ${hasMillionDollars ? 'text-amber-400' : 'text-slate-400'}`}>
+                {formatMoney(netWorth)}
+              </span>
             </div>
           </div>
         </div>
@@ -223,6 +268,8 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = ({ stats, marketVolatilit
       </div>
     </div>
   );
-};
+});
+
+PlayerStatsDisplay.displayName = 'PlayerStatsDisplay';
 
 export default PlayerStatsDisplay;

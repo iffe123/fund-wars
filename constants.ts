@@ -1,5 +1,5 @@
 
-import type { PlayerStats, Scenario, NewsEvent, DifficultySettings, Difficulty, LifeAction, StructureChoice, DueDiligencePhase, PortfolioAction, PortfolioCompany, FinancingPhase, NPC, QuizQuestion, MarketVolatility, RivalFund, CompetitiveDeal, RivalStrategy, FactionReputation, TimeSlot } from './types';
+import type { PlayerStats, Scenario, NewsEvent, DifficultySettings, Difficulty, LifeAction, StructureChoice, DueDiligencePhase, PortfolioAction, PortfolioCompany, FinancingPhase, NPC, QuizQuestion, MarketVolatility, RivalFund, CompetitiveDeal, RivalStrategy, FactionReputation, TimeSlot, LifestyleLevel, FamilyMember, PersonalFinances, FundFinances } from './types';
 import { PlayerLevel, DealType } from './types';
 
 export const DEFAULT_FACTION_REPUTATION: FactionReputation = {
@@ -11,9 +11,11 @@ export const DEFAULT_FACTION_REPUTATION: FactionReputation = {
 };
 
 // The "Rookie" Profile (Default State)
+// Starting cash is intentionally low - you're a new associate living paycheck to paycheck
+// This creates tension where every expense matters and players must prioritize
 const NORMAL_STATS: PlayerStats = {
   level: PlayerLevel.ASSOCIATE,
-  cash: 5000,
+  cash: 1500,              // Legacy field - kept in sync with personalFinances.bankBalance
   reputation: 10,
   factionReputation: { ...DEFAULT_FACTION_REPUTATION },
   stress: 0,
@@ -36,18 +38,34 @@ const NORMAL_STATS: PlayerStats = {
   health: 100,
   dependency: 0,
   tutorialStep: 0,
-  loanBalance: 0,
-  loanRate: 0,
+  loanBalance: 0,               // Legacy field - kept in sync with personalFinances.outstandingLoans
+  loanRate: 0,                  // Legacy field - kept in sync with personalFinances.loanInterestRate
   knowledgeLog: [],
   knowledgeFlags: [],
-  // New: Achievement System
+  // Achievement System
   unlockedAchievements: [],
-  // New: Industry Specialization
+  // Industry Specialization
   sectorExpertise: [],
   primarySector: undefined,
-  // New: Exit Tracking
+  // Exit Tracking
   completedExits: [],
   totalRealizedGains: 0,
+  // NEW: Personal & Fund Finances
+  personalFinances: {
+    bankBalance: 1500,           // Same as legacy cash
+    totalEarnings: 0,
+    salaryYTD: 0,
+    bonusYTD: 0,
+    carryReceived: 0,
+    outstandingLoans: 0,
+    loanInterestRate: 0,
+    monthlyBurn: 2000,           // BROKE_ASSOCIATE tier
+    lifestyleLevel: 'BROKE_ASSOCIATE',
+  },
+  fundFinances: null,            // Not a founder yet
+  dealAllocations: [],
+  carryEligibleDeals: [],
+  activeSkillInvestments: [],
 };
 
 export const INITIAL_NPCS: NPC[] = [
@@ -197,17 +215,134 @@ export const INITIAL_NPCS: NPC[] = [
   }
 ];
 
+// ==================== FAMILY NPCs ====================
+// Personal relationships that create financial and emotional obligations
+
+export const FAMILY_NPCS: FamilyMember[] = [
+  {
+    id: 'mom',
+    name: 'Mom',
+    role: 'Retired Teacher',
+    avatar: 'fa-heart',
+    relationship: 80,
+    mood: 70,
+    trust: 90,
+    traits: ['Worried', 'Supportive', 'Guilting'],
+    memories: [],
+    isRival: false,
+    relationshipType: 'FAMILY',
+    familyRole: 'PARENT',
+    financialNeed: 30,
+    emotionalNeed: 70,
+    lastContactWeek: 0,
+    dialogueHistory: [
+      { sender: 'npc', senderName: 'Mom', text: "Honey, I know you're busy with your important job, but we haven't heard from you in weeks. Dad's back is acting up again. Call when you can? Love you." }
+    ],
+    schedule: {
+      weekday: ['MORNING', 'EVENING'],
+      weekend: ['MORNING', 'AFTERNOON', 'EVENING'],
+    },
+    goals: ['Make sure you eat', 'Guilt trip about not visiting', 'Ask about relationships'],
+  },
+  {
+    id: 'dad',
+    name: 'Dad',
+    role: 'Retired Accountant',
+    avatar: 'fa-user-tie',
+    relationship: 60,
+    mood: 50,
+    trust: 75,
+    traits: ['Skeptical', 'Old School', 'Secretly Proud'],
+    memories: [],
+    isRival: false,
+    relationshipType: 'FAMILY',
+    familyRole: 'PARENT',
+    financialNeed: 40,
+    emotionalNeed: 30,
+    lastContactWeek: 0,
+    dialogueHistory: [
+      { sender: 'npc', senderName: 'Dad', text: "Private equity, huh? In my day we called that 'corporate raiding.' Your mother says you're doing well. I'll believe it when I see a real paycheck, not these 'carried interest' IOUs." }
+    ],
+    schedule: {
+      weekday: ['MORNING'],
+      weekend: ['MORNING', 'AFTERNOON'],
+    },
+    goals: ['Understand what you actually do', 'Give unsolicited financial advice', 'See you succeed on his terms'],
+  },
+  {
+    id: 'brother_mike',
+    name: 'Mike',
+    role: 'Younger Brother',
+    avatar: 'fa-user',
+    relationship: 65,
+    mood: 50,
+    trust: 70,
+    traits: ['Struggling', 'Resentful', 'Proud'],
+    memories: [],
+    isRival: false,
+    relationshipType: 'FAMILY',
+    familyRole: 'SIBLING',
+    financialNeed: 80,
+    emotionalNeed: 40,
+    lastContactWeek: 0,
+    dialogueHistory: [
+      { sender: 'npc', senderName: 'Mike', text: "Hey big shot. So you're making the big bucks now huh? Must be nice. Anyway, I'm in a bit of a jam. Nothing major. Just need like $5k to cover rent this month. Pay you back when my startup takes off." }
+    ],
+    schedule: {
+      weekday: ['EVENING'],
+      weekend: ['AFTERNOON', 'EVENING'],
+    },
+    goals: ['Borrow money', 'Avoid feeling inferior', 'Get your advice on his "startup"'],
+  },
+  {
+    id: 'girlfriend_emma',
+    name: 'Emma',
+    role: 'Girlfriend (6 months)',
+    avatar: 'fa-face-smile',
+    relationship: 70,
+    mood: 55,
+    trust: 60,
+    traits: ['Neglected', 'Understanding', 'Has Limits'],
+    memories: [],
+    isRival: false,
+    relationshipType: 'FAMILY',
+    familyRole: 'PARTNER',
+    financialNeed: 10,  // She has her own career
+    emotionalNeed: 90,  // Needs quality time
+    lastContactWeek: 0,
+    dialogueHistory: [
+      { sender: 'npc', senderName: 'Emma', text: "So are we still on for dinner Saturday? You cancelled the last three times. I get that work is crazy but I'm starting to wonder if I'm even a priority anymore." }
+    ],
+    schedule: {
+      weekday: ['EVENING'],
+      weekend: ['MORNING', 'AFTERNOON', 'EVENING'],
+    },
+    goals: ['Quality time', 'Feel valued', 'Evaluate if this relationship has a future'],
+  },
+];
+
 export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
   Easy: {
     name: 'Trust Fund Baby',
     description: "Your father is the Chairman of the Board. You start with a massive safety net, a Rolodex of contacts, and an innate sense of entitlement. It's hard to fail when you were born on third base.",
     initialStats: {
       ...NORMAL_STATS,
-      cash: 100000,
+      cash: 50000,           // Daddy's allowance
       reputation: 20,
-      stress: 10,
+      stress: 0,
       financialEngineering: 20,
       portfolio: [],
+      personalFinances: {
+        bankBalance: 50000,
+        totalEarnings: 0,
+        salaryYTD: 0,
+        bonusYTD: 0,
+        carryReceived: 0,
+        outstandingLoans: 0,
+        loanInterestRate: 0,
+        monthlyBurn: 10000,          // ASPIRATIONAL lifestyle from day 1
+        lifestyleLevel: 'ASPIRATIONAL',
+      },
     },
     modifiers: {
       positive: 1.2,
@@ -216,10 +351,13 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
   },
   Normal: {
     name: 'MBA Grad',
-    description: "You did everything right: top school, top grades, top internship. Now you're just another shark in a tank full of them. You have potential, but no protection. The pressure is on.",
+    description: "You did everything right: top school, top grades, top internship. Now you're just another shark in a tank full of them. You have potential, but no protection. Every dollar counts.",
     initialStats: {
         ...NORMAL_STATS,
+        // Starting with $1,500 - can barely afford golf with partners
+        // First salary payment comes with first advanceTime
         portfolio: [],
+        // personalFinances inherited from NORMAL_STATS
     },
     modifiers: {
       positive: 1.0,
@@ -231,11 +369,22 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
     description: "You clawed your way here with pure grit and a chip on your shoulder the size of a tombstone. Everyone is waiting for you to fail so they can say 'I told you so'. One mistake and you're out.",
     initialStats: {
       ...NORMAL_STATS,
-      cash: 25000,
+      cash: 500,             // You're broke and desperate
       stress: 35,
       analystRating: 40,
       financialEngineering: 5,
       portfolio: [],
+      personalFinances: {
+        bankBalance: 500,
+        totalEarnings: 0,
+        salaryYTD: 0,
+        bonusYTD: 0,
+        carryReceived: 0,
+        outstandingLoans: 15000,     // Student loans hanging over you
+        loanInterestRate: 0.08,      // 8% APR - better than credit cards at least
+        monthlyBurn: 2000,           // BROKE_ASSOCIATE - no choice
+        lifestyleLevel: 'BROKE_ASSOCIATE',
+      },
     },
     modifiers: {
       positive: 0.8,
@@ -252,6 +401,258 @@ export const LEVEL_RANKS: Record<PlayerLevel, number> = {
   [PlayerLevel.PARTNER]: 4,
   [PlayerLevel.FOUNDER]: 5,
 };
+
+// ==================== COMPENSATION SYSTEM ====================
+// Progressive cash system: salary, bonus, and carry by level
+
+export interface CompensationTier {
+  weeklySalary: number;       // Weekly base salary (after taxes)
+  bonusMultiplier: number;    // Multiplier on base for annual bonus (0 = no bonus)
+  carryPercentage: number;    // Percentage of exit profits (0 = no carry)
+  canAccessLoan: boolean;     // Whether player can take bridge loans
+  loanLimit: number;          // Maximum loan amount available
+}
+
+export const COMPENSATION_BY_LEVEL: Record<PlayerLevel, CompensationTier> = {
+  [PlayerLevel.ASSOCIATE]: {
+    weeklySalary: 2000,       // ~$100k/year after taxes - tight budget
+    bonusMultiplier: 0.5,     // 50% of base as potential bonus
+    carryPercentage: 0,       // No carry at associate level
+    canAccessLoan: false,     // No loans - you're too junior
+    loanLimit: 0,
+  },
+  [PlayerLevel.SENIOR_ASSOCIATE]: {
+    weeklySalary: 3000,       // ~$150k/year
+    bonusMultiplier: 0.75,    // 75% of base as potential bonus
+    carryPercentage: 0,       // Still no carry
+    canAccessLoan: true,      // Can now access emergency loans
+    loanLimit: 25000,
+  },
+  [PlayerLevel.VICE_PRESIDENT]: {
+    weeklySalary: 4500,       // ~$225k/year
+    bonusMultiplier: 1.0,     // 100% of base as potential bonus
+    carryPercentage: 0.5,     // 0.5% carry on exits
+    canAccessLoan: true,
+    loanLimit: 50000,
+  },
+  [PlayerLevel.PRINCIPAL]: {
+    weeklySalary: 6000,       // ~$300k/year
+    bonusMultiplier: 1.5,     // 150% of base as potential bonus
+    carryPercentage: 2,       // 2% carry on exits
+    canAccessLoan: true,
+    loanLimit: 100000,
+  },
+  [PlayerLevel.PARTNER]: {
+    weeklySalary: 10000,      // ~$500k/year
+    bonusMultiplier: 3.0,     // 300% of base as potential bonus
+    carryPercentage: 10,      // 10% carry - this is where the money is
+    canAccessLoan: true,
+    loanLimit: 500000,
+  },
+  [PlayerLevel.FOUNDER]: {
+    weeklySalary: 0,          // No salary - you're the owner
+    bonusMultiplier: 0,       // No bonus - you take distributions
+    carryPercentage: 20,      // 20% carry on all fund exits
+    canAccessLoan: true,
+    loanLimit: 1000000,
+  },
+};
+
+// Bonus calculation factors
+export const BONUS_FACTORS = {
+  minReputationForBonus: 30,      // Need at least 30 reputation to get any bonus
+  fullBonusReputation: 80,        // Need 80+ reputation for full bonus
+  portfolioPerformanceWeight: 0.4, // 40% of bonus based on portfolio performance
+  reputationWeight: 0.3,           // 30% based on reputation
+  dealsClosedWeight: 0.3,          // 30% based on deals closed this year
+};
+
+// Activity cost thresholds - what feels "expensive" at each level
+export const AFFORDABILITY_THRESHOLDS: Record<PlayerLevel, number> = {
+  [PlayerLevel.ASSOCIATE]: 200,        // $200 feels expensive
+  [PlayerLevel.SENIOR_ASSOCIATE]: 500, // $500 feels expensive
+  [PlayerLevel.VICE_PRESIDENT]: 1000,
+  [PlayerLevel.PRINCIPAL]: 2000,
+  [PlayerLevel.PARTNER]: 5000,
+  [PlayerLevel.FOUNDER]: 10000,
+};
+
+// ==================== LIFESTYLE SYSTEM ====================
+// Progressive lifestyle tiers affecting monthly burn, stress, and reputation
+
+export const LIFESTYLE_TIERS: Record<LifestyleLevel, {
+  name: string;
+  monthlyBurn: number;
+  description: string;
+  perks: string[];
+  stressModifier: number;       // Monthly stress change
+  reputationModifier: number;   // One-time rep change when upgrading
+  minLevelRequired: PlayerLevel;
+}> = {
+  BROKE_ASSOCIATE: {
+    name: 'Broke Associate',
+    monthlyBurn: 2000,
+    description: 'Studio apartment in a sketchy neighborhood. Instant ramen is a food group.',
+    perks: ['Builds character', 'Saves money'],
+    stressModifier: +5,  // Living like this is stressful
+    reputationModifier: 0,
+    minLevelRequired: PlayerLevel.ASSOCIATE,
+  },
+  COMFORTABLE: {
+    name: 'Comfortable',
+    monthlyBurn: 5000,
+    description: 'Decent 1BR, occasional Uber, dating is possible.',
+    perks: ['Normal sleep schedule', 'Can bring dates home'],
+    stressModifier: 0,
+    reputationModifier: 0,
+    minLevelRequired: PlayerLevel.ASSOCIATE,
+  },
+  ASPIRATIONAL: {
+    name: 'Aspirational',
+    monthlyBurn: 10000,
+    description: 'Nice apartment, gym membership, respectable wardrobe.',
+    perks: ['Look the part', 'Network at nice restaurants', '-5% stress from lifestyle'],
+    stressModifier: -2,
+    reputationModifier: +5,
+    minLevelRequired: PlayerLevel.SENIOR_ASSOCIATE,
+  },
+  BALLER: {
+    name: 'Baller',
+    monthlyBurn: 25000,
+    description: 'Luxury apartment, lease a BMW, bottle service on weekends.',
+    perks: ['Impress clients', 'Access to exclusive events', '-10% stress'],
+    stressModifier: -5,
+    reputationModifier: +10,
+    minLevelRequired: PlayerLevel.VICE_PRESIDENT,
+  },
+  MASTER_OF_UNIVERSE: {
+    name: 'Master of the Universe',
+    monthlyBurn: 50000,
+    description: 'Penthouse, driver, art collection, ski trips to Aspen.',
+    perks: ['Maximum prestige', 'LP-tier lifestyle', 'Automatic +5 reputation/month'],
+    stressModifier: -10,
+    reputationModifier: +25,
+    minLevelRequired: PlayerLevel.PARTNER,
+  },
+};
+
+// Default personal finances for new players
+export const DEFAULT_PERSONAL_FINANCES: PersonalFinances = {
+  bankBalance: 1500,             // Same as legacy cash
+  totalEarnings: 0,
+  salaryYTD: 0,
+  bonusYTD: 0,
+  carryReceived: 0,
+  outstandingLoans: 0,
+  loanInterestRate: 0,
+  monthlyBurn: 2000,             // BROKE_ASSOCIATE tier
+  lifestyleLevel: 'BROKE_ASSOCIATE',
+};
+
+// Default fund finances for Founders
+export const DEFAULT_FUND_FINANCES: FundFinances = {
+  totalCommitments: 0,
+  calledCapital: 0,
+  dryPowder: 0,
+  deployedCapital: 0,
+  realizedProceeds: 0,
+  managementFeePool: 0,
+  carryPool: 0,
+};
+
+// ==================== SKILL INVESTMENTS ====================
+// Personal development options that cost money and time
+
+export const SKILL_INVESTMENTS: {
+  id: string;
+  name: string;
+  cost: number;
+  timeWeeks: number;
+  benefits: {
+    analystRating?: number;
+    financialEngineering?: number;
+    reputation?: number;
+    setsFlags?: string[];
+  };
+  description: string;
+  prerequisites?: string[];
+}[] = [
+  {
+    id: 'cfa_level1',
+    name: 'CFA Level I',
+    cost: 3000,
+    timeWeeks: 12,
+    benefits: { analystRating: 10, financialEngineering: 5 },
+    description: 'The first step to becoming a chartered financial analyst. Mostly useful for the credential.',
+  },
+  {
+    id: 'cfa_level2',
+    name: 'CFA Level II',
+    cost: 3500,
+    timeWeeks: 16,
+    benefits: { analystRating: 15, financialEngineering: 10 },
+    description: 'The real grind begins. Asset valuation and financial reporting at an expert level.',
+    prerequisites: ['cfa_level1'],
+  },
+  {
+    id: 'cfa_level3',
+    name: 'CFA Level III',
+    cost: 4000,
+    timeWeeks: 20,
+    benefits: { analystRating: 20, reputation: 10, setsFlags: ['CFA_CHARTERHOLDER'] },
+    description: 'Portfolio management and wealth planning. The final boss. You can put "CFA" after your name now.',
+    prerequisites: ['cfa_level2'],
+  },
+  {
+    id: 'executive_mba',
+    name: 'Executive MBA',
+    cost: 150000,
+    timeWeeks: 52,
+    benefits: { reputation: 20, setsFlags: ['HAS_EMBA'] },
+    description: 'Two years of weekends at Wharton. Networking is the real value.',
+    prerequisites: ['min_level_senior_associate'],
+  },
+  {
+    id: 'modeling_bootcamp',
+    name: 'Financial Modeling Bootcamp',
+    cost: 2500,
+    timeWeeks: 2,
+    benefits: { financialEngineering: 15 },
+    description: 'Two weeks of Excel hell. Your models will never be the same.',
+  },
+  {
+    id: 'golf_lessons',
+    name: 'Golf Lessons',
+    cost: 5000,
+    timeWeeks: 8,
+    benefits: { reputation: 5, setsFlags: ['CAN_GOLF'] },
+    description: 'Learn to play the real game of PE. Half your deals will close on the back nine.',
+  },
+  {
+    id: 'mandarin_course',
+    name: 'Mandarin Language Course',
+    cost: 8000,
+    timeWeeks: 24,
+    benefits: { reputation: 10, setsFlags: ['SPEAKS_MANDARIN'] },
+    description: 'Open doors to Chinese LP relationships and cross-border deals.',
+  },
+  {
+    id: 'wine_sommelier',
+    name: 'Wine Sommelier Certification',
+    cost: 4000,
+    timeWeeks: 6,
+    benefits: { reputation: 8, setsFlags: ['WINE_EXPERT'] },
+    description: 'Know your Burgundy from your Bordeaux. Essential for impressing at LP dinners.',
+  },
+  {
+    id: 'negotiation_masterclass',
+    name: 'Negotiation Masterclass',
+    cost: 6000,
+    timeWeeks: 4,
+    benefits: { analystRating: 10, setsFlags: ['MASTER_NEGOTIATOR'] },
+    description: 'Learn from former FBI hostage negotiators. Surprisingly applicable to term sheet negotiations.',
+  },
+];
 
 // ... [Keep existing DueDiligence and Financing phases] ...
 const dueDiligencePhaseLBO: DueDiligencePhase = {
@@ -848,7 +1249,258 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
   },
-   // Include other scenarios as needed...
+  // ==================== FAMILY EVENTS ====================
+  // Personal life scenarios that test work-life balance
+  {
+    id: 5001,
+    title: "Mom's Medical Bills",
+    description: "Your mom calls, trying to sound casual. 'It's nothing major, honey, just some tests. But you know your father's pension doesn't stretch...' She needs $15,000 for medical bills she's been hiding.",
+    dayTypeGate: { dayType: 'WEEKEND' },
+    choices: [
+      {
+        text: "Pay it all",
+        description: "Transfer $15,000 immediately. She's your mother.",
+        sarcasticGuidance: "Blood is thicker than IRR.",
+        outcome: {
+          description: "Mom cries. Dad sends a gruff text: 'Thanks, son.' You feel good for the first time in weeks. Family comes first, even when your bank account says otherwise.",
+          statChanges: {
+            personalCash: -15000,
+            stress: -20,
+            ethics: +10,
+            npcRelationshipUpdate: { npcId: 'mom', change: 20, memory: 'Paid medical bills without hesitation' },
+            npcRelationshipUpdate2: { npcId: 'dad', change: 15, memory: 'Stepped up for the family' }
+          },
+        },
+      },
+      {
+        text: "Send $5,000",
+        description: "Help out but keep some boundaries. You're not a bank.",
+        sarcasticGuidance: "Partial credit. Better than nothing, worse than everything.",
+        outcome: {
+          description: "Mom thanks you, but you hear the disappointment. 'Every bit helps, honey.' The remaining balance becomes a silent tension at every family dinner.",
+          statChanges: {
+            personalCash: -5000,
+            stress: -5,
+            ethics: +5,
+            npcRelationshipUpdate: { npcId: 'mom', change: 5, memory: 'Helped with bills but had limits' }
+          },
+        },
+      },
+      {
+        text: "Can't right now",
+        description: "Make excuses about cash flow. Suggest payment plans.",
+        sarcasticGuidance: "You're a finance professional. You can construct a narrative.",
+        outcome: {
+          description: "Awkward silence. 'Of course, dear. We'll figure it out.' The guilt hits different at 2am when you're checking your bonus projections.",
+          statChanges: {
+            stress: +15,
+            ethics: -10,
+            npcRelationshipUpdate: { npcId: 'mom', change: -15, memory: 'Couldn\'t help when it mattered' }
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: 5002,
+    title: "Brother Needs 'Investment'",
+    description: "Mike corners you at Thanksgiving. His 'revolutionary' crypto-gaming startup needs $50,000 seed money. He's convinced it's the next big thing. Your finance brain says no. Your guilt says he's family.",
+    dayTypeGate: { dayType: 'WEEKEND' },
+    minCash: 25000,
+    choices: [
+      {
+        text: "Write the check",
+        description: "Family first. Maybe he'll surprise you.",
+        sarcasticGuidance: "Your due diligence standards seem to vary by blood relation.",
+        outcome: {
+          description: "Mike is ecstatic. 'You won't regret this, bro!' (Narrator: He will almost certainly regret this.) But hey, at least Christmas won't be awkward.",
+          statChanges: {
+            personalCash: -50000,
+            stress: +10,
+            ethics: -5,
+            npcRelationshipUpdate: { npcId: 'brother_mike', change: 30, memory: 'Believed in me when no one else did' },
+            setsFlags: ['INVESTED_IN_MIKE']
+          },
+        },
+      },
+      {
+        text: "Offer advice instead",
+        description: "Walk him through his business plan. Point out the holes. Gently.",
+        sarcasticGuidance: "Pro bono consulting. The gift that keeps on giving... awkward dinners.",
+        outcome: {
+          description: "Mike's face falls. 'So you think I'm an idiot.' But deep down, he knows you care. He'll thank you in two years when he pivots to something real.",
+          statChanges: {
+            energy: -10,
+            analystRating: +5,
+            npcRelationshipUpdate: { npcId: 'brother_mike', change: -10, trustChange: +15, memory: 'Shot down my idea but tried to help' }
+          },
+        },
+      },
+      {
+        text: "Hard pass",
+        description: "Tell him the truth: it's a bad investment and you're not his VC.",
+        sarcasticGuidance: "Brutal honesty. Effective in spreadsheets, devastating in families.",
+        outcome: {
+          description: "Mike storms off. 'Must be nice having all the answers from your ivory tower.' Christmas dinner is going to be very quiet this year.",
+          statChanges: {
+            stress: +5,
+            ethics: +10,
+            npcRelationshipUpdate: { npcId: 'brother_mike', change: -25, memory: 'Wouldn\'t even give me a chance' }
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: 5003,
+    title: "Emma's Ultimatum",
+    description: "Emma sits you down. 'I love you, but I can't keep doing this. I need to know if there's a future here, or if I'm just waiting for someone who's already married to their job.' She's not wrong. You've missed 8 of the last 10 planned dates.",
+    dayTypeGate: { dayType: 'WEEKEND', timeSlots: ['EVENING'] },
+    minStress: 40,
+    choices: [
+      {
+        text: "I'll change",
+        description: "Promise to make time. Mean it. Block off calendar.",
+        sarcasticGuidance: "You're committing to something that doesn't have a valuation. Novel.",
+        outcome: {
+          description: "Emma tears up. 'I want to believe you.' You block off every Saturday for the next month. Chad is going to hate this, but maybe that's the point.",
+          statChanges: {
+            stress: -15,
+            energy: +20,
+            reputation: -5,
+            npcRelationshipUpdate: { npcId: 'girlfriend_emma', change: 25, trustChange: 10, memory: 'Committed to making time for us' },
+            npcRelationshipUpdate2: { npcId: 'chad', change: -10, memory: 'Started prioritizing personal life over deals' }
+          },
+        },
+      },
+      {
+        text: "You deserve better",
+        description: "End it clean. You can't give her what she needs right now.",
+        sarcasticGuidance: "The cleanest exit strategy. No earn-out, no drag-along.",
+        outcome: {
+          description: "She cries. You feel hollow. But at least you're not stringing her along. Maybe in a few years, when you make Partner, you'll have time to be human again.",
+          statChanges: {
+            stress: +25,
+            energy: -20,
+            ethics: +15,
+            removeNpcId: 'girlfriend_emma'
+          },
+        },
+      },
+      {
+        text: "Just a few more months",
+        description: "Stall. The deal pipeline will calm down. Probably.",
+        sarcasticGuidance: "Kicking the can. A time-honored tradition in both M&A and relationships.",
+        outcome: {
+          description: "Emma sighs. 'You always say that.' She stays, but something's broken. The trust isn't there anymore. How long until she walks?",
+          statChanges: {
+            stress: +10,
+            npcRelationshipUpdate: { npcId: 'girlfriend_emma', change: -15, trustChange: -20, memory: 'Made empty promises again' }
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: 5004,
+    title: "Dad's Retirement Advice",
+    description: "Dad calls on Sunday morning. 'I've been thinking about your... private equity work. I ran some numbers. You should be putting at least 30% into index funds and maxing out your 401k. None of this 'carried interest' gambling.' He sounds genuinely worried.",
+    dayTypeGate: { dayType: 'WEEKEND', timeSlots: ['MORNING'] },
+    choices: [
+      {
+        text: "Humor him",
+        description: "Listen politely. Nod along. He means well.",
+        sarcasticGuidance: "He still thinks you make money by 'working hard.' Precious.",
+        outcome: {
+          description: "You spend 45 minutes hearing about the magic of compound interest. He ends with 'I'm proud of you, even if I don't understand what you do.' That hits different.",
+          statChanges: {
+            stress: -10,
+            energy: -5,
+            npcRelationshipUpdate: { npcId: 'dad', change: 10, memory: 'Actually listened to my advice for once' }
+          },
+        },
+      },
+      {
+        text: "Explain PE economics",
+        description: "Walk him through fund structure, GP/LP splits, and the J-curve.",
+        sarcasticGuidance: "Finally, someone who has to listen to your deck.",
+        outcome: {
+          description: "After an hour, he's silent. Then: 'So you're telling me you only make money if other people make money first?' He almost sounds impressed. Almost.",
+          statChanges: {
+            energy: -15,
+            analystRating: +5,
+            npcRelationshipUpdate: { npcId: 'dad', change: 5, trustChange: +10, memory: 'Tried to explain carry to me - still seems like gambling' }
+          },
+        },
+      },
+      {
+        text: "Blow him off",
+        description: "You don't have time for this. Cut the call short.",
+        sarcasticGuidance: "Time is money. And you're about to save some time.",
+        outcome: {
+          description: "'I'll call you later, Dad. Busy.' The line goes quiet. He says 'Sure, son' and hangs up. Mom texts an hour later: 'Your father was just trying to help.'",
+          statChanges: {
+            stress: +5,
+            energy: +10,
+            npcRelationshipUpdate: { npcId: 'dad', change: -15, memory: 'Dismissed my concern like I was a client' },
+            npcRelationshipUpdate2: { npcId: 'mom', change: -5, memory: 'Hurt your father\'s feelings' }
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: 5005,
+    title: "Lifestyle Pressure",
+    description: "Your apartment is fine, but every VP you know lives in a doorman building. Your suits are off-the-rack while Partners wear Zegna. Emma mentioned she'd love a vacation somewhere 'nice.' The unspoken pressure to upgrade your lifestyle is crushing.",
+    minReputation: 40,
+    choices: [
+      {
+        text: "Level up your lifestyle",
+        description: "Move to a better place. Upgrade the wardrobe. Fake it till you make it.",
+        sarcasticGuidance: "Looking the part is half the battle. The other half is paying for it.",
+        outcome: {
+          description: "You sign a lease for a sick apartment in Tribeca. New suits. New watch. Your bank account weeps, but damn you look good. The Partners notice.",
+          statChanges: {
+            personalCash: -10000,
+            reputation: +10,
+            stress: -10,
+            lifestyleLevel: 'ASPIRATIONAL'
+          },
+        },
+      },
+      {
+        text: "Stay humble",
+        description: "Keep the same lifestyle. Save and invest the difference.",
+        sarcasticGuidance: "Delayed gratification. Very Warren Buffett of you.",
+        outcome: {
+          description: "You resist the urge. Your bank account thanks you. But at the next firm dinner, you notice the MD eyeing your shoes. 'Are those... Cole Haan?' he asks, barely hiding his disdain.",
+          statChanges: {
+            reputation: -5,
+            ethics: +5,
+            stress: +5,
+            analystRating: +5
+          },
+        },
+      },
+      {
+        text: "Live beyond your means",
+        description: "Charge it all. Pay minimums. Deal with it when bonus hits.",
+        sarcasticGuidance: "Leveraged lifestyle buyout. Very PE of you.",
+        outcome: {
+          description: "You max out your credit cards. The lifestyle is intoxicating. But the interest compounds, and bonus season feels very far away. Hope that deal closes.",
+          statChanges: {
+            personalCash: -5000,
+            reputation: +15,
+            stress: +20,
+            loanBalanceChange: +25000,
+            loanRate: 0.22,
+            lifestyleLevel: 'BALLER'
+          },
+        },
+      },
+    ],
+  },
 ];
 
 export const VICE_ACTIONS: LifeAction[] = [
@@ -1008,7 +1660,7 @@ export const LIFE_ACTIONS: LifeAction[] = [
     icon: 'fa-skull-crossbones',
     outcome: {
       description: "You sign a predatory term sheet. Cash hits the account fast, but the lender is circling for their pound of flesh.",
-      statChanges: { cash: +50000, stress: +8, loanBalanceChange: +50000, loanRate: 0.28, score: +75 },
+      statChanges: { cash: +50000, stress: +8, loanBalanceChange: +50000, loanRate: 0.15, score: +75 }, // Reduced from 28% to 15% for better balance
     },
   },
   {
@@ -1108,8 +1760,9 @@ export const NEWS_EVENTS = [
 
 export const PREDEFINED_QUESTIONS: string[] = [
   "Should I take this deal?",
-  "How do I handle my MD?",
-  "Is this bonus fair?",
+  "LBO or Growth Equity?",
+  "What's the exit path here?",
+  "How do I lever up?",
   "What's the angle here?",
   "Test my financial knowledge"
 ];
@@ -1456,3 +2109,124 @@ export const RIVAL_FUND_NPCS: NPC[] = [
     goals: ['Prove scrappy funds can win', 'Leverage gossip to ambush you']
   }
 ];
+
+// ==================== ADVANCED AI CONFIGURATIONS ====================
+
+export const RIVAL_TAUNTS: Record<string, string[]> = {
+  hunter_capital: [
+    "Did you learn finance at community college?",
+    "My trust fund has generated more alpha than your entire career.",
+    "I don't compete with associates. I crush them.",
+    "Cute bid. Was that your entire fund?",
+    "The Vanderbilt name has survived three generations. You won't survive one.",
+    "I've forgotten more deals than you've ever seen.",
+  ],
+  meridian_partners: [
+    "We prefer disciplined capital allocation to emotional bidding.",
+    "Some of us still believe in fundamental value.",
+    "When this blows up, don't say we didn't warn you.",
+    "Interesting strategy. Our models say otherwise.",
+    "Victoria doesn't chase. She calculates.",
+    "We'll be here when you need a buyer for the wreckage.",
+  ],
+  apex_equity: [
+    "We came from nothing. What's your excuse?",
+    "Street smart beats book smart every time.",
+    "While you were in meetings, we closed the deal.",
+    "Scrappy beats silver spoon any day.",
+    "You think that's aggressive? You haven't seen anything.",
+    "The market doesn't care about your pedigree.",
+  ],
+};
+
+export const COALITION_ANNOUNCEMENTS = [
+  "Word on the street: rival funds are comparing notes on your strategy.",
+  "Unusual activity detected - competitors seem to be coordinating.",
+  "Your sources report a secret meeting between rival fund partners.",
+  "The game just changed. Your competitors are working together.",
+  "A coalition has formed. You're the target.",
+];
+
+export const PSYCHOLOGICAL_WARFARE_MESSAGES = [
+  "${name} hired a PR firm to spread doubt about your track record.",
+  "${name} is telling LPs you're 'over your skis' on leverage.",
+  "Rumors are swirling that ${name} has damaging information about you.",
+  "${name} publicly questioned your ethics at an industry dinner.",
+  "Your deal pipeline is mysteriously drying up. ${name} is smiling.",
+  "${name} sent a bottle of champagne with a note: 'For when you need to celebrate your exit from the industry.'",
+];
+
+export const SURPRISE_ATTACK_MESSAGES = [
+  "${name} just made an unexpected power play!",
+  "BREAKING: ${name} catches everyone off guard with aggressive move!",
+  "${name} has gone off-script. Expect chaos.",
+  "Intelligence suggests ${name} is planning something big.",
+  "${name} just burned their playbook. New strategy incoming.",
+];
+
+export const VENDETTA_ESCALATION_MESSAGES: Record<string, string[]> = {
+  WARMING: [
+    "${name} seems to have taken notice of you. Not in a good way.",
+    "You've gotten under ${name}'s skin. They're watching your moves closely.",
+    "${name} is starting to view you as a real threat.",
+  ],
+  HOT: [
+    "${name} has made this personal. Every deal is now a battleground.",
+    "The rivalry with ${name} is heating up. Expect fireworks.",
+    "${name} is actively working against your interests.",
+  ],
+  BLOOD_FEUD: [
+    "${name} has declared war. There will be collateral damage.",
+    "This has gone beyond business. ${name} wants to see you fail.",
+    "The vendetta with ${name} has reached dangerous levels.",
+  ],
+  TOTAL_WAR: [
+    "${name} is willing to burn everything to beat you. Including themselves.",
+    "DEFCON 1: ${name} has launched all-out war on your fund.",
+    "This is existential. Only one of you survives this rivalry.",
+  ],
+};
+
+export const AI_PERSONALITY_MODIFIERS: Record<string, {
+  aggressionBonus: number;
+  bluffMultiplier: number;
+  surpriseFrequency: number;
+  coalitionAffinity: number;
+}> = {
+  CALCULATING: {
+    aggressionBonus: 0,
+    bluffMultiplier: 0.5,
+    surpriseFrequency: 0.1,
+    coalitionAffinity: 0.3,
+  },
+  AGGRESSIVE: {
+    aggressionBonus: 20,
+    bluffMultiplier: 1.2,
+    surpriseFrequency: 0.3,
+    coalitionAffinity: 0.2,
+  },
+  OPPORTUNISTIC: {
+    aggressionBonus: 10,
+    bluffMultiplier: 1.5,
+    surpriseFrequency: 0.4,
+    coalitionAffinity: 0.5,
+  },
+  PARANOID: {
+    aggressionBonus: 5,
+    bluffMultiplier: 0.8,
+    surpriseFrequency: 0.2,
+    coalitionAffinity: 0.7,
+  },
+  UNPREDICTABLE: {
+    aggressionBonus: 15,
+    bluffMultiplier: 2.0,
+    surpriseFrequency: 0.6,
+    coalitionAffinity: 0.4,
+  },
+};
+
+export const ADAPTIVE_DIFFICULTY_THRESHOLDS = {
+  EASY: { playerWinRate: 0.7, wealthRatio: 2.0, reputationThreshold: 85 },
+  NORMAL: { playerWinRate: 0.5, wealthRatio: 1.5, reputationThreshold: 70 },
+  HARD: { playerWinRate: 0.3, wealthRatio: 1.0, reputationThreshold: 50 },
+};

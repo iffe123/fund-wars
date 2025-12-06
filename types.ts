@@ -27,6 +27,105 @@ export interface CompanyEvent {
   description: string;
 }
 
+// ==================== LIVING WORLD SYSTEM ====================
+
+export type CompanyEventType =
+  | 'REVENUE_DROP'
+  | 'KEY_CUSTOMER_LOSS'
+  | 'MANAGEMENT_DEPARTURE'
+  | 'COMPETITOR_THREAT'
+  | 'ACQUISITION_OPPORTUNITY'
+  | 'REGULATORY_ISSUE'
+  | 'UNION_DISPUTE'
+  | 'SUPPLY_CHAIN_CRISIS'
+  | 'ACTIVIST_INVESTOR'
+  | 'IPO_WINDOW'
+  | 'STRATEGIC_BUYER_INTEREST';
+
+export type CompanyStatus = 'PIPELINE' | 'OWNED' | 'EXITING';
+
+export interface ManagementMember {
+  role: 'CEO' | 'CFO' | 'COO' | 'CTO' | 'CMO';
+  name: string;
+  performance: number;  // 0-100
+  loyalty: number;      // 0-100
+  poachRisk: number;    // 0-100, risk of being recruited away
+}
+
+export interface EventOption {
+  id: string;
+  label: string;
+  description: string;
+  statChanges: StatChanges;
+  companyChanges: Partial<PortfolioCompany>;
+  outcomeText: string;
+  risk?: number;  // 0-100, chance of negative outcome
+}
+
+export interface CompanyActiveEvent {
+  id: string;
+  type: CompanyEventType;
+  title: string;
+  description: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  options: EventOption[];
+  expiresWeek: number;  // Must decide by this week
+  consultWithMachiavelli?: boolean;  // Flag to suggest advisor consultation
+}
+
+export interface StrategicDecision {
+  id: string;
+  title: string;
+  description: string;
+  options: EventOption[];
+  deadline: number;  // Game week
+  companyImpact: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+
+export interface Warning {
+  id: string;
+  type: 'CASH' | 'HEALTH' | 'STRESS' | 'REPUTATION' | 'PORTFOLIO' | 'LOAN' | 'DEADLINE';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  title: string;
+  message: string;
+  threshold?: number;
+  currentValue?: number;
+  suggestedAction?: string;
+}
+
+export interface NPCDrama {
+  id: string;
+  title: string;
+  description: string;
+  involvedNpcs: string[];  // NPC IDs
+  playerMustChooseSide: boolean;
+  urgency: 'LOW' | 'MEDIUM' | 'HIGH';
+  choices: Choice[];
+  expiresWeek: number;
+}
+
+export interface RivalAction {
+  rivalId: string;
+  action: string;
+  target?: string;
+  impact: string;
+}
+
+export interface MarketChange {
+  type: 'VOLATILITY_SHIFT' | 'SECTOR_ROTATION' | 'INTEREST_RATE' | 'CREDIT_CONDITIONS';
+  description: string;
+  impact: Partial<StatChanges>;
+}
+
+export interface WorldTickResult {
+  portfolioUpdates: Map<number, Partial<PortfolioCompany>>;
+  newEvents: CompanyActiveEvent[];
+  warnings: Warning[];
+  npcDramas: NPCDrama[];
+  rivalActions: RivalAction[];
+  marketChanges: MarketChange[];
+}
+
 export interface PortfolioCompany {
   id: number;
   name: string;
@@ -48,7 +147,33 @@ export interface PortfolioCompany {
   };
   eventHistory: CompanyEvent[];
   isAnalyzed?: boolean;
-  hasBoardCrisis?: boolean; // New for Activist Investor
+  hasBoardCrisis?: boolean;
+
+  // NEW: Company Health Metrics
+  employeeCount: number;
+  employeeGrowth: number;        // % change per quarter
+  ebitdaMargin: number;          // EBITDA / Revenue
+  cashBalance: number;           // Company's own cash
+  runwayMonths: number;          // Months of cash left (for growth companies)
+  customerChurn: number;         // For SaaS/subscription businesses
+
+  // NEW: Management & Governance
+  ceoPerformance: number;        // 0-100
+  boardAlignment: number;        // 0-100, how aligned board is
+  managementTeam: ManagementMember[];
+
+  // NEW: Deal Status
+  dealClosed: boolean;           // True once IOI is accepted and deal closes
+  isInExitProcess: boolean;
+  exitType?: ExitType;
+
+  // NEW: Active Events
+  activeEvent?: CompanyActiveEvent;
+  pendingDecisions: StrategicDecision[];
+
+  // NEW: Timeline
+  nextBoardMeetingWeek: number;  // Game week of next board meeting
+  lastFinancialUpdate: number;   // Game week of last update
 }
 
 export interface PortfolioAction {
@@ -129,17 +254,90 @@ export interface NPC {
 
 export type NPCRelationshipType = 'WORK' | 'PARTNER' | 'FAMILY' | 'WILDCARD';
 
+// ==================== PERSONAL & FUND FINANCES SYSTEM ====================
+
+// Lifestyle levels with escalating monthly costs
+export type LifestyleLevel =
+  | 'BROKE_ASSOCIATE'      // $2k/mo - studio apartment, ramen
+  | 'COMFORTABLE'          // $5k/mo - decent 1BR, Uber sometimes
+  | 'ASPIRATIONAL'         // $10k/mo - nice apartment, dating expenses
+  | 'BALLER'               // $25k/mo - luxury apartment, bottle service
+  | 'MASTER_OF_UNIVERSE';  // $50k/mo - penthouse, cars, art
+
+// Fund-level finances (for the PE firm - Founder mode)
+export interface FundFinances {
+  totalCommitments: number;      // Total LP commitments
+  calledCapital: number;         // Capital called from LPs
+  dryPowder: number;             // Available for new investments
+  deployedCapital: number;       // Invested in portfolio
+  realizedProceeds: number;      // Cash from exits
+  managementFeePool: number;     // Accumulated mgmt fees
+  carryPool: number;             // Accumulated carried interest pool
+}
+
+// Personal finances (for the player)
+export interface PersonalFinances {
+  bankBalance: number;           // Current cash in bank
+  totalEarnings: number;         // Lifetime earnings
+  salaryYTD: number;             // Salary earned this year
+  bonusYTD: number;              // Bonus earned this year
+  carryReceived: number;         // Total carry received lifetime
+  outstandingLoans: number;      // Personal debt
+  loanInterestRate: number;      // Current loan rate
+  monthlyBurn: number;           // Monthly lifestyle cost
+  lifestyleLevel: LifestyleLevel;
+}
+
+// Deal allocation tracking for carry eligibility
+export interface DealAllocation {
+  companyId: number;
+  role: 'LEAD' | 'SUPPORT' | 'OBSERVER';
+  carryPoints: number;  // Personal carry allocation (basis points)
+  hoursWorked: number;
+}
+
+// Family request types for family NPC events
+export interface FamilyRequest {
+  id: string;
+  type: 'MONEY' | 'TIME' | 'ADVICE' | 'VISIT';
+  amount?: number;               // For money requests
+  urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'EMERGENCY';
+  description: string;
+  deadline?: number;             // Game week deadline
+  consequenceIfIgnored: string;
+}
+
+// Extended NPC for family members
+export interface FamilyMember extends NPC {
+  relationshipType: 'FAMILY';
+  familyRole: 'PARENT' | 'SIBLING' | 'PARTNER' | 'CHILD';
+  financialNeed: number;         // 0-100, how much they need money
+  emotionalNeed: number;         // 0-100, how much they need attention
+  lastContactWeek: number;       // Game week of last contact
+  pendingRequest?: FamilyRequest;
+}
+
+// Skill investment for personal development
+export interface SkillInvestment {
+  id: string;
+  name: string;
+  cost: number;
+  timeWeeks: number;
+  startedWeek?: number;          // When the investment was started
+  completed: boolean;
+}
+
 export interface PlayerStats {
   level: PlayerLevel;
-  cash: number;
+  cash: number;  // Legacy: now derived from personalFinances.bankBalance
   reputation: number;
   factionReputation: FactionReputation;
   stress: number;
   energy: number;
   analystRating: number;
   financialEngineering: number;
-  ethics: number; // New: 0 (Sociopath) to 100 (Saint)
-  auditRisk: number; // New: 0 (Safe) to 100 (Indicted)
+  ethics: number; // 0 (Sociopath) to 100 (Saint)
+  auditRisk: number; // 0 (Safe) to 100 (Indicted)
   score: number;
   portfolio: PortfolioCompany[];
   playerFlags: Record<string, boolean>;
@@ -154,18 +352,25 @@ export interface PlayerStats {
   health: number; // 0-100
   dependency: number; // 0-100
   tutorialStep: number; // 0=Done, 1..N=Active Step
-  loanBalance: number; // Outstanding debt balance
-  loanRate: number; // Annualized interest rate (e.g. 0.24 = 24%)
+  loanBalance: number; // Legacy: now derived from personalFinances.outstandingLoans
+  loanRate: number; // Legacy: now derived from personalFinances.loanInterestRate
   knowledgeLog: KnowledgeEntry[];
   knowledgeFlags: string[];
-  // New: Achievement System
-  unlockedAchievements: string[]; // IDs of unlocked achievements
-  // New: Industry Specialization
+  // Achievement System
+  unlockedAchievements: string[];
+  // Industry Specialization
   sectorExpertise: SectorExpertise[];
   primarySector?: IndustrySector;
-  // New: Exit Tracking
+  // Exit Tracking
   completedExits: ExitResult[];
   totalRealizedGains: number;
+
+  // NEW: Personal & Fund Finances System
+  personalFinances: PersonalFinances;
+  fundFinances: FundFinances | null;  // null for non-Founders, populated for Founder
+  dealAllocations: DealAllocation[];  // Deals player is staffed on
+  carryEligibleDeals: number[];       // Portfolio company IDs player has carry in
+  activeSkillInvestments: SkillInvestment[];  // Skills currently being learned
 }
 
 export interface StatChanges {
@@ -214,8 +419,28 @@ export interface StatChanges {
   // New: Industry Specialization
   sectorExperienceGain?: { sector: IndustrySector; amount: number };
   setPrimarySector?: IndustrySector;
-  // New: Exit Tracking
+  // Exit Tracking
   addExitResult?: ExitResult;
+
+  // NEW: Personal Finance Changes
+  personalCash?: number;          // Direct change to personal bank balance
+  lifestyleLevel?: LifestyleLevel; // Change lifestyle tier
+  carryDistribution?: number;      // Carry payout from exit
+  dealAllocation?: DealAllocation; // Add deal allocation
+  skillInvestment?: string;        // Start a skill investment by ID
+  familyRequestResponse?: {
+    npcId: string;
+    accepted: boolean;
+    amount?: number;
+  };
+  // Multiple NPC relationship updates (for scenarios affecting multiple NPCs)
+  npcRelationshipUpdate2?: {
+    npcId: string;
+    change: number;
+    trustChange?: number;
+    moodChange?: number;
+    memory?: NPCMemory | string;
+  };
 }
 
 export interface SkillCheck {
@@ -355,6 +580,12 @@ export interface GameContextType {
   marketVolatility: MarketVolatility;
   tutorialStep: number;
   actionLog: string[];
+  // NEW: Living World State
+  activeWarnings: Warning[];
+  activeDrama: NPCDrama | null;
+  activeCompanyEvent: CompanyActiveEvent | null;
+  eventQueue: CompanyActiveEvent[];
+  pendingDecision: { event: CompanyActiveEvent | NPCDrama; awaitingAdvisorResponse: boolean } | null;
   setGamePhase: (phase: GamePhase) => void;
   updatePlayerStats: (changes: StatChanges) => void;
   handleActionOutcome: (outcome: { description: string; statChanges: StatChanges }, title: string) => void;
@@ -363,6 +594,12 @@ export interface GameContextType {
   setTutorialStep: (step: number) => void;
   advanceTime: () => void;
   resetGame: () => void;
+  // NEW: Living World Methods
+  dismissWarning: (id: string) => void;
+  handleWarningAction: (warning: Warning) => void;
+  setActiveDrama: (drama: NPCDrama | null) => void;
+  setActiveCompanyEvent: (event: CompanyActiveEvent | null) => void;
+  handleEventDecision: (eventId: string, optionId: string) => void;
 }
 
 // ==================== COMPETITOR FUNDS SYSTEM ====================
@@ -529,4 +766,69 @@ export interface ModelingChallenge {
   timeLimit: number; // Seconds
   reward: StatChanges;
   penalty: StatChanges;
+}
+
+// ==================== ADVANCED AI SYSTEM ====================
+
+export type AIPersonality = 'CALCULATING' | 'AGGRESSIVE' | 'OPPORTUNISTIC' | 'PARANOID' | 'UNPREDICTABLE';
+export type VendettaPhase = 'COLD' | 'WARMING' | 'HOT' | 'BLOOD_FEUD' | 'TOTAL_WAR';
+export type TacticalMove = 'POACH' | 'RUMOR' | 'COALITION' | 'SABOTAGE' | 'MARKET_MANIPULATION' | 'PSYCHOLOGICAL_WARFARE' | 'SURPRISE_BID' | 'STRATEGIC_RETREAT';
+
+export interface PlayerPatternData {
+  averageBidAggressiveness: number;
+  preferredSectors: string[];
+  bidDropoutThreshold: number;
+  riskTolerance: number;
+  responseToBluffs: 'FOLDS' | 'CALLS' | 'RAISES';
+  dealClosingRate: number;
+  weaknesses: string[];
+  lastUpdated: number;
+}
+
+export interface AIState {
+  playerPatterns: Partial<PlayerPatternData>;
+  rivalMindsets: Record<string, RivalMindsetState>;
+  coalitionState: CoalitionStateData | null;
+  lastAnalysisUpdate: number;
+  dealsWonByPlayer: number[];
+  dealsLostByPlayer: number[];
+  playerBidHistory: number[];
+}
+
+export interface RivalMindsetState {
+  fundId: string;
+  personality: AIPersonality;
+  currentMood: 'CONFIDENT' | 'CAUTIOUS' | 'DESPERATE' | 'VENGEFUL' | 'OPPORTUNISTIC';
+  fearLevel: number;
+  respectLevel: number;
+  vendettaPhase: VendettaPhase;
+  recentLosses: number;
+  recentWins: number;
+  isInCoalition: boolean;
+  lastSurpriseMove: number;
+}
+
+export interface CoalitionStateData {
+  isActive: boolean;
+  members: string[];
+  target: 'PLAYER' | string;
+  expiresAtTick: number;
+  strength: number;
+}
+
+export interface AITacticalDecision {
+  action: TacticalMove;
+  target?: string;
+  intensity: number;
+  reasoning: string;
+  successChance: number;
+  riskLevel: number;
+}
+
+export interface AuctionAIBehavior {
+  bid: number;
+  isBluff: boolean;
+  dropOut: boolean;
+  taunt?: string;
+  surpriseBid?: boolean;
 }

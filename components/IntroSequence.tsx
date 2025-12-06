@@ -26,7 +26,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
     onComplete(stress);
   };
 
-  // Stage 1: The Glory
+  // Stage 0: The Glory
   if (stage === 0) {
     return (
       <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center p-8 z-50">
@@ -35,8 +35,8 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
           <p className="text-xl md:text-2xl font-light text-slate-300 mb-4">Valedictorian.</p>
           <p className="text-xl md:text-2xl font-light text-slate-300 mb-8">You survived 12 superdays. You beat 4,000 applicants.</p>
           <p className="text-lg text-slate-500 italic mb-12">They told you you were special. They told you you were a 'Master of the Universe'.</p>
-          
-          <button 
+
+          <button
             onClick={handleNext}
             className="border border-white/20 hover:bg-white/10 text-white font-light py-2 px-8 rounded-full transition-all tracking-widest uppercase text-sm"
           >
@@ -47,7 +47,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
     );
   }
 
-  // Stage 2: The Crash
+  // Stage 1: The Crash
   if (stage === 1) {
     return (
       <div className="fixed inset-0 bg-slate-900 text-slate-200 flex flex-col items-center justify-center p-8 z-50">
@@ -61,8 +61,8 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
           <p className="text-lg text-red-400 italic mb-12 border-l-2 border-red-500 pl-4">
             "You are not a Master. You are an Analyst. And you are late."
           </p>
-          
-          <button 
+
+          <button
             onClick={handleNext}
             className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded shadow-lg transition-all"
           >
@@ -73,7 +73,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
     );
   }
 
-  // Stage 3: The Encounter
+  // Stage 2: The Encounter
   if (stage === 2) {
     return (
       <div className="fixed inset-0 bg-white text-slate-900 flex flex-col items-center justify-center p-8 z-50">
@@ -99,14 +99,14 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
           </div>
 
           <div className="grid grid-cols-1 gap-3">
-             <button 
+             <button
                 onClick={() => handleChoice(5)}
                 className="w-full text-left p-4 bg-white border border-slate-300 hover:border-blue-600 hover:shadow-md rounded-lg transition-all group"
              >
                 <span className="font-bold text-blue-700 block mb-1 group-hover:underline">"I'll crush it, Chad."</span>
                 <span className="text-xs text-slate-500">Effect: Chad sneers. "We'll see."</span>
              </button>
-             <button 
+             <button
                 onClick={() => handleChoice(25)}
                 className="w-full text-left p-4 bg-white border border-slate-300 hover:border-red-600 hover:shadow-md rounded-lg transition-all group"
              >

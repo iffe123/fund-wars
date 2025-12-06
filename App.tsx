@@ -1,13 +1,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, Difficulty, GamePhase, LifeAction, PortfolioAction, PortfolioCompany, MarketVolatility, NewsEvent, PortfolioImpact, UserProfile, CompanyEvent, NPC, QuizQuestion, CompetitiveDeal, RivalFund } from './types';
+import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, GamePhase, PortfolioCompany, MarketVolatility, NPC, CompetitiveDeal, CompanyActiveEvent, NPCDrama } from './types';
 import { PlayerLevel, DealType } from './types';
-import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS, RIVAL_FUNDS } from './constants';
+import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS, RIVAL_FUNDS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS } from './constants';
 import NewsTicker from './components/NewsTicker';
 import CommsTerminal from './components/CommsTerminal';
 import PortfolioView from './components/PortfolioView';
 import FounderDashboard from './components/FounderDashboard';
-import ChallengeModal from './components/ChallengeModal';
 import SanityEffects from './components/SanityEffects';
 import IntroSequence from './components/IntroSequence';
 import SystemBoot from './components/SystemBoot';
@@ -16,38 +15,37 @@ import PlayerStatsDisplay from './components/PlayerStats';
 import BottomNav from './components/BottomNav';
 import LoginScreen from './components/LoginScreen';
 import LegalDisclaimer from './components/LegalDisclaimer';
-import { TerminalPanel, TerminalButton, TerminalToast, AsciiProgress } from './components/TerminalUI';
+import { TerminalPanel, TerminalButton, TerminalToast } from './components/TerminalUI';
+import NpcListPanel from './components/NpcListPanel';
+import WorkspacePanel from './components/WorkspacePanel';
+import ScenarioPanel from './components/ScenarioPanel';
 import { getAdvisorResponse, getNPCResponse } from './services/geminiService';
 import { useGame } from './context/GameContext';
 import { useAuth } from './context/AuthContext';
 import { useAudio } from './context/AudioContext';
 import { logEvent } from './services/analytics';
+import { useToast } from './hooks/useToast';
 import CompetitiveAuctionModal, { AuctionResult } from './components/CompetitiveAuctionModal';
 import DealMarket from './components/DealMarket';
 import RivalLeaderboard from './components/RivalLeaderboard';
 import PortfolioCommandCenter from './components/PortfolioCommandCenter';
+import StatsExplainerModal from './components/StatsExplainerModal';
+import WarningPanel from './components/WarningPanel';
 
 declare global {
   interface Window {
-    google?: any;
+    google?: unknown;
   }
-}
-
-// Sarcastic Toast Interface
-interface Toast {
-    id: number;
-    message: string;
-    type: 'error' | 'success' | 'info';
 }
 
 const TUTORIAL_STEPS_TEXT = [
     "", // Step 0 (Inactive)
-    "The meat grinder is empty. Click [MANAGE_ASSETS] to see the deal Chad just threw at you.", // Step 1
-    "Here it is. 'PackFancy'. Click the row to open the Deal Memo.", // Step 2
+    "The meat grinder is empty. Click [MANAGE_ASSETS] to see the deal Chad (your MD) just threw at you. He expects results.", // Step 1
+    "Here it is. 'PackFancy Inc.' - a cardboard box company. Click the row to open the Deal Memo and see what you're dealing with.", // Step 2
     "Look at that Revenue. Flat as a pancake. If you buy this now, you get fired. You need an edge. Click [ANALYZE] to dig deeper.", // Step 3
-    "Analysis complete. We found a weird patent on Page 40. Ask your analyst Sarah about it. Go to [COMMS] (mobile users switch to COMMS tab).", // Step 4
-    "Tell Sarah to check the patent. Type or tap the prompt.", // Step 5
-    "Now we're talking. Valuation just doubled. Click [SUBMIT IOI] to lock it in.", // Step 6
+    "Analysis complete. We found a weird patent on Page 40. Time to meet SARAH - your Senior Analyst. She's been up 40 hours crunching models. Go to [COMMS] and select her.", // Step 4
+    "Sarah already found something. She's proactive like that. Ask her to dig deeper on the patent by clicking the prompt.", // Step 5
+    "PATENT #8829 is real. Hydrophobic coating tech could be a game-changer. Now you have leverage. Click [SUBMIT IOI] to lock in the deal. PRO TIP: After the tutorial, ask Machiavelli (your advisor) about deal structures like LBO vs Growth Equity.", // Step 6
 ];
 
 const DEFAULT_CHAT: ChatMessage[] = [
@@ -59,16 +57,19 @@ const App: React.FC = () => {
   const {
     user, playerStats, npcs, activeScenario, gamePhase, difficulty, marketVolatility, tutorialStep, actionLog,
     setGamePhase, updatePlayerStats, sendNpcMessage, setTutorialStep, advanceTime, addLogEntry,
-    rivalFunds, activeDeals, updateRivalFund, removeDeal, generateNewDeals, resetGame
+    rivalFunds, activeDeals, updateRivalFund, removeDeal, generateNewDeals, resetGame,
+    // Living World System
+    activeWarnings, activeDrama, activeCompanyEvent, eventQueue, pendingDecision,
+    dismissWarning, handleWarningAction, setActiveDrama, setActiveCompanyEvent, handleEventDecision,
   } = useGame();
   
   const { loading: authLoading } = useAuth();
   const { playSfx, playAmbience } = useAudio();
+  const { toasts, addToast, removeToast, clearToasts } = useToast();
 
   // --- CORE STATE ---
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
   const [activeTab, setActiveTab] = useState<'WORKSPACE' | 'ASSETS' | 'FOUNDER' | 'DEALS'>('WORKSPACE');
   const [activeMobileTab, setActiveMobileTab] = useState<'COMMS' | 'DESK' | 'NEWS' | 'MENU'>('DESK');
   
@@ -81,6 +82,12 @@ const App: React.FC = () => {
   // --- AUCTION STATE ---
   const [currentAuction, setCurrentAuction] = useState<CompetitiveDeal | null>(null);
   const [lastAuctionResult, setLastAuctionResult] = useState<AuctionResult | null>(null);
+
+  // --- STATS MODAL STATE ---
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [hasSeenStatsTutorial, setHasSeenStatsTutorial] = useState(() => {
+    return localStorage.getItem('HAS_SEEN_STATS_TUTORIAL') === 'true';
+  });
 
   const currentScenario = activeScenario || SCENARIOS[0];
   const scenarioChoices = (currentScenario.choices && currentScenario.choices.length > 0)
@@ -96,14 +103,6 @@ const App: React.FC = () => {
         : []);
   const founderUnlocked = playerStats ? playerStats.reputation >= 50 : false;
 
-  // --- SARCASTIC ERROR HANDLER ---
-  const addToast = (message: string, type: 'error' | 'success' | 'info' = 'info') => {
-      const id = Date.now();
-      setToasts(prev => [...prev, { id, message, type }]);
-      playSfx(type === 'error' ? 'ERROR' : type === 'success' ? 'SUCCESS' : 'NOTIFICATION');
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
-  };
-
   // Dev-only or explicit reset via query param
   useEffect(() => {
       const url = new URL(window.location.href);
@@ -114,7 +113,7 @@ const App: React.FC = () => {
           setBootComplete(false);
           setChatHistory(DEFAULT_CHAT);
           setSelectedNpcId('advisor');
-          setToasts([]);
+          clearToasts();
           addToast('Session reset via query flag.', 'info');
 
           url.searchParams.delete('reset');
@@ -154,6 +153,20 @@ const App: React.FC = () => {
       }
   }, [tutorialStep, activeMobileTab]);
 
+  // Send Sarah's proactive first message during tutorial step 5
+  const [sarahProactiveMessageSent, setSarahProactiveMessageSent] = useState(false);
+  useEffect(() => {
+      if (tutorialStep === 5 && !sarahProactiveMessageSent) {
+          // Check if Sarah's chat doesn't already have many messages
+          const sarah = npcs.find(n => n.id === 'sarah');
+          if (sarah && sarah.dialogueHistory.length <= 2) {
+              // Send Sarah's proactive message
+              sendNpcMessage('sarah', "Hey! Perfect timing. I've been in the data room all night. Found something weird on page 40 of the CIM - there's a patent reference they buried in the footnotes. PATENT #8829. Hydrophobic coating tech. If this is real, it could be a game-changer. Want me to dig deeper?", 'npc', 'Sarah');
+              setSarahProactiveMessageSent(true);
+          }
+      }
+  }, [tutorialStep, sarahProactiveMessageSent, npcs, sendNpcMessage]);
+
   // Ensure the market is live once the tutorial is cleared
   useEffect(() => {
       if (tutorialStep === 0 && bootComplete && gamePhase === 'LIFE_MANAGEMENT' && activeDeals.length === 0) {
@@ -161,12 +174,6 @@ const App: React.FC = () => {
       }
   }, [tutorialStep, bootComplete, gamePhase, activeDeals.length, generateNewDeals]);
 
-  // Left Panel Sync Logic
-  useEffect(() => {
-      if (selectedNpcId && activeMobileTab !== 'COMMS') {
-          // If NPC selected from logic, ensure chat terminal knows about it
-      }
-  }, [selectedNpcId]);
 
   // Auto-complete boot sequence if loading saved game (playerStats exists but not in INTRO)
   useEffect(() => {
@@ -187,7 +194,8 @@ const App: React.FC = () => {
 
   // --- HANDLERS ---
   const handleIntroComplete = (stress: number) => {
-      // Init Rookie Stats with mandatory PackFancy setup
+      // Init Stats with standard settings and mandatory PackFancy setup
+      const diffSettings = DIFFICULTY_SETTINGS['Normal'];
       const initialPortfolio: PortfolioCompany[] = [{
         id: 1,
         name: "PackFancy Inc.",
@@ -204,12 +212,27 @@ const App: React.FC = () => {
         revenueGrowth: 0.02,
         acquisitionDate: { year: 1, month: 1 },
         eventHistory: [],
-        isAnalyzed: false
+        isAnalyzed: false,
+        // Enhanced Living World fields
+        employeeCount: 450,
+        employeeGrowth: 0.01,
+        ebitdaMargin: 0.125,
+        cashBalance: 8000000,
+        runwayMonths: 18,
+        customerChurn: 0.05,
+        ceoPerformance: 70,
+        boardAlignment: 65,
+        managementTeam: [],
+        dealClosed: false,
+        isInExitProcess: false,
+        nextBoardMeetingWeek: 12,
+        lastFinancialUpdate: 0
       }];
 
+      // Apply difficulty settings
       updatePlayerStats({
-          //...DIFFICULTY_SETTINGS['Normal'].initialStats,
-          stress,
+          ...diffSettings.initialStats,
+          stress: diffSettings.initialStats.stress + stress,
           playedScenarioIds: [SCENARIOS[0].id],
           portfolio: initialPortfolio
       });
@@ -219,21 +242,48 @@ const App: React.FC = () => {
       setTutorialStep(1); // Start Tutorial
       setBootComplete(true);
       logEvent('tutorial_start');
-      addLogEntry("INIT: Career Sequence Started. Role: Analyst.");
-      setChatHistory(prev => [...prev, { sender: 'system', text: "[SYSTEM_LOG] Player accepted offer. Career started at Stress Level: " + stress }]);
+      addLogEntry(`INIT: Career Sequence Started. Role: Analyst.`);
+      setChatHistory(prev => [...prev, { sender: 'system', text: `[SYSTEM_LOG] Player accepted offer. Starting stress: ${diffSettings.initialStats.stress + stress}` }]);
       playSfx('BOOT');
   };
 
   const handleStatChange = (changes: StatChanges) => {
       let finalChanges = { ...changes };
 
-      // Bug fix: Merge auto-loan with original changes to avoid double-applying
+      // Check if player can access loans (Senior Associate+ only)
+      const compensation = playerStats ? COMPENSATION_BY_LEVEL[playerStats.level] : null;
+      const canAccessLoan = compensation?.canAccessLoan ?? false;
+      const loanLimit = compensation?.loanLimit ?? 0;
+      const currentLoanBalance = playerStats?.loanBalance ?? 0;
+      const availableLoanRoom = Math.max(0, loanLimit - currentLoanBalance);
+
+      // Handle negative cash scenarios
       if (playerStats && typeof changes.cash === 'number' && changes.cash < 0) {
           const projectedCash = playerStats.cash + changes.cash;
           if (projectedCash < 0) {
               const deficit = Math.abs(projectedCash);
+
+              if (!canAccessLoan) {
+                  // FIRED: Associates can't take loans and went negative
+                  addToast('INSUFFICIENT FUNDS. You cannot afford this.', 'error');
+                  addLogEntry('Expense rejected: insufficient funds and no loan access.');
+
+                  // Check if this would trigger firing (cash already very low)
+                  if (playerStats.cash < 100) {
+                      addToast('WARNING: You are nearly broke. Get promoted to access emergency loans.', 'error');
+                  }
+                  return; // Block the action
+              }
+
+              // Has loan access - check if within limit
               const loanSize = Math.max(25000, Math.ceil(deficit * 1.1));
-              // Merge loan into changes: add loan amount to offset the deficit
+              if (loanSize > availableLoanRoom) {
+                  addToast(`Loan limit exceeded. Max available: $${availableLoanRoom.toLocaleString()}`, 'error');
+                  addLogEntry('Emergency loan denied: credit limit reached.');
+                  return; // Block the action
+              }
+
+              // Merge loan into changes
               finalChanges = {
                   ...finalChanges,
                   cash: (finalChanges.cash || 0) + loanSize,
@@ -383,7 +433,7 @@ const App: React.FC = () => {
       setActiveMobileTab('DESK');
       setChatHistory(DEFAULT_CHAT);
       setSelectedNpcId('advisor');
-      setToasts([]);
+      clearToasts();
       addToast('Simulation reset. Rebooting intro...', 'info');
       addLogEntry('Simulation reset to cold open.');
   };
@@ -394,10 +444,68 @@ const App: React.FC = () => {
       playSfx('KEYPRESS');
   };
 
+  // --- LIVING WORLD HANDLERS ---
+  const handleConsultMachiavelli = async (event: CompanyActiveEvent | NPCDrama) => {
+    // Pre-populate advisor with context about the decision
+    const contextMessage = `[DECISION REQUIRED: ${event.title}] ${event.description}`;
+    const optionsContext = 'options' in event
+      ? event.options.map((opt: { label: string; description: string }) => `Option: ${opt.label} - ${opt.description}`).join('\n')
+      : event.choices.map((choice: Choice) => `Option: ${choice.text} - ${choice.description || ''}`).join('\n');
+
+    const advisorQuery = `I need your counsel on this situation:\n\n${event.description}\n\nMy options are:\n${optionsContext}\n\nWhat would you advise?`;
+
+    // Navigate to advisor chat
+    setSelectedNpcId('advisor');
+    if (window.innerWidth < 768) setActiveMobileTab('COMMS');
+
+    // Send the query to advisor
+    await handleSendMessageToAdvisor(advisorQuery);
+
+    addLogEntry(`Consulting advisor about: ${event.title}`);
+  };
+
+  const handleWarningActionWithNavigation = (warning: typeof activeWarnings[0]) => {
+    handleWarningAction(warning);
+
+    // Navigate based on warning type
+    switch (warning.type) {
+      case 'PORTFOLIO':
+        setActiveTab('ASSETS');
+        if (window.innerWidth < 768) setActiveMobileTab('DESK');
+        break;
+      case 'CASH':
+      case 'LOAN':
+        // Could open financial modal here if we had one
+        addToast('Check the workspace for financial options', 'info');
+        break;
+      case 'HEALTH':
+      case 'STRESS':
+        // Could navigate to life actions
+        addToast('Consider taking time off or reducing workload', 'info');
+        break;
+      case 'DEADLINE':
+        setActiveTab('ASSETS');
+        if (window.innerWidth < 768) setActiveMobileTab('DESK');
+        break;
+    }
+  };
+
   const handleChatBackToPortfolio = () => {
       setShowPortfolioDashboard(true);
       setActiveTab('ASSETS');
       if (window.innerWidth < 768) setActiveMobileTab('DESK');
+  };
+
+  const handleStatsClick = () => {
+      setShowStatsModal(true);
+  };
+
+  const handleStatsModalClose = () => {
+      setShowStatsModal(false);
+      if (!hasSeenStatsTutorial) {
+          setHasSeenStatsTutorial(true);
+          localStorage.setItem('HAS_SEEN_STATS_TUTORIAL', 'true');
+      }
   };
 
   // --- CHAT HANDLERS ---
@@ -473,45 +581,14 @@ const App: React.FC = () => {
   };
 
   // --- RENDER HELPERS ---
-  const renderLeftPanel = () => (
-      <TerminalPanel 
-        title="COMMS_ARRAY" 
-        className={`h-full flex flex-col ${tutorialStep === 4 ? 'z-[100] relative ring-2 ring-amber-500' : ''}`}
-      >
-          <div className="flex-1 bg-black">
-              {npcs.map(npc => (
-                  <button
-                      key={npc.id}
-                      onClick={() => { 
-                          setSelectedNpcId(npc.id); 
-                          playSfx('KEYPRESS');
-                          // Tutorial Logic: If we click Sarah in Step 4, advance
-                          if (tutorialStep === 4 && npc.id === 'sarah') {
-                              setTutorialStep(5);
-                          }
-                      }}
-                      className={`w-full text-left p-3 border-b border-slate-800 hover:bg-slate-800 transition-colors flex items-center space-x-3 ${selectedNpcId === npc.id ? 'bg-slate-800 text-amber-500' : 'text-slate-400'}`}
-                  >
-                      <div className={`w-2 h-2 rounded-full ${npc.mood > 60 && npc.trust > 50 ? 'bg-green-500' : (npc.mood < 30 || npc.trust < 30) ? 'bg-red-500' : 'bg-amber-500'}`}></div>
-                      <div className="flex-1">
-                          <div className="font-bold text-xs">{npc.name}</div>
-                          <div className="text-[10px] opacity-70">{npc.role}</div>
-                      </div>
-                  </button>
-              ))}
-              <button 
-                onClick={() => { setSelectedNpcId('advisor'); playSfx('KEYPRESS'); }}
-                className={`w-full text-left p-3 border-b border-slate-800 hover:bg-slate-800 transition-colors flex items-center space-x-3 ${selectedNpcId === 'advisor' ? 'bg-slate-800 text-blue-400' : 'text-slate-400'}`}
-              >
-                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                  <div className="font-bold text-xs">MACHIAVELLI (AI)</div>
-              </button>
-          </div>
-          <div className="p-2 border-t border-slate-700 bg-slate-900 text-[10px] text-center text-slate-500">
-              SECURE_CHANNEL_ESTABLISHED
-          </div>
-      </TerminalPanel>
-  );
+  const handleNpcSelect = useCallback((npcId: string) => {
+    setSelectedNpcId(npcId);
+    playSfx('KEYPRESS');
+  }, [playSfx]);
+
+  const handleTutorialStep5 = useCallback(() => {
+    setTutorialStep(5);
+  }, [setTutorialStep]);
 
   const renderCenterPanel = () => {
       // 1. Asset Manager View
@@ -543,7 +620,10 @@ const App: React.FC = () => {
                           }
                       }}
                       onBack={() => {
-                          if (tutorialStep > 0) return; // Prevent closing in tutorial
+                          if (tutorialStep > 0) {
+                              addToast('Complete the tutorial first!', 'error');
+                              return;
+                          }
                           setActiveTab('WORKSPACE');
                           playSfx('KEYPRESS');
                       }}
@@ -555,6 +635,7 @@ const App: React.FC = () => {
                           setActiveTab('FOUNDER');
                       }}
                       canAccessFounder={founderUnlocked}
+                      backDisabled={tutorialStep > 0}
                   />
               </TerminalPanel>
           )
@@ -607,40 +688,12 @@ const App: React.FC = () => {
       // 4. Scenario Workspace
       if (gamePhase === 'SCENARIO') {
           return (
-              <TerminalPanel title={`CIM_READER :: ${currentScenario.title.toUpperCase()}`} className="h-full flex flex-col">
-                  <div className="p-6 overflow-y-auto flex-1 bg-black text-slate-300 font-mono">
-                      <div className="border-l-2 border-amber-500 pl-4 mb-6 text-lg italic text-amber-100">
-                          {currentScenario.description}
-                      </div>
-
-                      <div className="grid gap-3">
-                          {scenarioChoices.length === 0 && (
-                              <div className="text-xs text-slate-500 border border-dashed border-slate-700 p-4 text-center space-y-3">
-                                  <div>No decision points available yet. Gather more intel.</div>
-                                  <button
-                                      onClick={handleScenarioFallback}
-                                      className="px-4 py-2 border border-slate-600 text-slate-300 hover:border-amber-500 hover:text-amber-400 transition-colors"
-                                  >
-                                      Return to Desk
-                                  </button>
-                              </div>
-                          )}
-
-                          {scenarioChoices.map((choice, i) => (
-                              <button
-                                  key={i}
-                                  onClick={() => handleChoice(choice)}
-                                  className="text-left border border-slate-700 p-4 hover:bg-slate-800 hover:border-green-500 transition-all group"
-                              >
-                                  <div className="font-bold text-green-500 mb-1 group-hover:text-green-400">
-                                      {">"} OPTION_{i + 1}: {choice.text}
-                                  </div>
-                                  <div className="text-xs text-slate-500">{choice.description}</div>
-                              </button>
-                          ))}
-                      </div>
-                  </div>
-              </TerminalPanel>
+              <ScenarioPanel
+                  scenario={currentScenario}
+                  choices={scenarioChoices}
+                  onChoice={handleChoice}
+                  onFallback={handleScenarioFallback}
+              />
           );
       }
 
@@ -656,15 +709,41 @@ const App: React.FC = () => {
               {/* Hide Life Actions during Tutorial Step 1 to prevent pushing content down */}
               {tutorialStep !== 1 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    {LIFE_ACTIONS.map(action => (
+                    {LIFE_ACTIONS.map(action => {
+                        // Calculate affordability for this action
+                        const actionCost = Math.abs(action.outcome.statChanges.cash || 0);
+                        const canAfford = playerStats ? playerStats.cash >= actionCost : false;
+                        const expensiveThreshold = playerStats ? AFFORDABILITY_THRESHOLDS[playerStats.level] : 200;
+                        const feelsExpensive = actionCost >= expensiveThreshold;
+
+                        // Check loan access for bridge loan action
+                        const compensation = playerStats ? COMPENSATION_BY_LEVEL[playerStats.level] : null;
+                        const canAccessLoan = compensation?.canAccessLoan ?? false;
+                        const loanLimit = compensation?.loanLimit ?? 0;
+                        const currentLoanBalance = playerStats?.loanBalance ?? 0;
+                        const isLoanAction = action.id === 'hard_money_loan';
+                        const loanLocked = isLoanAction && !canAccessLoan;
+
+                        return (
                         <button
                             key={action.id}
                             onClick={() => {
                                 if (tutorialStep > 0) return; // Lock during tutorial
                                 if (!playerStats) return;
+
+                                // Bridge Loan - locked for Associates
                                 if (action.id === 'hard_money_loan') {
+                                    if (!canAccessLoan) {
+                                        addToast('Loan access locked. Get promoted to Senior Associate first.', 'error');
+                                        addLogEntry('Bridge loan denied: insufficient seniority.');
+                                        return;
+                                    }
                                     if (playerStats.loanBalance > 0) {
                                         addToast('Existing bridge loan outstanding.', 'error');
+                                        return;
+                                    }
+                                    if (currentLoanBalance + 50000 > loanLimit) {
+                                        addToast(`Loan would exceed your $${loanLimit.toLocaleString()} limit.`, 'error');
                                         return;
                                     }
                                     handleStatChange(action.outcome.statChanges);
@@ -672,6 +751,8 @@ const App: React.FC = () => {
                                     addLogEntry('Took a hard money bridge loan.');
                                     return;
                                 }
+
+                                // Loan payment
                                 if (action.id === 'loan_payment') {
                                     if (playerStats.loanBalance <= 0) {
                                         addToast('No lender breathing down your neck right now.', 'error');
@@ -687,16 +768,34 @@ const App: React.FC = () => {
                                     addLogEntry('Paid down high-interest debt.');
                                     return;
                                 }
+
+                                // Affordability check for all actions
+                                if (actionCost > 0 && !canAfford) {
+                                    addToast(`Can't afford this. Need $${actionCost.toLocaleString()}`, 'error');
+                                    return;
+                                }
+
+                                // Warning for expensive actions (but still allow)
+                                if (feelsExpensive && actionCost > 0) {
+                                    addToast(`Splurging $${actionCost.toLocaleString()} on ${action.text}`, 'info');
+                                }
+
                                 handleStatChange(action.outcome.statChanges);
                                 addToast(action.text, 'success');
                                 addLogEntry(`ACTION: ${action.text}`);
                             }}
-                            className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all active:scale-95 active:border-amber-500 active:shadow-[0_0_12px_rgba(245,158,11,0.4)] ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                            className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all active:scale-95 active:border-amber-500 active:shadow-[0_0_12px_rgba(245,158,11,0.4)] ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''} ${loanLocked ? 'opacity-40 border-red-900' : ''} ${!canAfford && actionCost > 0 ? 'opacity-50 border-slate-800' : ''}`}
                         >
-                            <i className={`fas ${action.icon} text-2xl mb-2 text-slate-500 group-hover:text-blue-500`}></i>
+                            <i className={`fas ${action.icon} text-2xl mb-2 ${loanLocked ? 'text-red-900' : !canAfford && actionCost > 0 ? 'text-slate-600' : feelsExpensive && actionCost > 0 ? 'text-amber-600' : 'text-slate-500'} group-hover:text-blue-500`}></i>
                             <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-white">{action.text}</span>
+                            {actionCost > 0 && (
+                                <span className={`text-[8px] ${!canAfford ? 'text-red-500' : feelsExpensive ? 'text-amber-500' : 'text-slate-600'}`}>
+                                    ${actionCost.toLocaleString()}
+                                </span>
+                            )}
+                            {loanLocked && <span className="text-[8px] text-red-500">LOCKED</span>}
                         </button>
-                    ))}
+                    );})}
                 </div>
               )}
               
@@ -769,14 +868,28 @@ const App: React.FC = () => {
   };
 
   // --- MAIN RENDER ---
-  if (authLoading) return null;
-  
+  if (authLoading) {
+    return (
+      <div className="h-screen w-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-green-500 text-2xl font-mono animate-pulse">FUND WARS OS</div>
+          <div className="text-slate-500 text-xs mt-4">Initializing secure connection...</div>
+          <div className="mt-4 flex justify-center space-x-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) return <LoginScreen />;
 
   if (!legalAccepted) return <LegalDisclaimer onAccept={handleLegalAccept} />;
 
   if (!bootComplete) {
-      if (gamePhase === 'INTRO') return <IntroSequence onComplete={(s) => handleIntroComplete(s)} />;
+      if (gamePhase === 'INTRO') return <IntroSequence onComplete={handleIntroComplete} />;
       // If we loaded a game and are not in Intro, skip boot sequence
       if (playerStats) {
           // Use useEffect pattern to avoid setting state during render
@@ -803,7 +916,7 @@ const App: React.FC = () => {
                     setBootComplete(false);
                     setChatHistory(DEFAULT_CHAT);
                     setSelectedNpcId('advisor');
-                    setToasts([]);
+                    clearToasts();
                     addToast('Session reset.', 'success');
                 }}
             >
@@ -812,14 +925,20 @@ const App: React.FC = () => {
         )}
         {/* Mobile Status Bar / Safe Area Top */}
         <div className="pt-[env(safe-area-inset-top)] bg-slate-900 border-b border-slate-700 md:pt-0">
-             {playerStats && <PlayerStatsDisplay stats={playerStats} marketVolatility={marketVolatility} />}
+             {playerStats && <PlayerStatsDisplay stats={playerStats} marketVolatility={marketVolatility} onStatsClick={handleStatsClick} />}
         </div>
         
         {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
         <div className="hidden md:grid flex-1 grid-cols-[250px_1fr_250px] overflow-hidden relative">
             {/* Left Panel (Comms) */}
             <div className={`border-r border-slate-700 bg-black ${tutorialStep === 4 ? 'z-[100] relative' : ''}`}>
-                {renderLeftPanel()}
+                <NpcListPanel
+                  npcs={npcs}
+                  selectedNpcId={selectedNpcId}
+                  onSelectNpc={handleNpcSelect}
+                  tutorialStep={tutorialStep}
+                  onTutorialAdvance={handleTutorialStep5}
+                />
             </div>
             
             {/* Center Column (Workspace) */}
@@ -871,8 +990,10 @@ const App: React.FC = () => {
             )}
 
              {activeMobileTab === 'MENU' && (
-                <div className="flex-1 bg-slate-900 p-6 space-y-4">
+                <div className="flex-1 bg-slate-900 p-6 space-y-4 overflow-auto">
                     <h2 className="text-xl font-bold text-white mb-4">SYSTEM_MENU</h2>
+
+                    {/* Quick Stats Preview */}
                     <div className="space-y-2 text-sm text-slate-400 font-mono">
                         <div className="flex justify-between p-2 border border-slate-700 bg-black">
                              <span>Reputation</span>
@@ -882,18 +1003,52 @@ const App: React.FC = () => {
                              <span>Analyst Rating</span>
                              <span className="text-amber-500">{playerStats?.analystRating}/100</span>
                         </div>
-                         <div className="flex justify-between p-2 border border-slate-700 bg-black">
+                        <div className="flex justify-between p-2 border border-slate-700 bg-black">
                              <span>Level</span>
                              <span className="text-green-500">{playerStats?.level}</span>
                         </div>
                     </div>
+
+                    {/* View Full Stats Button */}
                     <button
-                        className="w-full border border-red-900 text-red-500 py-3 uppercase font-bold text-xs tracking-widest hover:bg-red-900/20"
-                        onClick={handleResetSimulation}
+                        className="w-full bg-gradient-to-r from-amber-600 to-amber-500 text-black py-3 uppercase font-bold text-xs tracking-widest hover:from-amber-500 hover:to-amber-400 rounded-lg flex items-center justify-center gap-2 transition-all"
+                        onClick={handleStatsClick}
                     >
-                        Reset Simulation
+                        <i className="fas fa-chart-bar"></i>
+                        View Full Stats & Explanation
                     </button>
-                    <div className="pt-8 border-t border-slate-800">
+
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                        <button
+                            className="p-3 border border-slate-700 bg-slate-800/50 rounded-lg text-slate-300 text-xs font-bold hover:bg-slate-700/50 flex flex-col items-center gap-1 transition-colors"
+                            onClick={() => { setActiveMobileTab('DESK'); setActiveTab('ASSETS'); }}
+                        >
+                            <i className="fas fa-briefcase text-emerald-400"></i>
+                            <span>Portfolio</span>
+                        </button>
+                        <button
+                            className="p-3 border border-slate-700 bg-slate-800/50 rounded-lg text-slate-300 text-xs font-bold hover:bg-slate-700/50 flex flex-col items-center gap-1 transition-colors"
+                            onClick={() => { setActiveMobileTab('DESK'); setActiveTab('DEALS'); }}
+                        >
+                            <i className="fas fa-gavel text-amber-400"></i>
+                            <span>Deal Market</span>
+                        </button>
+                    </div>
+
+                    {/* Danger Zone */}
+                    <div className="pt-4 border-t border-slate-800">
+                        <div className="text-xs text-slate-600 mb-2 uppercase tracking-wider">Danger Zone</div>
+                        <button
+                            className="w-full border border-red-900 text-red-500 py-3 uppercase font-bold text-xs tracking-widest hover:bg-red-900/20 rounded-lg transition-colors"
+                            onClick={handleResetSimulation}
+                        >
+                            Reset Simulation
+                        </button>
+                    </div>
+
+                    {/* User Info */}
+                    <div className="pt-4 border-t border-slate-800">
                          <div className="text-xs text-slate-600 mb-2">Authenticated as:</div>
                          <div className="flex items-center space-x-3 text-slate-300 mb-4">
                             {user.picture && <img src={user.picture} alt="Profile" className="w-8 h-8 rounded-full border border-slate-600" />}
@@ -910,8 +1065,8 @@ const App: React.FC = () => {
             <span className="animate-pulse">_</span>
         </div>
 
-        {/* DESKTOP FLOATING CHAT TERMINAL */}
-        <div className={`hidden md:block ${tutorialStep === 5 ? 'relative z-[100]' : ''}`}>
+        {/* DESKTOP FLOATING CHAT TERMINAL - Always on top of content panels */}
+        <div className="hidden md:block">
             <CommsTerminal
                 npcList={npcs}
                 selectedNpcId={selectedNpcId} // Pass this prop
@@ -949,11 +1104,149 @@ const App: React.FC = () => {
         {/* MOBILE BOTTOM NAV */}
         <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
 
+        {/* WARNING PANEL - Living World System */}
+        <WarningPanel
+            warnings={activeWarnings}
+            onDismiss={dismissWarning}
+            onAction={handleWarningActionWithNavigation}
+        />
+
+        {/* COMPANY EVENT DECISION MODAL */}
+        {activeCompanyEvent && (
+            <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="w-full max-w-lg bg-slate-900 border border-amber-500/50 rounded-lg shadow-2xl">
+                    <div className="p-4 border-b border-amber-500/30 bg-amber-500/10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                <i className="fas fa-exclamation-triangle text-amber-400"></i>
+                            </div>
+                            <div>
+                                <div className="text-xs text-amber-400/70 uppercase tracking-wider">Company Event</div>
+                                <div className="text-lg font-bold text-white">{activeCompanyEvent.title}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-4">
+                        <p className="text-sm text-slate-300 mb-4">{activeCompanyEvent.description}</p>
+                        <div className="space-y-2">
+                            {activeCompanyEvent.options.map((option, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        handleEventDecision(activeCompanyEvent.id, option.id);
+                                        addToast(option.outcomeText, option.risk === 'high' ? 'error' : 'success');
+                                        addLogEntry(`EVENT: ${activeCompanyEvent.title} - Chose: ${option.label}`);
+                                    }}
+                                    className={`w-full text-left p-3 border rounded transition-all ${
+                                        option.risk === 'high'
+                                            ? 'border-red-500/50 hover:border-red-400 hover:bg-red-900/20'
+                                            : option.risk === 'medium'
+                                            ? 'border-amber-500/50 hover:border-amber-400 hover:bg-amber-900/20'
+                                            : 'border-green-500/50 hover:border-green-400 hover:bg-green-900/20'
+                                    }`}
+                                >
+                                    <div className="text-sm font-bold text-white">{option.label}</div>
+                                    <div className="text-xs text-slate-400 mt-1">{option.description}</div>
+                                    <div className={`text-[10px] mt-1 ${
+                                        option.risk === 'high' ? 'text-red-400' : option.risk === 'medium' ? 'text-amber-400' : 'text-green-400'
+                                    }`}>
+                                        Risk: {option.risk.toUpperCase()}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => handleConsultMachiavelli(activeCompanyEvent)}
+                            className="w-full mt-4 p-3 border border-purple-500/50 hover:border-purple-400 hover:bg-purple-900/20 rounded text-purple-400 text-sm flex items-center justify-center gap-2"
+                        >
+                            <i className="fas fa-user-secret"></i>
+                            Consult Machiavelli
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* NPC DRAMA DECISION MODAL */}
+        {activeDrama && (
+            <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="w-full max-w-lg bg-slate-900 border border-purple-500/50 rounded-lg shadow-2xl">
+                    <div className="p-4 border-b border-purple-500/30 bg-purple-500/10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                <i className="fas fa-theater-masks text-purple-400"></i>
+                            </div>
+                            <div>
+                                <div className="text-xs text-purple-400/70 uppercase tracking-wider">Office Drama</div>
+                                <div className="text-lg font-bold text-white">{activeDrama.title}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-4">
+                        <p className="text-sm text-slate-300 mb-4">{activeDrama.description}</p>
+                        {activeDrama.involvedNpcs && activeDrama.involvedNpcs.length > 0 && (
+                            <div className="text-xs text-slate-500 mb-3">
+                                <i className="fas fa-users mr-1"></i>
+                                Involved: {activeDrama.involvedNpcs.join(', ')}
+                            </div>
+                        )}
+                        <div className="space-y-2">
+                            {activeDrama.choices.map((choice, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        updatePlayerStats(choice.outcome.statChanges);
+                                        if (choice.outcome.npcEffects) {
+                                            choice.outcome.npcEffects.forEach(effect => {
+                                                updatePlayerStats({
+                                                    npcRelationshipUpdate: {
+                                                        npcId: effect.npcId,
+                                                        change: effect.relationshipChange,
+                                                        memory: `Drama: ${activeDrama.title} - ${choice.text}`
+                                                    }
+                                                });
+                                            });
+                                        }
+                                        setActiveDrama(null);
+                                        addToast(choice.outcome.description, 'info');
+                                        addLogEntry(`DRAMA: ${activeDrama.title} - Chose: ${choice.text}`);
+                                    }}
+                                    className="w-full text-left p-3 border border-slate-600 hover:border-purple-400 hover:bg-purple-900/10 rounded transition-all"
+                                >
+                                    <div className="text-sm font-bold text-white">{choice.text}</div>
+                                    {choice.description && (
+                                        <div className="text-xs text-slate-400 mt-1">{choice.description}</div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => handleConsultMachiavelli(activeDrama)}
+                            className="w-full mt-4 p-3 border border-purple-500/50 hover:border-purple-400 hover:bg-purple-900/20 rounded text-purple-400 text-sm flex items-center justify-center gap-2"
+                        >
+                            <i className="fas fa-user-secret"></i>
+                            Consult Machiavelli
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         {/* TOAST LAYER */}
-        <TerminalToast toasts={toasts} removeToast={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
+        <TerminalToast toasts={toasts} removeToast={removeToast} />
 
         {/* GLITCH EFFECTS */}
         {playerStats && <SanityEffects stress={playerStats.stress} dependency={playerStats.dependency} />}
+
+        {/* STATS EXPLAINER MODAL */}
+        {showStatsModal && playerStats && (
+            <StatsExplainerModal
+                stats={playerStats}
+                marketVolatility={marketVolatility}
+                onClose={handleStatsModalClose}
+                isFirstTime={!hasSeenStatsTutorial}
+            />
+        )}
     </div>
   );
 };

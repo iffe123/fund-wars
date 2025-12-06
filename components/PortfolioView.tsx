@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import type { PortfolioCompany, PortfolioAction, PlayerStats } from '../types';
-import { PORTFOLIO_ACTIONS, MARKET_VOLATILITY_STYLES } from '../constants';
+import { MARKET_VOLATILITY_STYLES } from '../constants';
 import { TerminalButton, TerminalPanel, AsciiProgress, Badge } from './TerminalUI';
 import { useGame } from '../context/GameContext';
 import AuctionModal from './AuctionModal';
 import BlackBoxModal from './BlackBoxModal';
 import BoardBattleModal from './BoardBattleModal';
+import ExitStrategyModal from './ExitStrategyModal';
 
 interface PortfolioViewProps {
   playerStats: PlayerStats;
@@ -13,9 +14,10 @@ interface PortfolioViewProps {
   onBack: () => void;
   onJumpShip?: () => void;
   canAccessFounder?: boolean;
+  backDisabled?: boolean;
 }
 
-const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, onBack, onJumpShip, canAccessFounder = false }) => {
+const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onAction, onBack, onJumpShip, canAccessFounder = false, backDisabled = false }) => {
   const { tutorialStep, updatePlayerStats, setTutorialStep, marketVolatility } = useGame();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [analyzingIds, setAnalyzingIds] = useState<number[]>([]);
@@ -24,6 +26,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
   const [showAuction, setShowAuction] = useState<PortfolioCompany | null>(null);
   const [showBlackBox, setShowBlackBox] = useState(false);
   const [showBoardBattle, setShowBoardBattle] = useState<PortfolioCompany | null>(null);
+  const [showExitModal, setShowExitModal] = useState<PortfolioCompany | null>(null);
 
   const portfolio = playerStats.portfolio;
   const selectedCompany = portfolio.find(c => c.id === selectedId);
@@ -31,8 +34,9 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
   // Market Cycle Modifiers
   const isMarketPanic = marketVolatility === 'PANIC' || marketVolatility === 'CREDIT_CRUNCH';
 
-  const formatMoney = (val: number) => `$${(val / 1000000).toFixed(1)}M`;
-  const formatPercent = (val: number) => `${(val * 100).toFixed(1)}%`;
+  // Memoize formatting functions
+  const formatMoney = useCallback((val: number) => `$${(val / 1000000).toFixed(1)}M`, []);
+  const formatPercent = useCallback((val: number) => `${(val * 100).toFixed(1)}%`, []);
 
   const handleAnalyze = (companyId: number) => {
     setAnalyzingIds(prev => [...prev, companyId]);
@@ -104,8 +108,8 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
     }
   };
 
-  // Deal type styling
-  const getDealTypeStyle = (dealType: string) => {
+  // Memoize deal type styling function
+  const getDealTypeStyle = useCallback((dealType: string) => {
     switch (dealType) {
       case 'LBO': return 'bg-purple-900/30 text-purple-400 border-purple-700/50';
       case 'GROWTH': return 'bg-emerald-900/30 text-emerald-400 border-emerald-700/50';
@@ -113,7 +117,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
       case 'DEBT': return 'bg-amber-900/30 text-amber-400 border-amber-700/50';
       default: return 'bg-slate-800/50 text-slate-400 border-slate-600/50';
     }
-  };
+  }, []);
 
   return (
     <div className="h-full flex flex-col font-mono text-sm relative">
@@ -156,7 +160,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
               }}
             />
           )}
-          <TerminalButton label="CLOSE" icon="fa-xmark" size="sm" onClick={onBack} />
+          <TerminalButton label="BACK" icon="fa-arrow-left" size="sm" onClick={onBack} disabled={backDisabled} />
         </div>
       </div>
 
@@ -174,9 +178,27 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
             {/* MOBILE CARDS VIEW */}
             <div className="md:hidden p-4 space-y-3">
               {portfolio.length === 0 && (
-                <div className="p-8 text-center">
-                  <i className="fas fa-folder-open text-4xl text-slate-700 mb-3"></i>
-                  <div className="text-slate-500 uppercase tracking-widest text-xs">No Assets Found</div>
+                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                  <div className="w-20 h-20 rounded-full bg-slate-800/50 flex items-center justify-center mb-4 border border-slate-700/50">
+                    <i className="fas fa-folder-open text-4xl text-slate-600"></i>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-300 mb-2">Portfolio Empty</h3>
+                  <p className="text-slate-500 text-sm max-w-xs mb-6">
+                    No active investments yet. Source deals from the Deal Market and win auctions to build your portfolio.
+                  </p>
+                  <button
+                    onClick={onBack}
+                    className="bg-amber-500 hover:bg-amber-400 text-black px-6 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors shadow-lg shadow-amber-500/20"
+                  >
+                    <i className="fas fa-gavel mr-2"></i>
+                    Browse Deal Market
+                  </button>
+                  <div className="mt-6 p-4 bg-slate-800/30 rounded-lg border border-slate-700/30 max-w-xs">
+                    <div className="flex items-start gap-2 text-xs text-slate-400">
+                      <i className="fas fa-lightbulb text-amber-500/70 mt-0.5"></i>
+                      <span>Tip: Deals appear when you advance time. Win auctions to add companies to your portfolio.</span>
+                    </div>
+                  </div>
                 </div>
               )}
               {portfolio.map(company => {
@@ -249,9 +271,23 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
               <tbody className="text-slate-300">
                 {portfolio.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="p-12 text-center">
-                      <i className="fas fa-folder-open text-4xl text-slate-700 mb-3 block"></i>
-                      <div className="text-slate-500 uppercase tracking-widest text-xs">No Assets Found</div>
+                    <td colSpan={5} className="p-8">
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4 border border-slate-700/50">
+                          <i className="fas fa-folder-open text-3xl text-slate-600"></i>
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-300 mb-2">Portfolio Empty</h3>
+                        <p className="text-slate-500 text-sm max-w-md mb-4">
+                          No active investments yet. Source deals from the Deal Market and win auctions to build your portfolio.
+                        </p>
+                        <button
+                          onClick={onBack}
+                          className="bg-amber-500 hover:bg-amber-400 text-black px-5 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors"
+                        >
+                          <i className="fas fa-gavel mr-2"></i>
+                          Browse Deal Market
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -437,9 +473,19 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
                 <span className="text-[10px] font-bold uppercase tracking-wider">Analyze</span>
               </button>
 
-              <button className="border border-slate-700 bg-slate-800/30 text-slate-500 flex flex-col items-center justify-center p-4 rounded-lg opacity-50 cursor-not-allowed">
-                <i className="fas fa-calculator text-lg mb-2"></i>
-                <span className="text-[10px] font-bold uppercase tracking-wider">Model</span>
+              <button
+                onClick={() => selectedCompany.isAnalyzed && selectedCompany.ownershipPercentage > 0 && setShowExitModal(selectedCompany)}
+                disabled={!selectedCompany.isAnalyzed || selectedCompany.ownershipPercentage === 0}
+                className={`
+                  border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
+                  ${selectedCompany.isAnalyzed && selectedCompany.ownershipPercentage > 0
+                    ? 'bg-amber-950/30 border-amber-700/50 text-amber-400 hover:bg-amber-900/40 hover:border-amber-600'
+                    : 'border-slate-700 bg-slate-800/30 text-slate-500 opacity-50 cursor-not-allowed'
+                  }
+                `}
+              >
+                <i className="fas fa-door-open text-lg mb-2"></i>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Exit</span>
               </button>
 
               <button className="border border-slate-600 bg-slate-800/50 text-slate-300 flex flex-col items-center justify-center p-4 rounded-lg hover:bg-slate-700/50 hover:border-slate-500 transition-all">
@@ -497,8 +543,20 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ playerStats, onAction, on
           }}
         />
       )}
+
+      {showExitModal && (
+        <ExitStrategyModal
+          company={showExitModal}
+          playerStats={playerStats}
+          marketVolatility={marketVolatility}
+          onExecuteExit={handleExecuteExit}
+          onClose={() => setShowExitModal(null)}
+        />
+      )}
     </div>
   );
-};
+});
+
+PortfolioView.displayName = 'PortfolioView';
 
 export default PortfolioView;

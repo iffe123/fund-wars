@@ -77,11 +77,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
     }
 
+    let didSettle = false;
+
+    // Timeout: If Firebase auth doesn't respond within 8 seconds, show login screen
+    // This prevents infinite black/loading screen if Firebase is unreachable
+    const authTimeout = setTimeout(() => {
+        if (!didSettle) {
+            console.warn('[AUTH] Firebase auth timeout - showing login screen');
+            setLoading(false);
+        }
+    }, 8000);
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      didSettle = true;
+      clearTimeout(authTimeout);
       setCurrentUser(user);
       setLoading(false);
     });
-    return unsubscribe;
+
+    return () => {
+        clearTimeout(authTimeout);
+        unsubscribe();
+    };
   }, []);
 
   return (

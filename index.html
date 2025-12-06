@@ -3,9 +3,41 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+    <!-- Primary Meta Tags -->
+    <title>Fund Wars - PE/VC Career Simulator</title>
+    <meta name="description" content="Navigate the cutthroat world of private equity. Start as an analyst, claw your way to Partner. AI-powered NPCs, deal mechanics, and office politics.">
+    <meta name="keywords" content="private equity, venture capital, game, simulator, career, finance, investment banking">
+    <meta name="author" content="Fund Wars">
+
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#f59e0b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Fund Wars">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="/icons/icon-180.png">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://fundwars.app/">
+    <meta property="og:title" content="Fund Wars - PE/VC Career Simulator">
+    <meta property="og:description" content="From Analyst to Partner. Navigate deals, politics, and your own sanity. Built entirely with AI.">
+    <meta property="og:image" content="/icons/og-image.png">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Fund Wars - PE/VC Career Simulator">
+    <meta name="twitter:description" content="From Analyst to Partner. Built without writing a single line of code.">
+    <meta name="twitter:image" content="/icons/og-image.png">
+
     <meta http-equiv="Permissions-Policy" content="identity-credentials-get=*">
-    <title>Fund Wars OS v9.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,6 +72,12 @@
         --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
         --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
         --gradient-dark: linear-gradient(180deg, #0d1117 0%, #030303 100%);
+
+        /* Safe Area Insets for notched devices */
+        --safe-area-inset-top: env(safe-area-inset-top, 0px);
+        --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-area-inset-left: env(safe-area-inset-left, 0px);
+        --safe-area-inset-right: env(safe-area-inset-right, 0px);
       }
 
       body {
@@ -56,6 +94,10 @@
         user-select: none;
         -webkit-tap-highlight-color: transparent;
         -webkit-touch-callout: none;
+
+        /* Safe area padding for notched devices */
+        padding-top: var(--safe-area-inset-top);
+        padding-bottom: var(--safe-area-inset-bottom);
       }
 
       /* Terminal Scrollbar */
@@ -264,6 +306,17 @@
         background: var(--terminal-accent);
         color: var(--terminal-bg);
       }
+
+      /* Safe Area Utility Classes */
+      .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+      .mt-safe { margin-top: env(safe-area-inset-top, 0px); }
+      .mb-safe { margin-bottom: env(safe-area-inset-bottom, 0px); }
+
+      /* Ensure bottom nav doesn't get hidden behind home indicator */
+      .bottom-nav-safe {
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+      }
     </style>
   <script type="importmap">
 {
@@ -274,7 +327,6 @@
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0",
     "@capacitor/cli": "https://aistudiocdn.com/@capacitor/cli@^7.4.4",
     "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
-    "howler": "https://aistudiocdn.com/howler@^2.2.4",
     "vite": "https://aistudiocdn.com/vite@^7.2.4",
     "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
   }
