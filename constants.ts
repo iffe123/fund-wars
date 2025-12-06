@@ -1187,8 +1187,9 @@ export const NEWS_EVENTS = [
 
 export const PREDEFINED_QUESTIONS: string[] = [
   "Should I take this deal?",
-  "How do I handle my MD?",
-  "Is this bonus fair?",
+  "LBO or Growth Equity?",
+  "What's the exit path here?",
+  "How do I lever up?",
   "What's the angle here?",
   "Test my financial knowledge"
 ];

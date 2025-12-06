@@ -178,9 +178,27 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
             {/* MOBILE CARDS VIEW */}
             <div className="md:hidden p-4 space-y-3">
               {portfolio.length === 0 && (
-                <div className="p-8 text-center">
-                  <i className="fas fa-folder-open text-4xl text-slate-700 mb-3"></i>
-                  <div className="text-slate-500 uppercase tracking-widest text-xs">No Assets Found</div>
+                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                  <div className="w-20 h-20 rounded-full bg-slate-800/50 flex items-center justify-center mb-4 border border-slate-700/50">
+                    <i className="fas fa-folder-open text-4xl text-slate-600"></i>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-300 mb-2">Portfolio Empty</h3>
+                  <p className="text-slate-500 text-sm max-w-xs mb-6">
+                    No active investments yet. Source deals from the Deal Market and win auctions to build your portfolio.
+                  </p>
+                  <button
+                    onClick={onBack}
+                    className="bg-amber-500 hover:bg-amber-400 text-black px-6 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors shadow-lg shadow-amber-500/20"
+                  >
+                    <i className="fas fa-gavel mr-2"></i>
+                    Browse Deal Market
+                  </button>
+                  <div className="mt-6 p-4 bg-slate-800/30 rounded-lg border border-slate-700/30 max-w-xs">
+                    <div className="flex items-start gap-2 text-xs text-slate-400">
+                      <i className="fas fa-lightbulb text-amber-500/70 mt-0.5"></i>
+                      <span>Tip: Deals appear when you advance time. Win auctions to add companies to your portfolio.</span>
+                    </div>
+                  </div>
                 </div>
               )}
               {portfolio.map(company => {
@@ -253,9 +271,23 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
               <tbody className="text-slate-300">
                 {portfolio.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="p-12 text-center">
-                      <i className="fas fa-folder-open text-4xl text-slate-700 mb-3 block"></i>
-                      <div className="text-slate-500 uppercase tracking-widest text-xs">No Assets Found</div>
+                    <td colSpan={5} className="p-8">
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4 border border-slate-700/50">
+                          <i className="fas fa-folder-open text-3xl text-slate-600"></i>
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-300 mb-2">Portfolio Empty</h3>
+                        <p className="text-slate-500 text-sm max-w-md mb-4">
+                          No active investments yet. Source deals from the Deal Market and win auctions to build your portfolio.
+                        </p>
+                        <button
+                          onClick={onBack}
+                          className="bg-amber-500 hover:bg-amber-400 text-black px-5 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors"
+                        >
+                          <i className="fas fa-gavel mr-2"></i>
+                          Browse Deal Market
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )}

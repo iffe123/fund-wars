@@ -29,6 +29,7 @@ import CompetitiveAuctionModal, { AuctionResult } from './components/Competitive
 import DealMarket from './components/DealMarket';
 import RivalLeaderboard from './components/RivalLeaderboard';
 import PortfolioCommandCenter from './components/PortfolioCommandCenter';
+import StatsExplainerModal from './components/StatsExplainerModal';
 
 declare global {
   interface Window {
@@ -38,12 +39,12 @@ declare global {
 
 const TUTORIAL_STEPS_TEXT = [
     "", // Step 0 (Inactive)
-    "The meat grinder is empty. Click [MANAGE_ASSETS] to see the deal Chad just threw at you.", // Step 1
-    "Here it is. 'PackFancy'. Click the row to open the Deal Memo.", // Step 2
+    "The meat grinder is empty. Click [MANAGE_ASSETS] to see the deal Chad (your MD) just threw at you. He expects results.", // Step 1
+    "Here it is. 'PackFancy Inc.' - a cardboard box company. Click the row to open the Deal Memo and see what you're dealing with.", // Step 2
     "Look at that Revenue. Flat as a pancake. If you buy this now, you get fired. You need an edge. Click [ANALYZE] to dig deeper.", // Step 3
-    "Analysis complete. We found a weird patent on Page 40. Ask your analyst Sarah about it. Go to [COMMS] (mobile users switch to COMMS tab).", // Step 4
-    "Tell Sarah to check the patent. Type or tap the prompt.", // Step 5
-    "Now we're talking. Valuation just doubled. Click [SUBMIT IOI] to lock it in.", // Step 6
+    "Analysis complete. We found a weird patent on Page 40. Time to meet SARAH - your Senior Analyst. She's been up 40 hours crunching models. Go to [COMMS] and select her.", // Step 4
+    "Sarah already found something. She's proactive like that. Ask her to dig deeper on the patent by clicking the prompt.", // Step 5
+    "PATENT #8829 is real. Hydrophobic coating tech could be a game-changer. Now you have leverage. Click [SUBMIT IOI] to lock in the deal. PRO TIP: After the tutorial, ask Machiavelli (your advisor) about deal structures like LBO vs Growth Equity.", // Step 6
 ];
 
 const DEFAULT_CHAT: ChatMessage[] = [
@@ -77,6 +78,12 @@ const App: React.FC = () => {
   // --- AUCTION STATE ---
   const [currentAuction, setCurrentAuction] = useState<CompetitiveDeal | null>(null);
   const [lastAuctionResult, setLastAuctionResult] = useState<AuctionResult | null>(null);
+
+  // --- STATS MODAL STATE ---
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [hasSeenStatsTutorial, setHasSeenStatsTutorial] = useState(() => {
+    return localStorage.getItem('HAS_SEEN_STATS_TUTORIAL') === 'true';
+  });
 
   const currentScenario = activeScenario || SCENARIOS[0];
   const scenarioChoices = (currentScenario.choices && currentScenario.choices.length > 0)
@@ -141,6 +148,20 @@ const App: React.FC = () => {
           setActiveMobileTab('COMMS');
       }
   }, [tutorialStep, activeMobileTab]);
+
+  // Send Sarah's proactive first message during tutorial step 5
+  const [sarahProactiveMessageSent, setSarahProactiveMessageSent] = useState(false);
+  useEffect(() => {
+      if (tutorialStep === 5 && !sarahProactiveMessageSent) {
+          // Check if Sarah's chat doesn't already have many messages
+          const sarah = npcs.find(n => n.id === 'sarah');
+          if (sarah && sarah.dialogueHistory.length <= 2) {
+              // Send Sarah's proactive message
+              sendNpcMessage('sarah', "Hey! Perfect timing. I've been in the data room all night. Found something weird on page 40 of the CIM - there's a patent reference they buried in the footnotes. PATENT #8829. Hydrophobic coating tech. If this is real, it could be a game-changer. Want me to dig deeper?", 'npc', 'Sarah');
+              setSarahProactiveMessageSent(true);
+          }
+      }
+  }, [tutorialStep, sarahProactiveMessageSent, npcs, sendNpcMessage]);
 
   // Ensure the market is live once the tutorial is cleared
   useEffect(() => {
@@ -409,6 +430,18 @@ const App: React.FC = () => {
       setShowPortfolioDashboard(true);
       setActiveTab('ASSETS');
       if (window.innerWidth < 768) setActiveMobileTab('DESK');
+  };
+
+  const handleStatsClick = () => {
+      setShowStatsModal(true);
+  };
+
+  const handleStatsModalClose = () => {
+      setShowStatsModal(false);
+      if (!hasSeenStatsTutorial) {
+          setHasSeenStatsTutorial(true);
+          localStorage.setItem('HAS_SEEN_STATS_TUTORIAL', 'true');
+      }
   };
 
   // --- CHAT HANDLERS ---
@@ -828,7 +861,7 @@ const App: React.FC = () => {
         )}
         {/* Mobile Status Bar / Safe Area Top */}
         <div className="pt-[env(safe-area-inset-top)] bg-slate-900 border-b border-slate-700 md:pt-0">
-             {playerStats && <PlayerStatsDisplay stats={playerStats} marketVolatility={marketVolatility} />}
+             {playerStats && <PlayerStatsDisplay stats={playerStats} marketVolatility={marketVolatility} onStatsClick={handleStatsClick} />}
         </div>
         
         {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
@@ -893,8 +926,10 @@ const App: React.FC = () => {
             )}
 
              {activeMobileTab === 'MENU' && (
-                <div className="flex-1 bg-slate-900 p-6 space-y-4">
+                <div className="flex-1 bg-slate-900 p-6 space-y-4 overflow-auto">
                     <h2 className="text-xl font-bold text-white mb-4">SYSTEM_MENU</h2>
+
+                    {/* Quick Stats Preview */}
                     <div className="space-y-2 text-sm text-slate-400 font-mono">
                         <div className="flex justify-between p-2 border border-slate-700 bg-black">
                              <span>Reputation</span>
@@ -904,18 +939,52 @@ const App: React.FC = () => {
                              <span>Analyst Rating</span>
                              <span className="text-amber-500">{playerStats?.analystRating}/100</span>
                         </div>
-                         <div className="flex justify-between p-2 border border-slate-700 bg-black">
+                        <div className="flex justify-between p-2 border border-slate-700 bg-black">
                              <span>Level</span>
                              <span className="text-green-500">{playerStats?.level}</span>
                         </div>
                     </div>
+
+                    {/* View Full Stats Button */}
                     <button
-                        className="w-full border border-red-900 text-red-500 py-3 uppercase font-bold text-xs tracking-widest hover:bg-red-900/20"
-                        onClick={handleResetSimulation}
+                        className="w-full bg-gradient-to-r from-amber-600 to-amber-500 text-black py-3 uppercase font-bold text-xs tracking-widest hover:from-amber-500 hover:to-amber-400 rounded-lg flex items-center justify-center gap-2 transition-all"
+                        onClick={handleStatsClick}
                     >
-                        Reset Simulation
+                        <i className="fas fa-chart-bar"></i>
+                        View Full Stats & Explanation
                     </button>
-                    <div className="pt-8 border-t border-slate-800">
+
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                        <button
+                            className="p-3 border border-slate-700 bg-slate-800/50 rounded-lg text-slate-300 text-xs font-bold hover:bg-slate-700/50 flex flex-col items-center gap-1 transition-colors"
+                            onClick={() => { setActiveMobileTab('DESK'); setActiveTab('ASSETS'); }}
+                        >
+                            <i className="fas fa-briefcase text-emerald-400"></i>
+                            <span>Portfolio</span>
+                        </button>
+                        <button
+                            className="p-3 border border-slate-700 bg-slate-800/50 rounded-lg text-slate-300 text-xs font-bold hover:bg-slate-700/50 flex flex-col items-center gap-1 transition-colors"
+                            onClick={() => { setActiveMobileTab('DESK'); setActiveTab('DEALS'); }}
+                        >
+                            <i className="fas fa-gavel text-amber-400"></i>
+                            <span>Deal Market</span>
+                        </button>
+                    </div>
+
+                    {/* Danger Zone */}
+                    <div className="pt-4 border-t border-slate-800">
+                        <div className="text-xs text-slate-600 mb-2 uppercase tracking-wider">Danger Zone</div>
+                        <button
+                            className="w-full border border-red-900 text-red-500 py-3 uppercase font-bold text-xs tracking-widest hover:bg-red-900/20 rounded-lg transition-colors"
+                            onClick={handleResetSimulation}
+                        >
+                            Reset Simulation
+                        </button>
+                    </div>
+
+                    {/* User Info */}
+                    <div className="pt-4 border-t border-slate-800">
                          <div className="text-xs text-slate-600 mb-2">Authenticated as:</div>
                          <div className="flex items-center space-x-3 text-slate-300 mb-4">
                             {user.picture && <img src={user.picture} alt="Profile" className="w-8 h-8 rounded-full border border-slate-600" />}
@@ -976,6 +1045,16 @@ const App: React.FC = () => {
 
         {/* GLITCH EFFECTS */}
         {playerStats && <SanityEffects stress={playerStats.stress} dependency={playerStats.dependency} />}
+
+        {/* STATS EXPLAINER MODAL */}
+        {showStatsModal && playerStats && (
+            <StatsExplainerModal
+                stats={playerStats}
+                marketVolatility={marketVolatility}
+                onClose={handleStatsModalClose}
+                isFirstTime={!hasSeenStatsTutorial}
+            />
+        )}
     </div>
   );
 };

@@ -367,7 +367,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
             {/* Chat Area */}
             <div className="flex-1 flex flex-col bg-slate-900 relative">
                 {/* Chat Header Info */}
-                <div className="p-3 border-b border-slate-800 bg-slate-900/90 flex justify-between items-center backdrop-blur-sm absolute top-0 w-full z-10">
+                <div className="p-3 border-b border-slate-800 bg-slate-900/95 flex justify-between items-center backdrop-blur-sm absolute top-0 w-full z-10 min-h-[4.5rem]">
                     <div>
                         <span className="font-bold text-slate-200 block truncate">
                             {activeTab === 'ADVISOR' ? 'Machiavelli (Advisor)' : activeNPC?.name}
@@ -398,7 +398,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 p-4 pt-16 pb-32 overflow-y-auto space-y-4 custom-scrollbar">
+                <div className="flex-1 p-4 pt-20 pb-48 overflow-y-auto space-y-4 custom-scrollbar scroll-smooth" style={{ scrollPaddingBottom: '12rem' }}>
                     {activeMessages.map((msg, index) => {
                         const isPlayer = msg.sender === 'player';
                         const isSystem = msg.sender === 'system';
@@ -457,6 +457,11 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                                         )}
                                         
                                         <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+
+                                        {/* Timestamp */}
+                                        <div className={`text-[9px] mt-1.5 ${isPlayer ? 'text-blue-300/60' : 'text-slate-500'}`}>
+                                            {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -472,7 +477,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                 </div>
 
                 {/* Input Area (Sticky Bottom) */}
-                <div className="p-2 md:p-3 border-t border-slate-800 bg-slate-900 absolute bottom-0 left-0 right-0">
+                <div className="p-2 md:p-3 border-t border-slate-800 bg-slate-900/95 backdrop-blur-sm absolute bottom-0 left-0 right-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                     {/* Quick Responses */}
                     <div className="flex overflow-x-auto gap-3 mb-3 pb-1 no-scrollbar">
                          {activeTab === 'ADVISOR' ? (
