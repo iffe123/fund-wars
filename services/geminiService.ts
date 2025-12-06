@@ -30,13 +30,18 @@ const withRetry = async <T>(
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
-      // Don't retry on certain errors
+      // Don't retry on certain errors (auth, quota, referrer restrictions)
       const errorMessage = lastError.message.toLowerCase();
       if (
         errorMessage.includes('invalid api key') ||
         errorMessage.includes('api key not valid') ||
         errorMessage.includes('permission denied') ||
-        errorMessage.includes('quota exceeded')
+        errorMessage.includes('permission_denied') ||
+        errorMessage.includes('referrer') ||
+        errorMessage.includes('http_referrer_blocked') ||
+        errorMessage.includes('api_key_http_referrer_blocked') ||
+        errorMessage.includes('quota exceeded') ||
+        errorMessage.includes('403')
       ) {
         throw lastError;
       }
@@ -61,6 +66,15 @@ const classifyError = (error: Error): { type: string; message: string } => {
 
   if (msg.includes('api key not valid') || msg.includes('invalid api key')) {
     return { type: 'auth', message: 'Invalid API key. Please check your VITE_API_KEY configuration.' };
+  }
+  if (msg.includes('referrer') || msg.includes('http_referrer_blocked') || msg.includes('api_key_http_referrer_blocked')) {
+    return {
+      type: 'referrer',
+      message: 'API key referrer restriction error. The API key needs fundwars.app added to allowed referrers in Google Cloud Console.'
+    };
+  }
+  if (msg.includes('permission denied') || msg.includes('permission_denied') || msg.includes('403')) {
+    return { type: 'permission', message: 'API permission denied. Check API key configuration in Google Cloud Console.' };
   }
   if (msg.includes('quota exceeded') || msg.includes('rate limit')) {
     return { type: 'quota', message: 'API quota exceeded. Please wait a moment and try again.' };
@@ -343,6 +357,9 @@ export const getAdvisorResponse = async (
     if (classified.type === 'auth') {
       return "SYSTEM ERROR: API authentication failed. Check your API key configuration.";
     }
+    if (classified.type === 'referrer' || classified.type === 'permission') {
+      return "SYSTEM ERROR: API access blocked. The API key needs the site domain added to allowed referrers in Google Cloud Console.";
+    }
     if (classified.type === 'quota') {
       return "Easy there, kid. Even Wall Street has limits. Wait a moment and try again.";
     }
@@ -488,6 +505,14 @@ export const getNPCResponse = async (
         const err = error instanceof Error ? error : new Error(String(error));
         const classified = classifyError(err);
         console.error(`Gemini NPC API error (${classified.type}):`, err.message);
+
+        // Log specific guidance for referrer errors
+        if (classified.type === 'referrer' || classified.type === 'permission') {
+            console.error(
+                '%c⚠️ API KEY REFERRER ERROR: Add https://fundwars.app/* to the allowed HTTP referrers in Google Cloud Console → APIs & Services → Credentials → [Your API Key] → Application restrictions',
+                'color: #ef4444; font-weight: bold;'
+            );
+        }
 
         // Fall back to offline responses
         return { text: offlineNpcReply(npc, playerStats, playerMessage) };
