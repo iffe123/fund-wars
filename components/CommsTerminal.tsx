@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { ChatMessage, NPC } from '../types';
 import { useGame } from '../context/GameContext';
+import { isGeminiApiConfigured } from '../services/geminiService';
 
 interface CommsTerminalProps {
   npcList: NPC[];
@@ -506,7 +507,10 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                     </div>
                     {activeTab !== 'ADVISOR' && (
                         <div className="text-[10px] text-slate-500 mb-2 uppercase tracking-wide">
-                            Gemini-driven replies adapt to your stats, debt, and the current case file. Toss sharper prompts for spicier intel.
+                            {isGeminiApiConfigured()
+                                ? "Gemini-driven replies adapt to your stats, debt, and the current case file. Toss sharper prompts for spicier intel."
+                                : <span className="text-amber-500"><i className="fas fa-exclamation-triangle mr-1"></i>OFFLINE MODE - AI not configured. NPCs use scripted responses. Set VITE_API_KEY to enable Gemini AI.</span>
+                            }
                         </div>
                     )}
 
