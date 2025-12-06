@@ -1,5 +1,5 @@
 import type { ExitOption, ExitType, PortfolioCompany, PlayerStats, MarketVolatility } from '../types';
-import { COMPENSATION_BY_LEVEL } from '../constants';
+import { COMPENSATION_BY_LEVEL } from '../constants.js';
 
 export const EXIT_OPTIONS: ExitOption[] = [
   {
