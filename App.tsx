@@ -521,7 +521,10 @@ const App: React.FC = () => {
                           }
                       }}
                       onBack={() => {
-                          if (tutorialStep > 0) return; // Prevent closing in tutorial
+                          if (tutorialStep > 0) {
+                              addToast('Complete the tutorial first!', 'error');
+                              return;
+                          }
                           setActiveTab('WORKSPACE');
                           playSfx('KEYPRESS');
                       }}
@@ -533,6 +536,7 @@ const App: React.FC = () => {
                           setActiveTab('FOUNDER');
                       }}
                       canAccessFounder={founderUnlocked}
+                      backDisabled={tutorialStep > 0}
                   />
               </TerminalPanel>
           )
@@ -926,8 +930,8 @@ const App: React.FC = () => {
             <span className="animate-pulse">_</span>
         </div>
 
-        {/* DESKTOP FLOATING CHAT TERMINAL */}
-        <div className={`hidden md:block ${tutorialStep === 5 ? 'relative z-[100]' : ''}`}>
+        {/* DESKTOP FLOATING CHAT TERMINAL - Always on top of content panels */}
+        <div className="hidden md:block">
             <CommsTerminal
                 npcList={npcs}
                 selectedNpcId={selectedNpcId} // Pass this prop

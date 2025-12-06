@@ -265,9 +265,10 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
   const isNpcLoading = activeTab !== 'ADVISOR' && loadingNpcs[activeTab];
 
   // Styling logic based on mode
+  // CommsTerminal should always float above content panels (z-[150] > z-[100] for tutorial panels)
   const containerClasses = mode === 'MOBILE_EMBED'
       ? "w-full h-full flex flex-col bg-slate-900"
-      : `fixed w-[90vw] md:w-[600px] h-[70vh] flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-50 border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'z-[100] ring-2 ring-amber-500' : ''}`;
+      : `fixed w-[90vw] md:w-[600px] h-[70vh] flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-[150] border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'ring-2 ring-amber-500' : ''}`;
 
   const containerStyle = mode === 'DESKTOP_OVERLAY'
       ? { top: dragPosition.y, left: dragPosition.x }
@@ -305,8 +306,8 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                     >
                         Back to Portfolio
                     </button>
-                    <button onClick={() => { onBackToPortfolio?.(); closeTerminal(); }} className="text-slate-500 hover:text-amber-500">
-                        <i className="fas fa-times"></i>
+                    <button onClick={closeTerminal} className="text-slate-500 hover:text-amber-500" title="Minimize chat">
+                        <i className="fas fa-minus"></i>
                     </button>
                 </div>
             </div>
