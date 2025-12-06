@@ -7,9 +7,13 @@ import { AuthProvider } from './context/AuthContext';
 import { AudioProvider } from './context/AudioContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { injectSpeedInsights } from '@vercel/speed-insights';
+import { inject } from '@vercel/analytics';
 
 // Initialize Vercel Speed Insights
 injectSpeedInsights();
+
+// Initialize Vercel Web Analytics
+inject();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
