@@ -101,7 +101,9 @@ const App: React.FC = () => {
             }))
           )
         : []);
-  const founderUnlocked = playerStats ? playerStats.reputation >= 50 : false;
+  const founderUnlocked = playerStats
+    ? (playerStats.personalFinances?.bankBalance ?? playerStats.cash ?? 0) >= 1_000_000
+    : false;
 
   // Dev-only or explicit reset via query param
   useEffect(() => {
@@ -634,7 +636,7 @@ const App: React.FC = () => {
                       }}
                       onJumpShip={() => {
                           if (!founderUnlocked) {
-                              addToast('Founder Mode locked. Build more reputation first.', 'error');
+                              addToast('Founder Mode locked. Requires $1M in personal funds.', 'error');
                               return;
                           }
                           setActiveTab('FOUNDER');

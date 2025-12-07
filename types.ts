@@ -226,6 +226,13 @@ export interface PortfolioCompany {
   ddCompletedWeek?: number;      // Week when due diligence was completed
   actionsThisWeek: string[];     // Actions taken this week on this company
   lastManagementActions: Record<ManagementActionType, number>;  // Action type -> last week performed
+  leverageModelViewed?: boolean; // Must be true before bid can be submitted
+  leverageModelParams?: {
+    entryMultiple: number;
+    exitMultiple: number;
+    projectedIRR: number;
+    projectedMOIC: number;
+  };
 
   // NEW: Active Events
   activeEvent?: CompanyActiveEvent;
