@@ -44,6 +44,60 @@ export type CompanyEventType =
 
 export type CompanyStatus = 'PIPELINE' | 'OWNED' | 'EXITING';
 
+// Deal Phase State Machine:
+// PIPELINE → ANALYZING → ANALYZED → BIDDING → WON/LOST/WALKED_AWAY
+export type DealPhase =
+  | 'PIPELINE'      // Initial state - can only do DILIGENCE
+  | 'ANALYZING'     // DD in progress (intermediate state)
+  | 'ANALYZED'      // DD complete - can SUBMIT IOI, DISCUSS, WALK AWAY, or use LEVERAGE tool
+  | 'BIDDING'       // IOI submitted, waiting for auction result
+  | 'WON'           // Deal won - moves to portfolio as OWNED
+  | 'LOST'          // Lost to rival - removed from pipeline
+  | 'WALKED_AWAY';  // Player chose to pass
+
+// Management action types for owned companies
+export type ManagementActionType =
+  | 'SET_STRATEGY'
+  | 'FIRE_CEO'
+  | 'HIRE_EXECUTIVE'
+  | 'BOARD_MEETING'
+  | 'COST_CUTTING'
+  | 'GROWTH_INVESTMENT'
+  | 'REFINANCE_DEBT'
+  | 'ADD_ON_ACQUISITION'
+  | 'PREPARE_EXIT';
+
+export interface ManagementActionOutcome {
+  chance: number;  // 0-100
+  statChanges: Partial<StatChanges>;
+  companyChanges: Partial<PortfolioCompany>;
+  description: string;
+}
+
+export interface ManagementAction {
+  type: ManagementActionType;
+  label: string;
+  description: string;
+  apCost: number;
+  cooldownWeeks: number;  // Can't repeat for X weeks
+  possibleOutcomes: ManagementActionOutcome[];
+}
+
+// Leverage model for IRR/MOIC calculations
+export interface LeverageModel {
+  entryMultiple: number;      // EV/EBITDA multiple for entry
+  revenueMultiple: number;    // EV/Revenue multiple
+  debtPercent: number;        // % of purchase price financed with debt
+  holdPeriodYears: number;    // Expected hold period
+  exitMultiple: number;       // Expected exit multiple
+  revenueGrowthRate: number;  // Annual revenue growth assumption
+  marginImprovement: number;  // EBITDA margin improvement
+  // Calculated outputs
+  projectedIRR: number;
+  projectedMOIC: number;
+  equityCheck: number;        // Cash needed from fund
+}
+
 export interface ManagementMember {
   role: 'CEO' | 'CFO' | 'COO' | 'CTO' | 'CMO';
   name: string;
@@ -166,6 +220,12 @@ export interface PortfolioCompany {
   dealClosed: boolean;           // True once IOI is accepted and deal closes
   isInExitProcess: boolean;
   exitType?: ExitType;
+
+  // Deal Phase State Machine
+  dealPhase: DealPhase;          // Current phase in the deal pipeline
+  ddCompletedWeek?: number;      // Week when due diligence was completed
+  actionsThisWeek: string[];     // Actions taken this week on this company
+  lastManagementActions: Record<ManagementActionType, number>;  // Action type -> last week performed
 
   // NEW: Active Events
   activeEvent?: CompanyActiveEvent;

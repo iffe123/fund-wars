@@ -841,7 +841,10 @@ const financingPhaseVC: FinancingPhase = {
   ]
 };
 
-const firstCompany: Omit<PortfolioCompany, 'acquisitionDate' | 'eventHistory'> = {
+// Partial portfolio company type - fields that get auto-initialized by GameContext
+type PartialPortfolioCompany = Omit<PortfolioCompany, 'acquisitionDate' | 'eventHistory' | 'dealPhase' | 'actionsThisWeek' | 'lastManagementActions' | 'pendingDecisions' | 'isAnalyzed' | 'employeeCount' | 'employeeGrowth' | 'ebitdaMargin' | 'cashBalance' | 'runwayMonths' | 'customerChurn' | 'ceoPerformance' | 'boardAlignment' | 'managementTeam' | 'dealClosed' | 'isInExitProcess' | 'nextBoardMeetingWeek' | 'lastFinancialUpdate'>;
+
+const firstCompany: PartialPortfolioCompany = {
   id: 1,
   name: "PackFancy Inc.",
   ceo: "Doris Chen",
@@ -857,7 +860,7 @@ const firstCompany: Omit<PortfolioCompany, 'acquisitionDate' | 'eventHistory'> =
   revenueGrowth: 0.02,
 };
 
-const synergySystems: Omit<PortfolioCompany, 'acquisitionDate' | 'eventHistory'> = {
+const synergySystems: PartialPortfolioCompany = {
   id: 2,
   name: "Synergy Systems",
   ceo: "Mark Donaldson",
@@ -873,7 +876,7 @@ const synergySystems: Omit<PortfolioCompany, 'acquisitionDate' | 'eventHistory'>
   revenueGrowth: 0.60,
 };
 
-const ventureBoxCo: Omit<PortfolioCompany, 'acquisitionDate' | 'eventHistory'> = {
+const ventureBoxCo: PartialPortfolioCompany = {
   id: 5,
   name: "Box.ai",
   ceo: "Skyler",

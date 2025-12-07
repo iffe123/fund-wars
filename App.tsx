@@ -226,7 +226,12 @@ const App: React.FC = () => {
         dealClosed: false,
         isInExitProcess: false,
         nextBoardMeetingWeek: 12,
-        lastFinancialUpdate: 0
+        lastFinancialUpdate: 0,
+        // Deal phase state machine fields
+        dealPhase: 'PIPELINE',
+        actionsThisWeek: [],
+        lastManagementActions: {},
+        pendingDecisions: []
       }];
 
       // Apply difficulty settings
@@ -636,6 +641,24 @@ const App: React.FC = () => {
                       }}
                       canAccessFounder={founderUnlocked}
                       backDisabled={tutorialStep > 0}
+                      onDiscuss={(company, advisorType) => {
+                          // Map advisor type to NPC ID
+                          const npcId = advisorType === 'sarah' ? 'sarah' : 'advisor';
+                          setSelectedNpcId(npcId);
+
+                          // Switch to COMMS view on mobile
+                          if (window.innerWidth < 768) {
+                              setActiveMobileTab('COMMS');
+                          }
+
+                          // Send context message about the deal
+                          const contextMessage = advisorType === 'sarah'
+                              ? `I'd like to discuss the ${company.name} deal. It's a ${company.dealType} opportunity with $${(company.ebitda / 1000000).toFixed(1)}M EBITDA and ${(company.revenueGrowth * 100).toFixed(1)}% growth.`
+                              : `I need strategic advice on ${company.name}. What's your read on this deal?`;
+
+                          sendNpcMessage(npcId, contextMessage, 'player');
+                          addLogEntry(`Discussing ${company.name} with ${advisorType === 'sarah' ? 'Sarah' : 'Machiavelli'}`);
+                      }}
                   />
               </TerminalPanel>
           )

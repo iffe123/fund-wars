@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
-import type { PortfolioCompany, PortfolioAction, PlayerStats, CompanyStatus } from '../types';
+import type { PortfolioCompany, PortfolioAction, PlayerStats, CompanyStatus, DealPhase, LeverageModel } from '../types';
 import { MARKET_VOLATILITY_STYLES } from '../constants';
 import { TerminalButton, TerminalPanel, AsciiProgress, Badge } from './TerminalUI';
 import { useGame } from '../context/GameContext';
@@ -7,6 +7,7 @@ import AuctionModal from './AuctionModal';
 import BlackBoxModal from './BlackBoxModal';
 import BoardBattleModal from './BoardBattleModal';
 import ExitStrategyModal from './ExitStrategyModal';
+import LeverageModelModal from './LeverageModelModal';
 import { calculatePortfolioAnalytics, formatMoney as formatMoneyUtil } from '../utils/scenarioGating';
 import { getCompanyStatus } from '../utils/worldEngine';
 
@@ -17,10 +18,11 @@ interface PortfolioViewProps {
   onJumpShip?: () => void;
   canAccessFounder?: boolean;
   backDisabled?: boolean;
+  onDiscuss?: (company: PortfolioCompany, advisorType: 'sarah' | 'machiavelli') => void;
 }
 
-const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onAction, onBack, onJumpShip, canAccessFounder = false, backDisabled = false }) => {
-  const { tutorialStep, updatePlayerStats, setTutorialStep, marketVolatility, rivalFunds, useAction } = useGame();
+const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onAction, onBack, onJumpShip, canAccessFounder = false, backDisabled = false, onDiscuss }) => {
+  const { tutorialStep, updatePlayerStats, setTutorialStep, marketVolatility, rivalFunds, useAction, addLogEntry } = useGame();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [analyzingIds, setAnalyzingIds] = useState<number[]>([]);
 
@@ -29,6 +31,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   const [showBlackBox, setShowBlackBox] = useState(false);
   const [showBoardBattle, setShowBoardBattle] = useState<PortfolioCompany | null>(null);
   const [showExitModal, setShowExitModal] = useState<PortfolioCompany | null>(null);
+  const [showLeverageModal, setShowLeverageModal] = useState<PortfolioCompany | null>(null);
 
   const portfolio = playerStats.portfolio;
   const selectedCompany = portfolio.find(c => c.id === selectedId);
@@ -53,6 +56,70 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   const formatMoney = useCallback((val: number) => `$${(val / 1000000).toFixed(1)}M`, []);
   const formatPercent = useCallback((val: number) => `${(val * 100).toFixed(1)}%`, []);
 
+  // Helper: Get company's deal phase (with backward compatibility)
+  const getCompanyDealPhase = useCallback((company: PortfolioCompany): DealPhase => {
+    // If dealPhase is explicitly set, use it
+    if (company.dealPhase) return company.dealPhase;
+
+    // Backward compatibility: derive phase from existing fields
+    if (company.dealClosed) return 'WON';
+    if (company.isInExitProcess) return 'WON'; // Still owned, just exiting
+    if (company.isAnalyzed) return 'ANALYZED';
+    return 'PIPELINE';
+  }, []);
+
+  // Helper: Check if action was used this week on a company
+  const hasUsedActionThisWeek = useCallback((company: PortfolioCompany, actionType: string): boolean => {
+    return (company.actionsThisWeek || []).includes(actionType);
+  }, []);
+
+  // Helper: Record that an action was taken on a company this week
+  const recordCompanyAction = useCallback((companyId: number, actionType: string) => {
+    const company = portfolio.find(c => c.id === companyId);
+    if (!company) return;
+
+    const currentActions = company.actionsThisWeek || [];
+    updatePlayerStats({
+      modifyCompany: {
+        id: companyId,
+        updates: {
+          actionsThisWeek: [...currentActions, actionType],
+        }
+      }
+    });
+  }, [portfolio, updatePlayerStats]);
+
+  // Helper: Handle DISCUSS action - opens COMMS with context
+  const handleDiscuss = useCallback((company: PortfolioCompany, advisorType: 'sarah' | 'machiavelli') => {
+    if (onDiscuss) {
+      onDiscuss(company, advisorType);
+    } else {
+      // Fallback: just log that discuss was requested
+      addLogEntry(`Requested discussion about ${company.name} with ${advisorType === 'sarah' ? 'Sarah (Deal Analysis)' : 'Machiavelli (Strategy)'}`);
+    }
+  }, [onDiscuss, addLogEntry]);
+
+  // Helper: Handle LEVERAGE model application
+  const handleApplyLeverageModel = useCallback((model: LeverageModel, suggestedBid: number) => {
+    if (!showLeverageModal) return;
+
+    // Update company with model data and pre-fill bid context
+    updatePlayerStats({
+      modifyCompany: {
+        id: showLeverageModal.id,
+        updates: {
+          latestCeoReport: `Leverage model applied: ${(model.projectedIRR * 100).toFixed(1)}% IRR, ${model.projectedMOIC.toFixed(2)}x MOIC at ${formatMoney(suggestedBid)} entry.`,
+        }
+      }
+    });
+
+    addLogEntry(`LEVERAGE MODEL: ${showLeverageModal.name} - Target IRR ${(model.projectedIRR * 100).toFixed(1)}%, MOIC ${model.projectedMOIC.toFixed(2)}x`);
+    setShowLeverageModal(null);
+
+    // Record the action
+    recordCompanyAction(showLeverageModal.id, 'LEVERAGE');
+  }, [showLeverageModal, updatePlayerStats, addLogEntry, formatMoney, recordCompanyAction]);
+
   const handleAnalyze = (companyId: number) => {
     // Check if we have enough actions (skip during tutorial)
     if (tutorialStep === 0 && !useAction('ANALYZE_DEAL')) {
@@ -71,8 +138,19 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
         return;
       }
 
-      // Mark company as analyzed in stats (simplified logic)
-      updatePlayerStats({ modifyCompany: { id: companyId, updates: { isAnalyzed: true, latestCeoReport: "PATENT #8829 DISCOVERED: Hydrophobic Coating Tech. Valuation +40%." } }});
+      // Mark company as analyzed and update deal phase
+      updatePlayerStats({
+        modifyCompany: {
+          id: companyId,
+          updates: {
+            isAnalyzed: true,
+            dealPhase: 'ANALYZED' as DealPhase,
+            ddCompletedWeek: currentWeek,
+            latestCeoReport: "PATENT #8829 DISCOVERED: Hydrophobic Coating Tech. Valuation +40%."
+          }
+        }
+      });
+      recordCompanyAction(companyId, 'DILIGENCE');
 
       if (tutorialStep === 3) {
         setTutorialStep(4);
@@ -89,6 +167,16 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
     // TRIGGER LIVE AUCTION
     const company = portfolio.find(c => c.id === companyId);
     if (company && tutorialStep !== 6) { // Don't trigger auction on tutorial step
+      // Update deal phase to BIDDING
+      updatePlayerStats({
+        modifyCompany: {
+          id: companyId,
+          updates: {
+            dealPhase: 'BIDDING' as DealPhase,
+          }
+        }
+      });
+      recordCompanyAction(companyId, 'SUBMIT_IOI');
       setShowAuction(company);
       return;
     }
@@ -109,13 +197,16 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
 
   const handleAuctionComplete = (success: boolean, finalBid: number) => {
     if (success && showAuction) {
-      // CRITICAL: Mark company as OWNED immediately after winning auction
+      // CRITICAL: Mark company as WON/OWNED immediately after winning auction
       updatePlayerStats({
         modifyCompany: {
           id: showAuction.id,
           updates: {
             investmentCost: finalBid,
             dealClosed: true, // Transition from PIPELINE to OWNED
+            dealPhase: 'WON' as DealPhase, // Update deal phase state machine
+            actionsThisWeek: [], // Reset actions for new ownership phase
+            lastManagementActions: {}, // Initialize management action tracking
             acquisitionDate: {
               year: playerStats.gameTime?.year || 1,
               month: Math.ceil(((playerStats.gameTime?.week || 1) % 52) / 4.33) || 1
@@ -131,8 +222,23 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
         outcome: { description: `Auction Won at $${(finalBid/1000000).toFixed(1)}M`, statChanges: { reputation: +10 }, logMessage: `Won auction for ${showAuction.name}` }
       };
       onAction(showAuction.id, dummyAction);
-    } else {
-      updatePlayerStats({ reputation: -5, stress: +5 });
+      addLogEntry(`DEAL WON: ${showAuction.name} acquired for ${formatMoney(finalBid)}`);
+    } else if (showAuction) {
+      // Lost auction - update phase and remove from pipeline
+      updatePlayerStats({
+        modifyCompany: {
+          id: showAuction.id,
+          updates: {
+            dealPhase: 'LOST' as DealPhase,
+          }
+        }
+      });
+      // Remove from portfolio after a brief delay to show LOST state
+      setTimeout(() => {
+        const newPortfolio = playerStats.portfolio.filter(c => c.id !== showAuction.id);
+        updatePlayerStats({ portfolio: newPortfolio, reputation: -5, stress: +5 });
+      }, 100);
+      addLogEntry(`DEAL LOST: Lost auction for ${showAuction.name}`);
     }
     setShowAuction(null);
   };
@@ -176,9 +282,28 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
 
   const handleWalkAway = (companyId: number) => {
     if (tutorialStep === 0 && !useAction('ANALYZE_DEAL')) return;
-    // Remove company from portfolio
-    const newPortfolio = playerStats.portfolio.filter(c => c.id !== companyId);
-    updatePlayerStats({ portfolio: newPortfolio });
+
+    const company = portfolio.find(c => c.id === companyId);
+    if (company) {
+      addLogEntry(`WALKED AWAY: Passed on ${company.name}`);
+    }
+
+    // Mark as walked away, then remove from portfolio
+    updatePlayerStats({
+      modifyCompany: {
+        id: companyId,
+        updates: {
+          dealPhase: 'WALKED_AWAY' as DealPhase,
+        }
+      }
+    });
+
+    // Remove from portfolio after brief delay
+    setTimeout(() => {
+      const newPortfolio = playerStats.portfolio.filter(c => c.id !== companyId);
+      updatePlayerStats({ portfolio: newPortfolio });
+    }, 100);
+
     setSelectedId(null);
   };
 
@@ -790,7 +915,10 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                     <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
                   </button>
 
-                  <button className="border border-slate-600 bg-slate-800/50 text-slate-300 flex flex-col items-center justify-center p-4 rounded-lg hover:bg-slate-700/50 hover:border-slate-500 transition-all">
+                  <button
+                    onClick={() => handleDiscuss(selectedCompany, 'sarah')}
+                    className="border border-slate-600 bg-slate-800/50 text-slate-300 flex flex-col items-center justify-center p-4 rounded-lg hover:bg-slate-700/50 hover:border-slate-500 transition-all"
+                  >
                     <i className="fas fa-comments text-lg mb-2"></i>
                     <span className="text-[10px] font-bold uppercase tracking-wider">Discuss</span>
                     <span className="text-[8px] text-emerald-500 mt-0.5">(Free)</span>
@@ -805,6 +933,19 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                     <span className="text-[10px] font-bold uppercase tracking-wider">Walk Away</span>
                     <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
                   </button>
+
+                  {/* LEVERAGE button - only available for ANALYZED deals */}
+                  {selectedCompany.isAnalyzed && (
+                    <button
+                      onClick={() => setShowLeverageModal(selectedCompany)}
+                      disabled={hasUsedActionThisWeek(selectedCompany, 'LEVERAGE')}
+                      className="border border-purple-700/50 bg-purple-950/30 text-purple-400 hover:bg-purple-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed col-span-2 md:col-span-1"
+                    >
+                      <i className="fas fa-calculator text-lg mb-2"></i>
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Leverage Model</span>
+                      <span className="text-[8px] text-emerald-500 mt-0.5">(Free)</span>
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -950,6 +1091,14 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
           marketVolatility={marketVolatility}
           onExecuteExit={handleExecuteExit}
           onClose={() => setShowExitModal(null)}
+        />
+      )}
+
+      {showLeverageModal && (
+        <LeverageModelModal
+          company={showLeverageModal}
+          onClose={() => setShowLeverageModal(null)}
+          onApplyModel={handleApplyLeverageModel}
         />
       )}
     </div>
