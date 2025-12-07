@@ -14,7 +14,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, unreadCom
     { id: 'COMMS', icon: 'fa-comments', label: 'COMMS', activeColor: 'text-blue-400' },
     { id: 'DESK', icon: 'fa-briefcase', label: 'DESK', activeColor: 'text-emerald-400' },
     { id: 'NEWS', icon: 'fa-newspaper', label: 'NEWS', activeColor: 'text-amber-400' },
-    { id: 'MENU', icon: 'fa-grid-2', label: 'MORE', activeColor: 'text-purple-400' },
+    { id: 'MENU', icon: 'fa-terminal', label: 'SYSTEM', activeColor: 'text-purple-400' },
   ];
 
   const handleTabClick = (id: 'COMMS' | 'DESK' | 'NEWS' | 'MENU') => {
