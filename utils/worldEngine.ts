@@ -387,6 +387,64 @@ export const generateWarnings = (playerStats: PlayerStats, currentWeek: number):
     }
   }
 
+  // LP Confidence warning
+  const lpConfidence = playerStats.factionReputation?.LIMITED_PARTNERS || 50;
+  if (lpConfidence < 30) {
+    warnings.push({
+      id: 'low_lp_confidence',
+      type: 'REPUTATION',
+      severity: lpConfidence < 20 ? 'CRITICAL' : 'HIGH',
+      title: 'LP Confidence Crisis',
+      message: `LPs are losing trust (${lpConfidence}/100). They may pull capital if this continues.`,
+      currentValue: lpConfidence,
+      threshold: 30,
+      suggestedAction: 'Improve fund performance and communication',
+    });
+  }
+
+  // Board Approval warning
+  const boardApproval = playerStats.factionReputation?.MANAGING_DIRECTORS || 50;
+  if (boardApproval < 25) {
+    warnings.push({
+      id: 'low_board_approval',
+      type: 'REPUTATION',
+      severity: boardApproval < 15 ? 'CRITICAL' : 'HIGH',
+      title: 'Board Confidence Failing',
+      message: `Board approval at ${boardApproval}/100. You may be terminated if it drops further!`,
+      currentValue: boardApproval,
+      threshold: 25,
+      suggestedAction: 'Hit targets and demonstrate good judgment',
+    });
+  }
+
+  // Audit Risk / Regulator Attention warning
+  if (playerStats.auditRisk > 60) {
+    warnings.push({
+      id: 'high_audit_risk',
+      type: 'REPUTATION',
+      severity: playerStats.auditRisk > 80 ? 'CRITICAL' : 'HIGH',
+      title: 'Regulatory Scrutiny',
+      message: `Regulators are watching (${playerStats.auditRisk}% attention). Investigation likely above 80%.`,
+      currentValue: playerStats.auditRisk,
+      threshold: 80,
+      suggestedAction: 'Clean up operations and avoid risky moves',
+    });
+  }
+
+  // Ethics warning
+  if (playerStats.ethics < 25) {
+    warnings.push({
+      id: 'low_ethics',
+      type: 'REPUTATION',
+      severity: playerStats.ethics < 15 ? 'CRITICAL' : 'HIGH',
+      title: 'Ethics Compromised',
+      message: `Ethics score at ${playerStats.ethics}/100. Regulators and media are watching.`,
+      currentValue: playerStats.ethics,
+      threshold: 25,
+      suggestedAction: 'Make ethical choices to rebuild credibility',
+    });
+  }
+
   // Portfolio company crisis warnings
   playerStats.portfolio.forEach(company => {
     if (company.hasBoardCrisis) {
