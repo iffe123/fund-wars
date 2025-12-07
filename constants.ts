@@ -1577,100 +1577,115 @@ export const SHADOW_ACTIONS: LifeAction[] = [
 ];
 
 export const LIFE_ACTIONS: LifeAction[] = [
+  // Self-Care (1 AP each)
   {
     id: 'gym',
     text: 'Go to the Gym',
     icon: 'fa-dumbbell',
+    apCost: 1,
     outcome: {
       description: "You hit the gym, releasing some stress and reminding yourself that you're physically superior to the analysts. It costs a bit, but looking good is part of the job.",
       statChanges: { energy: +30, stress: -15, cash: -50, score: +50 },
     },
   },
   {
-    id: 'networking',
-    text: 'Attend Networking Event',
-    icon: 'fa-martini-glass',
-    outcome: {
-      description: "You schmooze with the best of them, making connections that might be useful later. It's draining, but your name is out there now.",
-      statChanges: { reputation: +10, stress: +10, energy: -15, cash: -100, score: +100 },
-    },
-  },
-  {
-    id: 'work_late',
-    text: 'Work Late',
-    icon: 'fa-moon',
-    outcome: {
-      description: "You grind it out, refining models and making sure your name is on every important email. The partners notice your 'commitment.'",
-      statChanges: { analystRating: +10, energy: -20, stress: +10, score: +75, npcRelationshipUpdate: { npcId: 'sarah', change: -5, memory: 'Kept team working late' } },
-    },
-  },
-  {
-    id: 'relax',
-    text: 'Relax at Home',
-    icon: 'fa-couch',
-    outcome: {
-      description: "You actually take a night off. It feels... strange. While you recharged a little, you can't shake the feeling that your rivals are getting ahead.",
-      statChanges: { energy: +10, stress: -20, score: -25 },
-    },
-  },
-  {
-    id: 'study',
-    text: 'Study Financial Engineering',
-    icon: 'fa-book-open-reader',
-    outcome: {
-        description: "Instead of sleeping, you study esoteric debt structures. You feel your brain expanding, or maybe that's just a caffeine-induced aneurysm. Either way, you're sharper.",
-        statChanges: { financialEngineering: +5, energy: -10, stress: +5, score: +100 }
-    }
-  },
-  {
     id: 'therapy',
     text: 'Attend Therapy',
     icon: 'fa-brain',
+    apCost: 1,
     outcome: {
       description: "You pay a stranger to listen to your problems. It's surprisingly effective for stress, but feels like an admission of weakness. And it's expensive.",
       statChanges: { stress: -30, cash: -300, energy: +5, score: -50 },
     },
   },
   {
-    id: 'vacation',
-    text: 'Take a Vacation',
-    icon: 'fa-plane-departure',
+    id: 'relax',
+    text: 'Relax at Home',
+    icon: 'fa-couch',
+    apCost: 1,
     outcome: {
-      description: "You escape to a place without spreadsheets. The massive energy and stress recovery is offset by the deals you missed and the partners thinking you've gone soft.",
-      statChanges: { energy: +50, stress: -40, cash: -2000, reputation: -5, score: -200 },
+      description: "You actually take a night off. It feels... strange. While you recharged a little, you can't shake the feeling that your rivals are getting ahead.",
+      statChanges: { energy: +10, stress: -20, score: -25 },
+    },
+  },
+  // Career Building (1-1.5 AP)
+  {
+    id: 'networking',
+    text: 'Attend Networking Event',
+    icon: 'fa-martini-glass',
+    apCost: 1,
+    outcome: {
+      description: "You schmooze with the best of them, making connections that might be useful later. It's draining, but your name is out there now.",
+      statChanges: { reputation: +10, stress: +10, energy: -15, cash: -100, score: +100 },
     },
   },
   {
-    id: 'review_compliance',
-    text: 'Review Compliance Logs',
-    icon: 'fa-file-shield',
+    id: 'study',
+    text: 'Study Financial Engineering',
+    icon: 'fa-book-open-reader',
+    apCost: 1.5,  // Significant skill investment
     outcome: {
-        description: "You spend a Saturday morning auditing your own email trails and compliance logs. It's incredibly boring, but you find a few red flags and delete... err, correct them.",
-        statChanges: { auditRisk: -20, stress: +5, energy: -10, score: +50 }
-    }
-  },
-  {
-    id: 'golf_outing',
-    text: 'Golf with Partners',
-    icon: 'fa-golf-ball-tee',
-    outcome: {
-        description: "You drop $500 on greens fees to let the Managing Directors beat you. It's not about the game, it's about the face time. You laugh at their bad jokes.",
-        statChanges: { reputation: +15, cash: -500, energy: -10, score: +200, npcRelationshipUpdate: { npcId: 'chad', change: 10, memory: 'Good sport on the golf course' } }
+        description: "Instead of sleeping, you study esoteric debt structures. You feel your brain expanding, or maybe that's just a caffeine-induced aneurysm. Either way, you're sharper.",
+        statChanges: { financialEngineering: +5, energy: -10, stress: +5, score: +100 }
     }
   },
   {
     id: 'mentor_team',
     text: 'Mentor Juniors',
     icon: 'fa-chalkboard-user',
+    apCost: 1,
     outcome: {
         description: "You take the analysts out for drinks and actually listen to their complaints. They look at you like a messiah. Building loyalty from the bottom up.",
         statChanges: { reputation: +5, ethics: +10, analystRating: +10, cash: -200, npcRelationshipUpdate: { npcId: 'sarah', change: 15, memory: 'Bought drinks for the team' } }
     }
   },
   {
+    id: 'review_compliance',
+    text: 'Review Compliance Logs',
+    icon: 'fa-file-shield',
+    apCost: 1,
+    outcome: {
+        description: "You spend a Saturday morning auditing your own email trails and compliance logs. It's incredibly boring, but you find a few red flags and delete... err, correct them.",
+        statChanges: { auditRisk: -20, stress: +5, energy: -10, score: +50 }
+    }
+  },
+  // High Impact (1.5-2 AP)
+  {
+    id: 'golf_outing',
+    text: 'Golf with Partners',
+    icon: 'fa-golf-ball-tee',
+    apCost: 1.5,  // Time-intensive networking
+    outcome: {
+        description: "You drop $500 on greens fees to let the Managing Directors beat you. It's not about the game, it's about the face time. You laugh at their bad jokes.",
+        statChanges: { reputation: +15, cash: -500, energy: -10, score: +200, npcRelationshipUpdate: { npcId: 'chad', change: 10, memory: 'Good sport on the golf course' } }
+    }
+  },
+  {
+    id: 'vacation',
+    text: 'Take a Vacation',
+    icon: 'fa-plane-departure',
+    apCost: 2,    // Major time investment
+    outcome: {
+      description: "You escape to a place without spreadsheets. The massive energy and stress recovery is offset by the deals you missed and the partners thinking you've gone soft.",
+      statChanges: { energy: +50, stress: -40, cash: -2000, reputation: -5, score: -200 },
+    },
+  },
+  {
+    id: 'work_late',
+    text: 'Work Late',
+    icon: 'fa-moon',
+    apCost: 1,
+    outcome: {
+      description: "You grind it out, refining models and making sure your name is on every important email. The partners notice your 'commitment.'",
+      statChanges: { analystRating: +10, energy: -20, stress: +10, score: +75, npcRelationshipUpdate: { npcId: 'sarah', change: -5, memory: 'Kept team working late' } },
+    },
+  },
+  // Financial Actions (1 AP)
+  {
     id: 'hard_money_loan',
     text: 'Take Bridge Loan',
     icon: 'fa-skull-crossbones',
+    apCost: 1,
     outcome: {
       description: "You sign a predatory term sheet. Cash hits the account fast, but the lender is circling for their pound of flesh.",
       statChanges: { cash: +50000, stress: +8, loanBalanceChange: +50000, loanRate: 0.15, score: +75 }, // Reduced from 28% to 15% for better balance
@@ -1680,6 +1695,7 @@ export const LIFE_ACTIONS: LifeAction[] = [
     id: 'loan_payment',
     text: 'Pay Down Debt',
     icon: 'fa-money-bill-wave',
+    apCost: 1,
     outcome: {
       description: "You wire a chunk back to the lender. It hurts the wallet, but at least the sharks ease off for a week.",
       statChanges: { cash: -10000, loanBalanceChange: -10000, stress: -2, score: +25 },

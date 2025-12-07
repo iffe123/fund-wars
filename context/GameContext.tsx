@@ -65,7 +65,7 @@ interface GameContextTypeExtended extends GameContextType {
     setActiveCompanyEvent: (event: CompanyActiveEvent | null) => void;
     handleEventDecision: (eventId: string, optionId: string) => void;
     // Time & Action System
-    useAction: (actionType: ActionType) => boolean;
+    useAction: (costOrActionType: number | ActionType) => boolean;
     endWeek: () => void;
     toggleNightGrinder: () => void;
 }
@@ -970,12 +970,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [activeDrama, updatePlayerStats, addLogEntry]);
 
   // --- TIME & ACTION SYSTEM ---
-  const useAction = useCallback((actionType: ActionType): boolean => {
+  const useAction = useCallback((costOrActionType: number | ActionType): boolean => {
     if (!playerStats?.gameTime) return false;
 
-    const cost = ACTION_COSTS[actionType] || 1;
+    // Determine the cost - if a number is passed, use it directly; otherwise look up from ACTION_COSTS
+    const isNumber = typeof costOrActionType === 'number';
+    const cost = isNumber ? costOrActionType : (ACTION_COSTS[costOrActionType] || 1);
+    const actionLabel = isNumber ? 'action' : costOrActionType.replace(/_/g, ' ');
+
     if (playerStats.gameTime.actionsRemaining < cost) {
-      addLogEntry(`Not enough actions for ${actionType.replace(/_/g, ' ')}`);
+      addLogEntry(`Not enough actions for ${actionLabel} (need ${cost} AP)`);
       return false;
     }
 
@@ -986,7 +990,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         gameTime: {
           ...prev.gameTime,
           actionsRemaining: prev.gameTime.actionsRemaining - cost,
-          actionsUsedThisWeek: [...prev.gameTime.actionsUsedThisWeek, actionType],
+          // Only track action type if it was provided
+          actionsUsedThisWeek: isNumber
+            ? prev.gameTime.actionsUsedThisWeek
+            : [...prev.gameTime.actionsUsedThisWeek, costOrActionType as ActionType],
         }
       };
     });

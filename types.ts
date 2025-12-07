@@ -403,17 +403,28 @@ export type ActionType =
   | 'HANDLE_EVENT';
 
 export const ACTION_COSTS: Record<ActionType, number> = {
+  // Deal Actions
   ANALYZE_DEAL: 1,
-  SUBMIT_IOI: 1,
-  BOARD_MEETING: 2,
+  SUBMIT_IOI: 1.5,        // Significant - committing to a deal
+
+  // Portfolio Management
+  BOARD_MEETING: 2,       // Major action - takes significant time
+  PORTFOLIO_REVIEW: 1,
+  EXIT_PLANNING: 2,       // Major strategic decision
+
+  // Career Development
   NETWORK_EVENT: 1,
   SCOUT_TALENT: 1,
-  PORTFOLIO_REVIEW: 1,
-  EXIT_PLANNING: 2,
-  SKILL_TRAINING: 1,
-  REST: 1,
-  CONSULT_ADVISOR: 0,  // Free - encourages using the advisor
+  SKILL_TRAINING: 1.5,    // Investing in yourself takes effort
+
+  // Advisory
+  CONSULT_ADVISOR: 1,     // Advice has opportunity cost
+
+  // Events
   HANDLE_EVENT: 1,
+
+  // Rest
+  REST: 1,                // Even resting uses your time
 };
 
 export interface GameTime {
@@ -645,6 +656,7 @@ export interface LifeAction {
   id: string;
   text: string;
   icon: string;
+  apCost: number;      // Action Point cost (1, 1.5, or 2)
   outcome: {
     description: string;
     statChanges: StatChanges;
@@ -703,7 +715,7 @@ export interface GameContextType {
   setActiveCompanyEvent: (event: CompanyActiveEvent | null) => void;
   handleEventDecision: (eventId: string, optionId: string) => void;
   // NEW: Time & Action System Methods
-  useAction: (actionType: ActionType) => boolean;
+  useAction: (costOrActionType: number | ActionType) => boolean;
   endWeek: () => void;
   toggleNightGrinder: () => void;
 }
