@@ -103,12 +103,19 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   const handleApplyLeverageModel = useCallback((model: LeverageModel, suggestedBid: number) => {
     if (!showLeverageModal) return;
 
-    // Update company with model data and pre-fill bid context
+    // Update company with model data, pre-fill bid context, and mark as viewed
     updatePlayerStats({
       modifyCompany: {
         id: showLeverageModal.id,
         updates: {
           latestCeoReport: `Leverage model applied: ${(model.projectedIRR * 100).toFixed(1)}% IRR, ${model.projectedMOIC.toFixed(2)}x MOIC at ${formatMoney(suggestedBid)} entry.`,
+          leverageModelViewed: true,
+          leverageModelParams: {
+            entryMultiple: model.entryMultiple,
+            exitMultiple: model.exitMultiple,
+            projectedIRR: model.projectedIRR,
+            projectedMOIC: model.projectedMOIC,
+          },
         }
       }
     });
@@ -451,7 +458,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
               size="sm"
               glow={canAccessFounder}
               disabled={!canAccessFounder}
-              title={canAccessFounder ? undefined : 'Increase your reputation to unlock Founder Mode'}
+              title={canAccessFounder ? undefined : 'Requires $1M in personal funds'}
               onClick={() => {
                 if (!canAccessFounder) return;
                 onJumpShip();
@@ -900,28 +907,24 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
 
                   <button
                     onClick={() => handleSubmitIOI(selectedCompany.id)}
-                    disabled={(!selectedCompany.isAnalyzed && tutorialStep === 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)}
+                    disabled={(!selectedCompany.isAnalyzed && tutorialStep === 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1) || (tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed)}
+                    title={tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed ? 'Run Leverage Model first' : undefined}
                     className={`
                       border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
                       ${tutorialStep === 6
                         ? 'z-[70] relative bg-emerald-900/50 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-pulse-glow'
                         : 'bg-emerald-950/30 border-emerald-700/50 text-emerald-400 hover:bg-emerald-900/40 hover:border-emerald-600'
                       }
-                      ${((!selectedCompany.isAnalyzed && tutorialStep === 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)) ? 'opacity-30 grayscale cursor-not-allowed' : ''}
+                      ${((!selectedCompany.isAnalyzed && tutorialStep === 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1) || (tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed)) ? 'opacity-30 grayscale cursor-not-allowed' : ''}
                     `}
                   >
                     <i className="fas fa-clipboard-check text-lg mb-2"></i>
                     <span className="text-[10px] font-bold uppercase tracking-wider">{isMarketPanic ? "Frozen" : "Submit IOI"}</span>
-                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleDiscuss(selectedCompany, 'sarah')}
-                    className="border border-slate-600 bg-slate-800/50 text-slate-300 flex flex-col items-center justify-center p-4 rounded-lg hover:bg-slate-700/50 hover:border-slate-500 transition-all"
-                  >
-                    <i className="fas fa-comments text-lg mb-2"></i>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Discuss</span>
-                    <span className="text-[8px] text-emerald-500 mt-0.5">(Free)</span>
+                    {tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed ? (
+                      <span className="text-[8px] text-amber-500 mt-0.5">(Run Model First)</span>
+                    ) : (
+                      <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
+                    )}
                   </button>
 
                   <button
