@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
-import type { PortfolioCompany, PortfolioAction, PlayerStats } from '../types';
+import type { PortfolioCompany, PortfolioAction, PlayerStats, CompanyStatus } from '../types';
 import { MARKET_VOLATILITY_STYLES } from '../constants';
 import { TerminalButton, TerminalPanel, AsciiProgress, Badge } from './TerminalUI';
 import { useGame } from '../context/GameContext';
@@ -8,6 +8,7 @@ import BlackBoxModal from './BlackBoxModal';
 import BoardBattleModal from './BoardBattleModal';
 import ExitStrategyModal from './ExitStrategyModal';
 import { calculatePortfolioAnalytics, formatMoney as formatMoneyUtil } from '../utils/scenarioGating';
+import { getCompanyStatus } from '../utils/worldEngine';
 
 interface PortfolioViewProps {
   playerStats: PlayerStats;
@@ -108,7 +109,20 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
 
   const handleAuctionComplete = (success: boolean, finalBid: number) => {
     if (success && showAuction) {
-      updatePlayerStats({ modifyCompany: { id: showAuction.id, updates: { investmentCost: finalBid } } });
+      // CRITICAL: Mark company as OWNED immediately after winning auction
+      updatePlayerStats({
+        modifyCompany: {
+          id: showAuction.id,
+          updates: {
+            investmentCost: finalBid,
+            dealClosed: true, // Transition from PIPELINE to OWNED
+            acquisitionDate: {
+              year: playerStats.gameTime?.year || 1,
+              month: Math.ceil(((playerStats.gameTime?.week || 1) % 52) / 4.33) || 1
+            }
+          }
+        }
+      });
       const dummyAction: PortfolioAction = {
         id: 'submit_ioi',
         text: 'Submit IOI',
@@ -130,6 +144,141 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
     if (choice === 'WHISTLEBLOW') {
       updatePlayerStats({ setsFlags: ['WHISTLEBLOWER'] });
     }
+  };
+
+  // Handle exit execution from ExitStrategyModal
+  const handleExecuteExit = (exitType: string, proceeds: number) => {
+    if (!showExitModal) return;
+    updatePlayerStats({
+      modifyCompany: {
+        id: showExitModal.id,
+        updates: {
+          isInExitProcess: false,
+          dealClosed: false, // Remove from portfolio
+        }
+      },
+      cash: proceeds,
+      reputation: +5,
+      score: +500,
+    });
+    setShowExitModal(null);
+  };
+
+  // === STATE-APPROPRIATE ACTION HANDLERS ===
+
+  // PIPELINE Actions
+  const handleRefreshDiligence = (companyId: number) => {
+    if (tutorialStep === 0 && !useAction('ANALYZE_DEAL')) return;
+    updatePlayerStats({
+      modifyCompany: { id: companyId, updates: { isAnalyzed: true } }
+    });
+  };
+
+  const handleWalkAway = (companyId: number) => {
+    if (tutorialStep === 0 && !useAction('ANALYZE_DEAL')) return;
+    // Remove company from portfolio
+    const newPortfolio = playerStats.portfolio.filter(c => c.id !== companyId);
+    updatePlayerStats({ portfolio: newPortfolio });
+    setSelectedId(null);
+  };
+
+  // OWNED Actions
+  const handleReviewPerformance = (companyId: number) => {
+    if (tutorialStep === 0 && !useAction('PORTFOLIO_REVIEW')) return;
+    updatePlayerStats({
+      modifyCompany: { id: companyId, updates: { isAnalyzed: true } }
+    });
+  };
+
+  const handleOperationalImprovement = (companyId: number) => {
+    if (tutorialStep === 0 && !useAction('PORTFOLIO_REVIEW')) return;
+    const company = portfolio.find(c => c.id === companyId);
+    if (!company) return;
+    // Boost company value by 5-15%
+    const boost = 1 + (Math.random() * 0.1 + 0.05);
+    updatePlayerStats({
+      modifyCompany: {
+        id: companyId,
+        updates: {
+          currentValuation: Math.round(company.currentValuation * boost),
+          ebitda: Math.round(company.ebitda * (1 + Math.random() * 0.05)),
+        }
+      },
+      stress: +5,
+    });
+  };
+
+  const handleRefinanceDebt = (companyId: number) => {
+    if (tutorialStep === 0 && !useAction('PORTFOLIO_REVIEW')) return;
+    const company = portfolio.find(c => c.id === companyId);
+    if (!company) return;
+    // Reduce debt by 10-20%
+    const reduction = 0.8 + Math.random() * 0.1;
+    updatePlayerStats({
+      modifyCompany: {
+        id: companyId,
+        updates: {
+          debt: Math.round(company.debt * reduction),
+        }
+      },
+      financialEngineering: +2,
+    });
+  };
+
+  const handlePrepareForExit = (companyId: number) => {
+    if (tutorialStep === 0 && !useAction('EXIT_PLANNING')) return;
+    updatePlayerStats({
+      modifyCompany: {
+        id: companyId,
+        updates: {
+          isInExitProcess: true,
+        }
+      },
+    });
+  };
+
+  const handleDividendRecap = (companyId: number) => {
+    if (tutorialStep === 0 && !useAction('PORTFOLIO_REVIEW')) return;
+    const company = portfolio.find(c => c.id === companyId);
+    if (!company) return;
+    // Extract 10-20% of company value as dividend, but increase debt
+    const dividendAmount = Math.round(company.currentValuation * (0.1 + Math.random() * 0.1));
+    updatePlayerStats({
+      modifyCompany: {
+        id: companyId,
+        updates: {
+          debt: company.debt + dividendAmount,
+          cashBalance: Math.max(0, company.cashBalance - dividendAmount * 0.2),
+        }
+      },
+      cash: dividendAmount,
+      ethics: -5,
+      auditRisk: +3,
+    });
+  };
+
+  // EXITING Actions
+  const handleListForSale = (companyId: number) => {
+    if (tutorialStep === 0 && !useAction('EXIT_PLANNING')) return;
+    setShowExitModal(portfolio.find(c => c.id === companyId) || null);
+  };
+
+  const handleCancelExit = (companyId: number) => {
+    if (tutorialStep === 0 && !useAction('PORTFOLIO_REVIEW')) return;
+    updatePlayerStats({
+      modifyCompany: {
+        id: companyId,
+        updates: {
+          isInExitProcess: false,
+        }
+      },
+    });
+  };
+
+  // Get company status helper
+  const getSelectedCompanyStatus = (): CompanyStatus => {
+    if (!selectedCompany) return 'PIPELINE';
+    return getCompanyStatus(selectedCompany);
   };
 
   // Memoize deal type styling function
@@ -367,7 +516,18 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                         {company.hasBoardCrisis ? (
                           <Badge variant="danger" pulse>CRISIS</Badge>
                         ) : (
-                          <Badge variant="success">ACTIVE</Badge>
+                          <span className={`
+                            inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border
+                            ${getCompanyStatus(company) === 'PIPELINE' ? 'bg-blue-950/50 text-blue-400 border-blue-700/50' : ''}
+                            ${getCompanyStatus(company) === 'OWNED' ? 'bg-emerald-950/50 text-emerald-400 border-emerald-700/50' : ''}
+                            ${getCompanyStatus(company) === 'EXITING' ? 'bg-amber-950/50 text-amber-400 border-amber-700/50' : ''}
+                          `}>
+                            <i className={`fas text-[8px] ${
+                              getCompanyStatus(company) === 'PIPELINE' ? 'fa-search' :
+                              getCompanyStatus(company) === 'OWNED' ? 'fa-building' : 'fa-sign-out-alt'
+                            }`}></i>
+                            {getCompanyStatus(company)}
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -561,74 +721,192 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
 
             </div>
 
-            {/* ACTION BAR (Sticky Footer on Mobile) */}
+            {/* ACTION BAR (Sticky Footer on Mobile) - State-Appropriate Actions */}
             <div className={`
               p-4 bg-gradient-to-t from-slate-900 to-slate-900/95 border-t border-slate-700/60
-              grid grid-cols-2 md:grid-cols-4 gap-3
               absolute bottom-0 left-0 right-0 md:relative
               ${(tutorialStep >= 3 && tutorialStep <= 6) ? 'z-[70] relative' : ''}
             `}>
-              <button
-                onClick={() => handleAnalyze(selectedCompany.id)}
-                disabled={analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)}
-                className={`
-                  relative border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
-                  ${tutorialStep === 3
-                    ? 'z-[70] bg-amber-950/50 border-amber-500 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.4)] animate-pulse-glow'
-                    : 'bg-slate-800/50 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500'
-                  }
-                  ${(analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)) ? 'opacity-40 cursor-not-allowed' : ''}
-                `}
-                title={tutorialStep === 0 ? 'Costs 1 action' : undefined}
-              >
-                {analyzingIds.includes(selectedCompany.id) ? (
-                  <div className="w-5 h-5 border-2 border-slate-600 border-t-amber-500 rounded-full animate-spin"></div>
-                ) : (
-                  <i className="fas fa-microscope text-lg mb-2"></i>
+              {/* Status Badge */}
+              <div className="flex items-center justify-between mb-3">
+                <div className={`
+                  px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border
+                  ${getSelectedCompanyStatus() === 'PIPELINE' ? 'bg-blue-950/50 text-blue-400 border-blue-700/50' : ''}
+                  ${getSelectedCompanyStatus() === 'OWNED' ? 'bg-emerald-950/50 text-emerald-400 border-emerald-700/50' : ''}
+                  ${getSelectedCompanyStatus() === 'EXITING' ? 'bg-amber-950/50 text-amber-400 border-amber-700/50' : ''}
+                `}>
+                  <i className={`fas mr-1.5 ${
+                    getSelectedCompanyStatus() === 'PIPELINE' ? 'fa-search' :
+                    getSelectedCompanyStatus() === 'OWNED' ? 'fa-building' : 'fa-sign-out-alt'
+                  }`}></i>
+                  {getSelectedCompanyStatus()}
+                </div>
+                {(playerStats.gameTime?.actionsRemaining || 0) === 0 && tutorialStep === 0 && (
+                  <span className="text-xs text-red-400 font-bold">
+                    <i className="fas fa-exclamation-circle mr-1"></i>
+                    NO ACTIONS - ADVANCE WEEK
+                  </span>
                 )}
-                <span className="text-[10px] font-bold uppercase tracking-wider">Analyze</span>
-                {tutorialStep === 0 && <span className="text-[8px] text-slate-500 mt-0.5">(1 action)</span>}
-              </button>
+              </div>
 
-              <button
-                onClick={() => selectedCompany.isAnalyzed && selectedCompany.ownershipPercentage > 0 && setShowExitModal(selectedCompany)}
-                disabled={!selectedCompany.isAnalyzed || selectedCompany.ownershipPercentage === 0}
-                className={`
-                  border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
-                  ${selectedCompany.isAnalyzed && selectedCompany.ownershipPercentage > 0
-                    ? 'bg-amber-950/30 border-amber-700/50 text-amber-400 hover:bg-amber-900/40 hover:border-amber-600'
-                    : 'border-slate-700 bg-slate-800/30 text-slate-500 opacity-50 cursor-not-allowed'
-                  }
-                `}
-              >
-                <i className="fas fa-door-open text-lg mb-2"></i>
-                <span className="text-[10px] font-bold uppercase tracking-wider">Exit</span>
-                {tutorialStep === 0 && <span className="text-[8px] text-slate-500 mt-0.5">(2 actions)</span>}
-              </button>
+              {/* PIPELINE Actions */}
+              {getSelectedCompanyStatus() === 'PIPELINE' && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <button
+                    onClick={() => handleAnalyze(selectedCompany.id)}
+                    disabled={analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)}
+                    className={`
+                      relative border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
+                      ${tutorialStep === 3
+                        ? 'z-[70] bg-amber-950/50 border-amber-500 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.4)] animate-pulse-glow'
+                        : 'bg-slate-800/50 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500'
+                      }
+                      ${(analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)) ? 'opacity-40 cursor-not-allowed' : ''}
+                    `}
+                  >
+                    {analyzingIds.includes(selectedCompany.id) ? (
+                      <div className="w-5 h-5 border-2 border-slate-600 border-t-amber-500 rounded-full animate-spin"></div>
+                    ) : (
+                      <i className="fas fa-search text-lg mb-2"></i>
+                    )}
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Diligence</span>
+                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
+                  </button>
 
-              <button className="border border-slate-600 bg-slate-800/50 text-slate-300 flex flex-col items-center justify-center p-4 rounded-lg hover:bg-slate-700/50 hover:border-slate-500 transition-all">
-                <i className="fas fa-comments text-lg mb-2"></i>
-                <span className="text-[10px] font-bold uppercase tracking-wider">Discuss</span>
-                {tutorialStep === 0 && <span className="text-[8px] text-slate-500 mt-0.5">(free)</span>}
-              </button>
+                  <button
+                    onClick={() => handleSubmitIOI(selectedCompany.id)}
+                    disabled={(!selectedCompany.isAnalyzed && tutorialStep === 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)}
+                    className={`
+                      border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
+                      ${tutorialStep === 6
+                        ? 'z-[70] relative bg-emerald-900/50 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-pulse-glow'
+                        : 'bg-emerald-950/30 border-emerald-700/50 text-emerald-400 hover:bg-emerald-900/40 hover:border-emerald-600'
+                      }
+                      ${((!selectedCompany.isAnalyzed && tutorialStep === 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)) ? 'opacity-30 grayscale cursor-not-allowed' : ''}
+                    `}
+                  >
+                    <i className="fas fa-clipboard-check text-lg mb-2"></i>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{isMarketPanic ? "Frozen" : "Submit IOI"}</span>
+                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
+                  </button>
 
-              <button
-                onClick={() => handleSubmitIOI(selectedCompany.id)}
-                disabled={(!selectedCompany.isAnalyzed && tutorialStep !== 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)}
-                className={`
-                  border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
-                  ${tutorialStep === 6
-                    ? 'z-[70] relative bg-emerald-900/50 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-pulse-glow'
-                    : 'bg-emerald-950/30 border-emerald-700/50 text-emerald-400 hover:bg-emerald-900/40 hover:border-emerald-600'
-                  }
-                  ${((!selectedCompany.isAnalyzed && tutorialStep !== 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)) ? 'opacity-30 grayscale cursor-not-allowed' : ''}
-                `}
-                title={tutorialStep === 0 ? 'Costs 1 action' : undefined}
-              >
-                <i className="fas fa-file-signature text-lg mb-2"></i>
-                <span className="text-[10px] font-bold uppercase tracking-wider">{isMarketPanic ? "Mkt Frozen" : "Submit IOI"}</span>
-                {tutorialStep === 0 && <span className="text-[8px] text-slate-500 mt-0.5">(1 action)</span>}
-              </button>
+                  <button className="border border-slate-600 bg-slate-800/50 text-slate-300 flex flex-col items-center justify-center p-4 rounded-lg hover:bg-slate-700/50 hover:border-slate-500 transition-all">
+                    <i className="fas fa-comments text-lg mb-2"></i>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Discuss</span>
+                    <span className="text-[8px] text-emerald-500 mt-0.5">(Free)</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleWalkAway(selectedCompany.id)}
+                    disabled={tutorialStep !== 0 || (playerStats.gameTime?.actionsRemaining || 0) < 1}
+                    className="border border-red-800/50 bg-red-950/30 text-red-400 hover:bg-red-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <i className="fas fa-door-open text-lg mb-2"></i>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Walk Away</span>
+                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
+                  </button>
+                </div>
+              )}
+
+              {/* OWNED Actions */}
+              {getSelectedCompanyStatus() === 'OWNED' && (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                  <button
+                    onClick={() => handleReviewPerformance(selectedCompany.id)}
+                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1}
+                    className="border border-blue-700/50 bg-blue-950/30 text-blue-400 hover:bg-blue-900/40 flex flex-col items-center justify-center p-3 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <i className="fas fa-chart-bar text-base mb-1"></i>
+                    <span className="text-[9px] font-bold uppercase tracking-wider">Review</span>
+                    <span className="text-[7px] text-slate-500">(1 AP)</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleOperationalImprovement(selectedCompany.id)}
+                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1}
+                    className="border border-emerald-700/50 bg-emerald-950/30 text-emerald-400 hover:bg-emerald-900/40 flex flex-col items-center justify-center p-3 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <i className="fas fa-cogs text-base mb-1"></i>
+                    <span className="text-[9px] font-bold uppercase tracking-wider">Improve</span>
+                    <span className="text-[7px] text-slate-500">(1 AP)</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleRefinanceDebt(selectedCompany.id)}
+                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1 || selectedCompany.debt <= 0}
+                    className="border border-purple-700/50 bg-purple-950/30 text-purple-400 hover:bg-purple-900/40 flex flex-col items-center justify-center p-3 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <i className="fas fa-sync-alt text-base mb-1"></i>
+                    <span className="text-[9px] font-bold uppercase tracking-wider">Refinance</span>
+                    <span className="text-[7px] text-slate-500">(1 AP)</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDividendRecap(selectedCompany.id)}
+                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1}
+                    className="border border-amber-700/50 bg-amber-950/30 text-amber-400 hover:bg-amber-900/40 flex flex-col items-center justify-center p-3 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <i className="fas fa-money-bill-wave text-base mb-1"></i>
+                    <span className="text-[9px] font-bold uppercase tracking-wider">Dividend</span>
+                    <span className="text-[7px] text-red-400">(1 AP) ⚠️</span>
+                  </button>
+
+                  <button
+                    onClick={() => handlePrepareForExit(selectedCompany.id)}
+                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 2}
+                    className="border border-cyan-700/50 bg-cyan-950/30 text-cyan-400 hover:bg-cyan-900/40 flex flex-col items-center justify-center p-3 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <i className="fas fa-sign-out-alt text-base mb-1"></i>
+                    <span className="text-[9px] font-bold uppercase tracking-wider">Prep Exit</span>
+                    <span className="text-[7px] text-slate-500">(2 AP)</span>
+                  </button>
+                </div>
+              )}
+
+              {/* EXITING Actions */}
+              {getSelectedCompanyStatus() === 'EXITING' && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <button
+                    onClick={() => handleListForSale(selectedCompany.id)}
+                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 2}
+                    className="border border-emerald-700/50 bg-emerald-950/30 text-emerald-400 hover:bg-emerald-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <i className="fas fa-tag text-lg mb-2"></i>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">List for Sale</span>
+                    <span className="text-[8px] text-slate-500 mt-0.5">(2 AP)</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowExitModal(selectedCompany)}
+                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1}
+                    className="border border-blue-700/50 bg-blue-950/30 text-blue-400 hover:bg-blue-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <i className="fas fa-handshake text-lg mb-2"></i>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Negotiate</span>
+                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowExitModal(selectedCompany)}
+                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 2}
+                    className="border border-amber-700/50 bg-amber-950/30 text-amber-400 hover:bg-amber-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <i className="fas fa-bullhorn text-lg mb-2"></i>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">IPO Prep</span>
+                    <span className="text-[8px] text-slate-500 mt-0.5">(2 AP)</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleCancelExit(selectedCompany.id)}
+                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1}
+                    className="border border-red-800/50 bg-red-950/30 text-red-400 hover:bg-red-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <i className="fas fa-undo text-lg mb-2"></i>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Cancel Exit</span>
+                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

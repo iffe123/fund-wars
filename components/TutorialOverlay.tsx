@@ -6,6 +6,8 @@ interface TutorialOverlayProps {
   step: number;
 }
 
+const TOTAL_TUTORIAL_STEPS = 6;
+
 const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) => {
   const { setTutorialStep } = useGame();
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
@@ -19,6 +21,11 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) 
   }, [step]);
 
   if (step === 0) return null;
+
+  // Clamp step to valid range for display
+  const displayStep = Math.min(step, TOTAL_TUTORIAL_STEPS);
+  const isLastStep = step >= TOTAL_TUTORIAL_STEPS;
+  const progressPercent = (displayStep / TOTAL_TUTORIAL_STEPS) * 100;
 
   const handleSkipClick = () => {
     setShowSkipConfirm(true);
@@ -70,7 +77,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) 
                     <span>SYS_ADMIN // TUTORIAL_PROTOCOL</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                    <span>STEP {step}/6</span>
+                    <span>STEP {displayStep}/{TOTAL_TUTORIAL_STEPS}</span>
                     <button
                         onClick={handleSkipClick}
                         className="hover:text-white underline cursor-pointer pointer-events-auto text-[10px]"
@@ -78,6 +85,14 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) 
                         [SKIP]
                     </button>
                 </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="h-1 bg-slate-800/50">
+                <div
+                    className="h-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-500 ease-out"
+                    style={{ width: `${progressPercent}%` }}
+                />
             </div>
 
             {/* Body */}
@@ -111,7 +126,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) 
                         <i className="fas fa-exclamation-triangle mr-2"></i>
                         Stuck? Look for the <span className="text-amber-400 font-bold">glowing button</span> or
                         <button
-                          onClick={() => setTutorialStep(step + 1)}
+                          onClick={() => setTutorialStep(Math.min(step + 1, TOTAL_TUTORIAL_STEPS + 1))}
                           className="ml-2 underline text-amber-400 hover:text-amber-300 pointer-events-auto cursor-pointer"
                         >
                           click here to skip this step
@@ -119,6 +134,40 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) 
                       </div>
                     )}
                 </div>
+            </div>
+
+            {/* Action Button Footer */}
+            <div className="p-3 bg-slate-800/50 border-t border-slate-700/50">
+                <button
+                    onClick={() => {
+                        if (isLastStep) {
+                            setTutorialStep(0); // Complete tutorial
+                        } else {
+                            setTutorialStep(step + 1);
+                        }
+                    }}
+                    className={`
+                        w-full py-3 px-4 rounded-lg font-bold text-sm uppercase tracking-wider
+                        transition-all duration-200 pointer-events-auto cursor-pointer
+                        flex items-center justify-center gap-2
+                        ${isLastStep
+                            ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/30'
+                            : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black shadow-lg shadow-amber-500/30'
+                        }
+                    `}
+                >
+                    {isLastStep ? (
+                        <>
+                            <i className="fas fa-rocket"></i>
+                            START PLAYING
+                        </>
+                    ) : (
+                        <>
+                            CONTINUE
+                            <i className="fas fa-arrow-right"></i>
+                        </>
+                    )}
+                </button>
             </div>
         </div>
 

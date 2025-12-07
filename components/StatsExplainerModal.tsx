@@ -119,6 +119,81 @@ const STAT_EXPLANATIONS = [
   },
 ];
 
+// Stakeholder Relations Stats with detailed explanations
+const STAKEHOLDER_STATS = [
+  {
+    id: 'lpConfidence',
+    icon: 'fa-landmark',
+    label: 'LP Confidence',
+    color: 'text-emerald-400',
+    bgColor: 'bg-emerald-950/30',
+    borderColor: 'border-emerald-800/50',
+    description: 'Limited Partners trust in your fund management.',
+    drops: 'losses, missed targets, scandals',
+    rises: 'good returns, transparent reporting',
+    danger: 'Below 30: LPs may pull capital',
+    getValue: (stats: PlayerStats) => stats.factionReputation?.LIMITED_PARTNERS || 50,
+    getStatus: (val: number) => val < 30 ? 'critical' : val < 50 ? 'warning' : 'healthy',
+  },
+  {
+    id: 'mediaSentiment',
+    icon: 'fa-newspaper',
+    label: 'Media Sentiment',
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-950/30',
+    borderColor: 'border-blue-800/50',
+    description: 'How the press portrays you.',
+    drops: 'layoffs, scandals, bad exits',
+    rises: 'job creation, successful IPOs',
+    danger: 'Below 20: Regulatory scrutiny increases',
+    getValue: (stats: PlayerStats) => Math.round((stats.reputation + (100 - stats.auditRisk)) / 2),
+    getStatus: (val: number) => val < 20 ? 'critical' : val < 40 ? 'warning' : 'healthy',
+  },
+  {
+    id: 'regulatorAttention',
+    icon: 'fa-gavel',
+    label: 'Regulator Attention',
+    color: 'text-red-400',
+    bgColor: 'bg-red-950/30',
+    borderColor: 'border-red-800/50',
+    description: 'How closely regulators watch you. LOWER = BETTER',
+    drops: 'clean audits, time passing',
+    rises: 'low ethics, complaints, media heat',
+    danger: 'Above 80: Investigation triggered',
+    getValue: (stats: PlayerStats) => stats.auditRisk,
+    getStatus: (val: number) => val > 80 ? 'critical' : val > 50 ? 'warning' : 'healthy',
+    inverted: true,
+  },
+  {
+    id: 'boardApproval',
+    icon: 'fa-users-cog',
+    label: 'Board Approval',
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-950/30',
+    borderColor: 'border-amber-800/50',
+    description: "Your fund's board confidence in you.",
+    drops: 'underperformance, risky moves',
+    rises: 'hitting targets, good judgment',
+    danger: 'Below 25: You get fired (GAME OVER)',
+    getValue: (stats: PlayerStats) => stats.factionReputation?.MANAGING_DIRECTORS || 50,
+    getStatus: (val: number) => val < 25 ? 'critical' : val < 50 ? 'warning' : 'healthy',
+  },
+  {
+    id: 'dealFlowQuality',
+    icon: 'fa-handshake',
+    label: 'Deal Flow Quality',
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-950/30',
+    borderColor: 'border-cyan-800/50',
+    description: 'Quality of deals coming to you.',
+    drops: 'bad reputation, burned bridges',
+    rises: 'successful exits, good relationships',
+    danger: 'Below 30: Only bad deals available',
+    getValue: (stats: PlayerStats) => Math.min(100, stats.reputation + (stats.analystRating / 2)),
+    getStatus: (val: number) => val < 30 ? 'critical' : val < 50 ? 'warning' : 'healthy',
+  },
+];
+
 const StatsExplainerModal: React.FC<StatsExplainerModalProps> = ({
   stats,
   marketVolatility,
@@ -248,6 +323,66 @@ const StatsExplainerModal: React.FC<StatsExplainerModalProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-400">{MARKET_VOLATILITY_STYLES[marketVolatility].description}</p>
+          </div>
+
+          {/* Stakeholder Relations - Detailed */}
+          <div className="mt-4 p-4 rounded-lg border border-slate-700 bg-slate-800/30">
+            <div className="flex items-center gap-2 mb-3">
+              <i className="fas fa-users-gear text-amber-400"></i>
+              <span className="font-bold text-white">Stakeholder Relations</span>
+              <span className="text-[10px] text-slate-500 ml-auto">Click for details</span>
+            </div>
+            <div className="space-y-3">
+              {STAKEHOLDER_STATS.map(stat => {
+                const value = stat.getValue(stats);
+                const status = stat.getStatus(value);
+                return (
+                  <div
+                    key={stat.id}
+                    className={`p-3 rounded-lg border ${stat.bgColor} ${stat.borderColor} hover:scale-[1.01] transition-all cursor-pointer`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <i className={`fas ${stat.icon} ${stat.color}`}></i>
+                        <span className="font-bold text-white text-sm">{stat.label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-mono font-bold ${stat.color}`}>{value}/100</span>
+                        <i className={`fas text-xs ${
+                          status === 'critical' ? 'fa-triangle-exclamation text-red-400' :
+                          status === 'warning' ? 'fa-circle-exclamation text-amber-400' :
+                          'fa-circle-check text-emerald-400'
+                        }`}></i>
+                      </div>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden mb-2">
+                      <div
+                        className={`h-full transition-all duration-300 ${
+                          status === 'critical' ? 'bg-red-500' :
+                          status === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'
+                        }`}
+                        style={{ width: `${stat.inverted ? 100 - value : value}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400 mb-1">{stat.description}</p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px]">
+                      <span className="text-red-400">
+                        <i className="fas fa-arrow-down mr-1"></i>{stat.drops}
+                      </span>
+                      <span className="text-emerald-400">
+                        <i className="fas fa-arrow-up mr-1"></i>{stat.rises}
+                      </span>
+                    </div>
+                    {status !== 'healthy' && (
+                      <div className={`mt-2 text-[10px] font-bold ${status === 'critical' ? 'text-red-400' : 'text-amber-400'}`}>
+                        <i className="fas fa-bolt mr-1"></i>{stat.danger}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Faction Reputation */}
