@@ -47,9 +47,10 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
     return `$${val}`;
   }, []);
 
-  // Calculate net worth (cash + portfolio value - debt)
+  // Calculate net worth (bank balance + portfolio value - debt)
   const portfolioValue = stats.portfolio.reduce((sum, c) => sum + (c.currentValuation * (c.ownershipPercentage / 100)), 0);
-  const netWorth = stats.cash + portfolioValue + stats.totalRealizedGains - stats.loanBalance;
+  const bankBalance = stats.personalFinances?.bankBalance ?? stats.cash;
+  const netWorth = bankBalance + portfolioValue + stats.totalRealizedGains - stats.loanBalance;
 
   // Win condition progress
   const isPartner = LEVEL_RANKS[stats.level] >= LEVEL_RANKS[PlayerLevel.PARTNER];
@@ -102,14 +103,14 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
       >
       {/* MOBILE VIEW (< 768px) */}
       <div className="flex md:hidden items-center w-full justify-between gap-3">
-        {/* Cash */}
+        {/* Bank Balance */}
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-emerald-950/50 border border-emerald-800/50 flex items-center justify-center">
             <i className="fas fa-wallet text-emerald-400 text-sm"></i>
           </div>
           <div className="flex flex-col">
-            <span className="text-[9px] text-slate-400 uppercase tracking-wider font-bold">Cash</span>
-            <span className="text-emerald-400 font-bold text-sm tabular-nums">{formatMoney(stats.cash)}</span>
+            <span className="text-[9px] text-slate-400 uppercase tracking-wider font-bold">Bank</span>
+            <span className="text-emerald-400 font-bold text-sm tabular-nums">{formatMoney(stats.personalFinances?.bankBalance ?? stats.cash)}</span>
           </div>
         </div>
 
@@ -159,10 +160,10 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           <i className="fas fa-user text-slate-500 text-[10px] mr-1"></i>
           <span className="text-[8px] text-slate-500 uppercase tracking-wider mr-2">Personal</span>
 
-          {/* Weekly Budget */}
+          {/* Bank Balance */}
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-800/30">
             <i className="fas fa-wallet text-emerald-400 text-[10px]"></i>
-            <span className="text-emerald-400 font-bold tabular-nums text-[11px]">${stats.cash.toLocaleString()}</span>
+            <span className="text-emerald-400 font-bold tabular-nums text-[11px]">${(stats.personalFinances?.bankBalance ?? stats.cash).toLocaleString()}</span>
           </div>
 
           {/* Lifestyle */}
@@ -216,18 +217,6 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-950/30 border border-blue-800/40">
             <i className="fas fa-star text-blue-400 text-xs"></i>
             <span className="font-bold text-blue-400 tabular-nums">{stats.reputation}</span>
-          </div>
-
-          {/* Net Worth */}
-          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border ${
-            hasMillionDollars
-              ? 'bg-amber-950/30 border-amber-800/40'
-              : 'bg-slate-800/30 border-slate-700/40'
-          }`}>
-            <i className={`fas fa-sack-dollar text-xs ${hasMillionDollars ? 'text-amber-400' : 'text-slate-500'}`}></i>
-            <span className={`font-bold tabular-nums ${hasMillionDollars ? 'text-amber-400' : 'text-slate-400'}`}>
-              {formatMoney(netWorth)}
-            </span>
           </div>
         </div>
 
