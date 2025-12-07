@@ -2,6 +2,7 @@ import React, { memo, useMemo } from 'react';
 import type { PlayerStats, StatChanges, CompetitiveDeal, LifeAction } from '../types';
 import { TerminalPanel, TerminalButton } from './TerminalUI';
 import { LIFE_ACTIONS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS } from '../constants';
+import { useGame } from '../context/GameContext';
 
 interface WorkspacePanelProps {
   playerStats: PlayerStats | null;
@@ -30,6 +31,8 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
   addLogEntry,
   updatePlayerStats
 }) => {
+  const { useAction } = useGame();
+
   // Calculate affordability and loan access
   const compensation = useMemo(
     () => playerStats ? COMPENSATION_BY_LEVEL[playerStats.level] : null,
@@ -40,14 +43,23 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
   const loanLimit = compensation?.loanLimit ?? 0;
   const currentLoanBalance = playerStats?.loanBalance ?? 0;
   const expensiveThreshold = playerStats ? AFFORDABILITY_THRESHOLDS[playerStats.level] : 200;
+  const actionsRemaining = playerStats?.gameTime?.actionsRemaining ?? 0;
 
   const handleLifeAction = (action: LifeAction) => {
     if (tutorialStep > 0) return; // Lock during tutorial
     if (!playerStats) return;
 
     const actionCost = Math.abs(action.outcome.statChanges.cash || 0);
+    const apCost = action.apCost;
     const canAfford = playerStats.cash >= actionCost;
+    const hasEnoughAP = actionsRemaining >= apCost;
     const feelsExpensive = actionCost >= expensiveThreshold;
+
+    // Check AP availability first
+    if (!hasEnoughAP) {
+      addToast(`Not enough action points! Need ${apCost} AP, have ${actionsRemaining}`, 'error');
+      return;
+    }
 
     // Bridge Loan - locked for Associates
     if (action.id === 'hard_money_loan') {
@@ -62,6 +74,11 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
       }
       if (currentLoanBalance + 50000 > loanLimit) {
         addToast(`Loan would exceed your $${loanLimit.toLocaleString()} limit.`, 'error');
+        return;
+      }
+      // Deduct AP cost
+      if (!useAction(apCost)) {
+        addToast('Not enough action points!', 'error');
         return;
       }
       onStatChange(action.outcome.statChanges);
@@ -81,6 +98,11 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
         addToast('Insufficient cash to pay down debt.', 'error');
         return;
       }
+      // Deduct AP cost
+      if (!useAction(apCost)) {
+        addToast('Not enough action points!', 'error');
+        return;
+      }
       updatePlayerStats({ cash: -payment, loanBalanceChange: -payment, stress: -2, score: +25 });
       addToast(`Debt payment sent: $${payment.toLocaleString()}`, 'success');
       addLogEntry('Paid down high-interest debt.');
@@ -90,6 +112,12 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
     // Affordability check for all actions
     if (actionCost > 0 && !canAfford) {
       addToast(`Can't afford this. Need $${actionCost.toLocaleString()}`, 'error');
+      return;
+    }
+
+    // Deduct AP cost
+    if (!useAction(apCost)) {
+      addToast('Not enough action points!', 'error');
       return;
     }
 
@@ -115,25 +143,34 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {LIFE_ACTIONS.map(action => {
             const actionCost = Math.abs(action.outcome.statChanges.cash || 0);
+            const apCost = action.apCost;
             const canAfford = playerStats ? playerStats.cash >= actionCost : false;
+            const hasEnoughAP = actionsRemaining >= apCost;
             const feelsExpensive = actionCost >= expensiveThreshold;
             const isLoanAction = action.id === 'hard_money_loan';
             const loanLocked = isLoanAction && !canAccessLoan;
+            const isDisabled = tutorialStep > 0 || loanLocked || !hasEnoughAP || (!canAfford && actionCost > 0);
 
             return (
               <button
                 key={action.id}
                 onClick={() => handleLifeAction(action)}
-                className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all active:scale-95 active:border-amber-500 active:shadow-[0_0_12px_rgba(245,158,11,0.4)] ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''} ${loanLocked ? 'opacity-40 border-red-900' : ''} ${!canAfford && actionCost > 0 ? 'opacity-50 border-slate-800' : ''}`}
+                disabled={isDisabled}
+                className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all active:scale-95 active:border-amber-500 active:shadow-[0_0_12px_rgba(245,158,11,0.4)] ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''} ${loanLocked ? 'opacity-40 border-red-900' : ''} ${!hasEnoughAP ? 'opacity-40 border-slate-800 cursor-not-allowed' : ''} ${!canAfford && actionCost > 0 ? 'opacity-50 border-slate-800' : ''}`}
               >
-                <i className={`fas ${action.icon} text-2xl mb-2 ${loanLocked ? 'text-red-900' : !canAfford && actionCost > 0 ? 'text-slate-400' : feelsExpensive && actionCost > 0 ? 'text-amber-600' : 'text-slate-500'} group-hover:text-blue-500`}></i>
+                <i className={`fas ${action.icon} text-2xl mb-2 ${loanLocked || !hasEnoughAP ? 'text-red-900' : !canAfford && actionCost > 0 ? 'text-slate-400' : feelsExpensive && actionCost > 0 ? 'text-amber-600' : 'text-slate-500'} group-hover:text-blue-500`}></i>
                 <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-white">{action.text}</span>
+                {/* Display AP cost */}
+                <span className={`text-[8px] font-bold ${!hasEnoughAP ? 'text-red-500' : 'text-amber-400'}`}>
+                  {apCost} AP
+                </span>
                 {actionCost > 0 && (
                   <span className={`text-[8px] ${!canAfford ? 'text-red-500' : feelsExpensive ? 'text-amber-500' : 'text-slate-400'}`}>
                     ${actionCost.toLocaleString()}
                   </span>
                 )}
                 {loanLocked && <span className="text-[8px] text-red-500">LOCKED</span>}
+                {!hasEnoughAP && !loanLocked && <span className="text-[8px] text-red-500">NO AP</span>}
               </button>
             );
           })}
