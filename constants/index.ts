@@ -5,3 +5,4 @@ export * from './modelingChallenges';
 export * from './sectors';
 export * from './companyEvents';
 export * from './npcDramas';
+export * from './managementActions';

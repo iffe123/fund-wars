@@ -539,7 +539,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         ...changes.addPortfolioCompany,
                         id: uniqueId,
                         acquisitionDate: { year: baseStats.gameYear || 1, month: baseStats.gameMonth || 1 },
-                        eventHistory: []
+                        eventHistory: [],
+                        // Initialize deal phase state machine fields
+                        dealPhase: changes.addPortfolioCompany.dealPhase || 'PIPELINE',
+                        actionsThisWeek: changes.addPortfolioCompany.actionsThisWeek || [],
+                        lastManagementActions: changes.addPortfolioCompany.lastManagementActions || {},
                     } as PortfolioCompany];
                 }
             }
@@ -1007,10 +1011,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     setPlayerStats(prev => {
       if (!prev?.gameTime) return prev;
+
+      // Reset actionsThisWeek for all portfolio companies
+      const updatedPortfolio = prev.portfolio.map(company => ({
+        ...company,
+        actionsThisWeek: [],
+      }));
+
       return {
         ...prev,
         energy: Math.max(0, (prev.energy || 100) + (nightGrinderPenalty.energy || 0)),
         health: Math.max(0, (prev.health || 100) + (nightGrinderPenalty.health || 0)),
+        portfolio: updatedPortfolio,
         gameTime: {
           week: currentWeek,
           year: 1 + yearsPassed,
