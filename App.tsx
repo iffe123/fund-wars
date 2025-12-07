@@ -461,6 +461,13 @@ const App: React.FC = () => {
 
     const advisorQuery = `I need your counsel on this situation:\n\n${event.description}\n\nMy options are:\n${optionsContext}\n\nWhat would you advise?`;
 
+    // Close the modal first - check if it's a CompanyEvent (has options) or Drama (has choices)
+    if ('options' in event) {
+      setActiveCompanyEvent(null);
+    } else {
+      setActiveDrama(null);
+    }
+
     // Navigate to advisor chat
     setSelectedNpcId('advisor');
     if (window.innerWidth < 768) setActiveMobileTab('COMMS');
