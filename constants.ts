@@ -1608,7 +1608,7 @@ export const LIFE_ACTIONS: LifeAction[] = [
       statChanges: { energy: +10, stress: -20, score: -25 },
     },
   },
-  // Career Building (1-1.5 AP)
+  // Career Building (1 AP)
   {
     id: 'networking',
     text: 'Attend Networking Event',
@@ -1623,7 +1623,7 @@ export const LIFE_ACTIONS: LifeAction[] = [
     id: 'study',
     text: 'Study Financial Engineering',
     icon: 'fa-book-open-reader',
-    apCost: 1.5,  // Significant skill investment
+    apCost: 1,
     outcome: {
         description: "Instead of sleeping, you study esoteric debt structures. You feel your brain expanding, or maybe that's just a caffeine-induced aneurysm. Either way, you're sharper.",
         statChanges: { financialEngineering: +5, energy: -10, stress: +5, score: +100 }
@@ -1649,12 +1649,12 @@ export const LIFE_ACTIONS: LifeAction[] = [
         statChanges: { auditRisk: -20, stress: +5, energy: -10, score: +50 }
     }
   },
-  // High Impact (1.5-2 AP)
+  // High Impact (1 AP)
   {
     id: 'golf_outing',
     text: 'Golf with Partners',
     icon: 'fa-golf-ball-tee',
-    apCost: 1.5,  // Time-intensive networking
+    apCost: 1,
     outcome: {
         description: "You drop $500 on greens fees to let the Managing Directors beat you. It's not about the game, it's about the face time. You laugh at their bad jokes.",
         statChanges: { reputation: +15, cash: -500, energy: -10, score: +200, npcRelationshipUpdate: { npcId: 'chad', change: 10, memory: 'Good sport on the golf course' } }
@@ -1664,7 +1664,7 @@ export const LIFE_ACTIONS: LifeAction[] = [
     id: 'vacation',
     text: 'Take a Vacation',
     icon: 'fa-plane-departure',
-    apCost: 2,    // Major time investment
+    apCost: 1,
     outcome: {
       description: "You escape to a place without spreadsheets. The massive energy and stress recovery is offset by the deals you missed and the partners thinking you've gone soft.",
       statChanges: { energy: +50, stress: -40, cash: -2000, reputation: -5, score: -200 },

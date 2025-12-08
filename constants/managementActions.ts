@@ -5,7 +5,7 @@ import type { ManagementAction, ManagementActionType } from '../types';
  *
  * These actions become available when a deal is WON and the company
  * transitions to OWNED status. Each action has:
- * - AP cost: Action points required
+ * - AP cost: Action points required (always 1)
  * - Cooldown: Weeks before the same action can be repeated
  * - Outcomes: Probabilistic results affecting company and player stats
  */
@@ -42,7 +42,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     type: 'FIRE_CEO',
     label: 'Fire CEO',
     description: 'Remove underperforming leadership. High risk, high reward.',
-    apCost: 2,
+    apCost: 1,
     cooldownWeeks: 12,
     possibleOutcomes: [
       {
@@ -204,7 +204,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     type: 'ADD_ON_ACQUISITION',
     label: 'Add-On Acquisition',
     description: 'Acquire a complementary business. High complexity, high potential.',
-    apCost: 2,
+    apCost: 1,
     cooldownWeeks: 16,
     possibleOutcomes: [
       {
@@ -231,7 +231,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     type: 'PREPARE_EXIT',
     label: 'Prepare for Exit',
     description: 'Start positioning the company for sale. Begins the exit process.',
-    apCost: 2,
+    apCost: 1,
     cooldownWeeks: 20,
     possibleOutcomes: [
       {
