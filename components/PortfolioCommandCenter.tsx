@@ -71,6 +71,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
   };
 
   // Get actions based on company status
+  // SUBMIT IOI removed - use proper flow in Asset Manager (Diligence → Leverage → IOI)
   const getPipelineActions = (company: PortfolioCompany) => [
     {
       label: company.isAnalyzed ? 'Refresh Diligence' : 'Analyze File',
@@ -82,18 +83,6 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
         });
         addLogEntry(`Diligence refreshed for ${company.name}`);
         if (!company.isAnalyzed && tutorialStep === 3) setTutorialStep(4);
-      },
-    },
-    {
-      label: 'Submit IOI',
-      icon: 'fa-file-signature',
-      disabled: !company.isAnalyzed,
-      tooltip: company.isAnalyzed ? 'Move to deal execution' : 'Analyze first',
-      onClick: () => {
-        onJumpToAssets();
-        if (tutorialStep > 0) {
-          setTutorialStep(6);
-        }
       },
     },
     {
@@ -223,7 +212,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
         <TerminalPanel title="PORTFOLIO_COMMAND_CENTER" className="h-auto">
           <div className="p-4 space-y-4">
             <div className="text-xs text-slate-400 font-mono border border-amber-500/40 bg-amber-950/20 p-3 rounded">
-              Quick-launch actions for every company. Pipeline companies need analysis before IOI. Owned companies require active management. Exiting companies are preparing for sale.
+              Quick-launch actions for every company. Pipeline companies can be analyzed or dropped. Use Asset Manager for full deal flow (Diligence → Leverage → IOI). Owned companies require active management.
             </div>
 
             {/* Status legend */}
