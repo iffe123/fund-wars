@@ -989,7 +989,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ...prev,
         gameTime: {
           ...prev.gameTime,
-          actionsRemaining: prev.gameTime.actionsRemaining - cost,
+          actionsRemaining: Math.floor(prev.gameTime.actionsRemaining - cost),
           // Only track action type if it was provided
           actionsUsedThisWeek: isNumber
             ? prev.gameTime.actionsUsedThisWeek
