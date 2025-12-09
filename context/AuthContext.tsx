@@ -2,10 +2,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth, googleProvider } from '../services/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { loadGoogleSignIn } from '../services/googleAuth';
 
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
+  googleSdkReady: boolean;
+  googleSdkError: string | null;
   signInWithGoogle: () => Promise<void>;
   signInAsGuest: () => void;
   logout: () => Promise<void>;
@@ -16,10 +19,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [googleSdkReady, setGoogleSdkReady] = useState(false);
+  const [googleSdkError, setGoogleSdkError] = useState<string | null>(null);
+
+  // Lazy load Google Sign-In SDK
+  useEffect(() => {
+    loadGoogleSignIn()
+      .then(() => {
+        setGoogleSdkReady(true);
+      })
+      .catch((error) => {
+        console.warn('[AUTH] Google Sign-In SDK failed to load:', error.message);
+        setGoogleSdkError(error.message || 'Failed to load Google Sign-In');
+      });
+  }, []);
 
   const signInWithGoogle = async () => {
     if (!auth || !googleProvider) {
         alert("Firebase is not configured. Please add your API keys to .env or use Guest Access.");
+        return;
+    }
+    if (googleSdkError) {
+        alert("Google Sign-In is unavailable (offline mode). Please use Guest Access.");
+        return;
+    }
+    if (!googleSdkReady) {
+        alert("Google Sign-In is still loading. Please try again in a moment.");
         return;
     }
     try {
@@ -102,7 +127,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   return (
-    <AuthContext.Provider value={{ currentUser, loading, signInWithGoogle, signInAsGuest, logout }}>
+    <AuthContext.Provider value={{ currentUser, loading, googleSdkReady, googleSdkError, signInWithGoogle, signInAsGuest, logout }}>
       {children}
     </AuthContext.Provider>
   );
