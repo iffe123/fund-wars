@@ -61,6 +61,8 @@ const App: React.FC = () => {
     // Living World System
     activeWarnings, activeDrama, activeCompanyEvent, eventQueue, pendingDecision,
     dismissWarning, handleWarningAction, setActiveDrama, setActiveCompanyEvent, handleEventDecision,
+    // Time & Action System
+    useAction,
   } = useGame();
   
   const { loading: authLoading } = useAuth();
@@ -763,6 +765,13 @@ const App: React.FC = () => {
                                 if (tutorialStep > 0) return; // Lock during tutorial
                                 if (!playerStats) return;
 
+                                // All life actions cost 1 AP (except loans which are free but have other restrictions)
+                                const isLoanRelated = action.id === 'hard_money_loan' || action.id === 'loan_payment';
+                                if (!isLoanRelated && !useAction(1)) {
+                                    addToast('Not enough AP this week. Advance time.', 'error');
+                                    return;
+                                }
+
                                 // Bridge Loan - locked for Associates
                                 if (action.id === 'hard_money_loan') {
                                     if (!canAccessLoan) {
@@ -816,7 +825,7 @@ const App: React.FC = () => {
                                 addToast(action.text, 'success');
                                 addLogEntry(`ACTION: ${action.text}`);
                             }}
-                            className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all active:scale-95 active:border-amber-500 active:shadow-[0_0_12px_rgba(245,158,11,0.4)] ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''} ${loanLocked ? 'opacity-40 border-red-900' : ''} ${!canAfford && actionCost > 0 ? 'opacity-50 border-slate-800' : ''}`}
+                            className={`aspect-square border border-slate-700 hover:bg-slate-800 hover:border-blue-500 flex flex-col items-center justify-center p-2 text-center group transition-all active:scale-95 active:border-amber-500 active:shadow-[0_0_12px_rgba(245,158,11,0.4)] ${tutorialStep > 0 ? 'opacity-30 cursor-not-allowed' : ''} ${loanLocked ? 'opacity-40 border-red-900' : ''} ${!canAfford && actionCost > 0 ? 'opacity-50 border-slate-800' : ''} ${(playerStats?.gameTime?.actionsRemaining || 0) < 1 && !isLoanAction ? 'opacity-40 border-slate-800' : ''}`}
                         >
                             <i className={`fas ${action.icon} text-2xl mb-2 ${loanLocked ? 'text-red-900' : !canAfford && actionCost > 0 ? 'text-slate-400' : feelsExpensive && actionCost > 0 ? 'text-amber-600' : 'text-slate-500'} group-hover:text-blue-500`}></i>
                             <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-white">{action.text}</span>
@@ -825,6 +834,7 @@ const App: React.FC = () => {
                                     ${actionCost.toLocaleString()}
                                 </span>
                             )}
+                            {!isLoanAction && <span className="text-[8px] text-cyan-500 mt-0.5">(1 AP)</span>}
                             {loanLocked && <span className="text-[8px] text-red-500">LOCKED</span>}
                         </button>
                     );})}
@@ -1153,26 +1163,41 @@ const App: React.FC = () => {
                                 <i className="fas fa-exclamation-triangle text-amber-400"></i>
                             </div>
                             <div>
-                                <div className="text-xs text-amber-400/70 uppercase tracking-wider">Company Event</div>
+                                <div className="text-xs text-amber-400/70 uppercase tracking-wider">Company Event (1 AP)</div>
                                 <div className="text-lg font-bold text-white">{activeCompanyEvent.title}</div>
                             </div>
                         </div>
                     </div>
                     <div className="p-4">
                         <p className="text-sm text-slate-300 mb-4">{activeCompanyEvent.description}</p>
+                        {(playerStats?.gameTime?.actionsRemaining || 0) < 1 && (
+                            <div className="bg-red-950/50 border border-red-800/50 p-3 rounded mb-4">
+                                <div className="text-red-400 text-sm font-bold">No AP remaining</div>
+                                <div className="text-red-400/70 text-xs">Advance time to get more actions</div>
+                            </div>
+                        )}
                         <div className="space-y-2">
-                            {activeCompanyEvent.options.map((option, idx) => (
+                            {activeCompanyEvent.options.map((option, idx) => {
+                                // Risk is 0-100 number: 0-30 = low, 31-60 = medium, 61+ = high
+                                const riskLevel = (option.risk || 0) >= 60 ? 'high' : (option.risk || 0) >= 30 ? 'medium' : 'low';
+                                const riskPercent = option.risk || 0;
+                                return (
                                 <button
                                     key={idx}
+                                    disabled={(playerStats?.gameTime?.actionsRemaining || 0) < 1}
                                     onClick={() => {
+                                        if (!useAction(1)) {
+                                            addToast('Not enough AP this week.', 'error');
+                                            return;
+                                        }
                                         handleEventDecision(activeCompanyEvent.id, option.id);
-                                        addToast(option.outcomeText, option.risk === 'high' ? 'error' : 'success');
+                                        addToast(`DECISION: ${option.label} — ${option.outcomeText}`, riskLevel === 'high' ? 'error' : 'success');
                                         addLogEntry(`EVENT: ${activeCompanyEvent.title} - Chose: ${option.label}`);
                                     }}
-                                    className={`w-full text-left p-3 border rounded transition-all ${
-                                        option.risk === 'high'
+                                    className={`w-full text-left p-3 border rounded transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                                        riskLevel === 'high'
                                             ? 'border-red-500/50 hover:border-red-400 hover:bg-red-900/20'
-                                            : option.risk === 'medium'
+                                            : riskLevel === 'medium'
                                             ? 'border-amber-500/50 hover:border-amber-400 hover:bg-amber-900/20'
                                             : 'border-green-500/50 hover:border-green-400 hover:bg-green-900/20'
                                     }`}
@@ -1180,19 +1205,19 @@ const App: React.FC = () => {
                                     <div className="text-sm font-bold text-white">{option.label}</div>
                                     <div className="text-xs text-slate-400 mt-1">{option.description}</div>
                                     <div className={`text-[10px] mt-1 ${
-                                        option.risk === 'high' ? 'text-red-400' : option.risk === 'medium' ? 'text-amber-400' : 'text-green-400'
+                                        riskLevel === 'high' ? 'text-red-400' : riskLevel === 'medium' ? 'text-amber-400' : 'text-green-400'
                                     }`}>
-                                        Risk: {option.risk.toUpperCase()}
+                                        Risk: {riskPercent}% ({riskLevel.toUpperCase()})
                                     </div>
                                 </button>
-                            ))}
+                            );})}
                         </div>
                         <button
                             onClick={() => handleConsultMachiavelli(activeCompanyEvent)}
                             className="w-full mt-4 p-3 border border-purple-500/50 hover:border-purple-400 hover:bg-purple-900/20 rounded text-purple-400 text-sm flex items-center justify-center gap-2"
                         >
                             <i className="fas fa-user-secret"></i>
-                            Consult Machiavelli
+                            Consult Machiavelli (Free)
                         </button>
                     </div>
                 </div>
@@ -1209,7 +1234,7 @@ const App: React.FC = () => {
                                 <i className="fas fa-theater-masks text-purple-400"></i>
                             </div>
                             <div>
-                                <div className="text-xs text-purple-400/70 uppercase tracking-wider">Office Drama</div>
+                                <div className="text-xs text-purple-400/70 uppercase tracking-wider">Office Drama (1 AP)</div>
                                 <div className="text-lg font-bold text-white">{activeDrama.title}</div>
                             </div>
                         </div>
@@ -1222,11 +1247,22 @@ const App: React.FC = () => {
                                 Involved: {activeDrama.involvedNpcs.join(', ')}
                             </div>
                         )}
+                        {(playerStats?.gameTime?.actionsRemaining || 0) < 1 && (
+                            <div className="bg-red-950/50 border border-red-800/50 p-3 rounded mb-4">
+                                <div className="text-red-400 text-sm font-bold">No AP remaining</div>
+                                <div className="text-red-400/70 text-xs">Advance time to get more actions</div>
+                            </div>
+                        )}
                         <div className="space-y-2">
                             {activeDrama.choices.map((choice, idx) => (
                                 <button
                                     key={idx}
+                                    disabled={(playerStats?.gameTime?.actionsRemaining || 0) < 1}
                                     onClick={() => {
+                                        if (!useAction(1)) {
+                                            addToast('Not enough AP this week.', 'error');
+                                            return;
+                                        }
                                         updatePlayerStats(choice.outcome.statChanges);
                                         if (choice.outcome.npcEffects) {
                                             choice.outcome.npcEffects.forEach(effect => {
@@ -1240,15 +1276,16 @@ const App: React.FC = () => {
                                             });
                                         }
                                         setActiveDrama(null);
-                                        addToast(choice.outcome.description, 'info');
+                                        addToast(`DECISION: ${choice.text} — ${choice.outcome.description}`, 'info');
                                         addLogEntry(`DRAMA: ${activeDrama.title} - Chose: ${choice.text}`);
                                     }}
-                                    className="w-full text-left p-3 border border-slate-600 hover:border-purple-400 hover:bg-purple-900/10 rounded transition-all"
+                                    className="w-full text-left p-3 border border-slate-600 hover:border-purple-400 hover:bg-purple-900/10 rounded transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     <div className="text-sm font-bold text-white">{choice.text}</div>
                                     {choice.description && (
                                         <div className="text-xs text-slate-400 mt-1">{choice.description}</div>
                                     )}
+                                    <div className="text-[10px] text-cyan-500 mt-1">(1 AP)</div>
                                 </button>
                             ))}
                         </div>
@@ -1257,7 +1294,7 @@ const App: React.FC = () => {
                             className="w-full mt-4 p-3 border border-purple-500/50 hover:border-purple-400 hover:bg-purple-900/20 rounded text-purple-400 text-sm flex items-center justify-center gap-2"
                         >
                             <i className="fas fa-user-secret"></i>
-                            Consult Machiavelli
+                            Consult Machiavelli (Free)
                         </button>
                     </div>
                 </div>

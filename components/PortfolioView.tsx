@@ -851,6 +851,86 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                 </div>
               )}
 
+              {/* DEAL PROGRESS INDICATOR - For Pipeline Deals */}
+              {getSelectedCompanyStatus() === 'PIPELINE' && (
+                <div className="card-elevated rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 text-slate-500 mb-3">
+                    <i className="fas fa-tasks text-blue-500/70"></i>
+                    <span className="text-[11px] uppercase tracking-widest font-bold">Deal Progress</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Step 1: Due Diligence */}
+                    <div className={`flex-1 p-2 rounded-lg border text-center transition-all ${
+                      selectedCompany?.isAnalyzed
+                        ? 'bg-emerald-950/30 border-emerald-700/50'
+                        : 'bg-blue-950/30 border-blue-700/50 animate-pulse'
+                    }`}>
+                      <div className={`text-xs font-bold ${selectedCompany?.isAnalyzed ? 'text-emerald-400' : 'text-blue-400'}`}>
+                        {selectedCompany?.isAnalyzed ? '✓' : '1'}
+                      </div>
+                      <div className="text-[9px] text-slate-400 mt-1">Diligence</div>
+                      <div className="text-[8px] text-slate-500">(1 AP)</div>
+                    </div>
+                    <i className="fas fa-chevron-right text-slate-600 text-[10px]"></i>
+
+                    {/* Step 2: Leverage Model */}
+                    <div className={`flex-1 p-2 rounded-lg border text-center transition-all ${
+                      selectedCompany?.leverageModelViewed
+                        ? 'bg-emerald-950/30 border-emerald-700/50'
+                        : selectedCompany?.isAnalyzed
+                          ? 'bg-purple-950/30 border-purple-700/50 animate-pulse'
+                          : 'bg-slate-800/30 border-slate-700/50 opacity-50'
+                    }`}>
+                      <div className={`text-xs font-bold ${
+                        selectedCompany?.leverageModelViewed
+                          ? 'text-emerald-400'
+                          : selectedCompany?.isAnalyzed
+                            ? 'text-purple-400'
+                            : 'text-slate-500'
+                      }`}>
+                        {selectedCompany?.leverageModelViewed ? '✓' : '2'}
+                      </div>
+                      <div className="text-[9px] text-slate-400 mt-1">Model</div>
+                      <div className="text-[8px] text-emerald-500">Free</div>
+                    </div>
+                    <i className="fas fa-chevron-right text-slate-600 text-[10px]"></i>
+
+                    {/* Step 3: Submit IOI */}
+                    <div className={`flex-1 p-2 rounded-lg border text-center transition-all ${
+                      selectedCompany?.dealPhase === 'BIDDING' || selectedCompany?.dealPhase === 'WON'
+                        ? 'bg-emerald-950/30 border-emerald-700/50'
+                        : selectedCompany?.leverageModelViewed
+                          ? 'bg-emerald-950/30 border-emerald-700/50 animate-pulse'
+                          : 'bg-slate-800/30 border-slate-700/50 opacity-50'
+                    }`}>
+                      <div className={`text-xs font-bold ${
+                        selectedCompany?.dealPhase === 'BIDDING' || selectedCompany?.dealPhase === 'WON'
+                          ? 'text-emerald-400'
+                          : selectedCompany?.leverageModelViewed
+                            ? 'text-emerald-400'
+                            : 'text-slate-500'
+                      }`}>
+                        {selectedCompany?.dealPhase === 'BIDDING' || selectedCompany?.dealPhase === 'WON' ? '✓' : '3'}
+                      </div>
+                      <div className="text-[9px] text-slate-400 mt-1">Submit IOI</div>
+                      <div className="text-[8px] text-slate-500">(1 AP)</div>
+                    </div>
+                  </div>
+                  {/* Next step hint */}
+                  <div className="mt-3 text-[10px] text-slate-500 text-center">
+                    {!selectedCompany?.isAnalyzed && (
+                      <span className="text-blue-400">→ Complete Due Diligence to analyze the deal</span>
+                    )}
+                    {selectedCompany?.isAnalyzed && !selectedCompany?.leverageModelViewed && (
+                      <span className="text-purple-400">→ Run Leverage Model to set your bid parameters</span>
+                    )}
+                    {selectedCompany?.leverageModelViewed && selectedCompany?.dealPhase !== 'BIDDING' && selectedCompany?.dealPhase !== 'WON' && (
+                      <span className="text-emerald-400">→ Ready to Submit IOI and enter auction</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
             </div>
 
             {/* ACTION BAR (Sticky Footer on Mobile) - State-Appropriate Actions */}
