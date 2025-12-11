@@ -242,12 +242,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                             carryEligibleDeals: data.playerStats.carryEligibleDeals || [],
                             activeSkillInvestments: data.playerStats.activeSkillInvestments || [],
                             // NEW: Time & Action System - ensure gameTime has proper defaults
+                            // Reduced to 2 AP per week for meaningful strategic tension
                             gameTime: data.playerStats.gameTime || {
                               week: 1,
                               year: 1,
                               quarter: 1 as 1 | 2 | 3 | 4,
-                              actionsRemaining: 4,
-                              maxActions: 4,
+                              actionsRemaining: 2,
+                              maxActions: 2,
                               isNightGrinder: false,
                               actionsUsedThisWeek: [],
                             },
