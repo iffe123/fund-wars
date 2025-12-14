@@ -11,6 +11,7 @@ import SanityEffects from './components/SanityEffects';
 import IntroSequence from './components/IntroSequence';
 import SystemBoot from './components/SystemBoot';
 import TutorialOverlay from './components/TutorialOverlay';
+import PostTutorialGuide from './components/PostTutorialGuide';
 import PlayerStatsDisplay from './components/PlayerStats';
 import BottomNav from './components/BottomNav';
 import LoginScreen from './components/LoginScreen';
@@ -90,6 +91,9 @@ const App: React.FC = () => {
   const [hasSeenStatsTutorial, setHasSeenStatsTutorial] = useState(() => {
     return localStorage.getItem('HAS_SEEN_STATS_TUTORIAL') === 'true';
   });
+
+  // --- POST-TUTORIAL GUIDE STATE ---
+  const [showPostTutorialGuide, setShowPostTutorialGuide] = useState(false);
 
   const currentScenario = activeScenario || SCENARIOS?.[0] || { id: 0, title: 'Loading...', description: '', choices: [], structureOptions: [] };
   const scenarioChoices = (currentScenario.choices && currentScenario.choices.length > 0)
@@ -622,10 +626,8 @@ const App: React.FC = () => {
                       onAction={(id, action) => {
                           // Special logic for Submit IOI in tutorial
                           if (tutorialStep === 6 && action.id === 'submit_ioi') {
-                              setGamePhase('SCENARIO');
-                              setActiveTab('WORKSPACE');
                               setTutorialStep(0); // END TUTORIAL
-                              addToast("IOI SUBMITTED. DEAL PHASE INITIATED.", "success");
+                              setShowPostTutorialGuide(true); // Show guidance before scenario
                               logEvent('tutorial_complete');
                               setChatHistory(prev => [...prev, { sender: 'system', text: "[SYSTEM_LOG] Tutorial Complete. First Deal IOI Submitted." }]);
                           } else {
@@ -1142,6 +1144,24 @@ const App: React.FC = () => {
                 onClose={() => setCurrentAuction(null)}
             />
         )}
+
+        {/* POST-TUTORIAL GUIDE MODAL */}
+        <PostTutorialGuide
+            isOpen={showPostTutorialGuide}
+            onClose={() => {
+                setShowPostTutorialGuide(false);
+                setGamePhase('SCENARIO');
+                setActiveTab('WORKSPACE');
+                addToast("IOI SUBMITTED. Time to choose your deal structure.", "success");
+            }}
+            onContinue={() => {
+                setShowPostTutorialGuide(false);
+                setGamePhase('SCENARIO');
+                setActiveTab('WORKSPACE');
+                addToast("IOI SUBMITTED. Time to choose your deal structure.", "success");
+                playSfx('SUCCESS');
+            }}
+        />
 
         {/* MOBILE BOTTOM NAV */}
         <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
