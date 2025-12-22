@@ -3,6 +3,7 @@ import {
   Warning, NPCDrama, CompanyActiveEvent, RivalFund, CompetitiveDeal, 
   AIState, StatChanges, ActionType 
 } from '../types';
+import type { ActivityItem } from '../components/ActivityFeed';
 
 export interface GameState {
   playerStats: PlayerStats | null;
@@ -13,6 +14,7 @@ export interface GameState {
   marketVolatility: MarketVolatility;
   tutorialStep: number;
   actionLog: string[];
+  activities: ActivityItem[]; // RPG flow: activity feed
   
   // Living World
   activeWarnings: Warning[];
@@ -33,6 +35,7 @@ export type GameAction =
   | { type: 'SET_NPCS'; payload: NPC[] }
   | { type: 'UPDATE_NPC'; payload: { id: string; updates: Partial<NPC> } }
   | { type: 'ADD_LOG_ENTRY'; payload: string }
+  | { type: 'ADD_ACTIVITY'; payload: ActivityItem } // RPG flow: add activity
   | { type: 'SET_TUTORIAL_STEP'; payload: number }
   | { type: 'ADVANCE_TIME'; payload: void } // Logic moved to reducer or thunk? Reducer can handle state updates.
   | { type: 'SET_ACTIVE_SCENARIO'; payload: Scenario | null }

@@ -75,6 +75,7 @@ export const initialState: GameState = {
     marketVolatility: 'NORMAL',
     tutorialStep: 0,
     actionLog: [],
+    activities: [], // RPG flow: activity feed
     activeWarnings: [],
     activeDrama: null,
     activeCompanyEvent: null,
@@ -119,6 +120,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             const entry = `${timestamp} // ${action.payload}`;
             return { ...state, actionLog: [entry, ...state.actionLog].slice(0, 50) };
+        }
+
+        case 'ADD_ACTIVITY': {
+            // Keep last 100 activities
+            return { ...state, activities: [action.payload, ...state.activities].slice(0, 100) };
         }
 
         case 'SET_TUTORIAL_STEP':
