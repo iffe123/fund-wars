@@ -32,6 +32,7 @@ import RivalLeaderboard from './components/RivalLeaderboard';
 import PortfolioCommandCenter from './components/PortfolioCommandCenter';
 import StatsExplainerModal from './components/StatsExplainerModal';
 import WarningPanel from './components/WarningPanel';
+import GameEndModal from './components/GameEndModal';
 
 declare global {
   interface Window {
@@ -952,6 +953,21 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen w-screen bg-black text-slate-200 flex flex-col overflow-hidden font-terminal">
+        {/* End-state overlay so the game flow always resolves visibly */}
+        {playerStats && ['GAME_OVER', 'PRISON', 'ALONE', 'VICTORY'].includes(gamePhase) && (
+            <GameEndModal
+                phase={gamePhase}
+                stats={playerStats}
+                actionLog={actionLog}
+                onRestart={handleResetSimulation}
+                onClose={() => {
+                    // Allow player to keep browsing the UI, but make the end state explicit.
+                    // They can restart from the modal at any time.
+                    addToast('End state acknowledged. You can restart from the menu.', 'info');
+                }}
+            />
+        )}
+
         {import.meta.env.DEV && (
             <button
                 className="fixed top-2 right-2 z-[200] bg-slate-800 text-white text-[10px] px-3 py-1 border border-slate-600 rounded hover:bg-slate-700"
