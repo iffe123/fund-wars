@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
+import { Z_INDEX } from '../constants/zIndex';
 
 interface TutorialOverlayProps {
   instruction: string;
@@ -57,13 +58,17 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) 
   return (
     <>
       {/* Full Screen Mask - Visual only, does not block underlying interactions */}
-      {/* Z-index hierarchy: Tutorial elements must be above ALL modals (max modal z-index is ~200) */}
+      {/* Z-index hierarchy: Tutorial elements must be above ALL modals */}
       <div
-        className="fixed inset-0 bg-black/40 z-[900] pointer-events-none backdrop-blur-[1px] transition-opacity duration-500"
+        className="fixed inset-0 bg-black/40 pointer-events-none backdrop-blur-[1px] transition-opacity duration-500"
+        style={{ zIndex: Z_INDEX.tutorialOverlay }}
       ></div>
 
       {/* Sys_Admin Instruction Box */}
-      <div className={`fixed left-1/2 transform -translate-x-1/2 z-[950] w-[90vw] md:w-[450px] animate-slide-in pointer-events-none ${positionClass}`}>
+      <div 
+        className={`fixed left-1/2 transform -translate-x-1/2 w-[90vw] md:w-[450px] animate-slide-in pointer-events-none ${positionClass}`}
+        style={{ zIndex: Z_INDEX.tutorial }}
+      >
 
         {/* Pointer (Conditional Placement) */}
         {isBottomHeavyStep ? null : (
@@ -181,7 +186,10 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ instruction, step }) 
 
       {/* Skip Confirmation Dialog */}
       {showSkipConfirm && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 pointer-events-auto">
+        <div 
+            className="fixed inset-0 flex items-center justify-center p-4 pointer-events-auto"
+            style={{ zIndex: Z_INDEX.max }}
+        >
           <div className="bg-slate-900 border-2 border-amber-500 rounded-lg shadow-2xl max-w-md w-full p-6 animate-slide-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center">

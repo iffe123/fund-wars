@@ -432,6 +432,7 @@ export interface GameTime {
   maxActions: number;
   isNightGrinder: boolean;
   actionsUsedThisWeek: ActionType[];
+  actionsPerformedThisWeek: string[]; // New: Track specific actions on targets
 }
 
 export interface PlayerStats {
@@ -712,7 +713,7 @@ export interface GameContextType {
   setActiveCompanyEvent: (event: CompanyActiveEvent | null) => void;
   handleEventDecision: (eventId: string, optionId: string) => void;
   // NEW: Time & Action System Methods
-  useAction: (costOrActionType: number | ActionType) => boolean;
+  useAction: (costOrActionType: number | ActionType, targetId?: string) => boolean;
   endWeek: () => void;
   toggleNightGrinder: () => void;
 }
