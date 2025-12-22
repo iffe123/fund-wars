@@ -20,7 +20,7 @@ import { TerminalPanel, TerminalButton, TerminalToast } from './components/Termi
 import NpcListPanel from './components/NpcListPanel';
 import WorkspacePanel from './components/WorkspacePanel';
 import ScenarioPanel from './components/ScenarioPanel';
-import { getAdvisorResponse, getNPCResponse } from './services/geminiService';
+import { getAdvisorResponse, getNPCResponse, getDynamicNewsEvents } from './services/geminiService';
 import { useGame } from './context/GameContext';
 import { useAuth } from './context/AuthContext';
 import { useAudio } from './context/AudioContext';
@@ -33,6 +33,7 @@ import PortfolioCommandCenter from './components/PortfolioCommandCenter';
 import StatsExplainerModal from './components/StatsExplainerModal';
 import WarningPanel from './components/WarningPanel';
 import GameEndModal from './components/GameEndModal';
+import TransparencyModal from './components/TransparencyModal';
 
 declare global {
   interface Window {
@@ -82,6 +83,7 @@ const App: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(DEFAULT_CHAT);
   const [isAdvisorLoading, setIsAdvisorLoading] = useState(false);
   const [showPortfolioDashboard, setShowPortfolioDashboard] = useState(false);
+  const [dynamicNews, setDynamicNews] = useState<import('./types').NewsEvent[]>([]);
 
   // --- AUCTION STATE ---
   const [currentAuction, setCurrentAuction] = useState<CompetitiveDeal | null>(null);
@@ -95,6 +97,9 @@ const App: React.FC = () => {
 
   // --- POST-TUTORIAL GUIDE STATE ---
   const [showPostTutorialGuide, setShowPostTutorialGuide] = useState(false);
+
+  // --- TRANSPARENCY MODAL STATE ---
+  const [showTransparencyModal, setShowTransparencyModal] = useState(false);
 
   const currentScenario = activeScenario || SCENARIOS?.[0] || { id: 0, title: 'Loading...', description: '', choices: [], structureOptions: [] };
   const scenarioChoices = (currentScenario.choices && currentScenario.choices.length > 0)
@@ -182,6 +187,28 @@ const App: React.FC = () => {
           generateNewDeals();
       }
   }, [tutorialStep, bootComplete, gamePhase, activeDeals.length, generateNewDeals]);
+
+  // Dynamic news: refresh on each time tick (weekly advance)
+  useEffect(() => {
+      if (!playerStats) return;
+      if (gamePhase === 'INTRO') return;
+      const tick = playerStats.timeCursor ?? 0;
+      // Avoid generating during tutorial rail spam; generate after tutorial or once per tick anyway
+      let cancelled = false;
+      (async () => {
+          try {
+              const items = await getDynamicNewsEvents(playerStats, marketVolatility, actionLog);
+              if (!cancelled && items?.length) {
+                  setDynamicNews(items);
+              }
+          } catch {
+              // ignore; service has its own fallback
+          }
+      })();
+      return () => {
+          cancelled = true;
+      };
+  }, [playerStats?.timeCursor, marketVolatility]);
 
 
   // Auto-complete boot sequence if loading saved game (playerStats exists but not in INTRO)
@@ -985,7 +1012,14 @@ const App: React.FC = () => {
         )}
         {/* Mobile Status Bar / Safe Area Top */}
         <div className="pt-[env(safe-area-inset-top)] bg-slate-900 border-b border-slate-700 md:pt-0">
-             {playerStats && <PlayerStatsDisplay stats={playerStats} marketVolatility={marketVolatility} onStatsClick={handleStatsClick} />}
+             {playerStats && (
+                <PlayerStatsDisplay
+                    stats={playerStats}
+                    marketVolatility={marketVolatility}
+                    onStatsClick={handleStatsClick}
+                    onOpenTransparency={() => setShowTransparencyModal(true)}
+                />
+             )}
         </div>
         
         {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
@@ -1009,7 +1043,7 @@ const App: React.FC = () => {
             
             {/* Right Panel (News) */}
             <div className="border-l border-slate-700 bg-black">
-                 <NewsTicker events={NEWS_EVENTS} systemLogs={actionLog} />
+                 <NewsTicker events={[...dynamicNews, ...NEWS_EVENTS]} systemLogs={actionLog} />
             </div>
             
             <TutorialOverlay instruction={TUTORIAL_STEPS_TEXT[tutorialStep]} step={tutorialStep} />
@@ -1045,7 +1079,7 @@ const App: React.FC = () => {
             
             {activeMobileTab === 'NEWS' && (
                 <div className="flex-1 overflow-hidden">
-                     <NewsTicker events={NEWS_EVENTS} systemLogs={actionLog} />
+                     <NewsTicker events={[...dynamicNews, ...NEWS_EVENTS]} systemLogs={actionLog} />
                 </div>
             )}
 
@@ -1076,6 +1110,15 @@ const App: React.FC = () => {
                     >
                         <i className="fas fa-chart-bar"></i>
                         View Full Stats & Explanation
+                    </button>
+
+                    {/* Transparency Button */}
+                    <button
+                        className="w-full border border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 text-slate-200 py-3 uppercase font-bold text-xs tracking-widest rounded-lg flex items-center justify-center gap-2 transition-all"
+                        onClick={() => setShowTransparencyModal(true)}
+                    >
+                        <i className="fas fa-eye"></i>
+                        Transparency & Rules
                     </button>
 
                     {/* Quick Actions */}
@@ -1188,6 +1231,16 @@ const App: React.FC = () => {
             onDismiss={dismissWarning}
             onAction={handleWarningActionWithNavigation}
         />
+
+        {/* TRANSPARENCY / RULES MODAL */}
+        {playerStats && (
+            <TransparencyModal
+                isOpen={showTransparencyModal}
+                stats={playerStats}
+                marketVolatility={marketVolatility}
+                onClose={() => setShowTransparencyModal(false)}
+            />
+        )}
 
         {/* COMPANY EVENT DECISION MODAL */}
         {activeCompanyEvent && (

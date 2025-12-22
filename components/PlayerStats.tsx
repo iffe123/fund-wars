@@ -11,9 +11,10 @@ interface PlayerStatsProps {
   marketVolatility: MarketVolatility;
   onStatsClick?: () => void;
   showTimeActionBar?: boolean;
+  onOpenTransparency?: () => void;
 }
 
-const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVolatility, onStatsClick, showTimeActionBar = true }) => {
+const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVolatility, onStatsClick, showTimeActionBar = true, onOpenTransparency }) => {
   const { endWeek, toggleNightGrinder } = useGame();
 
   // Modal state for stats explainer
@@ -146,11 +147,26 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         </div>
 
         {/* Stats Info Hint (Mobile) */}
-        {onStatsClick && (
-          <div className="w-6 h-6 rounded-full bg-slate-800/80 border border-slate-600/50 flex items-center justify-center">
-            <i className="fas fa-info text-slate-400 text-[10px]"></i>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {onOpenTransparency && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenTransparency();
+              }}
+              className="w-6 h-6 rounded-full bg-slate-800/80 border border-slate-600/50 flex items-center justify-center hover:bg-slate-700"
+              title="Transparency & rules"
+              aria-label="Open transparency & rules"
+            >
+              <i className="fas fa-eye text-slate-300 text-[10px]"></i>
+            </button>
+          )}
+          {onStatsClick && (
+            <div className="w-6 h-6 rounded-full bg-slate-800/80 border border-slate-600/50 flex items-center justify-center">
+              <i className="fas fa-info text-slate-400 text-[10px]"></i>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* DESKTOP VIEW (>= 768px) */}
@@ -298,6 +314,25 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
               </span>
             </div>
           </div>
+
+          {/* Divider */}
+          {onOpenTransparency && <div className="w-px h-6 bg-slate-700/50"></div>}
+
+          {/* Transparency shortcut */}
+          {onOpenTransparency && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenTransparency();
+              }}
+              className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/30 border border-slate-700/40 hover:bg-slate-700/40 transition-colors"
+              title="Transparency & rules"
+              aria-label="Open transparency & rules"
+            >
+              <i className="fas fa-eye text-slate-300 text-[10px]"></i>
+              <span className="text-[10px] uppercase tracking-widest font-bold text-slate-300">Rules</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
