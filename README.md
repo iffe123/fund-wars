@@ -3,6 +3,11 @@
 
 A satirical Private Equity career simulator.
 
+## Product & Development Guide
+
+- [`docs/FUND_WARS_DEVELOPMENT_GUIDE.md`](./docs/FUND_WARS_DEVELOPMENT_GUIDE.md)
+- [`docs/README.md`](./docs/README.md) (documentation index)
+
 ## 🚀 Quick Start (Guest Mode)
 
 You can run the app immediately in "Guest Mode" without any API keys.

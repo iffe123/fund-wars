@@ -1,0 +1,26 @@
+# Fund Wars - Cursor Rules (Source-of-Truth: docs/FUND_WARS_DEVELOPMENT_GUIDE.md)
+
+These rules are the default constraints for AI-assisted changes in this repo.
+
+## Product / Game Rules (Hard)
+- The core loop is weekly turns with exactly **2 Action Points (AP)**.
+- **No action can be repeated on the same target within a single week**; each action must advance state.
+- Favor meaningful scarcity and consequential decisions over “more buttons” or reversible outcomes.
+- NPCs are strategic assets with memory, preferences, and agendas; AI chat must degrade gracefully when offline/unavailable.
+
+## Engineering Rules (Hard)
+- TypeScript strictness is non-negotiable: no `any` unless genuinely unavoidable and justified.
+- Keep modules focused; refactor if a single file grows beyond ~500 lines.
+- No inline styles; use Tailwind utility classes (and shared tokens/patterns where applicable).
+- Accessibility is required: semantic elements, ARIA labels where needed, and keyboard navigation for interactive UI.
+- All game state mutations must go through explicit actions/reducers; avoid direct mutation.
+
+## Quality Bar (Hard)
+- Never expose technical errors to players; provide clear user-facing recovery paths.
+- Prefer offline-first behavior: gameplay should work without network; AI features should be optional.
+- Ensure tutorial overlays render above all modals (z-index discipline).
+
+## Workflow Expectations
+- Make changes that are small, typed, and testable.
+- Update or add docs when behavior/architecture changes.
+
