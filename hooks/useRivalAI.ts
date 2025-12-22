@@ -4,11 +4,11 @@ import {
     calculateAdaptiveDifficulty, generateRivalMindset, getVendettaPhase, 
     checkCoalitionFormation, decideTacticalMove, generateSurpriseEvent,
     calculateTacticalMoveEffects, generateTacticalMoveMessage,
-    generateAIKnowledgeEntry, VENDETTA_ESCALATION_MESSAGES
+    generateAIKnowledgeEntry
 } from '../utils/rivalAI';
 import { 
     COALITION_ANNOUNCEMENTS, PSYCHOLOGICAL_WARFARE_MESSAGES, SURPRISE_ATTACK_MESSAGES, 
-    DEFAULT_FACTION_REPUTATION 
+    DEFAULT_FACTION_REPUTATION, VENDETTA_ESCALATION_MESSAGES
 } from '../constants';
 import { hydrateRivalFund, clampStat, normalizeMemory, normalizeKnowledgeEntry } from '../utils/gameUtils';
 import { RivalMindsetState, KnowledgeEntry } from '../types';
