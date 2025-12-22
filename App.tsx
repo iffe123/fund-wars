@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, GamePhase, PortfolioCompany, MarketVolatility, NPC, CompetitiveDeal, CompanyActiveEvent, NPCDrama } from './types';
 import { PlayerLevel, DealType } from './types';
-import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS, RIVAL_FUNDS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS } from './constants';
+import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS, RIVAL_FUNDS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS, Z_INDEX } from './constants';
 import NewsTicker from './components/NewsTicker';
 import CommsTerminal from './components/CommsTerminal';
 import PortfolioView from './components/PortfolioView';
@@ -647,7 +647,8 @@ const App: React.FC = () => {
           return (
               <TerminalPanel
                 title="ASSET_MANAGER"
-                className={`h-full ${isTutorialActive ? 'relative z-[100]' : ''}`}
+                className={`h-full ${isTutorialActive ? 'relative' : ''}`}
+                style={isTutorialActive ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
               >
                   <PortfolioView
                       playerStats={playerStats}
@@ -768,7 +769,8 @@ const App: React.FC = () => {
       return (
           <TerminalPanel
             title="WORKSPACE_HOME"
-            className={`h-full flex flex-col p-4 bg-black ${isTutorialActive ? 'relative z-[100]' : ''}`}
+            className={`h-full flex flex-col p-4 bg-black ${isTutorialActive ? 'relative' : ''}`}
+            style={isTutorialActive ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
           >
               {/* Hide Life Actions during Tutorial Step 1 to prevent pushing content down */}
               {tutorialStep !== 1 && (
@@ -874,7 +876,10 @@ const App: React.FC = () => {
               <div className="flex-1 border-t border-slate-800 pt-4">
                   <div className="flex justify-between items-center mb-2">
                       <span className="text-xs font-bold text-slate-500">PENDING_TASKS</span>
-                      <div className={tutorialStep === 1 ? 'relative z-[100]' : ''}>
+                      <div 
+                        className={tutorialStep === 1 ? 'relative' : ''}
+                        style={tutorialStep === 1 ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
+                      >
                           <TerminalButton
                             label="MANAGE_ASSETS"
                             icon="fa-briefcase"
@@ -997,7 +1002,8 @@ const App: React.FC = () => {
 
         {import.meta.env.DEV && (
             <button
-                className="fixed top-2 right-2 z-[200] bg-slate-800 text-white text-[10px] px-3 py-1 border border-slate-600 rounded hover:bg-slate-700"
+                className="fixed top-2 right-2 bg-slate-800 text-white text-[10px] px-3 py-1 border border-slate-600 rounded hover:bg-slate-700"
+                style={{ zIndex: Z_INDEX.max }}
                 onClick={() => {
                     resetGame();
                     setBootComplete(false);
@@ -1025,7 +1031,10 @@ const App: React.FC = () => {
         {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
         <div className="hidden md:grid flex-1 grid-cols-[250px_1fr_250px] overflow-hidden relative">
             {/* Left Panel (Comms) */}
-            <div className={`border-r border-slate-700 bg-black ${tutorialStep === 4 ? 'z-[100] relative' : ''}`}>
+            <div 
+                className={`border-r border-slate-700 bg-black ${tutorialStep === 4 ? 'relative' : ''}`}
+                style={tutorialStep === 4 ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
+            >
                 <NpcListPanel
                   npcs={npcs}
                   selectedNpcId={selectedNpcId}
@@ -1037,7 +1046,10 @@ const App: React.FC = () => {
             
             {/* Center Column (Workspace) */}
             {/* Lift during tutorial interactions - include step 4 to prevent black screen after analyze */}
-            <div className={`bg-black relative flex flex-col ${(tutorialStep >= 1 && tutorialStep <= 6) ? 'z-[100]' : ''}`}>
+            <div 
+                className={`bg-black relative flex flex-col`}
+                style={(tutorialStep >= 1 && tutorialStep <= 6) ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
+            >
                 {renderCenterPanel()}
             </div>
             
@@ -1071,7 +1083,10 @@ const App: React.FC = () => {
             )}
             
             {activeMobileTab === 'DESK' && (
-                <div className={`flex-1 overflow-hidden relative bg-black ${(tutorialStep >= 1 && tutorialStep <= 6) ? 'z-[100]' : ''}`}>
+                <div 
+                    className={`flex-1 overflow-hidden relative bg-black`}
+                    style={(tutorialStep >= 1 && tutorialStep <= 6) ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
+                >
                     {renderCenterPanel()}
                     <TutorialOverlay instruction={TUTORIAL_STEPS_TEXT[tutorialStep]} step={tutorialStep} />
                 </div>
@@ -1244,7 +1259,10 @@ const App: React.FC = () => {
 
         {/* COMPANY EVENT DECISION MODAL */}
         {activeCompanyEvent && (
-            <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div 
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+                style={{ zIndex: Z_INDEX.modalOverlay }}
+            >
                 <div className="w-full max-w-lg bg-slate-900 border border-amber-500/50 rounded-lg shadow-2xl">
                     <div className="p-4 border-b border-amber-500/30 bg-amber-500/10">
                         <div className="flex items-center gap-3">
@@ -1315,7 +1333,10 @@ const App: React.FC = () => {
 
         {/* NPC DRAMA DECISION MODAL */}
         {activeDrama && (
-            <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div 
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+                style={{ zIndex: Z_INDEX.modalOverlay }}
+            >
                 <div className="w-full max-w-lg bg-slate-900 border border-purple-500/50 rounded-lg shadow-2xl">
                     <div className="p-4 border-b border-purple-500/30 bg-purple-500/10">
                         <div className="flex items-center gap-3">

@@ -17,3 +17,5 @@ export * from './rivals';
 export * from './difficulty';
 export * from './lifestyle';
 export * from './ui';
+export * from './zIndex';
+
