@@ -328,6 +328,7 @@ const mergeConsequences = (
 
 /**
  * Process the weekly event queue - select priority and optional events.
+ * REDESIGNED: Ensures events are ALWAYS available - game never stops.
  */
 export const processWeeklyQueue = (
   queue: EventQueue,
@@ -379,7 +380,8 @@ export const processWeeklyQueue = (
 
   newQueue.scheduledEvents = futureEvents;
 
-  // Generate random events if queue is empty
+  // REDESIGN: Always generate priority event if none exists
+  // This ensures game never stops for lack of content
   if (!newQueue.priorityEvent) {
     const priorityEvent = selectRandomEvent('PRIORITY', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek);
     if (priorityEvent) {
@@ -387,8 +389,10 @@ export const processWeeklyQueue = (
     }
   }
 
-  // Fill optional events (aim for 2-3)
-  while (newQueue.optionalEvents.length < 3) {
+  // REDESIGN: Ensure minimum 5 optional events (increased from 3)
+  // Players should always have choices available
+  const MIN_OPTIONAL_EVENTS = 5;
+  while (newQueue.optionalEvents.length < MIN_OPTIONAL_EVENTS) {
     const optionalEvent = selectRandomEvent('OPTIONAL', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek);
     if (optionalEvent) {
       // Avoid duplicates
@@ -396,6 +400,23 @@ export const processWeeklyQueue = (
         newQueue.optionalEvents.push(optionalEvent);
       } else {
         break; // No more unique events available
+      }
+    } else {
+      break;
+    }
+  }
+
+  // REDESIGN: Generate background events for atmosphere (2-4 per week)
+  const MIN_BACKGROUND_EVENTS = 2;
+  while (newQueue.backgroundEvents.length < MIN_BACKGROUND_EVENTS) {
+    const backgroundEvent = selectRandomEvent('OPTIONAL', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek);
+    if (backgroundEvent) {
+      // Convert to background event with lower priority
+      backgroundEvent.priority = 1;
+      if (!newQueue.backgroundEvents.some(e => e.eventId === backgroundEvent.eventId)) {
+        newQueue.backgroundEvents.push(backgroundEvent);
+      } else {
+        break;
       }
     } else {
       break;
@@ -582,4 +603,110 @@ export const generateWeeklySummary = (
     npcChanges: [], // Would need NPC tracking to populate
     nextWeekTeaser: undefined, // Could peek at scheduled events
   };
+};
+
+// ============================================================================
+// EVENT CHAINING & FLOW SYSTEM
+// ============================================================================
+
+/**
+ * Chain a follow-up event immediately after the current event.
+ * This creates continuous narrative flow.
+ */
+export const chainEvent = (
+  queue: EventQueue,
+  eventId: string,
+  source: string,
+  delayWeeks: number = 0
+): EventQueue => {
+  return scheduleEvent(queue, eventId, delayWeeks, source, 100);
+};
+
+/**
+ * Create an immediate event that doesn't consume AP.
+ * Used for narrative responses, NPC reactions, etc.
+ */
+export const createImmediateEvent = (
+  queue: EventQueue,
+  eventId: string,
+  source: string
+): EventQueue => {
+  const queuedEvent: QueuedEvent = {
+    eventId,
+    addedWeek: queue.currentWeek,
+    source: `IMMEDIATE:${source}`,
+    priority: 8, // High priority but below PRIORITY events
+  };
+
+  return {
+    ...queue,
+    optionalEvents: [queuedEvent, ...queue.optionalEvents],
+  };
+};
+
+/**
+ * Check if the queue has sufficient events to keep the game flowing.
+ * If not, generate more.
+ */
+export const ensureEventFlow = (
+  queue: EventQueue,
+  allEvents: Map<string, StoryEvent>,
+  arcs: StoryArc[],
+  playerStats: PlayerStats,
+  npcs: NPC[],
+  worldFlags: Set<string>,
+  marketVolatility: MarketVolatility
+): EventQueue => {
+  const MIN_TOTAL_EVENTS = 5;
+  const currentEventCount = 
+    (queue.priorityEvent ? 1 : 0) + 
+    queue.optionalEvents.length;
+
+  if (currentEventCount >= MIN_TOTAL_EVENTS) {
+    return queue; // Sufficient events
+  }
+
+  // Need more events - generate them
+  return processWeeklyQueue(
+    queue,
+    allEvents,
+    arcs,
+    playerStats,
+    npcs,
+    worldFlags,
+    marketVolatility
+  );
+};
+
+/**
+ * Get the next event player should see.
+ * Prioritizes: PRIORITY → High-priority optional → Regular optional
+ */
+export const getNextEvent = (
+  queue: EventQueue,
+  allEvents: Map<string, StoryEvent>
+): QueuedEvent | null => {
+  // Priority event always comes first
+  if (queue.priorityEvent) {
+    return queue.priorityEvent;
+  }
+
+  // Sort optional events by priority
+  const sortedOptional = [...queue.optionalEvents].sort((a, b) => 
+    (b.priority || 0) - (a.priority || 0)
+  );
+
+  return sortedOptional[0] || null;
+};
+
+/**
+ * Mark an event as viewed (for tracking, doesn't remove it).
+ */
+export const markEventViewed = (
+  queue: EventQueue,
+  eventId: string
+): EventQueue => {
+  // This is a soft mark - event stays in queue until completed
+  // Could add a viewedEvents array to EventQueue if needed
+  return queue;
 };
