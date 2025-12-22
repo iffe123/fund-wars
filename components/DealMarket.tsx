@@ -164,6 +164,22 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
                 <div className="border-t border-slate-700 p-3 space-y-3 bg-slate-900/50">
                   <p className="text-sm text-slate-200 leading-relaxed">{deal.description}</p>
 
+                  <div className="border border-slate-800 bg-black/30 rounded p-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+                        Known unknowns
+                      </div>
+                      <div className="text-[10px] uppercase tracking-widest text-amber-400 font-bold">
+                        DD AVAILABLE
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      This deal includes <span className="text-slate-200 font-bold">1 hidden risk</span> and{' '}
+                      <span className="text-slate-200 font-bold">1 hidden upside</span>. You can reveal both once you enter the auction
+                      and run Due Diligence.
+                    </div>
+                  </div>
+
                   <div className="text-xs">
                     <span className="text-slate-400 font-bold">SELLER:</span>
                     <span className="text-slate-200 ml-2">{deal.seller}</span>

@@ -446,7 +446,9 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
   const handleDueDiligence = () => {
     setShowDueDiligence(true);
     setDdRevealed(true);
-    setBidLog(prev => [...prev, `> DUE_DILIGENCE_INITIATED...`, `> RISK: ${deal.hiddenRisk}`, `> UPSIDE: ${deal.hiddenUpside}`]);
+    const risk = deal.hiddenRisk || 'No additional risk signal found (or data missing).';
+    const upside = deal.hiddenUpside || 'No additional upside signal found (or data missing).';
+    setBidLog(prev => [...prev, `> DUE_DILIGENCE_INITIATED...`, `> RISK: ${risk}`, `> UPSIDE: ${upside}`]);
     triggerImpact('MEDIUM');
     setTimeout(() => setShowDueDiligence(false), 3000);
   };
@@ -496,7 +498,7 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
               className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 py-2 text-xs font-mono transition-colors"
             >
               <i className="fas fa-search mr-2"></i>
-              RUN DUE DILIGENCE (Reveal Hidden Info)
+              RUN DUE DILIGENCE (Reveal known-unknowns: risk + upside)
             </button>
           )}
 
@@ -504,11 +506,11 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-red-900/30 border border-red-500/50 p-2 rounded">
                 <div className="text-red-400 font-bold mb-1"><i className="fas fa-exclamation-triangle mr-1"></i>RISK</div>
-                <div className="text-red-200">{deal.hiddenRisk}</div>
+                <div className="text-red-200">{deal.hiddenRisk || 'No additional risk signal found.'}</div>
               </div>
               <div className="bg-green-900/30 border border-green-500/50 p-2 rounded">
                 <div className="text-green-400 font-bold mb-1"><i className="fas fa-arrow-trend-up mr-1"></i>UPSIDE</div>
-                <div className="text-green-200">{deal.hiddenUpside}</div>
+                <div className="text-green-200">{deal.hiddenUpside || 'No additional upside signal found.'}</div>
               </div>
             </div>
           )}

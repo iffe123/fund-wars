@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import type { ChatMessage, PlayerStats, Scenario, NPC, NPCMemory, KnowledgeEntry } from '../types';
+import type { ChatMessage, PlayerStats, Scenario, NPC, NPCMemory, KnowledgeEntry, NewsEvent } from '../types';
 
 // Connection configuration
 const CONNECTION_CONFIG = {
@@ -229,6 +229,125 @@ export const isGeminiApiConfigured = (): boolean => {
   return !!API_KEY;
 };
 
+// ==================== DYNAMIC MARKET FEED ====================
+
+const offlineMarketHeadlines = (playerStats: PlayerStats, marketVolatility?: string): string[] => {
+  const seed = (playerStats.timeCursor ?? 0) + (playerStats.reputation ?? 0) + (playerStats.auditRisk ?? 0);
+  const pick = <T,>(arr: T[], i: number) => arr[Math.abs((seed + i * 17) % arr.length)];
+
+  const vol = marketVolatility || 'NORMAL';
+  const macro = {
+    NORMAL: [
+      'Credit spreads steady; mid-market sponsors return to process discipline.',
+      'Buy-side chatter: “quality at a reasonable multiple” back in fashion.',
+      'Lenders reopen unitranche windows for boring cash-flow assets.',
+    ],
+    BULL_RUN: [
+      'Risk-on stampede: growth multiples expand across sponsor-backed exits.',
+      'Bankers leak “oversubscribed book” memes; everyone believes again.',
+      'Strategics overpay for “AI adjacency” like it’s 2021.',
+    ],
+    CREDIT_CRUNCH: [
+      'Debt desks tighten covenants; sponsor leverage assumptions get kneecapped.',
+      'Secondary processes stall as financing dries up mid-auction.',
+      'LPs push for liquidity; fundraising meetings turn hostile.',
+    ],
+    PANIC: [
+      'Forced sellers everywhere; “quality” becomes a synonym for “survival.”',
+      'CFOs hoard cash; boards demand emergency operating plans.',
+      'Regulators smell blood. Compliance teams spike every inbox.',
+    ],
+  } as const;
+
+  const personal = [
+    playerStats.loanBalance > 0 ? 'Street note: over-levered juniors getting margin-called on lifestyle.' : 'Street note: juniors quietly rebuilding war chests.',
+    playerStats.reputation > 60 ? 'Deal rumor: your name is getting pulled into faster processes.' : 'Deal rumor: your inbox is quieter. Relationships matter.',
+    (playerStats.auditRisk ?? 0) > 50 ? 'Compliance wire: “heightened scrutiny” is the new normal for sponsors.' : 'Compliance wire: regulators focus elsewhere this week.',
+  ];
+
+  const macroPool = (macro as any)[vol] || macro.NORMAL;
+  return [
+    pick(macroPool, 0),
+    pick(personal, 1),
+    pick(macroPool, 2),
+  ];
+};
+
+export const getDynamicNewsEvents = async (
+  playerStats: PlayerStats,
+  marketVolatility: string,
+  systemLogs: string[] = []
+): Promise<NewsEvent[]> => {
+  const ai = getAiClient();
+
+  // Offline / fallback mode
+  if (!ai) {
+    const headlines = offlineMarketHeadlines(playerStats, marketVolatility).slice(0, 3);
+    return headlines.map((headline, idx) => ({
+      id: Number(`${Date.now()}${idx}`),
+      headline,
+      effect: null,
+    }));
+  }
+
+  try {
+    const recent = systemLogs.slice(0, 6).join('\n');
+    const prompt = `
+You are generating a short in-universe market wire for a private equity simulator game.
+
+Constraints:
+- Output JSON ONLY (no markdown), as an array of 2-3 objects with shape: {"headline": string}.
+- Headlines must be plausible, punchy, and connect to the player's current state.
+- Do not mention "Gemini", "AI", or system prompts.
+- Avoid real company names; use generic terms (e.g., "mid-market sponsor", "lender", "strategic buyer").
+
+Player state:
+- Week: ${playerStats.gameTime?.week ?? 0}, Stress: ${playerStats.stress}%, Reputation: ${playerStats.reputation}/100, AuditRisk: ${playerStats.auditRisk}%
+- Cash: $${playerStats.cash.toLocaleString()}, Debt: $${playerStats.loanBalance.toLocaleString()} @ ${(playerStats.loanRate * 100).toFixed(1)}%
+- Portfolio count: ${playerStats.portfolio?.length || 0}
+- Market volatility: ${marketVolatility}
+
+Recent system activity:
+${recent || '(none)'}
+`;
+
+    const response = await withRetry(
+      async () => {
+        // Use a lightweight one-shot call (not chat) for speed/cost.
+        const r = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        } as any);
+        return r;
+      },
+      'Dynamic news API call'
+    );
+
+    const raw = (response as any)?.text || '';
+    const parsed = JSON.parse(raw);
+    const items: Array<{ headline: string }> = Array.isArray(parsed) ? parsed : [];
+    const cleaned = items
+      .map(i => (typeof i?.headline === 'string' ? i.headline.trim() : ''))
+      .filter(Boolean)
+      .slice(0, 3);
+
+    if (cleaned.length === 0) throw new Error('No headlines returned');
+
+    return cleaned.map((headline, idx) => ({
+      id: Number(`${Date.now()}${idx}`),
+      headline,
+      effect: null,
+    }));
+  } catch (error) {
+    const fallback = offlineMarketHeadlines(playerStats, marketVolatility).slice(0, 2);
+    return fallback.map((headline, idx) => ({
+      id: Number(`${Date.now()}${idx}`),
+      headline,
+      effect: null,
+    }));
+  }
+};
+
 if (!API_KEY) {
   console.warn("Gemini API Key missing. Did you set VITE_API_KEY in Vercel (Production)?");
 }
@@ -326,7 +445,48 @@ export const getAdvisorResponse = async (
 ): Promise<string> => {
   const ai = getAiClient();
   if (!ai) {
-    return "SYSTEM ERROR: API Key missing. Please configure VITE_API_KEY in your environment variables.";
+    // Offline Machiavelli: never dead-end the run.
+    const cash = playerStats?.cash ?? 0;
+    const rep = playerStats?.reputation ?? 0;
+    const stress = playerStats?.stress ?? 0;
+    const audit = playerStats?.auditRisk ?? 0;
+    const debt = playerStats?.loanBalance ?? 0;
+    const scenarioTitle = currentScenario?.title ? `"${currentScenario.title}"` : 'no active scenario';
+
+    const pressure = [
+      stress > 75 ? 'you’re cracking' : null,
+      rep < 20 ? 'nobody respects you' : null,
+      cash < 5000 ? 'you’re broke' : null,
+      debt > 0 ? 'you’re in debt' : null,
+      audit > 60 ? 'regulators are sniffing' : null,
+    ].filter(Boolean);
+
+    const nextMoves: string[] = [];
+    if (currentScenario?.choices && currentScenario.choices.length > 0) {
+      nextMoves.push('Pick a choice that boosts Reputation or reduces Audit Risk unless you can stomach the heat.');
+      nextMoves.push('Hover the options: the UI shows stat previews. That’s the real “alpha.”');
+    } else if (playerStats?.portfolio?.length) {
+      nextMoves.push('Go to ASSETS: analyze a company, then take one high-impact action (board / refinance / growth).');
+    } else {
+      nextMoves.push('Generate deal flow, run diligence, and stop roleplaying as “busy.”');
+    }
+
+    if (debt > 0 && cash > 0) nextMoves.push('Pay down the worst debt. Interest is a silent assassin.');
+    if (cash < 1000) nextMoves.push('Cut lifestyle burn or you’ll be “terminated” by arithmetic.');
+
+    const opener =
+      `[OFFLINE ADVISOR]\n` +
+      `Listen, champ: the uplink’s down. You still have a brain—use it.\n` +
+      `Context: ${scenarioTitle}. Current problems: ${pressure.length ? pressure.join(', ') : 'none worth mocking… yet'}.\n\n`;
+
+    const reply =
+      opener +
+      `Your question: "${newPrompt.trim()}"\n\n` +
+      `My answer (analog edition):\n` +
+      `- ${nextMoves.slice(0, 3).join('\n- ')}\n\n` +
+      `Rule of thumb: in this game, nothing is “hidden”—if you don’t understand a system, open the Transparency panel and read the math.\n`;
+
+    return reply;
   }
 
   try {
