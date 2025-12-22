@@ -26,6 +26,11 @@ import { useAuth } from './context/AuthContext';
 import { useAudio } from './context/AudioContext';
 import { logEvent } from './services/analytics';
 import { useToast } from './hooks/useToast';
+import { useEnhancedToast } from './hooks/useEnhancedToast';
+import { ToastContainer } from './components/ui/Toast';
+import ActivityFeed from './components/ActivityFeed';
+import WeekTransition from './components/WeekTransition';
+import { useWeekTransition } from './hooks/useWeekTransition';
 import CompetitiveAuctionModal, { AuctionResult } from './components/CompetitiveAuctionModal';
 import DealMarket from './components/DealMarket';
 import RivalLeaderboard from './components/RivalLeaderboard';
@@ -59,7 +64,8 @@ const App: React.FC = () => {
   // Use Context
   const {
     user, playerStats, npcs, activeScenario, gamePhase, difficulty, marketVolatility, tutorialStep, actionLog,
-    setGamePhase, updatePlayerStats, sendNpcMessage, setTutorialStep, advanceTime, addLogEntry,
+    activities,
+    setGamePhase, updatePlayerStats, sendNpcMessage, setTutorialStep, advanceTime, addLogEntry, addActivity,
     rivalFunds, activeDeals, updateRivalFund, removeDeal, generateNewDeals, resetGame,
     // Living World System
     activeWarnings, activeDrama, activeCompanyEvent, eventQueue, pendingDecision,
@@ -70,13 +76,16 @@ const App: React.FC = () => {
   
   const { loading: authLoading } = useAuth();
   const { playSfx, playAmbience } = useAudio();
-  const { toasts, addToast, removeToast, clearToasts } = useToast();
+  const { toasts: oldToasts, addToast: addOldToast, removeToast, clearToasts } = useToast();
+  const { toasts, removeToast: removeEnhancedToast, toast } = useEnhancedToast();
+  const { isTransitioning: isWeekTransitioning, startTransition: startWeekTransition } = useWeekTransition();
 
   // --- CORE STATE ---
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
   const [activeTab, setActiveTab] = useState<'WORKSPACE' | 'ASSETS' | 'FOUNDER' | 'DEALS'>('WORKSPACE');
   const [activeMobileTab, setActiveMobileTab] = useState<'COMMS' | 'DESK' | 'NEWS' | 'MENU'>('DESK');
+  const [showActivityFeed, setShowActivityFeed] = useState(false);
   
   // --- UI STATE ---
   const [selectedNpcId, setSelectedNpcId] = useState<string>('advisor');
@@ -401,6 +410,9 @@ const App: React.FC = () => {
       if (activeDeals.length > 0) {
           addToast(`${activeDeals.length} DEAL${activeDeals.length > 1 ? 'S' : ''} IN PIPELINE`, 'info');
       }
+      
+      // Trigger week transition animation
+      startWeekTransition();
   };
 
   // --- AUCTION HANDLERS ---
@@ -1050,6 +1062,58 @@ const App: React.FC = () => {
                 className={`bg-black relative flex flex-col`}
                 style={(tutorialStep >= 1 && tutorialStep <= 6) ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
             >
+                {/* Desktop Tab Bar */}
+                <div className="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                    <div className="flex border border-slate-700 rounded-lg overflow-hidden bg-black">
+                        {(['WORKSPACE', 'ASSETS', 'FOUNDER', 'DEALS'] as const).map((tab) => {
+                            const tabLabels = {
+                                'WORKSPACE': 'WORKSPACE',
+                                'ASSETS': 'ASSETS',
+                                'FOUNDER': 'FOUNDER',
+                                'DEALS': 'DEALS'
+                            };
+                            const isDisabled = tab === 'FOUNDER' && !founderUnlocked;
+                            return (
+                                <button
+                                    key={tab}
+                                    onClick={() => !isDisabled && setActiveTab(tab)}
+                                    disabled={isDisabled}
+                                    className={`px-3 py-2 text-xs font-bold uppercase transition-colors ${
+                                        activeTab === tab
+                                            ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-black'
+                                            : isDisabled
+                                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
+                                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                    }`}
+                                >
+                                    {tabLabels[tab]}
+                                    {isDisabled && <i className="fas fa-lock ml-1"></i>}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    
+                    {/* Activity Feed Toggle */}
+                    <button
+                      onClick={() => setShowActivityFeed(!showActivityFeed)}
+                      className={`
+                        px-3 py-2 rounded-lg border text-xs font-bold uppercase
+                        transition-all duration-200
+                        ${showActivityFeed
+                          ? 'bg-blue-900/50 border-blue-500/60 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.3)]'
+                          : 'bg-slate-800/50 border-slate-600/50 text-slate-400 hover:bg-slate-700/50 hover:border-slate-500'
+                        }
+                      `}
+                    >
+                      <i className="fas fa-list-ul mr-1"></i>
+                      Activity
+                      {activities && activities.length > 0 && (
+                        <span className="ml-1.5 px-1.5 py-0.5 bg-blue-500 text-white text-[10px] rounded-full">
+                          {activities.length > 99 ? '99+' : activities.length}
+                        </span>
+                      )}
+                    </button>
+                </div>
                 {renderCenterPanel()}
             </div>
             
@@ -1414,6 +1478,16 @@ const App: React.FC = () => {
         {/* TOAST LAYER */}
         <TerminalToast toasts={toasts} removeToast={removeToast} />
 
+        {/* WEEK TRANSITION */}
+        {playerStats?.gameTime && (
+          <WeekTransition
+            isActive={isWeekTransitioning}
+            currentWeek={playerStats.gameTime.week}
+            year={playerStats.gameTime.year}
+            quarter={playerStats.gameTime.quarter}
+          />
+        )}
+
         {/* GLITCH EFFECTS */}
         {playerStats && <SanityEffects stress={playerStats.stress} dependency={playerStats.dependency} />}
 
@@ -1426,6 +1500,48 @@ const App: React.FC = () => {
                 isFirstTime={!hasSeenStatsTutorial}
             />
         )}
+      {/* Activity Feed Slide-out Panel */}
+      <div
+        className={`
+          fixed top-0 right-0 h-full w-80 bg-slate-900 border-l border-slate-700 shadow-2xl
+          transform transition-transform duration-300 ease-in-out
+          ${showActivityFeed ? 'translate-x-0' : 'translate-x-full'}
+        `}
+        style={{ zIndex: Z_INDEX.modal - 1 }}
+      >
+        <div className="h-full flex flex-col">
+          {/* Header */}
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <i className="fas fa-list-ul text-blue-400"></i>
+              Activity Feed
+            </h3>
+            <button
+              onClick={() => setShowActivityFeed(false)}
+              className="text-slate-400 hover:text-white transition-colors"
+            >
+              <i className="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          {/* Activity Feed */}
+          <div className="flex-1 overflow-hidden">
+            <ActivityFeed activities={activities || []} className="h-full" />
+          </div>
+        </div>
+      </div>
+
+      {/* Activity Feed Overlay (mobile) */}
+      {showActivityFeed && (
+        <div
+          className="fixed inset-0 bg-black/50 md:hidden"
+          style={{ zIndex: Z_INDEX.modal - 2 }}
+          onClick={() => setShowActivityFeed(false)}
+        />
+      )}
+
+      {/* Enhanced Toast System */}
+      <ToastContainer toasts={toasts} onDismiss={removeEnhancedToast} />
     </div>
   );
 };

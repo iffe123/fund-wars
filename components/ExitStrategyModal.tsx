@@ -24,7 +24,7 @@ const ExitStrategyModal: React.FC<ExitStrategyModalProps> = ({
   onClose,
 }) => {
   const [selectedExit, setSelectedExit] = useState<ExitType | null>(null);
-  const [phase, setPhase] = useState<'SELECT' | 'CONFIRM' | 'RESULT'>('SELECT');
+  const [phase, setPhase] = useState<'SELECT' | 'RESULT'>('SELECT');
   const [exitOutcome, setExitOutcome] = useState<{
     success: boolean;
     result: ExitResult;
@@ -50,24 +50,27 @@ const ExitStrategyModal: React.FC<ExitStrategyModalProps> = ({
     return `$${val.toLocaleString()}`;
   };
 
-  const handleExecuteExit = () => {
-    if (!selectedOption || !projectedValues) return;
+  const handleExecuteExit = (exitType: ExitType) => {
+    const option = EXIT_OPTIONS.find(e => e.type === exitType);
+    if (!option) return;
 
+    const values = calculateExitValue(company, option, playerStats, marketVolatility);
+    
     // Determine success (most exits succeed, liquidation always "succeeds" but poorly)
-    const successChance = selectedOption.type === 'LIQUIDATION' ? 1.0 :
-      selectedOption.type === 'IPO' ? 0.75 :
-      selectedOption.type === 'STRATEGIC_SALE' ? 0.85 :
+    const successChance = option.type === 'LIQUIDATION' ? 1.0 :
+      option.type === 'IPO' ? 0.75 :
+      option.type === 'STRATEGIC_SALE' ? 0.85 :
       0.90;
 
     const success = Math.random() < successChance;
 
     // Adjust values for failure
-    const finalMultiple = success ? projectedValues.multiple : projectedValues.multiple * 0.6;
+    const finalMultiple = success ? values.multiple : values.multiple * 0.6;
     const finalValue = Math.round(company.investmentCost * finalMultiple);
     const finalProfit = finalValue - company.investmentCost;
 
     const result: ExitResult = {
-      exitType: selectedOption.type,
+      exitType: option.type,
       companyName: company.name,
       investmentCost: company.investmentCost,
       exitValue: finalValue,
@@ -77,10 +80,11 @@ const ExitStrategyModal: React.FC<ExitStrategyModalProps> = ({
     };
 
     const flavorTexts = success
-      ? EXIT_FLAVOR_TEXT[selectedOption.type].success
-      : EXIT_FLAVOR_TEXT[selectedOption.type].failure;
+      ? EXIT_FLAVOR_TEXT[option.type].success
+      : EXIT_FLAVOR_TEXT[option.type].failure;
     const flavorText = flavorTexts[Math.floor(Math.random() * flavorTexts.length)];
 
+    setSelectedExit(exitType);
     setExitOutcome({ success, result, flavorText });
     setPhase('RESULT');
   };
@@ -190,13 +194,13 @@ const ExitStrategyModal: React.FC<ExitStrategyModalProps> = ({
                   return (
                     <button
                       key={option.type}
-                      onClick={() => available && setSelectedExit(option.type)}
+                      onClick={() => available && handleExecuteExit(option.type)}
                       disabled={!available}
                       className={`w-full text-left p-4 rounded-lg border transition-all ${
                         isSelected
                           ? 'bg-blue-500/20 border-blue-500'
                           : available
-                          ? 'bg-slate-800 border-slate-700 hover:border-slate-500'
+                          ? 'bg-slate-800 border-slate-700 hover:border-slate-500 hover:bg-slate-700/50 active:scale-[0.99]'
                           : 'bg-slate-800/50 border-slate-700/50 opacity-50 cursor-not-allowed'
                       }`}
                     >
@@ -231,19 +235,12 @@ const ExitStrategyModal: React.FC<ExitStrategyModalProps> = ({
                 })}
               </div>
 
-              {/* Proceed Button */}
-              {selectedExit && (
-                <button
-                  onClick={() => setPhase('CONFIRM')}
-                  className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
-                >
-                  Review {selectedOption?.name}
-                </button>
-              )}
+              {/* Execute immediately - no confirmation needed */}
             </>
           )}
 
-          {phase === 'CONFIRM' && selectedOption && projectedValues && (
+          {/* Remove CONFIRM phase - not needed */}
+          {false && phase === 'RESULT' && selectedOption && projectedValues && (
             <div>
               <h3 className="text-xl font-bold text-white mb-4">{selectedOption.name}</h3>
 

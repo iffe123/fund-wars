@@ -4,6 +4,7 @@ import {
   StatChanges, RivalFund, CompetitiveDeal, Warning, 
   NPCDrama, CompanyActiveEvent, ActionType, ACTION_COSTS 
 } from '../types';
+import type { ActivityItem } from '../components/ActivityFeed';
 
 interface GameActions {
   setGamePhase: (phase: any) => void;
@@ -11,6 +12,7 @@ interface GameActions {
   handleActionOutcome: (outcome: { description: string; statChanges: StatChanges }, title: string) => void;
   sendNpcMessage: (npcId: string, message: string, sender?: 'player' | 'npc' | 'system', senderName?: string) => void;
   addLogEntry: (message: string) => void;
+  addActivity: (activity: Omit<ActivityItem, 'id' | 'timestamp'>) => void; // RPG flow helper
   setTutorialStep: (step: number) => void;
   advanceTime: () => void;
   resetGame: () => void;
@@ -39,6 +41,15 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const addLogEntry = useCallback((message: string) => {
     dispatch({ type: 'ADD_LOG_ENTRY', payload: message });
+  }, [dispatch]);
+
+  const addActivity = useCallback((activity: Omit<ActivityItem, 'id' | 'timestamp'>) => {
+    const fullActivity: ActivityItem = {
+      ...activity,
+      id: `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date(),
+    };
+    dispatch({ type: 'ADD_ACTIVITY', payload: fullActivity });
   }, [dispatch]);
 
   const updatePlayerStats = useCallback((changes: StatChanges) => {
@@ -183,25 +194,54 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
   }, [state.playerStats, dispatch, addLogEntry]);
 
   const endWeek = useCallback(() => {
+    // Add activity for week transition
+    dispatch({ 
+      type: 'ADD_ACTIVITY', 
+      payload: {
+        id: `week-end-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'time',
+        icon: 'fas fa-calendar-check',
+        title: 'Week ended',
+        detail: 'Processing portfolio updates, rival actions, and market changes...',
+        sentiment: 'neutral'
+      }
+    });
+    
     dispatch({ type: 'END_WEEK' });
-    // Trigger world tick side effects?
-    // The reducer updates the state, but maybe we need to run AI or other things.
-    // advanceTime logic handles world tick.
-    // endWeek in original code calls advanceTimeRef.current?.()
     dispatch({ type: 'ADVANCE_TIME' });
-  }, [dispatch]);
+    
+    // Add activity for new week
+    setTimeout(() => {
+      if (state.playerStats?.gameTime) {
+        dispatch({ 
+          type: 'ADD_ACTIVITY', 
+          payload: {
+            id: `week-start-${Date.now()}`,
+            timestamp: new Date(),
+            type: 'time',
+            icon: 'fas fa-play-circle',
+            title: `Week ${state.playerStats.gameTime.week} begins`,
+            detail: `Q${state.playerStats.gameTime.quarter} • Year ${state.playerStats.gameTime.year}`,
+            sentiment: 'positive'
+          }
+        });
+      }
+    }, 100);
+  }, [dispatch, state.playerStats]);
 
   const toggleNightGrinder = useCallback(() => {
     dispatch({ type: 'TOGGLE_NIGHT_GRINDER' });
   }, [dispatch]);
 
   return (
-    <GameActionsContext.Provider value={{
+    <GameActionsContext.Provider     value={{
       setGamePhase,
       updatePlayerStats,
       handleActionOutcome,
       sendNpcMessage,
       addLogEntry,
+      addActivity,
       setTutorialStep,
       advanceTime,
       resetGame,
