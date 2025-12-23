@@ -27,7 +27,19 @@ import {
   generateWeeklySummary,
   ChoiceResult,
   WeeklySummary,
+  processWeeklyQueue,
+  ensureEventFlow,
+  getNextEvent,
 } from '../utils/eventQueueManager';
+import {
+  initializeGameFlow,
+  getNextAvailableEvent,
+  completeEvent as completeFlowEvent,
+  createFreeFlowEvent,
+  getAvailableActions,
+  getFlowStatus,
+  type GameFlowState,
+} from '../utils/gameFlowManager';
 import { STORY_EVENTS, STORY_ARCS, createEventMap, createArcMap } from '../constants/rpgContent';
 
 // ============================================================================
@@ -44,6 +56,9 @@ interface RPGEventState {
   weeklySummary: WeeklySummary | null;
   isEventModalOpen: boolean;
   pendingConsequences: EventConsequences | null;
+  // NEW: Game flow state for continuous event system
+  flowState: GameFlowState | null;
+  autoFlowEnabled: boolean; // Toggle for new vs old system
 }
 
 type RPGEventAction =
@@ -61,23 +76,35 @@ type RPGEventAction =
   | { type: 'CLOSE_EVENT_MODAL' }
   | { type: 'SET_PENDING_CONSEQUENCES'; payload: EventConsequences | null }
   | { type: 'GENERATE_WEEKLY_SUMMARY' }
-  | { type: 'SYNC_EXTERNAL_FLAGS'; payload: string[] };
+  | { type: 'SYNC_EXTERNAL_FLAGS'; payload: string[] }
+  // NEW: Flow system actions
+  | { type: 'UPDATE_FLOW_STATE'; payload: GameFlowState }
+  | { type: 'TOGGLE_AUTO_FLOW'; payload: boolean }
+  | { type: 'REFRESH_EVENT_QUEUE'; payload: { playerStats: PlayerStats; npcs: NPC[]; marketVolatility: MarketVolatility } };
 
 // ============================================================================
 // INITIAL STATE
 // ============================================================================
 
-const createInitialState = (): RPGEventState => ({
-  eventQueue: createInitialEventQueue(),
-  storyArcs: [...STORY_ARCS],
-  currentEvent: null,
-  currentPhase: 'MORNING_BRIEFING',
-  worldFlags: new Set(),
-  lastChoiceResult: null,
-  weeklySummary: null,
-  isEventModalOpen: false,
-  pendingConsequences: null,
-});
+const createInitialState = (): RPGEventState => {
+  const initialQueue = createInitialEventQueue();
+  const initialFlags = new Set<string>();
+  
+  return {
+    eventQueue: initialQueue,
+    storyArcs: [...STORY_ARCS],
+    currentEvent: null,
+    currentPhase: 'MORNING_BRIEFING',
+    worldFlags: initialFlags,
+    lastChoiceResult: null,
+    weeklySummary: null,
+    isEventModalOpen: false,
+    pendingConsequences: null,
+    // NEW: Initialize flow state for continuous event system
+    flowState: initializeGameFlow(initialQueue, initialFlags),
+    autoFlowEnabled: true, // Enable new system by default
+  };
+};
 
 // ============================================================================
 // REDUCER
@@ -276,6 +303,55 @@ const rpgEventReducer = (state: RPGEventState, action: RPGEventAction): RPGEvent
       };
     }
 
+    // NEW: Flow system actions
+    case 'UPDATE_FLOW_STATE':
+      return {
+        ...state,
+        flowState: action.payload,
+        eventQueue: action.payload.eventQueue,
+        worldFlags: action.payload.worldFlags,
+        currentEvent: action.payload.activeEvent,
+        currentPhase: action.payload.currentPhase,
+      };
+
+    case 'TOGGLE_AUTO_FLOW':
+      return {
+        ...state,
+        autoFlowEnabled: action.payload,
+      };
+
+    case 'REFRESH_EVENT_QUEUE': {
+      const { playerStats, npcs, marketVolatility } = action.payload;
+      const eventMap = createEventMap();
+      
+      // Use new flow system to ensure events are always available
+      const refreshedQueue = processWeeklyQueue(
+        state.eventQueue,
+        eventMap,
+        state.storyArcs,
+        playerStats,
+        npcs,
+        state.worldFlags,
+        marketVolatility
+      );
+      
+      // Ensure flow
+      const flowingQueue = ensureEventFlow(
+        refreshedQueue,
+        eventMap,
+        state.storyArcs,
+        playerStats,
+        npcs,
+        state.worldFlags,
+        marketVolatility
+      );
+      
+      return {
+        ...state,
+        eventQueue: flowingQueue,
+      };
+    }
+
     default:
       return state;
   }
@@ -312,6 +388,13 @@ interface RPGEventContextType {
   scheduleEvent: (eventId: string, delayWeeks: number, source: string) => void;
   setWorldFlag: (flag: string) => void;
   clearWorldFlag: (flag: string) => void;
+  
+  // NEW: Flow system methods
+  getNextEvent: (playerStats: PlayerStats, npcs: NPC[], marketVolatility: MarketVolatility) => StoryEvent | null;
+  refreshEventQueue: (playerStats: PlayerStats, npcs: NPC[], marketVolatility: MarketVolatility) => void;
+  createFreeInteraction: (type: 'NPC_CHAT' | 'NEWS_UPDATE' | 'MARKET_SHIFT' | 'PORTFOLIO_UPDATE', context: any) => StoryEvent;
+  getFlowStatus: () => { availableEventCount: number; canProgress: boolean; suggestion: string };
+  toggleAutoFlow: (enabled: boolean) => void;
 }
 
 const RPGEventContext = createContext<RPGEventContextType | null>(null);
@@ -531,6 +614,95 @@ export const RPGEventProvider: React.FC<RPGEventProviderProps> = ({ children }) 
     );
   }, [state.storyArcs]);
 
+  // NEW: Flow system methods
+  const getNextEventAction = useCallback((
+    playerStats: PlayerStats,
+    npcs: NPC[],
+    marketVolatility: MarketVolatility
+  ): StoryEvent | null => {
+    if (!state.flowState || !state.autoFlowEnabled) {
+      // Fallback to old system
+      const nextQueued = getNextEvent(state.eventQueue, eventMap);
+      return nextQueued ? eventMap.get(nextQueued.eventId) || null : null;
+    }
+
+    const { event, flowState: updatedFlowState } = getNextAvailableEvent(
+      state.flowState,
+      playerStats,
+      npcs,
+      state.storyArcs,
+      marketVolatility
+    );
+
+    if (updatedFlowState !== state.flowState) {
+      dispatch({ type: 'UPDATE_FLOW_STATE', payload: updatedFlowState });
+    }
+
+    return event;
+  }, [state.flowState, state.autoFlowEnabled, state.eventQueue, state.storyArcs, eventMap]);
+
+  const refreshEventQueueAction = useCallback((
+    playerStats: PlayerStats,
+    npcs: NPC[],
+    marketVolatility: MarketVolatility
+  ) => {
+    dispatch({
+      type: 'REFRESH_EVENT_QUEUE',
+      payload: { playerStats, npcs, marketVolatility },
+    });
+  }, []);
+
+  const createFreeInteractionAction = useCallback((
+    type: 'NPC_CHAT' | 'NEWS_UPDATE' | 'MARKET_SHIFT' | 'PORTFOLIO_UPDATE',
+    context: any
+  ): StoryEvent => {
+    if (!state.flowState) {
+      // Fallback: create simple event
+      return {
+        id: `temp-${Date.now()}`,
+        type: 'OPTIONAL',
+        title: 'Quick Update',
+        hook: 'Something is happening.',
+        stakes: 'LOW',
+        category: 'OPERATIONS',
+        choices: [],
+        requirements: {},
+      };
+    }
+
+    const { event, flowState: updatedFlowState } = createFreeFlowEvent(
+      state.flowState,
+      type,
+      context
+    );
+
+    dispatch({ type: 'UPDATE_FLOW_STATE', payload: updatedFlowState });
+    return event;
+  }, [state.flowState]);
+
+  const getFlowStatusAction = useCallback(() => {
+    if (!state.flowState || !state.autoFlowEnabled) {
+      // Fallback to simple count
+      const count = (state.eventQueue.priorityEvent ? 1 : 0) + state.eventQueue.optionalEvents.length;
+      return {
+        availableEventCount: count,
+        canProgress: count > 0,
+        suggestion: count > 0 ? 'Events available' : 'No events - generating...',
+      };
+    }
+
+    const status = getFlowStatus(state.flowState, { gameTime: { actionsRemaining: 2 } } as PlayerStats);
+    return {
+      availableEventCount: status.availableEventCount,
+      canProgress: status.canProgress,
+      suggestion: status.suggestion,
+    };
+  }, [state.flowState, state.autoFlowEnabled, state.eventQueue]);
+
+  const toggleAutoFlowAction = useCallback((enabled: boolean) => {
+    dispatch({ type: 'TOGGLE_AUTO_FLOW', payload: enabled });
+  }, []);
+
   const contextValue: RPGEventContextType = {
     state,
     currentEvent: state.currentEvent,
@@ -552,6 +724,13 @@ export const RPGEventProvider: React.FC<RPGEventProviderProps> = ({ children }) 
     scheduleEvent: scheduleEventAction,
     setWorldFlag,
     clearWorldFlag,
+    
+    // NEW: Flow system methods
+    getNextEvent: getNextEventAction,
+    refreshEventQueue: refreshEventQueueAction,
+    createFreeInteraction: createFreeInteractionAction,
+    getFlowStatus: getFlowStatusAction,
+    toggleAutoFlow: toggleAutoFlowAction,
   };
 
   return (

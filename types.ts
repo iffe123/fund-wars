@@ -407,21 +407,35 @@ export type ActionType =
   | 'SKILL_TRAINING'
   | 'REST'
   | 'CONSULT_ADVISOR'
-  | 'HANDLE_EVENT';
+  | 'HANDLE_EVENT'
+  | 'PRIORITY_RESPONSE'
+  | 'DEEP_ENGAGEMENT'
+  | 'CASUAL_INTERACTION'
+  | 'STRATEGIC_INTERVENTION';
 
+// REDESIGNED AP COSTS: Most actions are FREE (0 AP)
+// AP now represents strategic FOCUS, not basic activity
 export const ACTION_COSTS: Record<ActionType, number> = {
-  // All actions cost 1 AP for simplicity
-  ANALYZE_DEAL: 1,
-  SUBMIT_IOI: 1,
-  BOARD_MEETING: 1,
-  PORTFOLIO_REVIEW: 1,
-  EXIT_PLANNING: 1,
-  NETWORK_EVENT: 1,
-  SCOUT_TALENT: 1,
-  SKILL_TRAINING: 1,
-  CONSULT_ADVISOR: 1,
-  HANDLE_EVENT: 1,
-  REST: 1,
+  // FREE ACTIONS (0 AP) - Can always do these
+  ANALYZE_DEAL: 0,           // Reviewing deals is free, bidding costs AP
+  PORTFOLIO_REVIEW: 0,       // Checking portfolio is free
+  CONSULT_ADVISOR: 0,        // Talking to NPCs/advisors is free
+  NETWORK_EVENT: 0,          // Networking is free
+  SCOUT_TALENT: 0,           // Research is free
+  CASUAL_INTERACTION: 0,     // Light touches, quick checks
+  REST: 0,                   // Taking care of yourself is free
+  
+  // LOW COST ACTIONS (1 AP) - Strategic choices
+  SUBMIT_IOI: 1,             // Making a bid costs focus
+  BOARD_MEETING: 1,          // Major meetings cost focus
+  HANDLE_EVENT: 1,           // Responding to events
+  PRIORITY_RESPONSE: 1,      // Critical decisions
+  DEEP_ENGAGEMENT: 1,        // Deep work with people/deals
+  STRATEGIC_INTERVENTION: 1, // Hands-on portfolio management
+  
+  // MODERATE COST ACTIONS (2 AP) - Major commitments
+  EXIT_PLANNING: 1,          // Planning exits
+  SKILL_TRAINING: 1,         // Personal development
 };
 
 export interface GameTime {
