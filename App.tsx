@@ -794,6 +794,25 @@ const App: React.FC = () => {
             activeDealsCount={activeDeals.length}
             addToast={(msg, type) => addToast(msg, type)}
             addLogEntry={addLogEntry}
+            onSwitchTab={(tab) => {
+              // Handle tab switching from onboarding events
+              if (tab === 'ASSETS') {
+                setActiveTab('ASSETS');
+                if (window.innerWidth < 768) setActiveMobileTab('DESK');
+              } else if (tab === 'COMMS') {
+                if (window.innerWidth < 768) setActiveMobileTab('COMMS');
+              }
+              playSfx('KEYPRESS');
+            }}
+            onTutorialComplete={() => {
+              // Handle tutorial completion from onboarding events
+              setTutorialStep(0);
+              setShowPostTutorialGuide(false);
+              setGamePhase('SCENARIO');
+              logEvent('tutorial_complete');
+              addLogEntry('ONBOARDING: Complete. Ready for real deals.');
+              playSfx('SUCCESS');
+            }}
           />
       );
   };

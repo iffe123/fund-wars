@@ -1,24 +1,28 @@
 /**
  * RPG Event Content Library
- * 
+ *
  * Sample story events and arcs demonstrating the event-driven RPG system.
  * This serves as both example content and the starting point for the game.
  */
 
-import type { 
-  StoryEvent, 
-  StoryArc, 
+import type {
+  StoryEvent,
+  StoryArc,
   NPCEvolutionStage,
-  RPGEnhancedNPC 
+  RPGEnhancedNPC
 } from '../types/rpgEvents';
 import { PlayerLevel } from '../types';
+import { ONBOARDING_ARC, ONBOARDING_EVENTS } from './onboardingContent';
 
 // ============================================================================
 // MAIN STORY ARCS
 // ============================================================================
 
 export const STORY_ARCS: StoryArc[] = [
-  // Tutorial Arc
+  // Onboarding Arc (Tutorial) - Always first
+  ONBOARDING_ARC,
+
+  // First Deal Arc
   {
     id: 'arc_first_deal',
     title: 'The Cardboard Empire',
@@ -295,6 +299,9 @@ export const STORY_ARCS: StoryArc[] = [
 // ============================================================================
 
 export const STORY_EVENTS: StoryEvent[] = [
+  // === ONBOARDING EVENTS (Tutorial) ===
+  ...ONBOARDING_EVENTS,
+
   // === FIRST DEAL ARC EVENTS ===
   {
     id: 'evt_first_deal',

@@ -30,6 +30,8 @@ interface EventDrivenWorkspaceProps {
   activeDealsCount: number;
   addToast: (message: string, type: 'error' | 'success' | 'info') => void;
   addLogEntry: (message: string) => void;
+  onSwitchTab?: (tab: 'ASSETS' | 'COMMS' | 'NEWS' | 'SYSTEM') => void;
+  onTutorialComplete?: () => void;
 }
 
 const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
@@ -41,6 +43,8 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
   activeDealsCount,
   addToast,
   addLogEntry,
+  onSwitchTab,
+  onTutorialComplete,
 }) => {
   const {
     playerStats,
@@ -138,13 +142,41 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     // Log the action
     addLogEntry(`EVENT: ${event.title} - ${choice.label}`);
 
+    // Handle tab switching from consequences (for onboarding)
+    if (result.consequences.switchToTab && onSwitchTab) {
+      onSwitchTab(result.consequences.switchToTab);
+    }
+
+    // Handle guided actions (highlight UI elements)
+    if (result.consequences.guidedAction) {
+      const { targetElement, pulseColor } = result.consequences.guidedAction;
+      const element = document.querySelector(targetElement);
+      if (element) {
+        element.classList.add('guided-pulse');
+        element.setAttribute('data-guided', 'true');
+        element.setAttribute('data-pulse-color', pulseColor || 'amber');
+
+        // Auto-clear after 10 seconds
+        setTimeout(() => {
+          element.classList.remove('guided-pulse');
+          element.removeAttribute('data-guided');
+          element.removeAttribute('data-pulse-color');
+        }, 10000);
+      }
+    }
+
+    // Check if tutorial is complete
+    if (result.consequences.setsFlags?.includes('TUTORIAL_COMPLETE') && onTutorialComplete) {
+      onTutorialComplete();
+    }
+
     // Toast for immediate feedback
     if (result.consequences.notification) {
       // Convert warning to info since addToast only accepts error/success/info
       const toastType = result.consequences.notification.type === 'warning' ? 'info' : result.consequences.notification.type;
       addToast(result.consequences.notification.message, toastType as 'error' | 'success' | 'info');
     }
-  }, [playerStats, npcs, makeChoice, applyConsequences, updatePlayerStats, addLogEntry, addToast]);
+  }, [playerStats, npcs, makeChoice, applyConsequences, updatePlayerStats, addLogEntry, addToast, onSwitchTab, onTutorialComplete]);
 
   // Handle dismiss event (defer for later)
   const handleDismissEvent = useCallback((eventId: string) => {
@@ -167,7 +199,18 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     }
   }, [playerStats, npcs, marketVolatility, refreshEventQueue, addToast]);
 
-  // Tutorial mode - show guided path
+  // Check if onboarding events exist
+  const onboardingEvent = useMemo(() => {
+    // Find current onboarding event based on tutorial step / flags
+    const onboardingEvents = availableEvents.filter(e => e.isOnboarding);
+    if (onboardingEvents.length > 0) {
+      // Return the first available onboarding event
+      return onboardingEvents[0];
+    }
+    return null;
+  }, [availableEvents]);
+
+  // Legacy tutorial mode check - will be phased out
   const isTutorialActive = tutorialStep >= 1 && tutorialStep <= 6;
 
   if (!playerStats) {
@@ -180,7 +223,36 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     );
   }
 
-  // During tutorial, show simplified view
+  // NEW: If we have an onboarding event, show it through the event system
+  // This replaces the legacy tutorial overlay approach
+  if (onboardingEvent && !worldFlags.has('TUTORIAL_COMPLETE')) {
+    return (
+      <div style={{ zIndex: Z_INDEX.tutorialHighlight, position: 'relative' }}>
+        <TerminalPanel
+          title="ONBOARDING"
+          className="h-full flex flex-col p-4 bg-black relative"
+        >
+          <EventFeed
+            priorityEvent={onboardingEvent}
+            optionalEvents={[]}
+            backgroundMessages={['Welcome to Apex Capital...']}
+            playerStats={playerStats}
+            npcs={npcs}
+            worldFlags={worldFlags}
+            currentPhase="PRIORITY_EVENT"
+            onChoice={handleEventChoice}
+            onDismissEvent={() => {}} // No dismissing onboarding events
+            onAdvanceWeek={() => {}} // No advancing during onboarding
+            onRefreshEvents={() => {}} // No refreshing during onboarding
+            className="flex-1"
+          />
+        </TerminalPanel>
+      </div>
+    );
+  }
+
+  // LEGACY: During tutorial (old system), show simplified view
+  // This provides backward compatibility while we transition
   if (isTutorialActive) {
     return (
       <div style={{ zIndex: Z_INDEX.tutorialHighlight, position: 'relative' }}>

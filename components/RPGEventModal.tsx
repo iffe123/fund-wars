@@ -1,16 +1,68 @@
 /**
  * RPG Event Modal
- * 
+ *
  * Displays story events with narrative text, choices, and consequences.
  * This is the primary player-facing interface for the event-driven RPG system.
+ * Enhanced to support onboarding/tutorial events with mentor guidance.
  */
 
 import React, { useState, useMemo } from 'react';
-import type { StoryEvent, EventChoice, EventConsequences } from '../types/rpgEvents';
+import type { StoryEvent, EventChoice, EventConsequences, MentorGuidance } from '../types/rpgEvents';
 import type { PlayerStats, NPC } from '../types';
 import { useRPGEvents, useChoiceAvailability } from '../contexts/RPGEventContext';
 import { checkChoiceRequirements, performSkillCheck } from '../utils/eventQueueManager';
 import { Z_INDEX } from '../constants/zIndex';
+
+// Mentor avatar mappings
+const MENTOR_AVATARS: Record<string, { icon: string; color: string; bgColor: string }> = {
+  machiavelli: {
+    icon: 'fa-user-secret',
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-900/30',
+  },
+  sarah: {
+    icon: 'fa-glasses',
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-900/30',
+  },
+  system: {
+    icon: 'fa-terminal',
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-900/30',
+  },
+};
+
+// Mentor Guidance Component
+const MentorGuidanceBox: React.FC<{ guidance: MentorGuidance }> = ({ guidance }) => {
+  const mentor = MENTOR_AVATARS[guidance.character] || MENTOR_AVATARS.system;
+
+  return (
+    <div className={`mb-6 p-4 rounded-lg border-2 ${mentor.bgColor} border-dashed border-opacity-50`}
+         style={{ borderColor: 'currentColor' }}>
+      <div className="flex items-start gap-3">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${mentor.bgColor}`}>
+          <i className={`fas ${mentor.icon} ${mentor.color} text-lg`}></i>
+        </div>
+        <div className="flex-1">
+          <div className={`text-xs font-bold uppercase tracking-wider ${mentor.color} mb-1`}>
+            {guidance.character === 'system' ? 'System Guide' : guidance.character}
+          </div>
+          <p className="text-slate-200 text-sm leading-relaxed">
+            {guidance.message}
+          </p>
+          {guidance.tip && (
+            <div className="mt-2 p-2 bg-slate-800/50 rounded border-l-2 border-amber-500">
+              <p className="text-amber-200 text-xs">
+                <i className="fas fa-lightbulb mr-2 text-amber-400"></i>
+                <strong>Tip:</strong> {guidance.tip}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface RPGEventModalProps {
   playerStats: PlayerStats;
@@ -253,6 +305,16 @@ const RPGEventModal: React.FC<RPGEventModalProps> = ({
       <div className="bg-slate-900 border border-amber-500/50 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Event Header */}
         <div className="sticky top-0 bg-slate-900 p-6 border-b border-amber-500/30">
+          {/* Onboarding Badge */}
+          {currentEvent.isOnboarding && (
+            <div className="mb-3 flex items-center gap-2">
+              <span className="px-3 py-1 bg-gradient-to-r from-amber-600 to-amber-500 text-black text-xs font-bold uppercase tracking-wider rounded-full">
+                <i className="fas fa-graduation-cap mr-1"></i>
+                Tutorial
+              </span>
+              <span className="text-slate-500 text-xs">Learning the basics</span>
+            </div>
+          )}
           <div className="flex items-start justify-between gap-4">
             <div>
               <span className={`text-xs uppercase tracking-wider ${getStakesColor(currentEvent.stakes)}`}>
@@ -298,6 +360,11 @@ const RPGEventModal: React.FC<RPGEventModalProps> = ({
             <div className="mb-6 p-3 bg-slate-800/50 rounded text-sm text-slate-400 italic">
               💡 {currentEvent.context}
             </div>
+          )}
+
+          {/* Mentor Guidance (Tutorial/Onboarding) */}
+          {currentEvent.mentorGuidance && (
+            <MentorGuidanceBox guidance={currentEvent.mentorGuidance} />
           )}
 
           {/* Advisor Hints */}
