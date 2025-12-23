@@ -990,7 +990,15 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                   <button
                     onClick={() => handleSubmitIOI(selectedCompany.id)}
                     disabled={(!selectedCompany.isAnalyzed && tutorialStep === 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1) || (tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed)}
-                    title={tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed ? 'Run Leverage Model first' : undefined}
+                    title={
+                      isMarketPanic
+                        ? 'Market is frozen during panic - wait for stability'
+                        : tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed
+                          ? 'Run the Leverage Model first to unlock IOI submission'
+                          : !selectedCompany.isAnalyzed && tutorialStep === 0
+                            ? 'Run Diligence first to analyze this deal'
+                            : undefined
+                    }
                     className={`
                       border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
                       ${tutorialStep === 6
@@ -1000,10 +1008,16 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                       ${((!selectedCompany.isAnalyzed && tutorialStep === 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1) || (tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed)) ? 'opacity-30 grayscale cursor-not-allowed' : ''}
                     `}
                   >
-                    <i className="fas fa-clipboard-check text-lg mb-2"></i>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">{isMarketPanic ? "Frozen" : "Submit IOI"}</span>
-                    {tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed ? (
-                      <span className="text-[8px] text-amber-500 mt-0.5">(Run Model First)</span>
+                    <i className={`fas ${isMarketPanic ? 'fa-snowflake' : tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed ? 'fa-lock' : 'fa-clipboard-check'} text-lg mb-2`}></i>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">
+                      {isMarketPanic ? "Market Frozen" : tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed ? "Locked" : "Submit IOI"}
+                    </span>
+                    {isMarketPanic ? (
+                      <span className="text-[9px] text-blue-400 mt-0.5">Wait for stability</span>
+                    ) : tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed ? (
+                      <span className="text-[9px] text-amber-400 mt-0.5 font-medium animate-pulse">⬇ Run Model First</span>
+                    ) : !selectedCompany.isAnalyzed && tutorialStep === 0 ? (
+                      <span className="text-[9px] text-amber-400 mt-0.5">Run Diligence First</span>
                     ) : (
                       <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
                     )}
@@ -1020,16 +1034,28 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                   </button>
 
                   {/* LEVERAGE button - only available for ANALYZED deals */}
+                  {/* Highlight when model needs to be run to unlock IOI */}
                   {selectedCompany.isAnalyzed && (
                     <button
                       data-tutorial="leverage-btn"
                       onClick={() => setShowLeverageModal(selectedCompany)}
                       disabled={hasUsedActionThisWeek(selectedCompany, 'LEVERAGE')}
-                      className="border border-purple-700/50 bg-purple-950/30 text-purple-400 hover:bg-purple-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed col-span-2 md:col-span-1"
+                      className={`
+                        border rounded-lg flex flex-col items-center justify-center p-4 transition-all col-span-2 md:col-span-1
+                        ${!selectedCompany.leverageModelViewed && tutorialStep === 0
+                          ? 'border-cyan-400 bg-cyan-950/50 text-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.4)] animate-pulse ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900'
+                          : 'border-purple-700/50 bg-purple-950/30 text-purple-400 hover:bg-purple-900/40'
+                        }
+                        ${hasUsedActionThisWeek(selectedCompany, 'LEVERAGE') ? 'opacity-40 cursor-not-allowed' : ''}
+                      `}
                     >
-                      <i className="fas fa-calculator text-lg mb-2"></i>
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Leverage Model</span>
-                      <span className="text-[8px] text-emerald-500 mt-0.5">(Free)</span>
+                      <i className={`fas fa-calculator text-lg mb-2 ${!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'animate-bounce' : ''}`}></i>
+                      <span className="text-[10px] font-bold uppercase tracking-wider">
+                        {!selectedCompany.leverageModelViewed && tutorialStep === 0 ? '📊 Run Model' : 'Leverage Model'}
+                      </span>
+                      <span className={`text-[8px] mt-0.5 ${!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'text-cyan-300 font-bold' : 'text-emerald-500'}`}>
+                        {!selectedCompany.leverageModelViewed && tutorialStep === 0 ? '⬆ REQUIRED TO UNLOCK IOI' : '(Free)'}
+                      </span>
                     </button>
                   )}
                 </div>
