@@ -895,15 +895,535 @@ What\'s your approach?
         successChance: 70,
         consequences: {
           stats: { stress: -5 },
-          notification: { 
-            title: 'Delegated', 
-            message: 'You have other things to worry about.', 
-            type: 'info' 
+          notification: {
+            title: 'Delegated',
+            message: 'You have other things to worry about.',
+            type: 'info'
           },
         },
       },
     ],
     expiresInWeeks: 2,
+  },
+
+  // === EARLY GAME VARIETY EVENTS ===
+  {
+    id: 'evt_coffee_meeting',
+    type: 'OPTIONAL',
+    category: 'NPC',
+    title: 'Coffee with Sarah',
+    hook: 'Sarah catches you at the coffee machine. She looks like she hasn\'t slept.',
+    description: `
+"Got a minute?" Sarah glances around to make sure no one's listening.
+
+"I've been grinding on the TechSync model all night. Found something weird in the cap table—there's a series of small transactions that don't match the investor list."
+
+She hesitates. "Could be nothing. Could be someone skimming. But if I bring it to Chad and I'm wrong..."
+
+She's asking if you'll look at it with her. Fresh eyes.
+
+This isn't your deal. But Sarah's asking.
+    `.trim(),
+    context: 'Building alliances early can pay off later.',
+    sourceNpcId: 'sarah',
+    involvedNpcs: ['sarah'],
+    involvedCompanies: [],
+    stakes: 'LOW',
+    choices: [
+      {
+        id: 'help_sarah',
+        label: 'Take a Look',
+        description: 'Spend 30 minutes reviewing her work.',
+        alignment: 'DIPLOMATIC',
+        consequences: {
+          stats: { stress: 5, analystRating: 3 },
+          npcEffects: [
+            { npcId: 'sarah', relationship: 15, trust: 10, memory: 'Helped me when I needed a second opinion' },
+          ],
+          setsFlags: ['HELPED_SARAH_EARLY'],
+          notification: {
+            title: 'Team Player',
+            message: 'You spot the issue—clerical error in Series B. Sarah owes you one.',
+            type: 'success'
+          },
+        },
+        playerLine: 'Show me what you\'ve got.',
+        epilogue: 'Sarah grins. "I knew I could count on you." She doesn\'t forget favors.',
+      },
+      {
+        id: 'too_busy',
+        label: 'Not Now',
+        description: 'You have your own work to do.',
+        alignment: 'NEUTRAL',
+        consequences: {
+          stats: { stress: -5 },
+          npcEffects: [
+            { npcId: 'sarah', relationship: -5, memory: 'Too busy to help' },
+          ],
+          notification: {
+            title: 'Focused',
+            message: 'Sarah nods stiffly. "Sure. I get it."',
+            type: 'info'
+          },
+        },
+        playerLine: 'Sorry, Sarah. Drowning here. Ask Hunter maybe?',
+      },
+      {
+        id: 'escalate',
+        label: 'Tell Her to Escalate',
+        description: 'If it\'s that serious, Chad should know.',
+        alignment: 'CAUTIOUS',
+        consequences: {
+          stats: { ethics: 5 },
+          npcEffects: [
+            { npcId: 'sarah', relationship: -10, memory: 'Suggested I escalate without support' },
+          ],
+          notification: {
+            title: 'By the Book',
+            message: 'Sarah\'s face falls. "Right. The official way."',
+            type: 'warning'
+          },
+        },
+        playerLine: 'If there\'s fraud, that\'s above our pay grade. Document it and tell Chad.',
+      },
+    ],
+    expiresInWeeks: 2,
+    requirements: {
+      minWeek: 2,
+    },
+  },
+
+  {
+    id: 'evt_late_night_pizza',
+    type: 'OPTIONAL',
+    category: 'PERSONAL',
+    title: 'Burning the Midnight Oil',
+    hook: 'It\'s 11pm. Everyone else has gone home. You\'re still at your desk.',
+    description: `
+The office is dark except for your monitor and the city lights.
+
+Your body aches from sitting. Your eyes burn from spreadsheets. The cleaning crew has already come and gone.
+
+You could order pizza and push through—there's always more work. Or you could call it a night and start fresh tomorrow.
+
+Sometimes the extra hours pay off. Sometimes they just burn you out faster.
+
+What's it going to be?
+    `.trim(),
+    context: 'Sustainable pace matters. Or does it?',
+    involvedNpcs: [],
+    involvedCompanies: [],
+    stakes: 'LOW',
+    choices: [
+      {
+        id: 'push_through',
+        label: 'Pizza and Grind',
+        description: 'Order delivery. Keep working. Sleep when you\'re Partner.',
+        alignment: 'BOLD',
+        consequences: {
+          stats: { energy: -20, stress: 10, analystRating: 5, cash: -25, score: 50 },
+          notification: {
+            title: 'Night Owl',
+            message: 'You demolish the model by 2am. Tomorrow\'s you problem.',
+            type: 'success'
+          },
+        },
+        playerLine: 'Just one more hour. Then maybe another.',
+        epilogue: 'The sun is coming up when you finally leave. But your work is impeccable.',
+      },
+      {
+        id: 'go_home',
+        label: 'Call It',
+        description: 'Fresh eyes in the morning will be more productive.',
+        alignment: 'CAUTIOUS',
+        consequences: {
+          stats: { energy: 10, stress: -10 },
+          notification: {
+            title: 'Lights Out',
+            message: 'You save your work and shut down. Tomorrow is another day.',
+            type: 'info'
+          },
+        },
+        playerLine: 'Nothing good happens after midnight.',
+      },
+      {
+        id: 'gym_break',
+        label: 'Hit the 24-Hour Gym',
+        description: 'Clear your head with a workout. Then decide.',
+        alignment: 'NEUTRAL',
+        consequences: {
+          stats: { energy: 15, stress: -15, health: 5, cash: -0 },
+          notification: {
+            title: 'Reset',
+            message: 'An hour of iron therapy. You return with fresh perspective.',
+            type: 'success'
+          },
+        },
+        playerLine: 'I need to move. My brain is mush.',
+        epilogue: 'After the workout, the problem seems simpler. You knock it out in an hour.',
+      },
+    ],
+    expiresInWeeks: 3,
+    requirements: {
+      minWeek: 1,
+    },
+  },
+
+  {
+    id: 'evt_headhunter_call',
+    type: 'OPTIONAL',
+    category: 'CAREER',
+    title: 'The Call',
+    hook: 'Unknown number. You almost let it go to voicemail.',
+    description: `
+"Hi there. My name is Rebecca Chen. I'm a recruiter at Korn Ferry."
+
+Your heart rate spikes. Headhunters don't call unless someone's watching.
+
+"I have a client—top-tier firm, you'd recognize the name—looking for someone with your profile. They're building out their deal team and your name came up."
+
+She won't say which firm. But she wants to meet for coffee. "Just a conversation."
+
+You've been at Apex for six months. Is it too early to explore? Or is this the kind of opportunity you'd regret missing?
+    `.trim(),
+    context: 'Your career is your responsibility. No one else\'s.',
+    involvedNpcs: [],
+    involvedCompanies: [],
+    stakes: 'MEDIUM',
+    choices: [
+      {
+        id: 'take_meeting',
+        label: 'Take the Meeting',
+        description: 'Coffee can\'t hurt. Information is power.',
+        alignment: 'NEUTRAL',
+        consequences: {
+          stats: { reputation: -5 },
+          setsFlags: ['MET_HEADHUNTER'],
+          queuesEvent: { eventId: 'evt_rival_offer', delayWeeks: 4, probability: 70 },
+          notification: {
+            title: 'Meeting Set',
+            message: 'Thursday, 7am, Blue Bottle. Discrete.',
+            type: 'info'
+          },
+        },
+        playerLine: 'I\'m listening. When and where?',
+        epilogue: 'You meet Rebecca in a quiet corner. She slides a folder across the table. The numbers are... compelling.',
+      },
+      {
+        id: 'loyal_decline',
+        label: 'Politely Decline',
+        description: 'You\'re focused on Apex right now.',
+        alignment: 'ETHICAL',
+        consequences: {
+          stats: { stress: -5 },
+          npcEffects: [
+            { npcId: 'chad', relationship: 5, memory: 'Loyal to the firm' },
+          ],
+          notification: {
+            title: 'Commitment',
+            message: '"I understand. I\'ll keep your number." Click.',
+            type: 'info'
+          },
+        },
+        playerLine: 'I appreciate the call, but I\'m not looking right now.',
+      },
+      {
+        id: 'fish_for_info',
+        label: 'Fish for Information',
+        description: 'Get details without committing to anything.',
+        alignment: 'CAUTIOUS',
+        consequences: {
+          stats: { financialEngineering: 2 },
+          setsFlags: ['KNOWS_MARKET_RATES'],
+          notification: {
+            title: 'Intel Gathered',
+            message: 'You learn the going rate for your role. Useful leverage.',
+            type: 'success'
+          },
+        },
+        playerLine: 'I\'m not sure about a meeting, but hypothetically... what kind of package are we talking?',
+      },
+    ],
+    expiresInWeeks: 2,
+    requirements: {
+      minWeek: 4,
+      minReputation: 20,
+    },
+  },
+
+  {
+    id: 'evt_analyst_burnout',
+    type: 'OPTIONAL',
+    category: 'NPC',
+    title: 'Sarah\'s Breaking Point',
+    hook: 'Sarah\'s making mistakes. That never happens.',
+    description: `
+You notice the typo in her model. Then another. Then a formula error that would have blown up the entire DCF.
+
+This isn't like Sarah. She's usually bulletproof.
+
+You watch her more closely. The trembling hands. The third Red Bull. The way she startles when anyone approaches.
+
+She's been pulling 100-hour weeks for a month straight. Everyone has. But some people break faster than others.
+
+Do you say something? It's not really your business. But if she crashes and burns, it becomes everyone's problem.
+    `.trim(),
+    context: 'We watch out for each other. Or we don\'t.',
+    sourceNpcId: 'sarah',
+    involvedNpcs: ['sarah'],
+    involvedCompanies: [],
+    stakes: 'MEDIUM',
+    requirements: {
+      minWeek: 6,
+      npcRelationships: [{ npcId: 'sarah', minRelationship: 30 }],
+    },
+    choices: [
+      {
+        id: 'private_talk',
+        label: 'Pull Her Aside',
+        description: 'Quiet conversation. Express genuine concern.',
+        alignment: 'ETHICAL',
+        consequences: {
+          stats: { ethics: 10 },
+          npcEffects: [
+            { npcId: 'sarah', relationship: 20, trust: 15, memory: 'Noticed when I was struggling and reached out' },
+          ],
+          notification: {
+            title: 'Human Moment',
+            message: 'Sarah\'s eyes water. "You\'re the first person to ask if I\'m okay."',
+            type: 'success'
+          },
+        },
+        playerLine: 'Hey. Can we talk for a minute? Not about work.',
+        epilogue: 'She takes a personal day. Comes back sharper. Remembers who noticed.',
+      },
+      {
+        id: 'cover_mistakes',
+        label: 'Fix Quietly',
+        description: 'Catch her errors before anyone else sees them.',
+        alignment: 'DIPLOMATIC',
+        consequences: {
+          stats: { stress: 10, analystRating: 5 },
+          npcEffects: [
+            { npcId: 'sarah', relationship: 10, memory: 'Covered for my mistakes' },
+          ],
+          notification: {
+            title: 'Silent Support',
+            message: 'You fix the errors. She never knows. But you\'re carrying extra weight.',
+            type: 'info'
+          },
+        },
+        playerLine: 'I\'ll clean this up. She\'ll get through it.',
+      },
+      {
+        id: 'tell_chad',
+        label: 'Report to Chad',
+        description: 'Quality control is a team issue. He needs to know.',
+        alignment: 'RUTHLESS',
+        consequences: {
+          stats: { reputation: 5, ethics: -10 },
+          npcEffects: [
+            { npcId: 'sarah', relationship: -30, trust: -20, memory: 'Reported me when I was struggling' },
+            { npcId: 'chad', relationship: 10, memory: 'Watches out for quality issues' },
+          ],
+          notification: {
+            title: 'Flag Raised',
+            message: 'Chad thanks you for the heads up. Sarah is called into his office.',
+            type: 'warning'
+          },
+        },
+        playerLine: 'Chad should know there are quality issues coming from Sarah\'s desk.',
+        epilogue: 'Sarah returns from Chad\'s office red-eyed. She doesn\'t look at you the rest of the day. Or the next.',
+      },
+      {
+        id: 'not_my_problem',
+        label: 'Stay Out of It',
+        description: 'Everyone has bad weeks. She\'ll figure it out.',
+        alignment: 'NEUTRAL',
+        consequences: {
+          stats: { stress: -5 },
+          notification: {
+            title: 'Not Your Circus',
+            message: 'You focus on your own work. Sarah spirals or doesn\'t.',
+            type: 'info'
+          },
+        },
+        playerLine: 'She\'s a professional. She\'ll handle it.',
+      },
+    ],
+    expiresInWeeks: 1,
+  },
+
+  {
+    id: 'evt_market_downturn',
+    type: 'OPTIONAL',
+    category: 'MARKET',
+    title: 'Blood in the Streets',
+    hook: 'The market dropped 800 points this morning. The office is tense.',
+    description: `
+CNBC is on every screen. Red everywhere.
+
+Some trade deal collapsed. Or rates are spiking. Or it's just random chaos—the market being the market.
+
+Your portfolio companies are getting crushed on paper. LPs are going to have questions. Partners are in emergency meetings.
+
+This is either a moment of panic or a moment of opportunity. PE is about buying when others are scared.
+
+But timing the bottom is how fortunes are lost.
+
+What's your read?
+    `.trim(),
+    context: 'Volatility creates opportunity. And danger.',
+    involvedNpcs: ['chad'],
+    involvedCompanies: [],
+    stakes: 'MEDIUM',
+    choices: [
+      {
+        id: 'buy_opportunity',
+        label: 'Call It Opportunity',
+        description: 'Draft a memo identifying distressed targets.',
+        alignment: 'BOLD',
+        consequences: {
+          stats: { reputation: 10, stress: 10 },
+          npcEffects: [
+            { npcId: 'chad', relationship: 10, memory: 'Saw opportunity in the chaos' },
+          ],
+          setsFlags: ['MARKET_OPPORTUNIST'],
+          notification: {
+            title: 'Contrarian',
+            message: 'You pitch buying while everyone else is selling. Chad raises an eyebrow.',
+            type: 'success'
+          },
+        },
+        playerLine: 'This is when deals get made. I\'m running screens on distressed targets.',
+        epilogue: 'Three months later, one of your screens turns into the firm\'s best deal of the year.',
+      },
+      {
+        id: 'defensive_posture',
+        label: 'Protect the Portfolio',
+        description: 'Focus on shoring up existing investments.',
+        alignment: 'CAUTIOUS',
+        consequences: {
+          stats: { analystRating: 5 },
+          notification: {
+            title: 'Defense First',
+            message: 'You call every portfolio CEO. Make sure no one does anything stupid.',
+            type: 'info'
+          },
+        },
+        playerLine: 'Forget new deals. We need to protect what we have.',
+      },
+      {
+        id: 'ride_it_out',
+        label: 'Don\'t Overreact',
+        description: 'Markets bounce. Panic is the real danger.',
+        alignment: 'NEUTRAL',
+        consequences: {
+          stats: { stress: -5 },
+          notification: {
+            title: 'Steady Hand',
+            message: 'You stay calm while others scramble. There\'s wisdom in that.',
+            type: 'info'
+          },
+        },
+        playerLine: 'This is noise. We\'ll know more in a week.',
+      },
+    ],
+    expiresInWeeks: 1,
+    requirements: {
+      minWeek: 3,
+      allowedVolatility: ['HIGH', 'CRISIS'],
+    },
+  },
+
+  {
+    id: 'evt_morning_briefing',
+    type: 'OPTIONAL',
+    category: 'OPERATIONS',
+    title: 'The Daily Grind',
+    hook: 'Another Monday. What\'s on the agenda?',
+    description: `
+Your inbox has 47 unread messages. Your calendar is a war crime.
+
+Somewhere in there is actual work that matters. But first you need to prioritize.
+
+There's a partner meeting in an hour where your opinion might be asked. There's a portfolio company crisis simmering. There's a new CIM that landed overnight that looks interesting.
+
+And you haven't responded to that recruiter email yet.
+
+What gets your attention first?
+    `.trim(),
+    context: 'How you spend your time defines your career.',
+    involvedNpcs: [],
+    involvedCompanies: [],
+    stakes: 'LOW',
+    choices: [
+      {
+        id: 'prep_partner_meeting',
+        label: 'Prep for Partner Meeting',
+        description: 'Get your talking points ready. Be seen.',
+        alignment: 'NEUTRAL',
+        consequences: {
+          stats: { reputation: 5, stress: 5 },
+          notification: {
+            title: 'Prepared',
+            message: 'You nail your points in the meeting. Partners nod.',
+            type: 'success'
+          },
+        },
+        playerLine: 'The meeting is where visibility happens.',
+      },
+      {
+        id: 'handle_crisis',
+        label: 'Handle the Crisis',
+        description: 'The portfolio company issue won\'t fix itself.',
+        alignment: 'CAUTIOUS',
+        consequences: {
+          stats: { analystRating: 5, stress: 10 },
+          notification: {
+            title: 'Firefighting',
+            message: 'You spend the morning on calls. The fire is contained.',
+            type: 'info'
+          },
+        },
+        playerLine: 'Crises don\'t wait for convenient scheduling.',
+      },
+      {
+        id: 'review_new_deal',
+        label: 'Review the New CIM',
+        description: 'New deals are the lifeblood. Get first look.',
+        alignment: 'BOLD',
+        consequences: {
+          stats: { analystRating: 3, financialEngineering: 2 },
+          setsFlags: ['DEAL_HUNTER'],
+          notification: {
+            title: 'Deal Hunter',
+            message: 'You skim the CIM. Something catches your eye...',
+            type: 'info'
+          },
+        },
+        playerLine: 'I need to see this deal before Hunter does.',
+      },
+      {
+        id: 'catch_up',
+        label: 'Just Clear the Inbox',
+        description: 'Sometimes survival means treading water.',
+        alignment: 'NEUTRAL',
+        consequences: {
+          stats: { stress: -5 },
+          notification: {
+            title: 'Maintenance Mode',
+            message: 'Nothing exciting. Nothing urgent. Just staying afloat.',
+            type: 'info'
+          },
+        },
+        playerLine: 'I need to get to inbox zero before I can think.',
+      },
+    ],
+    expiresInWeeks: 1,
+    requirements: {
+      minWeek: 2,
+    },
   },
 ];
 
