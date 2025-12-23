@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { PlayerStats, Scenario, ChatMessage, Choice, StatChanges, GamePhase, PortfolioCompany, MarketVolatility, NPC, CompetitiveDeal, CompanyActiveEvent, NPCDrama } from './types';
-import { PlayerLevel, DealType } from './types';
-import { DIFFICULTY_SETTINGS, SCENARIOS, NEWS_EVENTS, LIFE_ACTIONS, PREDEFINED_QUESTIONS, PORTFOLIO_ACTIONS, INITIAL_NPCS, QUIZ_QUESTIONS, VICE_ACTIONS, SHADOW_ACTIONS, RIVAL_FUNDS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS, Z_INDEX } from './constants';
+import type { PlayerStats, ChatMessage, Choice, StatChanges, CompetitiveDeal, CompanyActiveEvent, NPCDrama } from './types';
+import { SCENARIOS, NEWS_EVENTS, PREDEFINED_QUESTIONS, Z_INDEX } from './constants';
 import NewsTicker from './components/NewsTicker';
 import CommsTerminal from './components/CommsTerminal';
 import PortfolioView from './components/PortfolioView';
@@ -20,7 +19,7 @@ import { TerminalPanel, TerminalButton, TerminalToast } from './components/Termi
 import NpcListPanel from './components/NpcListPanel';
 import WorkspacePanel from './components/WorkspacePanel';
 import ScenarioPanel from './components/ScenarioPanel';
-import { getAdvisorResponse, getNPCResponse, getDynamicNewsEvents } from './services/geminiService';
+import { getDynamicNewsEvents } from './services/geminiService';
 import { useGame } from './context/GameContext';
 import { useAuth } from './context/AuthContext';
 import { useAudio } from './context/AudioContext';
@@ -31,6 +30,11 @@ import { ToastContainer } from './components/ui/Toast';
 import ActivityFeed from './components/ActivityFeed';
 import WeekTransition from './components/WeekTransition';
 import { useWeekTransition } from './hooks/useWeekTransition';
+import { useAppUIState } from './hooks/useAppUIState';
+import { useAuctionFlow } from './hooks/useAuctionFlow';
+import { useChatHandlers } from './hooks/useChatHandlers';
+import { useTutorialEffects } from './hooks/useTutorialEffects';
+import { useGameFlow } from './hooks/useGameFlow';
 import CompetitiveAuctionModal, { AuctionResult } from './components/CompetitiveAuctionModal';
 import DealMarket from './components/DealMarket';
 import RivalLeaderboard from './components/RivalLeaderboard';
@@ -58,9 +62,7 @@ const TUTORIAL_STEPS_TEXT = [
     "PATENT #8829 is real. Click [SUBMIT IOI] to lock in the deal.", // Step 6
 ];
 
-const DEFAULT_CHAT: ChatMessage[] = [
-    { sender: 'advisor', text: "SYSTEM READY. Awaiting inputs." }
-];
+// DEFAULT_CHAT moved to useChatHandlers hook
 
 const App: React.FC = () => {
   // Use Context
@@ -82,35 +84,130 @@ const App: React.FC = () => {
   const { toasts, removeToast: removeEnhancedToast, toast } = useEnhancedToast();
   const { isTransitioning: isWeekTransitioning, startTransition: startWeekTransition } = useWeekTransition();
 
-  // --- CORE STATE ---
+  // --- CORE STATE (from hooks) ---
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
-  const [activeTab, setActiveTab] = useState<'WORKSPACE' | 'ASSETS' | 'FOUNDER' | 'DEALS'>('WORKSPACE');
-  const [activeMobileTab, setActiveMobileTab] = useState<'COMMS' | 'DESK' | 'NEWS' | 'MENU'>('DESK');
-  const [showActivityFeed, setShowActivityFeed] = useState(false);
-  
-  // --- UI STATE ---
-  const [selectedNpcId, setSelectedNpcId] = useState<string>('advisor');
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(DEFAULT_CHAT);
-  const [isAdvisorLoading, setIsAdvisorLoading] = useState(false);
-  const [showPortfolioDashboard, setShowPortfolioDashboard] = useState(false);
   const [dynamicNews, setDynamicNews] = useState<import('./types').NewsEvent[]>([]);
 
-  // --- AUCTION STATE ---
-  const [currentAuction, setCurrentAuction] = useState<CompetitiveDeal | null>(null);
-  const [lastAuctionResult, setLastAuctionResult] = useState<AuctionResult | null>(null);
+  // --- UI STATE (from useAppUIState hook) ---
+  const {
+    activeTab,
+    activeMobileTab,
+    showActivityFeed,
+    showPortfolioDashboard,
+    showStatsModal,
+    showPostTutorialGuide,
+    showTransparencyModal,
+    hasSeenStatsTutorial,
+    setActiveTab,
+    setActiveMobileTab,
+    setShowActivityFeed,
+    setShowPortfolioDashboard,
+    setShowStatsModal,
+    setShowPostTutorialGuide,
+    setShowTransparencyModal,
+    handleStatsClick,
+    handleStatsModalClose,
+    navigateToAssets,
+  } = useAppUIState();
 
-  // --- STATS MODAL STATE ---
-  const [showStatsModal, setShowStatsModal] = useState(false);
-  const [hasSeenStatsTutorial, setHasSeenStatsTutorial] = useState(() => {
-    return localStorage.getItem('HAS_SEEN_STATS_TUTORIAL') === 'true';
+  // Wrapper for addToast to match expected signature
+  const addToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
+    addOldToast(message, type);
+  }, [addOldToast]);
+
+  // --- CHAT STATE (from useChatHandlers hook) ---
+  const {
+    selectedNpcId,
+    chatHistory,
+    isAdvisorLoading,
+    setSelectedNpcId,
+    setChatHistory,
+    handleSendMessageToAdvisor,
+    handleSendMessageToNPC,
+    handleNpcSelect,
+    appendChatMessage,
+    resetChatHistory,
+  } = useChatHandlers({
+    playerStats,
+    activeScenario,
+    npcs,
+    tutorialStep,
+    playSfx,
+    addToast,
+    sendNpcMessage,
+    setTutorialStep,
+    updatePlayerStats,
   });
 
-  // --- POST-TUTORIAL GUIDE STATE ---
-  const [showPostTutorialGuide, setShowPostTutorialGuide] = useState(false);
+  // --- AUCTION STATE (from useAuctionFlow hook) ---
+  const {
+    currentAuction,
+    lastAuctionResult,
+    handleStartAuction,
+    handleAuctionComplete,
+    handleDismissDeal,
+    closeAuction,
+  } = useAuctionFlow({
+    playerStats,
+    rivalFunds,
+    playSfx,
+    addLogEntry,
+    addToast,
+    removeDeal,
+    updatePlayerStats,
+    updateRivalFund,
+    appendChatMessage,
+  });
 
-  // --- TRANSPARENCY MODAL STATE ---
-  const [showTransparencyModal, setShowTransparencyModal] = useState(false);
+  // --- GAME FLOW (from useGameFlow hook) ---
+  const {
+    handleIntroComplete,
+    handleStatChange,
+    handleChoice,
+    handleScenarioFallback,
+    handleAdvanceTime,
+    handleResetSimulation,
+    handleConsultMachiavelli,
+    handleWarningActionWithNavigation,
+  } = useGameFlow({
+    playerStats,
+    tutorialStep,
+    activeDeals,
+    setGamePhase,
+    updatePlayerStats,
+    setTutorialStep,
+    advanceTime,
+    addLogEntry,
+    generateNewDeals,
+    resetGame,
+    setActiveDrama,
+    setActiveCompanyEvent,
+    setActiveTab,
+    setActiveMobileTab,
+    setBootComplete,
+    setShowPostTutorialGuide,
+    playSfx,
+    addToast,
+    clearToasts,
+    appendChatMessage,
+    resetChatHistory,
+    setSelectedNpcId,
+    handleSendMessageToAdvisor,
+    startWeekTransition,
+  });
+
+  // --- TUTORIAL EFFECTS (from useTutorialEffects hook) ---
+  const { handleTutorialStep5 } = useTutorialEffects({
+    tutorialStep,
+    activeTab,
+    activeMobileTab,
+    npcs,
+    setActiveTab,
+    setActiveMobileTab,
+    sendNpcMessage,
+    setTutorialStep,
+  });
 
   const currentScenario = activeScenario || SCENARIOS?.[0] || { id: 0, title: 'Loading...', description: '', choices: [], structureOptions: [] };
   const scenarioChoices = (currentScenario.choices && currentScenario.choices.length > 0)
@@ -136,8 +233,7 @@ const App: React.FC = () => {
       if (shouldReset) {
           resetGame();
           setBootComplete(false);
-          setChatHistory(DEFAULT_CHAT);
-          setSelectedNpcId('advisor');
+          resetChatHistory();
           clearToasts();
           addToast('Session reset via query flag.', 'info');
 
@@ -163,34 +259,7 @@ const App: React.FC = () => {
       }
   }, [bootComplete, playAmbience]);
 
-  // Auto-switch to ASSETS view on Step 6
-  useEffect(() => {
-      if (tutorialStep === 6 && activeTab !== 'ASSETS') {
-          setActiveTab('ASSETS');
-          if (window.innerWidth < 768) setActiveMobileTab('DESK');
-      }
-  }, [tutorialStep, activeTab]);
-
-  // Auto-switch to COMMS on tutorial step 4 for mobile users to avoid confusion
-  useEffect(() => {
-      if (tutorialStep === 4 && window.innerWidth < 768 && activeMobileTab !== 'COMMS') {
-          setActiveMobileTab('COMMS');
-      }
-  }, [tutorialStep, activeMobileTab]);
-
-  // Send Sarah's proactive first message during tutorial step 5
-  const [sarahProactiveMessageSent, setSarahProactiveMessageSent] = useState(false);
-  useEffect(() => {
-      if (tutorialStep === 5 && !sarahProactiveMessageSent) {
-          // Check if Sarah's chat doesn't already have many messages
-          const sarah = npcs.find(n => n.id === 'sarah');
-          if (sarah && sarah.dialogueHistory && sarah.dialogueHistory.length <= 2) {
-              // Send Sarah's proactive message
-              sendNpcMessage('sarah', "Hey! Perfect timing. I've been in the data room all night. Found something weird on page 40 of the CIM - there's a patent reference they buried in the footnotes. PATENT #8829. Hydrophobic coating tech. If this is real, it could be a game-changer. Want me to dig deeper?", 'npc', 'Sarah');
-              setSarahProactiveMessageSent(true);
-          }
-      }
-  }, [tutorialStep, sarahProactiveMessageSent, npcs, sendNpcMessage]);
+  // Tutorial auto-navigation effects now handled by useTutorialEffects hook
 
   // Ensure the market is live once the tutorial is cleared
   useEffect(() => {
@@ -239,418 +308,25 @@ const App: React.FC = () => {
       playSfx('KEYPRESS');
   };
 
-  // --- HANDLERS ---
-  const handleIntroComplete = (stress: number) => {
-      // Init Stats with standard settings and mandatory PackFancy setup
-      const diffSettings = DIFFICULTY_SETTINGS['Normal'];
-      const initialPortfolio: PortfolioCompany[] = [{
-        id: 1,
-        name: "PackFancy Inc.",
-        ceo: "Doris Chen",
-        investmentCost: 0,
-        ownershipPercentage: 0,
-        currentValuation: 55000000,
-        latestCeoReport: "Pending Analysis...",
-        nextBoardMeeting: "TBD",
-        dealType: DealType.LBO,
-        revenue: 120000000,
-        ebitda: 15000000,
-        debt: 0,
-        revenueGrowth: 0.02,
-        acquisitionDate: { year: 1, month: 1 },
-        eventHistory: [],
-        isAnalyzed: false,
-        // Enhanced Living World fields
-        employeeCount: 450,
-        employeeGrowth: 0.01,
-        ebitdaMargin: 0.125,
-        cashBalance: 8000000,
-        runwayMonths: 18,
-        customerChurn: 0.05,
-        ceoPerformance: 70,
-        boardAlignment: 65,
-        managementTeam: [],
-        dealClosed: false,
-        isInExitProcess: false,
-        nextBoardMeetingWeek: 12,
-        lastFinancialUpdate: 0,
-        // Deal phase state machine fields
-        dealPhase: 'PIPELINE',
-        actionsThisWeek: [],
-        lastManagementActions: {},
-        pendingDecisions: []
-      }];
+  // --- HANDLERS (now provided by custom hooks) ---
+  // handleIntroComplete, handleStatChange, handleChoice, handleScenarioFallback,
+  // handleAdvanceTime, handleResetSimulation -> useGameFlow
+  // handleStartAuction, handleAuctionComplete, handleDismissDeal -> useAuctionFlow
+  // handleSendMessageToAdvisor, handleSendMessageToNPC, handleNpcSelect -> useChatHandlers
+  // handleStatsClick, handleStatsModalClose -> useAppUIState
+  // handleConsultMachiavelli, handleWarningActionWithNavigation -> useGameFlow
+  // handleTutorialStep5 -> useTutorialEffects
 
-      // Apply difficulty settings
-      updatePlayerStats({
-          ...diffSettings.initialStats,
-          stress: diffSettings.initialStats.stress + stress,
-          playedScenarioIds: [SCENARIOS?.[0]?.id ?? 1],
-          portfolio: initialPortfolio
-      });
-
-      setGamePhase('LIFE_MANAGEMENT'); // Start in workspace, but with tutorial rail
-      setActiveTab('WORKSPACE'); // Ensure we are on the workspace tab
-      setTutorialStep(1); // Start Tutorial
-      setBootComplete(true);
-      logEvent('tutorial_start');
-      addLogEntry(`INIT: Career Sequence Started. Role: Analyst.`);
-      setChatHistory(prev => [...prev, { sender: 'system', text: `[SYSTEM_LOG] Player accepted offer. Starting stress: ${diffSettings.initialStats.stress + stress}` }]);
-      playSfx('BOOT');
-  };
-
-  const handleStatChange = (changes: StatChanges) => {
-      let finalChanges = { ...changes };
-
-      // Check if player can access loans (Senior Associate+ only)
-      const compensation = playerStats ? COMPENSATION_BY_LEVEL[playerStats.level] : null;
-      const canAccessLoan = compensation?.canAccessLoan ?? false;
-      const loanLimit = compensation?.loanLimit ?? 0;
-      const currentLoanBalance = playerStats?.loanBalance ?? 0;
-      const availableLoanRoom = Math.max(0, loanLimit - currentLoanBalance);
-
-      // Handle negative cash scenarios
-      if (playerStats && typeof changes.cash === 'number' && changes.cash < 0) {
-          const projectedCash = playerStats.cash + changes.cash;
-          if (projectedCash < 0) {
-              const deficit = Math.abs(projectedCash);
-
-              if (!canAccessLoan) {
-                  // FIRED: Associates can't take loans and went negative
-                  addToast('INSUFFICIENT FUNDS. You cannot afford this.', 'error');
-                  addLogEntry('Expense rejected: insufficient funds and no loan access.');
-
-                  // Check if this would trigger firing (cash already very low)
-                  if (playerStats.cash < 100) {
-                      addToast('WARNING: You are nearly broke. Get promoted to access emergency loans.', 'error');
-                  }
-                  return; // Block the action
-              }
-
-              // Has loan access - check if within limit
-              const loanSize = Math.max(25000, Math.ceil(deficit * 1.1));
-              if (loanSize > availableLoanRoom) {
-                  addToast(`Loan limit exceeded. Max available: $${availableLoanRoom.toLocaleString()}`, 'error');
-                  addLogEntry('Emergency loan denied: credit limit reached.');
-                  return; // Block the action
-              }
-
-              // Merge loan into changes
-              finalChanges = {
-                  ...finalChanges,
-                  cash: (finalChanges.cash || 0) + loanSize,
-                  loanBalanceChange: (finalChanges.loanBalanceChange || 0) + loanSize,
-                  loanRate: 0.22
-              };
-              addToast(`Auto-bridge loan wired: $${loanSize.toLocaleString()}`, 'info');
-              addLogEntry('Emergency loan drawn to cover negative cash.');
-          }
-      }
-
-      updatePlayerStats(finalChanges);
-      if (changes.cash && changes.cash < 0) addToast(`Funds Debited: $${Math.abs(changes.cash)}`, 'info');
-      if (changes.reputation && changes.reputation < 0) addToast(`Reputation Hit: ${changes.reputation}`, 'error');
-  };
-
-  const handleChoice = (choice: Choice) => {
-      handleStatChange(choice.outcome.statChanges);
-      addToast("ACTION_EXECUTED: " + choice.text, 'success');
-      addLogEntry(`CHOICE: ${choice.text}`);
-      
-      // Narrative Bridge: Inject choice into Chat History
-      setChatHistory(prev => [...prev, { 
-          sender: 'system', 
-          text: `[SYSTEM_LOG] Player chose: "${choice.text}". Outcome: ${choice.outcome.description}` 
-      }]);
-
-      playSfx('KEYPRESS');
-      
-      setTimeout(() => {
-        setGamePhase('LIFE_MANAGEMENT');
-      }, 1000);
-  };
-
-  const handleScenarioFallback = () => {
-      addToast('No actionable intel. Returning to desk.', 'info');
-      addLogEntry(`Scenario Cleared: ${currentScenario.title} contained no decisions.`);
-      setGamePhase('LIFE_MANAGEMENT');
-      setActiveTab('WORKSPACE');
-  };
-  
-  const handleAdvanceTime = () => {
-      if (!playerStats) return;
-
-      if (tutorialStep > 0) {
-          addToast("COMPLETE TUTORIAL FIRST", 'error');
-          return;
-      }
-
-      if (playerStats.loanBalance > 0) {
-          // Clamp loan rate to reasonable bounds (5% to 50% APR)
-          const activeRate = Math.max(0.05, Math.min(0.50, playerStats.loanRate || 0.28));
-          const rawMonthlyInterest = Math.ceil(playerStats.loanBalance * activeRate / 12);
-          // Cap monthly interest at 10% of loan balance to prevent runaway compounding
-          const maxMonthlyInterest = Math.ceil(playerStats.loanBalance * 0.10);
-          const monthlyInterest = Math.min(rawMonthlyInterest, maxMonthlyInterest);
-          // Only charge interest if player has enough cash, otherwise add to loan balance only
-          const cashToDeduct = Math.min(monthlyInterest, Math.max(0, playerStats.cash));
-          const interestToCapitalize = monthlyInterest - cashToDeduct;
-          updatePlayerStats({
-              loanBalanceChange: interestToCapitalize > 0 ? interestToCapitalize : undefined,
-              cash: cashToDeduct > 0 ? -cashToDeduct : undefined,
-              stress: +3
-          });
-          addToast(`Interest Accrued: $${monthlyInterest.toLocaleString()}`, 'error');
-          addLogEntry(`Loan interest compounded at ${(activeRate * 100).toFixed(1)}% APR`);
-      }
-      advanceTime();
-      generateNewDeals(); // Generate new competitive deals
-      playSfx('KEYPRESS');
-      addToast("TIME_ADVANCED: WEEK_CYCLE_COMPLETE", 'success');
-      setChatHistory(prev => [...prev, { sender: 'system', text: "[SYSTEM_LOG] Time advanced 1 week." }]);
-      
-      if (activeDeals.length > 0) {
-          addToast(`${activeDeals.length} DEAL${activeDeals.length > 1 ? 'S' : ''} IN PIPELINE`, 'info');
-      }
-      
-      // Trigger week transition animation
-      startWeekTransition();
-  };
-
-  // --- AUCTION HANDLERS ---
-  const handleStartAuction = (deal: CompetitiveDeal) => {
-      setCurrentAuction(deal);
-      playSfx('NOTIFICATION');
-      addLogEntry(`AUCTION ENTERED: ${deal.companyName}`);
-      setChatHistory(prev => [...prev, { 
-          sender: 'system', 
-          text: `[SYSTEM_LOG] You entered the auction for ${deal.companyName}. Competitors: ${deal.interestedRivals.length}` 
-      }]);
-  };
-
-  const handleAuctionComplete = (result: AuctionResult) => {
-      setCurrentAuction(null);
-      setLastAuctionResult(result);
-      removeDeal(result.deal.id);
-      
-      updatePlayerStats(result.statChanges);
-      
-      if (result.won && result.portfolioCompany) {
-          updatePlayerStats({ addPortfolioCompany: result.portfolioCompany });
-      }
-      
-      if (!result.won && result.winnerId !== 'none' && result.winnerId !== 'player') {
-          const winningFund = rivalFunds.find(f => f.id === result.winnerId);
-          if (winningFund) {
-              updateRivalFund(result.winnerId, {
-                  totalDeals: winningFund.totalDeals + 1,
-                  winStreak: winningFund.winStreak + 1,
-                  dryPowder: winningFund.dryPowder - result.finalPrice,
-                  portfolio: [...winningFund.portfolio, {
-                      name: result.deal.companyName,
-                      dealType: result.deal.dealType,
-                      acquisitionPrice: result.finalPrice,
-                      currentValue: result.deal.fairValue,
-                      acquiredMonth: playerStats?.gameMonth || 1,
-                      acquiredYear: playerStats?.gameYear || 1
-                  }]
-              });
-          }
-      }
-      
-      addLogEntry(result.won 
-          ? `AUCTION WON: ${result.deal.companyName} for $${(result.finalPrice / 1000000).toFixed(1)}M`
-          : `AUCTION LOST: ${result.deal.companyName} to ${result.winnerName}`
-      );
-      
-      if (result.rivalTaunt) {
-          setChatHistory(prev => [...prev, { 
-              sender: 'npc', 
-              senderName: 'Hunter',
-              text: result.rivalTaunt!
-          }]);
-          playSfx('NOTIFICATION');
-      }
-      
-      if (result.won) {
-          addToast(`DEAL CLOSED: ${result.deal.companyName}`, 'success');
-          playSfx('SUCCESS');
-      } else {
-          addToast(`DEAL LOST to ${result.winnerName}`, 'error');
-          playSfx('ERROR');
-      }
-  };
-
-  const handleResetSimulation = () => {
-      resetGame();
-      setBootComplete(false);
-      setActiveTab('WORKSPACE');
-      setActiveMobileTab('DESK');
-      setChatHistory(DEFAULT_CHAT);
-      setSelectedNpcId('advisor');
-      clearToasts();
-      addToast('Simulation reset. Rebooting intro...', 'info');
-      addLogEntry('Simulation reset to cold open.');
-  };
-
-  const handleDismissDeal = (dealId: number) => {
-      removeDeal(dealId);
-      addToast("DEAL DISMISSED", 'info');
-      playSfx('KEYPRESS');
-  };
-
-  // --- LIVING WORLD HANDLERS ---
-  const handleConsultMachiavelli = async (event: CompanyActiveEvent | NPCDrama) => {
-    // Pre-populate advisor with context about the decision
-    const contextMessage = `[DECISION REQUIRED: ${event.title}] ${event.description}`;
-    const optionsContext = 'options' in event
-      ? event.options.map((opt: { label: string; description: string }) => `Option: ${opt.label} - ${opt.description}`).join('\n')
-      : event.choices.map((choice: Choice) => `Option: ${choice.text} - ${choice.description || ''}`).join('\n');
-
-    const advisorQuery = `I need your counsel on this situation:\n\n${event.description}\n\nMy options are:\n${optionsContext}\n\nWhat would you advise?`;
-
-    // Close the modal first - check if it's a CompanyEvent (has options) or Drama (has choices)
-    if ('options' in event) {
-      setActiveCompanyEvent(null);
-    } else {
-      setActiveDrama(null);
-    }
-
-    // Navigate to advisor chat
-    setSelectedNpcId('advisor');
-    if (window.innerWidth < 768) setActiveMobileTab('COMMS');
-
-    // Send the query to advisor
-    await handleSendMessageToAdvisor(advisorQuery);
-
-    addLogEntry(`Consulting advisor about: ${event.title}`);
-  };
-
-  const handleWarningActionWithNavigation = (warning: typeof activeWarnings[0]) => {
-    handleWarningAction(warning);
-
-    // Navigate based on warning type
-    switch (warning.type) {
-      case 'PORTFOLIO':
-        setActiveTab('ASSETS');
-        if (window.innerWidth < 768) setActiveMobileTab('DESK');
-        break;
-      case 'CASH':
-      case 'LOAN':
-        // Could open financial modal here if we had one
-        addToast('Check the workspace for financial options', 'info');
-        break;
-      case 'HEALTH':
-      case 'STRESS':
-        // Could navigate to life actions
-        addToast('Consider taking time off or reducing workload', 'info');
-        break;
-      case 'DEADLINE':
-        setActiveTab('ASSETS');
-        if (window.innerWidth < 768) setActiveMobileTab('DESK');
-        break;
-    }
-  };
-
-  const handleChatBackToPortfolio = () => {
+  const handleChatBackToPortfolio = useCallback(() => {
       setShowPortfolioDashboard(true);
-      setActiveTab('ASSETS');
-      if (window.innerWidth < 768) setActiveMobileTab('DESK');
-  };
+      navigateToAssets();
+  }, [setShowPortfolioDashboard, navigateToAssets]);
 
-  const handleStatsClick = () => {
-      setShowStatsModal(true);
-  };
-
-  const handleStatsModalClose = () => {
-      setShowStatsModal(false);
-      if (!hasSeenStatsTutorial) {
-          setHasSeenStatsTutorial(true);
-          localStorage.setItem('HAS_SEEN_STATS_TUTORIAL', 'true');
-      }
-  };
-
-  // --- CHAT HANDLERS ---
-  const handleSendMessageToAdvisor = async (msg: string) => {
-      const newMsg: ChatMessage = { sender: 'player', text: msg };
-      setChatHistory(prev => [...prev, newMsg]);
-      playSfx('KEYPRESS');
-      setIsAdvisorLoading(true);
-      try {
-          const response = await getAdvisorResponse(msg, chatHistory, playerStats, activeScenario);
-          setChatHistory(prev => [...prev, { sender: 'advisor', text: response }]);
-          playSfx('NOTIFICATION');
-      } catch (error) {
-          console.error('Advisor response error:', error);
-          setChatHistory(prev => [...prev, { sender: 'advisor', text: 'Connection error. The advisor is temporarily unavailable.' }]);
-          addToast('Advisor connection failed', 'error');
-      } finally {
-          setIsAdvisorLoading(false);
-      }
-  };
-
-  const handleSendMessageToNPC = async (npcId: string, msg: string) => {
-      // 1. Add Player Message to UI Immediately
-      sendNpcMessage(npcId, msg);
-      playSfx('KEYPRESS');
-
-      const targetNPC = npcs.find(n => n.id === npcId);
-      if(targetNPC && targetNPC.dialogueHistory && playerStats) {
-           const updatedHistory: ChatMessage[] = [...targetNPC.dialogueHistory, { sender: 'player' as const, text: msg }];
-           // 2. Fetch AI Response
-           try {
-               const response = await getNPCResponse(msg, targetNPC, updatedHistory, playerStats, activeScenario);
-
-               if (tutorialStep === 5 && /patent/i.test(msg)) {
-                   setTutorialStep(6);
-               }
-
-               if (response.functionCalls) {
-                  // Handle game state updates from AI tools
-                  response.functionCalls.forEach(call => {
-                      if (call.name === 'updateGameState' && call.args) {
-                          const args = call.args;
-                          const changes: StatChanges = {};
-                          
-                          if (args.reputationChange) changes.reputation = args.reputationChange;
-                          if (args.stressChange) changes.stress = args.stressChange;
-                          if (args.aumChange) changes.aum = args.aumChange; // Founder Mode
-
-                          // If relationship changed
-                          if (args.relationshipChange) {
-                              changes.npcRelationshipUpdate = {
-                                  npcId: npcId,
-                                  change: args.relationshipChange,
-                                  memory: args.logMessage || "Interaction outcome"
-                              };
-                          }
-
-                          updatePlayerStats(changes);
-                          if (args.logMessage) addToast(args.logMessage, args.relationshipChange < 0 ? 'error' : 'success');
-                      }
-                  });
-               }
-               
-                 const npcReply = response.text || `${targetNPC?.name || 'NPC'} stares and slowly nods.`;
-                 sendNpcMessage(npcId, npcReply, 'npc', targetNPC?.name || 'NPC');
-                 addToast(`${targetNPC.name} responded`, 'info');
-
-           } catch (e) {
-               console.error("NPC Chat Error", e);
-               addToast("COMMS_ERROR: Signal Lost", 'error');
-           }
-      }
-  };
-
-  // --- RENDER HELPERS ---
-  const handleNpcSelect = useCallback((npcId: string) => {
-    setSelectedNpcId(npcId);
-    playSfx('KEYPRESS');
-  }, [playSfx]);
-
-  const handleTutorialStep5 = useCallback(() => {
-    setTutorialStep(5);
-  }, [setTutorialStep]);
+  // Wrapper for warning action that also calls the context action
+  const handleWarningWithContext = useCallback((warning: typeof activeWarnings[0]) => {
+    handleWarningAction(warning);
+    handleWarningActionWithNavigation(warning);
+  }, [handleWarningAction, handleWarningActionWithNavigation]);
 
   const renderCenterPanel = () => {
       // 1. Asset Manager View
@@ -668,12 +344,12 @@ const App: React.FC = () => {
                               setTutorialStep(0); // END TUTORIAL
                               setShowPostTutorialGuide(true); // Show guidance before scenario
                               logEvent('tutorial_complete');
-                              setChatHistory(prev => [...prev, { sender: 'system', text: "[SYSTEM_LOG] Tutorial Complete. First Deal IOI Submitted." }]);
+                              appendChatMessage({ sender: 'system', text: "[SYSTEM_LOG] Tutorial Complete. First Deal IOI Submitted." });
                           } else {
                               handleStatChange(action.outcome.statChanges);
                               addToast(action.outcome.logMessage, 'info');
                               addLogEntry(action.outcome.logMessage);
-                              setChatHistory(prev => [...prev, { sender: 'system', text: `[SYSTEM_LOG] Portfolio Action: ${action.text}` }]);
+                              appendChatMessage({ sender: 'system', text: `[SYSTEM_LOG] Portfolio Action: ${action.text}` });
                           }
                       }}
                       onBack={() => {
@@ -877,8 +553,7 @@ const App: React.FC = () => {
                 onClick={() => {
                     resetGame();
                     setBootComplete(false);
-                    setChatHistory(DEFAULT_CHAT);
-                    setSelectedNpcId('advisor');
+                    resetChatHistory();
                     clearToasts();
                     addToast('Session reset.', 'success');
                 }}
@@ -1124,7 +799,7 @@ const App: React.FC = () => {
                 playerCash={playerStats.cash}
                 playerReputation={playerStats.reputation}
                 onComplete={handleAuctionComplete}
-                onClose={() => setCurrentAuction(null)}
+                onClose={closeAuction}
             />
         )}
 
@@ -1153,7 +828,7 @@ const App: React.FC = () => {
         <WarningPanel
             warnings={activeWarnings}
             onDismiss={dismissWarning}
-            onAction={handleWarningActionWithNavigation}
+            onAction={handleWarningWithContext}
         />
 
         {/* TRANSPARENCY / RULES MODAL */}
