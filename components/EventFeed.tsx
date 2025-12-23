@@ -241,6 +241,7 @@ const EventFeed: React.FC<EventFeedProps> = ({
         {/* Advance Week Button */}
         {canAdvanceWeek && (
           <button
+            data-tutorial="advance-btn"
             onClick={onAdvanceWeek}
             disabled={!!priorityEvent}
             className={`

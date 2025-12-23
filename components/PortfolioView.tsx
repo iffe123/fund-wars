@@ -511,6 +511,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                 return (
                   <div
                     key={company.id}
+                    data-tutorial={isTutorialTarget ? 'deal-card' : undefined}
                     onClick={() => {
                       setSelectedId(company.id);
                       if (tutorialStep === 2) setTutorialStep(3);
@@ -518,7 +519,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                     className={`
                       card-elevated rounded-lg p-4 relative overflow-hidden cursor-pointer
                       transition-all duration-200 hover:border-slate-600
-                      ${isTutorialTarget ? 'z-[70] ring-2 ring-amber-500 animate-border-glow' : ''}
+                      ${isTutorialTarget ? 'ring-2 ring-amber-500/50' : ''}
                     `}
                   >
                     {/* Status indicators */}
@@ -965,12 +966,13 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
               {getSelectedCompanyStatus() === 'PIPELINE' && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <button
+                    data-tutorial={tutorialStep === 3 ? 'diligence-btn' : undefined}
                     onClick={() => handleAnalyze(selectedCompany.id)}
                     disabled={analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)}
                     className={`
                       relative border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
                       ${tutorialStep === 3
-                        ? 'z-[70] bg-amber-950/50 border-amber-500 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.4)] animate-pulse-glow'
+                        ? 'bg-amber-950/50 border-amber-500 text-amber-400'
                         : 'bg-slate-800/50 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500'
                       }
                       ${(analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)) ? 'opacity-40 cursor-not-allowed' : ''}
@@ -1020,6 +1022,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                   {/* LEVERAGE button - only available for ANALYZED deals */}
                   {selectedCompany.isAnalyzed && (
                     <button
+                      data-tutorial="leverage-btn"
                       onClick={() => setShowLeverageModal(selectedCompany)}
                       disabled={hasUsedActionThisWeek(selectedCompany, 'LEVERAGE')}
                       className="border border-purple-700/50 bg-purple-950/30 text-purple-400 hover:bg-purple-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed col-span-2 md:col-span-1"
