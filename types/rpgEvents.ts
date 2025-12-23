@@ -28,6 +28,26 @@ export type EventStakes = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type ChoiceAlignment = 'RUTHLESS' | 'DIPLOMATIC' | 'CAUTIOUS' | 'BOLD' | 'ETHICAL' | 'NEUTRAL';
 
 /**
+ * Mentor guidance shown during tutorial/onboarding events
+ */
+export interface MentorGuidance {
+  character: 'machiavelli' | 'sarah' | 'system';
+  message: string;        // Main guidance message
+  tip?: string;           // Optional game mechanic tip
+  highlight?: boolean;    // Whether to visually emphasize this guidance
+}
+
+/**
+ * Guided action to highlight UI elements during tutorial
+ */
+export interface GuidedAction {
+  targetElement: string;  // CSS selector for element to highlight
+  pulseColor?: 'amber' | 'cyan' | 'blue' | 'emerald' | 'purple';
+  tooltip?: string;       // Optional tooltip to show near element
+  autoAdvance?: boolean;  // Auto-advance when element is clicked
+}
+
+/**
  * A Story Event is the core unit of narrative gameplay.
  * Every week, players face events that require choices with consequences.
  */
@@ -35,39 +55,43 @@ export interface StoryEvent {
   id: string;
   type: EventType;
   category: EventCategory;
-  
+
   // === NARRATIVE ELEMENTS ===
   title: string;
   hook: string;           // Opening dramatic line (shown in preview)
   description: string;    // Full situation description
   context?: string;       // Why this matters now (optional flavor)
-  
+
   // === SOURCE AND PARTICIPANTS ===
   sourceNpcId?: string;   // Who is bringing this to the player
   involvedNpcs: string[]; // NPCs involved in this event
   involvedCompanies: number[]; // Portfolio company IDs involved
-  
+
   // === STAKES AND URGENCY ===
   stakes: EventStakes;
   expiresInWeeks?: number; // How many weeks before this auto-resolves
   autoResolveChoiceId?: string; // Which choice triggers if time runs out
-  
+
   // === GATING CONDITIONS ===
   requirements?: EventRequirements;
-  
+
   // === PLAYER CHOICES ===
   choices: EventChoice[];
-  
+
   // === STORY ARC CONNECTION ===
   triggerArcId?: string;  // Story arc this event belongs to
   arcStage?: number;      // Which stage of the arc
-  
+
   // === AI ADVISOR HINTS ===
   advisorHints?: {
     machiavelli?: string; // Strategic advice
     sarah?: string;       // Analytical perspective
   };
-  
+
+  // === MENTOR/TUTORIAL GUIDANCE ===
+  mentorGuidance?: MentorGuidance; // Onboarding guidance for new players
+  isOnboarding?: boolean;          // Marks this as a tutorial event
+
   // === UI/UX ===
   backgroundImage?: string;
   ambientSound?: string;
@@ -222,17 +246,17 @@ export interface SkillCheck {
 export interface EventConsequences {
   // === STAT CHANGES ===
   stats?: Partial<StatChanges>;
-  
+
   // === NPC EFFECTS ===
   npcEffects?: NPCEffect[];
-  
+
   // === WORLD STATE ===
   setsFlags?: string[];
   clearsFlags?: string[];
-  
+
   // === COMPANY EFFECTS ===
   companyEffects?: CompanyEffect[];
-  
+
   // === FUTURE EVENTS ===
   queuesEvent?: {
     eventId: string;
@@ -240,14 +264,14 @@ export interface EventConsequences {
     probability?: number;
   };
   blocksEvents?: string[];
-  
+
   // === ARC PROGRESSION ===
   advancesArc?: {
     arcId: string;
     toStage: number;
   };
   failsArc?: string;
-  
+
   // === UI FEEDBACK ===
   notification?: {
     title: string;
@@ -255,7 +279,11 @@ export interface EventConsequences {
     type: 'success' | 'warning' | 'error' | 'info';
   };
   logMessage?: string;
-  
+
+  // === GUIDED UI ACTIONS (Tutorial) ===
+  guidedAction?: GuidedAction;  // Highlight UI elements after choice
+  switchToTab?: 'ASSETS' | 'COMMS' | 'NEWS' | 'SYSTEM'; // Auto-switch tab
+
   // === ACHIEVEMENTS ===
   unlockAchievement?: string;
 }
