@@ -190,12 +190,87 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             return { ...action.payload };
 
         case 'UPDATE_PLAYER_STATS': {
-            if (!state.playerStats) return state;
-
             const changes = action.payload;
+
+            // Handle initial player stats creation when playerStats is null
+            // This happens after intro completion when we're initializing a new game
+            if (!state.playerStats) {
+                // Check if this is an initialization payload (contains required fields like level)
+                if (changes.level !== undefined) {
+                    // Initialize player stats from the changes payload
+                    const initialPlayerStats: PlayerStats = {
+                        level: changes.level,
+                        cash: changes.cash ?? 1500,
+                        reputation: changes.reputation ?? 10,
+                        factionReputation: changes.factionReputation ?? DEFAULT_FACTION_REPUTATION,
+                        stress: changes.stress ?? 0,
+                        energy: changes.energy ?? 100,
+                        analystRating: changes.analystRating ?? 50,
+                        financialEngineering: changes.financialEngineering ?? 10,
+                        ethics: changes.ethics ?? 50,
+                        auditRisk: changes.auditRisk ?? 0,
+                        score: changes.score ?? 0,
+                        portfolio: changes.portfolio ?? [],
+                        playerFlags: changes.playerFlags ?? {},
+                        playedScenarioIds: changes.playedScenarioIds ?? [],
+                        gameYear: changes.gameYear ?? 1,
+                        gameMonth: changes.gameMonth ?? 1,
+                        currentDayType: changes.currentDayType ?? 'WEEKDAY',
+                        currentTimeSlot: changes.currentTimeSlot ?? 'MORNING',
+                        timeCursor: changes.timeCursor ?? 0,
+                        aum: changes.aum ?? 0,
+                        employees: changes.employees ?? [],
+                        health: changes.health ?? 100,
+                        dependency: changes.dependency ?? 0,
+                        tutorialStep: changes.tutorialStep ?? 0,
+                        loanBalance: changes.loanBalance ?? 0,
+                        loanRate: changes.loanRate ?? 0,
+                        knowledgeLog: changes.knowledgeLog ?? [],
+                        knowledgeFlags: changes.knowledgeFlags ?? [],
+                        unlockedAchievements: changes.unlockedAchievements ?? [],
+                        sectorExpertise: changes.sectorExpertise ?? [],
+                        primarySector: changes.primarySector,
+                        completedExits: changes.completedExits ?? [],
+                        totalRealizedGains: changes.totalRealizedGains ?? 0,
+                        personalFinances: changes.personalFinances ?? {
+                            bankBalance: changes.cash ?? 1500,
+                            totalEarnings: 0,
+                            salaryYTD: 0,
+                            bonusYTD: 0,
+                            carryReceived: 0,
+                            outstandingLoans: 0,
+                            loanInterestRate: 0,
+                            monthlyBurn: 2000,
+                            lifestyleLevel: 'BROKE_ASSOCIATE',
+                        },
+                        fundFinances: changes.fundFinances ?? null,
+                        dealAllocations: changes.dealAllocations ?? [],
+                        carryEligibleDeals: changes.carryEligibleDeals ?? [],
+                        activeSkillInvestments: changes.activeSkillInvestments ?? [],
+                        gameTime: changes.gameTime ?? {
+                            week: 1,
+                            year: 1,
+                            quarter: 1 as 1 | 2 | 3 | 4,
+                            actionsRemaining: 2,
+                            maxActions: 2,
+                            isNightGrinder: false,
+                            actionsUsedThisWeek: [],
+                            actionsPerformedThisWeek: [],
+                        },
+                    };
+
+                    return {
+                        ...state,
+                        playerStats: initialPlayerStats,
+                    };
+                }
+                // If not an initialization payload and playerStats is null, do nothing
+                return state;
+            }
+
             const npcImpact = changes.npcRelationshipUpdate;
             const targetNpc = npcImpact ? state.npcs.find(n => n.id === npcImpact.npcId) : undefined;
-            
+
             const prevStats = state.playerStats;
             const baseStats = prevStats || DIFFICULTY_SETTINGS['Normal'].initialStats;
             

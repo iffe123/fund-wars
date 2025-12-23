@@ -375,7 +375,7 @@ interface RPGEventContextType {
   // Actions
   initializeEventSystem: () => void;
   selectEvent: (eventId: string) => void;
-  makeChoice: (choice: EventChoice, playerStats: PlayerStats, npcs: NPC[]) => ChoiceResult;
+  makeChoice: (choice: EventChoice, playerStats: PlayerStats, npcs: NPC[], event?: StoryEvent) => ChoiceResult;
   advanceWeek: () => void;
   setPhase: (phase: WeekPhase) => void;
   closeEventModal: () => void;
@@ -427,13 +427,17 @@ export const RPGEventProvider: React.FC<RPGEventProviderProps> = ({ children }) 
     }
   }, [eventMap]);
 
-  // Make a choice on the current event
+  // Make a choice on the current event (or a passed event)
   const makeChoice = useCallback((
-    choice: EventChoice, 
-    playerStats: PlayerStats, 
-    npcs: NPC[]
+    choice: EventChoice,
+    playerStats: PlayerStats,
+    npcs: NPC[],
+    passedEvent?: StoryEvent
   ): ChoiceResult => {
-    if (!state.currentEvent) {
+    // Use the passed event if provided, otherwise fall back to currentEvent
+    const activeEvent = passedEvent || state.currentEvent;
+
+    if (!activeEvent) {
       return {
         success: false,
         consequences: {
@@ -445,7 +449,7 @@ export const RPGEventProvider: React.FC<RPGEventProviderProps> = ({ children }) 
     }
 
     const result = processChoice(
-      state.currentEvent,
+      activeEvent,
       choice,
       playerStats,
       npcs,
@@ -457,10 +461,10 @@ export const RPGEventProvider: React.FC<RPGEventProviderProps> = ({ children }) 
     dispatch({
       type: 'COMPLETE_EVENT',
       payload: {
-        eventId: state.currentEvent.id,
+        eventId: activeEvent.id,
         choiceId: choice.id,
         consequences: result.consequences,
-        arcId: state.currentEvent.triggerArcId,
+        arcId: activeEvent.triggerArcId,
       },
     });
 

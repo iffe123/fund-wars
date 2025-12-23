@@ -120,8 +120,8 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
   const handleEventChoice = useCallback((event: StoryEvent, choice: EventChoice) => {
     if (!playerStats) return;
 
-    // Make the choice using RPG system
-    const result = makeChoice(choice, playerStats, npcs);
+    // Make the choice using RPG system, passing the event explicitly
+    const result = makeChoice(choice, playerStats, npcs, event);
 
     // Apply consequences to game state
     const statChanges = applyConsequences(result.consequences);
