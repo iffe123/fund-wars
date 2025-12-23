@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Warning } from '../types';
+import { Z_INDEX } from '../constants/zIndex';
 
 interface WarningPanelProps {
   warnings: Warning[];
   onDismiss: (id: string) => void;
   onAction: (warning: Warning) => void;
 }
+
+// Limit visible warnings to prevent UI blocking
+const MAX_VISIBLE_WARNINGS = 2;
 
 /**
  * WarningPanel Component
@@ -17,8 +21,13 @@ interface WarningPanelProps {
  * - Portfolio company crises
  * - Approaching deadlines
  * - Loan burden
+ *
+ * Now with smart stacking: shows max 2 warnings at a time with
+ * expand/collapse and dismiss all functionality.
  */
 const WarningPanel: React.FC<WarningPanelProps> = ({ warnings, onDismiss, onAction }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   if (warnings.length === 0) return null;
 
   const getSeverityStyle = (severity: Warning['severity']) => {
@@ -72,9 +81,53 @@ const WarningPanel: React.FC<WarningPanelProps> = ({ warnings, onDismiss, onActi
     return severityOrder[a.severity] - severityOrder[b.severity];
   });
 
+  // Determine visible warnings based on expanded state
+  const visibleWarnings = isExpanded ? sortedWarnings : sortedWarnings.slice(0, MAX_VISIBLE_WARNINGS);
+  const hiddenCount = sortedWarnings.length - visibleWarnings.length;
+  const hasHiddenWarnings = hiddenCount > 0;
+
+  // Dismiss all warnings
+  const handleDismissAll = () => {
+    warnings.forEach(w => onDismiss(w.id));
+  };
+
   return (
-    <div className="fixed top-16 right-4 z-50 space-y-2 max-w-sm">
-      {sortedWarnings.map(warning => (
+    <div
+      className="fixed top-16 right-4 space-y-2 max-w-sm"
+      style={{ zIndex: Z_INDEX.toast }} // Below tutorial (140) but above most content
+    >
+      {/* Header with counts when multiple warnings */}
+      {warnings.length > 1 && (
+        <div className="flex items-center justify-between bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-2 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <i className="fas fa-exclamation-triangle text-amber-400"></i>
+            <span className="text-xs font-bold text-slate-200">
+              {warnings.length} Active Warning{warnings.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {hasHiddenWarnings && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-xs text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded hover:bg-slate-800 transition-colors"
+              >
+                {isExpanded ? 'Collapse' : `Show ${hiddenCount} more`}
+              </button>
+            )}
+            <button
+              onClick={handleDismissAll}
+              className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-slate-800 transition-colors"
+              title="Dismiss all warnings"
+            >
+              <i className="fas fa-times-circle mr-1"></i>
+              Dismiss All
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Warning cards */}
+      {visibleWarnings.map(warning => (
         <div
           key={warning.id}
           className={`border rounded-lg p-3 shadow-lg backdrop-blur-sm ${getSeverityStyle(warning.severity)}`}
@@ -152,13 +205,17 @@ const WarningPanel: React.FC<WarningPanelProps> = ({ warnings, onDismiss, onActi
         </div>
       ))}
 
-      {/* Collapse button when many warnings */}
-      {warnings.length > 3 && (
-        <div className="text-center">
+      {/* Hidden warnings indicator */}
+      {hasHiddenWarnings && !isExpanded && (
+        <button
+          onClick={() => setIsExpanded(true)}
+          className="w-full bg-slate-800/80 border border-slate-700 rounded-lg p-2 text-center backdrop-blur-sm hover:bg-slate-700/80 transition-colors"
+        >
           <span className="text-xs text-slate-400">
-            {warnings.length} active warnings
+            <i className="fas fa-chevron-down mr-1"></i>
+            {hiddenCount} more warning{hiddenCount !== 1 ? 's' : ''} hidden
           </span>
-        </div>
+        </button>
       )}
     </div>
   );

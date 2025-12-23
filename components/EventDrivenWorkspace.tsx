@@ -225,7 +225,8 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
 
   // NEW: If we have an onboarding event, show it through the event system
   // This replaces the legacy tutorial overlay approach
-  if (onboardingEvent && !worldFlags.has('TUTORIAL_COMPLETE')) {
+  // IMPORTANT: Skip if legacy tutorial is active (tutorialStep > 0) to avoid dual-tutorial conflict
+  if (onboardingEvent && !worldFlags.has('TUTORIAL_COMPLETE') && tutorialStep === 0) {
     return (
       <div style={{ zIndex: Z_INDEX.tutorialHighlight, position: 'relative' }}>
         <TerminalPanel
