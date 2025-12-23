@@ -27,8 +27,9 @@ const NpcListPanel: React.FC<NpcListPanelProps> = memo(({
 
   return (
     <TerminalPanel
-      title="COMMS_ARRAY"
-      className={`h-full flex flex-col ${tutorialStep === 4 ? 'z-[100] relative ring-2 ring-amber-500' : ''}`}
+      title="COMMS"
+      data-tutorial={tutorialStep === 4 ? 'comms-tab' : undefined}
+      className="h-full flex flex-col"
     >
       <div className="flex-1 bg-black">
         {npcs.map(npc => (

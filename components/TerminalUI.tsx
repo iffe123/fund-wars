@@ -151,13 +151,14 @@ export const IconButton: React.FC<IconButtonProps> = ({
 };
 
 // --- PANELS ---
-interface TerminalPanelProps {
+interface TerminalPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   title: string;
   className?: string;
   action?: React.ReactNode;
   variant?: 'default' | 'elevated' | 'glass';
   headerIcon?: string;
+  style?: React.CSSProperties;
 }
 
 export const TerminalPanel: React.FC<TerminalPanelProps> = ({
@@ -166,7 +167,9 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({
   className = '',
   action,
   variant = 'default',
-  headerIcon
+  headerIcon,
+  style,
+  ...restProps
 }) => {
   const variantStyles = {
     default: "border border-slate-700/80 bg-black/90",
@@ -175,7 +178,11 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({
   };
 
   return (
-    <div className={`${variantStyles[variant]} rounded-lg flex flex-col overflow-hidden ${className}`}>
+    <div
+      className={`${variantStyles[variant]} rounded-lg flex flex-col overflow-hidden ${className}`}
+      style={style}
+      {...restProps}
+    >
       <div className="bg-gradient-to-r from-slate-800/90 to-slate-800/70 px-4 py-2 flex justify-between items-center border-b border-slate-700/60 shrink-0">
         <div className="flex items-center gap-2">
           {headerIcon && <i className={`fas ${headerIcon} text-amber-500/80 text-xs`}></i>}

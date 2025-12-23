@@ -8,9 +8,9 @@ import CommsTerminal from './components/CommsTerminal';
 import PortfolioView from './components/PortfolioView';
 import FounderDashboard from './components/FounderDashboard';
 import SanityEffects from './components/SanityEffects';
-import IntroSequence from './components/IntroSequence';
+import { IntroSequence } from './components/intro';
 import SystemBoot from './components/SystemBoot';
-import TutorialOverlay from './components/TutorialOverlay';
+import { TutorialTooltip, TutorialHighlight, TUTORIAL_STEPS } from './components/tutorial';
 import PostTutorialGuide from './components/PostTutorialGuide';
 import PlayerStatsDisplay from './components/PlayerStats';
 import BottomNav from './components/BottomNav';
@@ -47,14 +47,15 @@ declare global {
   }
 }
 
+// Legacy tutorial steps text - keeping for backward compatibility during transition
 const TUTORIAL_STEPS_TEXT = [
     "", // Step 0 (Inactive)
-    "The meat grinder is empty. Click [MANAGE_ASSETS] to see the deal Chad (your MD) just threw at you. He expects results.", // Step 1
-    "Here it is. 'PackFancy Inc.' - a cardboard box company. Click the row to open the Deal Memo and see what you're dealing with.", // Step 2
-    "Look at that Revenue. Flat as a pancake. If you buy this now, you get fired. You need an edge. Click [ANALYZE] to dig deeper.", // Step 3
-    "Analysis complete. We found a weird patent on Page 40. Time to meet SARAH - your Senior Analyst. She's been up 40 hours crunching models. Tap the COMMS tab below, then tap SARAH (look for the glowing button with CLICK indicator).", // Step 4
-    "Sarah already found something. She's proactive like that. Ask her to dig deeper on the patent by clicking the prompt.", // Step 5
-    "PATENT #8829 is real. Hydrophobic coating tech could be a game-changer. Now you have leverage. Click [SUBMIT IOI] to lock in the deal. PRO TIP: After the tutorial, ask Machiavelli (your advisor) about deal structures like LBO vs Growth Equity.", // Step 6
+    "Your desk awaits. Click [ASSETS] to see the deal Chad (your MD) just threw at you.", // Step 1
+    "PackFancy Inc. Click the row to open the Deal Memo.", // Step 2
+    "Revenue is flat. You need an edge. Click [ANALYZE] to dig deeper.", // Step 3
+    "Analysis found something. Meet SARAH in COMMS - she's your Senior Analyst.", // Step 4
+    "Ask Sarah about the patent she found.", // Step 5
+    "PATENT #8829 is real. Click [SUBMIT IOI] to lock in the deal.", // Step 6
 ];
 
 const DEFAULT_CHAT: ChatMessage[] = [
@@ -654,14 +655,10 @@ const App: React.FC = () => {
   const renderCenterPanel = () => {
       // 1. Asset Manager View
       if (activeTab === 'ASSETS' && playerStats) {
-          // LIFT PANEL ABOVE OVERLAY FOR ALL TUTORIAL STEPS to prevent black screen during transitions
-          const isTutorialActive = tutorialStep >= 1 && tutorialStep <= 6;
-
           return (
               <TerminalPanel
                 title="ASSET_MANAGER"
-                className={`h-full ${isTutorialActive ? 'relative' : ''}`}
-                style={isTutorialActive ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
+                className="h-full"
               >
                   <PortfolioView
                       playerStats={playerStats}
@@ -904,10 +901,7 @@ const App: React.FC = () => {
         {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
         <div className="hidden md:grid flex-1 grid-cols-[250px_1fr_250px] overflow-hidden relative">
             {/* Left Panel (Comms) */}
-            <div 
-                className={`border-r border-slate-700 bg-black ${tutorialStep === 4 ? 'relative' : ''}`}
-                style={tutorialStep === 4 ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
-            >
+            <div className="border-r border-slate-700 bg-black">
                 <NpcListPanel
                   npcs={npcs}
                   selectedNpcId={selectedNpcId}
@@ -916,29 +910,28 @@ const App: React.FC = () => {
                   onTutorialAdvance={handleTutorialStep5}
                 />
             </div>
-            
+
             {/* Center Column (Workspace) */}
-            {/* Lift during tutorial interactions - include step 4 to prevent black screen after analyze */}
-            <div 
-                className={`bg-black relative flex flex-col`}
-                style={(tutorialStep >= 1 && tutorialStep <= 6) ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
-            >
+            <div className="bg-black relative flex flex-col">
                 {/* Desktop Tab Bar */}
                 <div className="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
                     <div className="flex border border-slate-700 rounded-lg overflow-hidden bg-black">
                         {(['WORKSPACE', 'ASSETS', 'FOUNDER', 'DEALS'] as const).map((tab) => {
                             const tabLabels = {
-                                'WORKSPACE': 'WORKSPACE',
+                                'WORKSPACE': 'DESK',
                                 'ASSETS': 'ASSETS',
                                 'FOUNDER': 'FOUNDER',
                                 'DEALS': 'DEALS'
                             };
                             const isDisabled = tab === 'FOUNDER' && !founderUnlocked;
+                            // Add tutorial data attributes for tooltip targeting
+                            const tutorialAttr = tab === 'WORKSPACE' ? 'desk-tab' : undefined;
                             return (
                                 <button
                                     key={tab}
                                     onClick={() => !isDisabled && setActiveTab(tab)}
                                     disabled={isDisabled}
+                                    data-tutorial={tutorialAttr}
                                     className={`px-3 py-2 text-xs font-bold uppercase transition-colors ${
                                         activeTab === tab
                                             ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-black'
@@ -982,38 +975,29 @@ const App: React.FC = () => {
             <div className="border-l border-slate-700 bg-black">
                  <NewsTicker events={[...dynamicNews, ...NEWS_EVENTS]} systemLogs={actionLog} />
             </div>
-            
-            <TutorialOverlay instruction={TUTORIAL_STEPS_TEXT[tutorialStep]} step={tutorialStep} />
         </div>
 
         {/* MOBILE LAYOUT (View Switcher) */}
         <div className="md:hidden flex-1 flex flex-col overflow-hidden relative">
             {activeMobileTab === 'COMMS' && (
-                <>
-                    <CommsTerminal
-                        mode="MOBILE_EMBED"
-                        isOpen={true}
-                        npcList={npcs}
-                        selectedNpcId={selectedNpcId} // Pass this prop
-                        advisorMessages={chatHistory}
-                        onSendMessageToAdvisor={handleSendMessageToAdvisor}
-                        onSendMessageToNPC={handleSendMessageToNPC}
-                        isLoadingAdvisor={isAdvisorLoading}
-                        predefinedQuestions={PREDEFINED_QUESTIONS}
-                        onClose={handleChatBackToPortfolio}
-                        onBackToPortfolio={handleChatBackToPortfolio}
-                    />
-                    <TutorialOverlay instruction={TUTORIAL_STEPS_TEXT[tutorialStep]} step={tutorialStep} />
-                </>
+                <CommsTerminal
+                    mode="MOBILE_EMBED"
+                    isOpen={true}
+                    npcList={npcs}
+                    selectedNpcId={selectedNpcId}
+                    advisorMessages={chatHistory}
+                    onSendMessageToAdvisor={handleSendMessageToAdvisor}
+                    onSendMessageToNPC={handleSendMessageToNPC}
+                    isLoadingAdvisor={isAdvisorLoading}
+                    predefinedQuestions={PREDEFINED_QUESTIONS}
+                    onClose={handleChatBackToPortfolio}
+                    onBackToPortfolio={handleChatBackToPortfolio}
+                />
             )}
             
             {activeMobileTab === 'DESK' && (
-                <div 
-                    className={`flex-1 overflow-hidden relative bg-black`}
-                    style={(tutorialStep >= 1 && tutorialStep <= 6) ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
-                >
+                <div className="flex-1 overflow-hidden relative bg-black">
                     {renderCenterPanel()}
-                    <TutorialOverlay instruction={TUTORIAL_STEPS_TEXT[tutorialStep]} step={tutorialStep} />
                 </div>
             )}
             
@@ -1334,6 +1318,35 @@ const App: React.FC = () => {
                     </div>
                 </div>
             </div>
+        )}
+
+        {/* TUTORIAL TOOLTIP LAYER - New contextual tooltip system */}
+        {tutorialStep > 0 && tutorialStep <= TUTORIAL_STEPS.length && (
+          <>
+            <TutorialHighlight
+              targetSelector={TUTORIAL_STEPS[tutorialStep - 1]?.targetSelector || ''}
+              isActive={true}
+            />
+            <TutorialTooltip
+              currentStep={tutorialStep - 1}
+              totalSteps={TUTORIAL_STEPS.length}
+              isVisible={true}
+              onDismiss={() => {
+                if (tutorialStep >= TUTORIAL_STEPS.length) {
+                  setTutorialStep(0);
+                  setShowPostTutorialGuide(true);
+                  logEvent('tutorial_complete');
+                } else {
+                  setTutorialStep(tutorialStep + 1);
+                }
+              }}
+              onSkip={() => {
+                setTutorialStep(0);
+                logEvent('tutorial_skipped');
+                addToast('Tutorial skipped. Explore at your own pace!', 'info');
+              }}
+            />
+          </>
         )}
 
         {/* TOAST LAYER */}
