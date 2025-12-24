@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../contexts/GameContext';
 import { LIFESTYLE_TIERS, SKILL_INVESTMENTS, COMPENSATION_BY_LEVEL } from '../constants';
 import type { LifestyleLevel, SkillInvestment } from '../types';
 import { PlayerLevel } from '../types';

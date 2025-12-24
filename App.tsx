@@ -20,7 +20,7 @@ import NpcListPanel from './components/NpcListPanel';
 import WorkspacePanel from './components/WorkspacePanel';
 import ScenarioPanel from './components/ScenarioPanel';
 import { getDynamicNewsEvents } from './services/geminiService';
-import { useGame } from './context/GameContext';
+import { useGame } from './contexts/GameContext';
 import { useAuth } from './context/AuthContext';
 import { useAudio } from './context/AudioContext';
 import { logEvent } from './services/analytics';

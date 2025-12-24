@@ -4,7 +4,7 @@ import { TerminalPanel, TerminalButton } from './TerminalUI';
 import type { CompetitiveDeal, RivalFund, PlayerStats } from '../types';
 import { DealType } from '../types';
 import { RIVAL_FUNDS } from '../constants';
-import { MAX_PORTFOLIO_SIZE } from '../context/GameContext';
+import { MAX_PORTFOLIO_SIZE } from '../utils/gameUtils';
 
 interface DealMarketProps {
   deals: CompetitiveDeal[];

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, memo } from 'react';
 import type { PortfolioCompany, PortfolioAction, PlayerStats, CompanyStatus, DealPhase, LeverageModel } from '../types';
 import { MARKET_VOLATILITY_STYLES } from '../constants';
 import { TerminalButton, TerminalPanel, AsciiProgress, Badge } from './TerminalUI';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../contexts/GameContext';
 import AuctionModal from './AuctionModal';
 import BlackBoxModal from './BlackBoxModal';
 import BoardBattleModal from './BoardBattleModal';

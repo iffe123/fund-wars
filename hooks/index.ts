@@ -21,6 +21,5 @@ export { useWeekTransition } from './useWeekTransition';
 export { useGamePersistence } from './useGamePersistence';
 export { useRivalAI } from './useRivalAI';
 export { useMarketCycle } from './useMarketCycle';
-export { useTutorialStep } from './useTutorialStep';
 export { useGuidedAction } from './useGuidedAction';
 export { useHaptic } from './useHaptic';

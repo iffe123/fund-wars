@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hydrateNpc, sanitizeKnowledgeLog, sanitizeKnowledgeFlags, hydrateFund, hydrateCompetitiveDeal } from './GameContext';
+import { hydrateNpc, sanitizeKnowledgeLog, sanitizeKnowledgeFlags, hydrateFund, hydrateCompetitiveDeal } from './gameUtils';
 import { DealType, type NPC } from '../types';
 
 const baseNpc: NPC = {

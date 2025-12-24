@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom/client';
 import './styles/tailwind.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import App from './App';
-import { GameProvider } from './context/GameContext';
+import { GameProvider } from './contexts/GameContext';
 import { AuthProvider } from './context/AuthContext';
 import { AudioProvider } from './context/AudioContext';
 import ErrorBoundary from './components/ErrorBoundary';
