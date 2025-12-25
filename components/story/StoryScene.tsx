@@ -160,9 +160,10 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
       {/* Main Content */}
       <div
         ref={sceneRef}
-        className="flex-1 overflow-y-auto pt-16"
+        className="flex-1 overflow-y-auto pt-16 pb-4"
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        <div className="max-w-3xl mx-auto p-6 min-h-[calc(100vh-8rem)]">
+        <div className="max-w-3xl mx-auto p-6">
           {/* Scene type indicator */}
           {scene.type === 'chapter_end' && (
             <div className="text-center mb-8">
@@ -217,7 +218,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
 
           {/* Choices */}
           {showChoices && availableChoices.length > 0 && !showEffects && (
-            <div className="mt-8 space-y-3 animate-fade-in">
+            <div className="mt-8 mb-8 space-y-3 animate-fade-in">
               <div className="text-gray-500 text-sm font-mono mb-4 flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 CHOOSE YOUR RESPONSE:
@@ -236,7 +237,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
 
           {/* Auto-advance button with countdown */}
           {showChoices && canAutoAdvance && !showEffects && (
-            <div className="mt-8">
+            <div className="mt-8 mb-8">
               <button
                 onClick={handleContinue}
                 disabled={state.isTransitioning}
@@ -277,10 +278,10 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
 
           {/* Skip text hint */}
           {!textComplete && (
-            <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2">
+            <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 pointer-events-none">
               <button
                 onClick={() => setTextComplete(true)}
-                className="text-gray-600 hover:text-gray-400 text-xs font-mono transition-colors"
+                className="text-gray-600 hover:text-gray-400 text-xs font-mono transition-colors pointer-events-auto"
               >
                 Click or press SPACE to skip
               </button>
