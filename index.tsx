@@ -3,10 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles/tailwind.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import App from './App';
-import { GameProvider } from './context/GameContext';
-import { AuthProvider } from './context/AuthContext';
-import { AudioProvider } from './context/AudioContext';
+import StoryApp from './StoryApp';
 import ErrorBoundary from './components/ErrorBoundary';
 import { injectSpeedInsights } from '@vercel/speed-insights';
 import { inject } from '@vercel/analytics';
@@ -23,16 +20,12 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+
+// New Story-Driven RPG Mode
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <AuthProvider>
-        <AudioProvider>
-            <GameProvider>
-              <App />
-            </GameProvider>
-        </AudioProvider>
-      </AuthProvider>
+      <StoryApp />
     </ErrorBoundary>
   </React.StrictMode>
 );
