@@ -1018,6 +1018,871 @@ Your choices have shaped your path. The relationships you've built—or burned�
 ];
 
 // ============================================================================
+// CHAPTER 2: THE FIRST DEAL
+// ============================================================================
+
+const CHAPTER_2_SCENES: Scene[] = [
+  // Opening Scene - One Week Later
+  {
+    id: 'ch2_opening',
+    chapterId: 'chapter_2',
+    title: 'One Week Later',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `**CHAPTER 2: THE FIRST DEAL**
+
+*One Week Later*
+
+The PackFancy deal is moving fast. Too fast.
+
+Your discovery of the hidden real estate value has caught fire. The partners are excited—a rare sight. Chad has been almost pleasant.
+
+But in PE, excitement means pressure. And pressure has a way of finding the cracks.
+
+Your desk is covered in printouts: property surveys, zoning maps, comparable transactions. The CIM you once dreaded is now dog-eared and coffee-stained.
+
+A new email notification pops up. Subject line: **"URGENT: PackFancy Site Visit Tomorrow - Mandatory"**
+
+*Time to see if your paper analysis holds up in the real world.*`,
+    choices: [
+      {
+        id: 'ch2_opening_prepare',
+        text: 'Start preparing your questions',
+        subtext: 'Be ready for anything',
+        nextSceneId: 'ch2_prepare',
+        effects: {
+          stats: { dealcraft: 3 },
+          setFlags: ['PREPARED_SITE_VISIT'],
+        },
+      },
+      {
+        id: 'ch2_opening_ask_sarah',
+        text: 'Ask Sarah for site visit tips',
+        subtext: 'Lean on experience',
+        nextSceneId: 'ch2_sarah_tips',
+        requirements: {
+          requiredFlags: ['SARAH_INTRO'],
+        },
+        effects: {
+          relationships: [{ npcId: 'sarah', change: 5, memory: 'Asked for my advice again' }],
+        },
+      },
+      {
+        id: 'ch2_opening_relax',
+        text: 'You know the numbers. Relax.',
+        subtext: 'Confidence is key',
+        nextSceneId: 'ch2_overconfident',
+        effects: {
+          stats: { stress: -5 },
+          setFlags: ['UNPREPARED_SITE_VISIT'],
+        },
+      },
+    ],
+  },
+
+  // Prepare for site visit
+  {
+    id: 'ch2_prepare',
+    chapterId: 'chapter_2',
+    title: 'Preparation',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `You spend the evening building a site visit checklist:
+
+**Operations:**
+- Current production capacity vs. theoretical max
+- Age and condition of equipment
+- Maintenance backlog
+- Workforce composition and union status
+
+**Real Estate (the prize):**
+- Actual condition of the Newark facility
+- Any environmental concerns
+- Existing lease arrangements
+- Proximity to airport expansion zone
+
+**Management:**
+- CEO succession readiness
+- Key person risk
+- Culture assessment
+
+You also print out aerial photos of the Newark site, comparing them to the airport's published expansion plans.
+
+*Preparation is the armor against uncertainty. But even armor has gaps.*`,
+    nextSceneId: 'ch2_site_visit_morning',
+    choices: [],
+  },
+
+  // Sarah's tips
+  {
+    id: 'ch2_sarah_tips',
+    chapterId: 'chapter_2',
+    title: 'Advice from Experience',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'sarah',
+      name: 'Sarah Chen',
+      mood: 'neutral',
+    },
+    narrative: `Sarah looks up from her model, rubbing her eyes.
+
+**"Site visit tomorrow? Here's what they don't teach you in B-school."**
+
+She ticks off points on her fingers:
+
+**"One: Look at the parking lot. Empty spaces at 2 PM means they're overstaffed or underperforming. Full lot with old cars means loyal, long-term workforce—hard to replace."**
+
+**"Two: Check the bathrooms. Seriously. If they can't keep the bathrooms clean, the equipment maintenance is worse."**
+
+**"Three: Talk to the floor managers, not just the C-suite. Executives lie. Middle managers complain. Complaints are information."**
+
+**"Four: If something feels wrong, it probably is. Trust your gut."**
+
+She pauses.
+
+**"And five: Bring comfortable shoes. These site visits never end when they're supposed to."**`,
+    nextSceneId: 'ch2_site_visit_morning',
+    choices: [],
+  },
+
+  // Overconfident path
+  {
+    id: 'ch2_overconfident',
+    chapterId: 'chapter_2',
+    title: 'Confidence or Hubris?',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `You close your laptop early for once.
+
+The numbers are locked in. The real estate angle is solid. Tomorrow is just due diligence theater—checking boxes so the partners can feel good about the investment memo.
+
+You grab a beer with some college friends. Share your "big deal" story. Enjoy their impressed reactions.
+
+At 11 PM, you notice a text from Sarah: *"Don't forget to bring the zoning docs tomorrow. Chad specifically asked for them."*
+
+Zoning docs?
+
+*You didn't print those.*
+
+A frantic hour later, you finally crash, alarm set for 5 AM.
+
+*Confidence is a currency. Overconfidence is a debt.*`,
+    nextSceneId: 'ch2_site_visit_morning',
+    choices: [],
+  },
+
+  // Site visit morning
+  {
+    id: 'ch2_site_visit_morning',
+    chapterId: 'chapter_2',
+    title: 'The Drive to Newark',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `6:47 AM. A black SUV idles outside your apartment.
+
+Chad is already in the back seat, eyes on his phone. He doesn't look up as you climb in.
+
+**"Coffee's in the cupholder. Don't spill it on the leather."**
+
+The drive to Newark takes 45 minutes. Chad spends most of it on calls—a different deal, something about a healthcare rollup. You catch fragments: *"...synergies are real but execution risk is high..."*
+
+Finally, he ends the call and looks at you.
+
+**"The Kowalski family has owned PackFancy for 30 years. Old Man Kowalski built it from nothing. His kids want to cash out and disappear to Boca. The old man isn't happy about it."**
+
+He checks his Rolex.
+
+**"Don't be fooled by the cardboard boxes. This is a family drama wrapped in a transaction. Tread carefully."**
+
+The Newark skyline appears through the windshield.`,
+    choices: [
+      {
+        id: 'ch2_morning_ask_family',
+        text: '"What do I need to know about the family?"',
+        subtext: 'Get the full picture',
+        nextSceneId: 'ch2_family_dynamics',
+        effects: {
+          stats: { politics: 3 },
+        },
+      },
+      {
+        id: 'ch2_morning_focus_deal',
+        text: '"I\'ll focus on the property and operations"',
+        subtext: 'Stick to the numbers',
+        nextSceneId: 'ch2_arrival',
+        effects: {
+          stats: { dealcraft: 2 },
+        },
+      },
+    ],
+  },
+
+  // Family dynamics
+  {
+    id: 'ch2_family_dynamics',
+    chapterId: 'chapter_2',
+    title: 'The Kowalski Dynasty',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Sterling',
+      mood: 'neutral',
+    },
+    narrative: `Chad sets down his phone—a rare gesture.
+
+**"Stanley Kowalski. 72. Polish immigrant who started manufacturing boxes in his garage in 1993. Classic American dream story. Built this into a $120 million company."**
+
+**"His wife died three years ago. He's been... different since. Less sharp. More nostalgic. He sees the sale as the end of his legacy."**
+
+**"His son, Tommy Jr., runs operations. Mid-40s, competent but uninspired. His daughter, Monica, is CFO. She's the one pushing the sale—wants her inheritance liquid, not tied up in cardboard."**
+
+**"Tommy Jr. doesn't want to sell but doesn't want to run it alone either. Classic middle-child paralysis."**
+
+He checks his phone again.
+
+**"The old man likes to be listened to. Let him talk. You'll learn more that way."**`,
+    nextSceneId: 'ch2_arrival',
+    choices: [],
+  },
+
+  // Arrival at facility
+  {
+    id: 'ch2_arrival',
+    chapterId: 'chapter_2',
+    title: 'First Impressions',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `The PackFancy facility is... not what you expected.
+
+The building is old—1960s industrial—but well-maintained. Fresh paint on the corrugated metal exterior. The parking lot is full, mostly pickup trucks and older sedans.
+
+A sign at the entrance reads: **"PackFancy Inc. - 30 Years of Boxing Excellence. Safety Record: 847 Days Without Incident."**
+
+Inside the lobby, faded photos line the walls. Stanley Kowalski shaking hands with various governors. Newspaper clippings about community awards. A glass case displaying vintage boxes from the company's history.
+
+A woman in her early 50s approaches, hand extended.
+
+**"Sterling Partners? I'm Monica Kowalski, CFO. My father is expecting you. He's... in a mood today, so bear with us."**
+
+Her smile doesn't reach her eyes.`,
+    choices: [
+      {
+        id: 'ch2_arrival_professional',
+        text: 'Match her professional energy',
+        subtext: 'All business',
+        nextSceneId: 'ch2_meet_stanley',
+        effects: {
+          relationships: [{ npcId: 'monica', change: 5, memory: 'Professional demeanor' }],
+        },
+      },
+      {
+        id: 'ch2_arrival_warm',
+        text: 'Try to connect personally',
+        subtext: 'Build rapport',
+        nextSceneId: 'ch2_monica_opens_up',
+        effects: {
+          relationships: [{ npcId: 'monica', change: 10, memory: 'Showed genuine interest' }],
+          setFlags: ['MONICA_RAPPORT'],
+        },
+      },
+    ],
+  },
+
+  // Monica opens up
+  {
+    id: 'ch2_monica_opens_up',
+    chapterId: 'chapter_2',
+    title: 'Behind the Numbers',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'monica',
+      name: 'Monica Kowalski',
+      mood: 'worried',
+    },
+    narrative: `You ask Monica about the company history as she walks you down the hall.
+
+Her guard drops slightly.
+
+**"Thirty years. I've worked here since I was sixteen, counting inventory on summer breaks. Now I'm trying to convince my father to let go of his life's work."**
+
+She stops walking, lowers her voice.
+
+**"Look, between us—Dad's not... he's not who he was. Mom's death hit him hard. He comes in every day, but half the time he's just wandering the floor, talking to machines like they're old friends."**
+
+**"Tommy thinks we should ride it out, let him retire naturally. But the market's changing. Amazon's squeezing us. If we don't sell now, in five years there might be nothing left to sell."**
+
+She glances toward a corner office.
+
+**"Just... be patient with him. He still thinks he can negotiate like it's 1995."**`,
+    nextSceneId: 'ch2_meet_stanley',
+    choices: [],
+  },
+
+  // Meet Stanley
+  {
+    id: 'ch2_meet_stanley',
+    chapterId: 'chapter_2',
+    title: 'The Patriarch',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'stanley',
+      name: 'Stanley Kowalski',
+      mood: 'neutral',
+    },
+    narrative: `Stanley Kowalski sits behind a desk that's too big for the small corner office. The walls are covered with photos, awards, and a Polish flag.
+
+He's smaller than you expected. Weathered hands. Sharp eyes that haven't dimmed with age.
+
+**"Sterling Partners."**
+
+He pronounces it like a verdict.
+
+**"I've been reading about your firm. Very impressive. You bought that restaurant chain last year. Fired half the staff and sold the real estate."**
+
+He leans forward.
+
+**"My father came to this country with eight dollars and a dream. I built this company with these hands. I know every machine on that floor by name."**
+
+**"So tell me, Mr. Sterling—"** he looks at Chad **"—when you 'optimize' my company, how many of my people lose their jobs?"**
+
+The room goes quiet.`,
+    choices: [
+      {
+        id: 'ch2_stanley_honest',
+        text: 'Be honest about PE\'s approach',
+        subtext: 'Risky but respectful',
+        style: 'ethical',
+        nextSceneId: 'ch2_stanley_respects',
+        effects: {
+          stats: { ethics: 10, reputation: -5 },
+          relationships: [{ npcId: 'stanley', change: 15, memory: 'Told me the truth' }],
+          setFlags: ['HONEST_WITH_STANLEY'],
+        },
+      },
+      {
+        id: 'ch2_stanley_deflect',
+        text: 'Defer to Chad',
+        subtext: 'Let the boss handle it',
+        nextSceneId: 'ch2_chad_handles_it',
+        effects: {
+          stats: { stress: -5 },
+        },
+      },
+      {
+        id: 'ch2_stanley_promise',
+        text: '"We\'ll take care of your people"',
+        subtext: 'Tell him what he wants to hear',
+        style: 'unethical',
+        nextSceneId: 'ch2_stanley_suspicious',
+        effects: {
+          stats: { ethics: -10, politics: 5 },
+          relationships: [{ npcId: 'stanley', change: -10, memory: 'Empty promises' }],
+          setFlags: ['PROMISED_STANLEY'],
+        },
+      },
+    ],
+  },
+
+  // Stanley respects honesty
+  {
+    id: 'ch2_stanley_respects',
+    chapterId: 'chapter_2',
+    title: 'Unexpected Respect',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'stanley',
+      name: 'Stanley Kowalski',
+      mood: 'happy',
+    },
+    narrative: `You take a breath.
+
+**"Mr. Kowalski, I'd be lying if I said PE firms never cut jobs. That's sometimes part of how we create value. But the real opportunity here isn't headcount—it's the real estate you're sitting on."**
+
+Stanley's eyebrows rise.
+
+**"This facility is adjacent to the airport expansion zone. Your land could be worth more than the entire company. We're not looking to gut your operations—we're looking to unlock value you might not even know you have."**
+
+The old man studies you for a long moment.
+
+Then he laughs. A real laugh, deep and warm.
+
+**"Finally! Someone who doesn't treat me like I'm senile."**
+
+He stands, extends a weathered hand.
+
+**"I like you, kid. You've got guts. Not many people look a man in the eye and tell him the truth anymore."**
+
+**"Come on. Let me show you my floor. And that 'valuable real estate' you're so excited about."**`,
+    nextSceneId: 'ch2_floor_tour',
+    choices: [],
+  },
+
+  // Chad handles it
+  {
+    id: 'ch2_chad_handles_it',
+    chapterId: 'chapter_2',
+    title: 'The Senior Touch',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Sterling',
+      mood: 'neutral',
+    },
+    narrative: `Chad leans back, unfazed.
+
+**"Mr. Kowalski, I appreciate your directness. Here's ours: We're not in the business of buying companies to destroy them. Destroyed companies don't make money."**
+
+**"What we do is identify unrealized potential. Sometimes that means changes. But our best outcomes come from companies that grow, not shrink."**
+
+**"And frankly? Your real estate position here is more valuable than your box business. That's not an insult—that's an opportunity."**
+
+Stanley's expression doesn't change.
+
+**"Show me the floor,"** he says finally. **"Then we'll talk about 'opportunities.'"**
+
+*Chad's smooth. But you notice Stanley glancing at you as you leave. You could have spoken up. You didn't.*`,
+    nextSceneId: 'ch2_floor_tour',
+    choices: [],
+  },
+
+  // Stanley suspicious
+  {
+    id: 'ch2_stanley_suspicious',
+    chapterId: 'chapter_2',
+    title: 'The Old Man\'s Doubt',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'stanley',
+      name: 'Stanley Kowalski',
+      mood: 'angry',
+    },
+    narrative: `Stanley's eyes narrow.
+
+**"Take care of my people. That's what everyone says. The last group who said that? A consulting firm. 'We'll take care of your people.' Six months later, they recommended cutting the pension."**
+
+He stands, towering despite his age.
+
+**"I may be old, but I'm not stupid. Don't insult me with platitudes."**
+
+The temperature in the room drops. Monica steps forward.
+
+**"Dad, let's just show them the facility. They came all this way—"**
+
+**"Fine."** Stanley waves dismissively. **"Let's see how much you like our 'valuable real estate' up close."**
+
+*Not the best start.*`,
+    nextSceneId: 'ch2_floor_tour',
+    choices: [],
+  },
+
+  // Floor tour
+  {
+    id: 'ch2_floor_tour',
+    chapterId: 'chapter_2',
+    title: 'The Factory Floor',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `The manufacturing floor is surprisingly modern.
+
+Corrugating machines hum with precision. Workers in safety gear move with practiced efficiency. Quality control stations dot the production line.
+
+Stanley transforms on the floor. His shuffle becomes a stride. He greets workers by name, asks about their kids, their weekends.
+
+**"Maria! How's your grandson? Still playing soccer?"**
+
+**"Eddie! That back of yours better? Don't let me catch you lifting anything heavy."**
+
+This isn't just a factory to him. It's a family.
+
+But you notice things too. Some machines look ancient. Maintenance logs on the wall show increasing repair frequency. A section of the floor is roped off—old equipment waiting for replacement that never came.
+
+The real estate angle is solid. But the operations might need more work than the CIM suggested.`,
+    choices: [
+      {
+        id: 'ch2_floor_ask_machines',
+        text: 'Ask about the aging equipment',
+        subtext: 'Get the full picture',
+        nextSceneId: 'ch2_equipment_truth',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['FOUND_CAPEX_ISSUE'],
+        },
+      },
+      {
+        id: 'ch2_floor_focus_workers',
+        text: 'Talk to the floor workers',
+        subtext: 'Sarah\'s advice',
+        nextSceneId: 'ch2_worker_intel',
+        requirements: {
+          requiredFlags: ['SARAH_INTRO'],
+        },
+        effects: {
+          stats: { politics: 3 },
+          setFlags: ['WORKER_INTEL'],
+        },
+      },
+      {
+        id: 'ch2_floor_check_property',
+        text: 'Step outside to see the property',
+        subtext: 'The main prize',
+        nextSceneId: 'ch2_property_reveal',
+        effects: {
+          setFlags: ['SAW_PROPERTY_FIRST'],
+        },
+      },
+    ],
+  },
+
+  // Equipment truth
+  {
+    id: 'ch2_equipment_truth',
+    chapterId: 'chapter_2',
+    title: 'Hidden Liabilities',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'tommy',
+      name: 'Tommy Kowalski Jr.',
+      mood: 'worried',
+    },
+    narrative: `Tommy Kowalski Jr. intercepts you near the roped-off section. Mid-40s, tired eyes, coffee-stained shirt.
+
+**"You're looking at the graveyard,"** he says quietly. **"Dad doesn't like to talk about it."**
+
+He glances toward his father, who's showing Chad the quality control station.
+
+**"We've got about $8 million in deferred capex. Some of these machines are held together with prayer and duct tape. The CIM didn't mention that, did it?"**
+
+He shakes his head.
+
+**"Monica handled the CIM. She... simplified some things. Thought it would help the valuation."**
+
+**"I've been begging Dad for years to reinvest. But after Mom died, he just... stopped caring about the future."**
+
+*$8 million in deferred capex. That changes the math.*`,
+    nextSceneId: 'ch2_property_reveal',
+    choices: [],
+  },
+
+  // Worker intel
+  {
+    id: 'ch2_worker_intel',
+    chapterId: 'chapter_2',
+    title: 'Shop Floor Wisdom',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'floor_worker',
+      name: 'Eddie (Floor Manager)',
+      mood: 'neutral',
+    },
+    narrative: `You find Eddie, the floor manager Stanley mentioned, during a brief break.
+
+**"You're the money guys, huh?"** He doesn't seem hostile, just tired. **"Wondering how we feel about being sold?"**
+
+He takes a sip of coffee.
+
+**"Honestly? Most of us have been here 15, 20 years. We're too old to start over, too young to retire. Whatever happens, we're stuck."**
+
+**"Stanley treats us right. Pays fair, respects the union, never asks us to cut corners on safety. But..."**
+
+He hesitates.
+
+**"The kids—Tommy and Monica—they're not like him. Monica especially. She's been 'streamlining' things for years. Pushed out some of the older guys. Called it 'efficiency.'"**
+
+**"If she gets control after a sale? That 'safety record' on the sign out front won't last long."**
+
+*Interesting intel. Monica might not be just the seller—she might be the problem.*`,
+    nextSceneId: 'ch2_property_reveal',
+    choices: [],
+  },
+
+  // Property reveal
+  {
+    id: 'ch2_property_reveal',
+    chapterId: 'chapter_2',
+    title: 'The Real Prize',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You step outside through a loading dock.
+
+And there it is.
+
+Forty acres of industrial land stretching toward the Newark Airport fence line. In the distance, you can see the construction cranes of the expansion project. A new runway being built that will come within half a mile of where you're standing.
+
+The zoning map you studied was accurate, but seeing it in person makes it real.
+
+This isn't just valuable real estate. This is a goldmine waiting to be dug.
+
+A plane takes off in the distance, banking over the property. You imagine what this land will be worth when the airport needs to expand further. Cargo facilities. Logistics hubs. High-value commercial real estate.
+
+$120 million for the whole company.
+
+Potentially $600-800 million for just the land.
+
+*The deal of a decade. If you can close it.*`,
+    nextSceneId: 'ch2_decision_point',
+    choices: [],
+  },
+
+  // Decision point
+  {
+    id: 'ch2_decision_point',
+    chapterId: 'chapter_2',
+    title: 'The Real Question',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `On the drive back to Manhattan, Chad is silent.
+
+Finally, he speaks.
+
+**"What do you think?"**
+
+It's the first time he's asked your opinion directly. On anything.
+
+You think about everything you saw:
+- Stanley's love for his workers and his failing grip on reality
+- Monica's eagerness to sell and the suspiciously clean CIM
+- Tommy's revelation about $8 million in deferred capex
+- The workers' fear of what comes after
+- And that land. That impossibly valuable land.
+
+**"I'm asking because the partners want your recommendation,"** Chad continues. **"You found this deal. You own it. What do we do?"**
+
+*This is it. Your first real decision.*`,
+    choices: [
+      {
+        id: 'ch2_decision_aggressive',
+        text: '"Buy it. Separate the land, flip it, move on."',
+        subtext: 'Maximum returns',
+        style: 'unethical',
+        nextSceneId: 'ch2_aggressive_path',
+        effects: {
+          stats: { reputation: 10, ethics: -15, stress: 10 },
+          setFlags: ['AGGRESSIVE_RECOMMENDATION', 'CHOSE_PROFIT'],
+        },
+      },
+      {
+        id: 'ch2_decision_balanced',
+        text: '"Buy it, but factor in the capex. Realistic valuation."',
+        subtext: 'Smart deal-making',
+        nextSceneId: 'ch2_balanced_path',
+        effects: {
+          stats: { dealcraft: 10, ethics: 5 },
+          setFlags: ['BALANCED_RECOMMENDATION'],
+        },
+      },
+      {
+        id: 'ch2_decision_ethical',
+        text: '"We need to protect the workers. Structure it right."',
+        subtext: 'Do well by doing good',
+        style: 'ethical',
+        nextSceneId: 'ch2_ethical_path',
+        effects: {
+          stats: { ethics: 15, reputation: -5 },
+          relationships: [{ npcId: 'chad', change: -5, memory: 'Got soft on the PackFancy deal' }],
+          setFlags: ['ETHICAL_RECOMMENDATION', 'CHOSE_PEOPLE'],
+        },
+      },
+      {
+        id: 'ch2_decision_pass',
+        text: '"I have concerns. Maybe we should pass."',
+        subtext: 'Walk away',
+        style: 'safe',
+        nextSceneId: 'ch2_pass_path',
+        effects: {
+          stats: { stress: -15, reputation: -10 },
+          relationships: [{ npcId: 'chad', change: -15, memory: 'Got cold feet on the first deal' }],
+          setFlags: ['PASSED_ON_DEAL'],
+        },
+      },
+    ],
+  },
+
+  // Chapter 2 ending - Aggressive path
+  {
+    id: 'ch2_aggressive_path',
+    chapterId: 'chapter_2',
+    title: 'The Hard Path',
+    type: 'chapter_end',
+    atmosphere: 'crisis',
+    narrative: `Chad nods slowly.
+
+**"That's the play. Acquire, separate the real estate, sell the operations to whoever wants them. Or close it down."**
+
+He pulls out his phone.
+
+**"I'll tell the partners we're moving forward. Aggressive bid, fast close."**
+
+As the city lights appear on the horizon, you feel a strange mix of triumph and unease.
+
+Stanley's face flashes in your mind. The workers. The 847-day safety record.
+
+But this is Private Equity. Value creation isn't always pretty.
+
+*Chapter 2 Complete.*
+
+*You've made your first real call. The consequences are still to come.*`,
+    choices: [
+      {
+        id: 'ch2_aggressive_continue',
+        text: 'Continue to Chapter 3',
+        nextSceneId: 'ch2_complete',
+        effects: {
+          stats: { money: 5000 },
+          achievement: 'FIRST_RECOMMENDATION',
+          setFlags: ['CHAPTER_2_COMPLETE'],
+        },
+      },
+    ],
+  },
+
+  // Chapter 2 ending - Balanced path
+  {
+    id: 'ch2_balanced_path',
+    chapterId: 'chapter_2',
+    title: 'The Smart Path',
+    type: 'chapter_end',
+    atmosphere: 'office',
+    narrative: `Chad raises an eyebrow.
+
+**"Factor in the capex? That means a lower bid. We might lose to a more aggressive buyer."**
+
+**"But,"** he admits, **"it also means we don't overpay for a company that needs $8 million in equipment. And we have leverage in negotiations when Monica tries to hide the truth."**
+
+He considers.
+
+**"Alright. Revised model. Adjusted offer. Let's see how they respond."**
+
+As Manhattan appears through the windshield, you feel satisfied. You found the angle—all of them. The opportunity and the risk.
+
+*This is what dealmaking feels like.*
+
+*Chapter 2 Complete.*
+
+*You've shown you can find value and avoid traps. The game is just beginning.*`,
+    choices: [
+      {
+        id: 'ch2_balanced_continue',
+        text: 'Continue to Chapter 3',
+        nextSceneId: 'ch2_complete',
+        effects: {
+          stats: { money: 3000 },
+          achievement: 'BALANCED_DEALER',
+          setFlags: ['CHAPTER_2_COMPLETE'],
+        },
+      },
+    ],
+  },
+
+  // Chapter 2 ending - Ethical path
+  {
+    id: 'ch2_ethical_path',
+    chapterId: 'chapter_2',
+    title: 'The Right Path',
+    type: 'chapter_end',
+    atmosphere: 'quiet',
+    narrative: `Chad is quiet for a long moment.
+
+**"Protect the workers."**
+
+He says it like he's tasting something unfamiliar.
+
+**"You know that's not how this usually works, right? We buy, we optimize, we exit. Workers are line items."**
+
+**"But..."** He sighs. **"The old man reminded me of my grandfather. Built his own business. Same stubborn pride."**
+
+**"Fine. We structure it with employment guarantees. Limited layoffs. Transition support. It'll cost us some returns, but..."**
+
+He shrugs.
+
+**"Maybe you're onto something. ESG is hot right now. 'Responsible PE' could be a selling point."**
+
+*You chose a harder path. But maybe the right one.*
+
+*Chapter 2 Complete.*
+
+*Ethics and profit don't always conflict. Sometimes they create unexpected opportunities.*`,
+    choices: [
+      {
+        id: 'ch2_ethical_continue',
+        text: 'Continue to Chapter 3',
+        nextSceneId: 'ch2_complete',
+        effects: {
+          stats: { money: 2000 },
+          achievement: 'ETHICAL_DEALER',
+          setFlags: ['CHAPTER_2_COMPLETE'],
+        },
+      },
+    ],
+  },
+
+  // Chapter 2 ending - Pass path
+  {
+    id: 'ch2_pass_path',
+    chapterId: 'chapter_2',
+    title: 'The Cautious Path',
+    type: 'chapter_end',
+    atmosphere: 'crisis',
+    narrative: `Chad's expression hardens.
+
+**"Pass? After you brought us this deal? After the partners are already excited?"**
+
+He shakes his head.
+
+**"Kid, this is Private Equity. Not every deal is perfect. If you wait for perfect, you wait forever."**
+
+**"But..."** He takes a breath. **"...you're the one who did the work. If your gut says walk, I'll back you up. Once."**
+
+**"Just know that next time, 'concerns' won't cut it. You need conviction. Either in or out."**
+
+The rest of the drive is silent.
+
+*You chose caution over commitment. It saved you from risk—but did it cost you opportunity?*
+
+*Chapter 2 Complete.*
+
+*Sometimes the best deals are the ones you don't make. Sometimes you're just afraid.*`,
+    choices: [
+      {
+        id: 'ch2_pass_continue',
+        text: 'Continue to Chapter 3',
+        nextSceneId: 'ch2_complete',
+        effects: {
+          stats: { money: 1000 },
+          achievement: 'CAUTIOUS_PLAYER',
+          setFlags: ['CHAPTER_2_COMPLETE'],
+        },
+      },
+    ],
+  },
+
+  // Chapter complete transition
+  {
+    id: 'ch2_complete',
+    chapterId: 'chapter_2',
+    title: 'Chapter Complete',
+    type: 'outcome',
+    atmosphere: 'celebration',
+    narrative: `**CHAPTER 2 COMPLETE**
+
+*The First Deal*
+
+Your first real recommendation is on the record. The consequences—good or bad—will unfold in the chapters to come.
+
+The Kowalski family is just the beginning. In Private Equity, every deal creates ripples. And sometimes, waves.`,
+    choices: [],
+  },
+];
+
+// ============================================================================
 // CHAPTER DEFINITIONS
 // ============================================================================
 
@@ -1032,7 +1897,19 @@ export const STORY_CHAPTERS: Chapter[] = [
     estimatedMinutes: 15,
     theme: 'introduction',
   },
-  // More chapters would go here
+  {
+    id: 'chapter_2',
+    number: 2,
+    title: 'The First Deal',
+    teaser: 'Your PackFancy discovery is moving to acquisition. Time to see if your paper analysis holds up in the real world.',
+    openingSceneId: 'ch2_opening',
+    endingSceneIds: ['ch2_aggressive_path', 'ch2_balanced_path', 'ch2_ethical_path', 'ch2_pass_path'],
+    requirements: {
+      completedChapters: ['chapter_1'],
+    },
+    estimatedMinutes: 20,
+    theme: 'rising_action',
+  },
 ];
 
 // ============================================================================
@@ -1041,7 +1918,7 @@ export const STORY_CHAPTERS: Chapter[] = [
 
 export const STORY_SCENES: Scene[] = [
   ...CHAPTER_1_SCENES,
-  // More chapter scenes would be added here
+  ...CHAPTER_2_SCENES,
 ];
 
 // ============================================================================
