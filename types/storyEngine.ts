@@ -39,6 +39,8 @@ export interface Scene {
   requirements?: SceneRequirements;
   /** Tags for filtering/searching */
   tags?: string[];
+  /** If true, scene requires user to click Continue (no auto-advance) */
+  requiresAcknowledgment?: boolean;
 }
 
 /**
