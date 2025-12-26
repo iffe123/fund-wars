@@ -37,14 +37,16 @@ const StatusBar: React.FC<StatusBarProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onMenuClick}
-            className="text-gray-500 hover:text-gray-300 transition-colors p-1"
+            className="text-gray-400 hover:text-white transition-colors p-2 -ml-2"
             title="Menu"
           >
-            <i className="fas fa-bars" />
+            <i className="fas fa-bars text-lg" />
           </button>
-          <span className="text-gray-400 text-sm font-mono leading-tight max-w-[120px] sm:max-w-none">
-            {currentScene?.title || 'FUND WARS'}
-          </span>
+          <div className="flex flex-col leading-none">
+            <span className="text-white font-semibold text-sm sm:text-base tracking-wide max-w-[140px] sm:max-w-none truncate">
+              {currentScene?.title || 'FUND WARS'}
+            </span>
+          </div>
         </div>
 
         {/* Center: Resource bars */}
@@ -141,8 +143,8 @@ const ResourceBar: React.FC<ResourceBarProps> = ({
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
     >
-      <span className="text-gray-500 text-xs font-mono w-8">{label}</span>
-      <div className="w-16 h-2 bg-gray-800 rounded-full overflow-hidden">
+      <span className="text-gray-300 text-xs font-bold font-mono w-8">{label}</span>
+      <div className="w-20 h-2.5 bg-gray-700 rounded-full overflow-hidden border border-gray-600">
         <div
           className={`h-full ${barColor} transition-all duration-300`}
           style={{ width: `${percentage}%` }}
@@ -160,7 +162,7 @@ const MoneyDisplay: React.FC<MoneyDisplayProps> = ({ value }) => {
   const formatted = formatCompact(value);
 
   return (
-    <span className="text-green-400 font-mono text-sm">
+    <span className="text-green-400 font-bold font-mono text-sm bg-gray-800/50 px-2 py-0.5 rounded">
       ${formatted}
     </span>
   );
