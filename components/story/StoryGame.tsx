@@ -14,7 +14,7 @@ import StoryScene from './StoryScene';
 import CharacterCreate from './CharacterCreate';
 import LoginScreen from '../LoginScreen';
 
-type GameScreen = 'title' | 'character_create' | 'chapter_select' | 'playing' | 'chapter_complete';
+type GameScreen = 'title' | 'character_create' | 'chapter_select' | 'playing' | 'chapter_complete' | 'game_over';
 
 const StoryGameInner: React.FC = () => {
   const {
@@ -41,7 +41,12 @@ const StoryGameInner: React.FC = () => {
   // Handle phase changes from the engine
   useEffect(() => {
     if (phase === 'PLAYING' && currentScene) {
-      setScreen('playing');
+      // Check for game over scenes
+      if (currentScene.id === 'game_over_restart') {
+        setScreen('game_over');
+      } else {
+        setScreen('playing');
+      }
     } else if (phase === 'CHAPTER_COMPLETE') {
       setScreen('chapter_complete');
     }
@@ -97,6 +102,14 @@ const StoryGameInner: React.FC = () => {
     setScreen('chapter_select');
   }, []);
 
+  // Handle game restart from game over
+  const handleRestart = useCallback(() => {
+    resetGame();
+    localStorage.removeItem('fundwars_autosave');
+    setHasSavedGame(false);
+    setScreen('title');
+  }, [resetGame]);
+
   // Render based on current screen
   switch (screen) {
     case 'title':
@@ -129,6 +142,14 @@ const StoryGameInner: React.FC = () => {
         <ChapterCompleteScreen
           onContinue={handleChapterCompleteAcknowledge}
           onMainMenu={handleBackToMenu}
+        />
+      );
+
+    case 'game_over':
+      return (
+        <GameOverScreen
+          onRestart={handleRestart}
+          game={game}
         />
       );
 
@@ -285,6 +306,135 @@ const ChapterCompleteScreen: React.FC<ChapterCompleteScreenProps> = ({ onContinu
             MAIN MENU
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Game Over Screen
+interface GameOverScreenProps {
+  onRestart: () => void;
+  game: ReturnType<typeof useStoryEngine>['game'];
+}
+
+const GameOverScreen: React.FC<GameOverScreenProps> = ({ onRestart, game }) => {
+  // Determine the type of game over based on flags
+  const flags = game?.flags || new Set<string>();
+  const wasQuit = flags.has('CHOSE_TO_QUIT') || flags.has('CHOSE_TO_RESIGN');
+  const wasFired = flags.has('CHOSE_TO_GET_FIRED') || flags.has('CHOSE_TO_STAY');
+  const wasLegend = flags.has('LEGENDARY_FAILURE');
+
+  const getTitle = () => {
+    if (wasLegend) return 'LEGENDARY FAILURE';
+    if (wasFired) return 'CAREER TERMINATED';
+    if (wasQuit) return 'SIMULATION ENDED';
+    return 'GAME OVER';
+  };
+
+  const getSubtitle = () => {
+    if (wasLegend) return 'You went out in a blaze of glory';
+    if (wasFired) return 'But you faced the consequences';
+    if (wasQuit) return 'Sometimes discretion is the better part of valor';
+    return 'Your journey ends here';
+  };
+
+  const getIcon = () => {
+    if (wasLegend) return 'fa-fire';
+    if (wasFired) return 'fa-gavel';
+    if (wasQuit) return 'fa-door-open';
+    return 'fa-skull';
+  };
+
+  return (
+    <div className="min-h-screen bg-black flex items-center justify-center p-8">
+      <div className="max-w-lg w-full text-center">
+        {/* Icon */}
+        <div className={`text-6xl mb-6 ${wasLegend ? 'text-yellow-400' : 'text-red-500'}`}>
+          <i className={`fas ${getIcon()}`} />
+        </div>
+
+        {/* Title */}
+        <h1 className={`text-4xl font-bold mb-4 ${wasLegend ? 'text-yellow-400' : 'text-red-500'}`}>
+          {getTitle()}
+        </h1>
+
+        {/* Subtitle */}
+        <p className="text-gray-400 text-lg mb-8">
+          {getSubtitle()}
+        </p>
+
+        {/* Stats Summary */}
+        {game && (
+          <div className="mb-8 p-4 bg-gray-900 border border-gray-800 rounded-sm">
+            <h3 className="text-gray-500 text-sm font-mono mb-4">FINAL STATS</h3>
+            <div className="grid grid-cols-3 gap-4 text-center mb-4">
+              <div>
+                <div className={`text-2xl font-bold ${(game.stats.reputation || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {game.stats.reputation || 0}
+                </div>
+                <div className="text-gray-500 text-xs">REPUTATION</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-yellow-400">
+                  ${(game.stats.money || 0).toLocaleString()}
+                </div>
+                <div className="text-gray-500 text-xs">MONEY</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-red-400">
+                  {game.stats.stress || 0}
+                </div>
+                <div className="text-gray-500 text-xs">STRESS</div>
+              </div>
+            </div>
+
+            {/* Achievements earned */}
+            {game.achievements.length > 0 && (
+              <div className="border-t border-gray-800 pt-4 mt-4">
+                <h4 className="text-yellow-500 text-xs font-mono mb-2">ACHIEVEMENTS EARNED</h4>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {game.achievements.map(achievement => (
+                    <span
+                      key={achievement}
+                      className="px-2 py-1 bg-yellow-900/30 border border-yellow-700 text-yellow-400 text-xs rounded"
+                    >
+                      {achievement.replace(/_/g, ' ')}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Wisdom */}
+        <p className="text-gray-600 text-sm italic mb-8">
+          {wasLegend
+            ? '"In a world of careful moves, one bold stroke can change everything."'
+            : wasFired
+            ? '"The only real failure is not learning from your mistakes."'
+            : '"Every exit is an entry somewhere else."'
+          }
+        </p>
+
+        {/* Restart Button */}
+        <button
+          onClick={onRestart}
+          className="
+            w-full py-4 px-8
+            bg-green-900/30 hover:bg-green-900/50
+            border border-green-700 hover:border-green-500
+            text-green-400 font-mono text-lg
+            transition-all duration-200
+          "
+        >
+          <i className="fas fa-redo mr-2" />
+          START OVER
+        </button>
+
+        <p className="text-gray-600 text-xs mt-4">
+          Your journey will begin anew
+        </p>
       </div>
     </div>
   );

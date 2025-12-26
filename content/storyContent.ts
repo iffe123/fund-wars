@@ -1002,7 +1002,251 @@ Brief silence.
           stats: { politics: 3 },
         },
       },
+      {
+        id: 'ch1_miles_leak',
+        text: '"I\'ll send you our internal valuation model"',
+        subtext: 'Share confidential information',
+        narratorComment: 'Wait, what? Did you just... oh no. No no no.',
+        style: 'risky',
+        nextSceneId: 'ch1_catastrophic_leak',
+        effects: {
+          stats: { ethics: -50, stress: 50 },
+          setFlags: ['LEAKED_CONFIDENTIAL_INFO', 'CATASTROPHIC_MISTAKE'],
+        },
+      },
     ],
+  },
+
+  // CATASTROPHIC PATH: Leaked confidential information
+  {
+    id: 'ch1_catastrophic_leak',
+    chapterId: 'chapter_1',
+    title: 'Career-Ending Mistake',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `You hear a sharp intake of breath from behind you.
+
+You spin around.
+
+**Chad Sterling** is standing in the doorway. His face is ashen. His hand grips the doorframe like he's preventing himself from lunging at you.
+
+**"Did you just..."** His voice is barely a whisper. **"Did you just offer to send our INTERNAL VALUATION MODEL to an investment banker?"**
+
+The phone is still in your hand. Miles is still on the line. You can hear his awkward cough.
+
+Chad walks slowly to your desk. Takes the phone. Ends the call.
+
+**"Do you have ANY idea what you've just done? That model contains our acquisition strategy, our assumptions, our EDGE. You just offered to hand our playbook to the other team."**
+
+He's shaking now.
+
+**"If Miles tells anyone—if this gets back to his clients—we're finished. I'm finished. And YOU..."**
+
+He can't even finish the sentence.
+
+*You just committed what might be the most catastrophic mistake in Sterling Partners' history.*`,
+    choices: [],
+    nextSceneId: 'ch1_point_of_no_return',
+    requiresAcknowledgment: true,
+  },
+
+  // Point of No Return - Quit or Continue
+  {
+    id: 'ch1_point_of_no_return',
+    chapterId: 'chapter_1',
+    title: 'Point of No Return',
+    type: 'decision',
+    atmosphere: 'crisis',
+    narrative: `The silence in Chad's office is deafening.
+
+Outside, the bullpen has gone quiet. Word travels fast in this place. You can feel every eye on you through the glass walls.
+
+Chad sits behind his desk, rubbing his temples.
+
+**"Here's where we are,"** he says finally. **"I have two options. One: I call security, have them escort you out, and we pretend this never happened. You sign an NDA, we pay you for today, and you disappear."**
+
+**"Two: You stay. You face the consequences. The partners will want blood. Your career at Sterling—maybe your career in PE entirely—is almost certainly over. But you'll face it like an adult."**
+
+He looks at you with something between contempt and... pity?
+
+**"Door one means you walk away now. Clean break. But you'll always know you ran."**
+
+**"Door two means you stay and face the firing squad. Probably get fired anyway, but at least you won't have quit."**
+
+**"Your choice. You've got ten seconds."**
+
+*This is it. The point of no return.*`,
+    choices: [
+      {
+        id: 'ch1_quit_now',
+        text: 'Take the exit. Walk away now.',
+        subtext: 'End the game and start over',
+        nextSceneId: 'ch1_quit_ending',
+        effects: {
+          setFlags: ['CHOSE_TO_QUIT'],
+        },
+      },
+      {
+        id: 'ch1_face_consequences',
+        text: 'Stay and face the consequences',
+        subtext: 'See this through to the bitter end',
+        narratorComment: 'Brave. Stupid, but brave.',
+        nextSceneId: 'ch1_dramatic_ending',
+        effects: {
+          stats: { ethics: 5 },
+          setFlags: ['CHOSE_TO_STAY'],
+        },
+      },
+    ],
+  },
+
+  // Quit Ending - Clean restart
+  {
+    id: 'ch1_quit_ending',
+    chapterId: 'chapter_1',
+    title: 'Exit Stage Left',
+    type: 'outcome',
+    atmosphere: 'quiet',
+    narrative: `You stand up slowly.
+
+**"I'll take the exit."**
+
+Chad nods, no surprise in his eyes. **"Smart choice. Cowardly, but smart."**
+
+Security arrives within minutes. A woman with a kind face hands you a box for your belongings. There's nothing to pack—you've only been here a day.
+
+The elevator ride down is the longest 47 floors of your life.
+
+As you step onto the street, your phone buzzes. A text from an unknown number:
+
+*"Heard what happened. Industry's small. Good luck with whatever's next. - S"*
+
+Sarah. Even now, she's looking out for you.
+
+The city stretches before you. Somewhere out there, there are other opportunities. Other chances.
+
+Maybe next time, you won't try to give away the company's secrets.
+
+**SIMULATION TERMINATED**
+
+*Your career at Sterling Partners lasted approximately 8 hours.*
+
+*Would you like to try again?*`,
+    choices: [
+      {
+        id: 'ch1_restart',
+        text: 'Start Over',
+        nextSceneId: 'game_over_restart',
+        effects: {
+          setFlags: ['GAME_OVER_QUIT'],
+        },
+      },
+    ],
+  },
+
+  // Dramatic Ending - Stayed to face consequences
+  {
+    id: 'ch1_dramatic_ending',
+    chapterId: 'chapter_1',
+    title: 'The Firing Squad',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `You sit back down.
+
+**"I'll stay."**
+
+Chad stares at you for a long moment. Then, slowly, he picks up his phone.
+
+**"Margaret, clear my afternoon. And get the partners on a call. All of them."**
+
+The next three hours are a blur of conference rooms, raised voices, and legal documents.
+
+The partners are... not pleased. Words like "liability," "termination," and "lawsuit" are thrown around liberally.
+
+But something unexpected happens.
+
+Miles Patterson—the banker—calls Chad directly. He laughs off the whole thing.
+
+**"Look, the kid made a mistake. I didn't hear anything useful anyway. Let's just pretend it never happened. I still want to do this deal."**
+
+It's not absolution. But it's something.
+
+At 11 PM, you're finally released from the conference room. Chad walks you out.
+
+**"You're not fired,"** he says. **"Yet. But you're on probation. Indefinitely. One more mistake and you're done. Understand?"**
+
+You nod.
+
+**"And kid? That took guts, staying. Stupid guts, but guts. Don't waste your second chance."**
+
+*You survived. Barely. But the stain on your reputation may never wash out.*
+
+**CAREER SEVERELY DAMAGED**
+
+*Continue with heavy penalties...*`,
+    choices: [
+      {
+        id: 'ch1_dramatic_continue',
+        text: 'Continue (with penalties)',
+        nextSceneId: 'ch1_chapter_end_damaged',
+        effects: {
+          stats: { reputation: -50, stress: 30, ethics: 10 },
+          achievement: 'SURVIVED_CATASTROPHE',
+          setFlags: ['CHAPTER_1_COMPLETE', 'SURVIVED_CATASTROPHE', 'ON_PROBATION'],
+        },
+      },
+    ],
+  },
+
+  // Damaged ending for Chapter 1
+  {
+    id: 'ch1_chapter_end_damaged',
+    chapterId: 'chapter_1',
+    title: 'End of Day One (Damaged)',
+    type: 'chapter_end',
+    atmosphere: 'crisis',
+    narrative: `The city lights seem dimmer tonight.
+
+You made it through day one at Sterling Partners. But at what cost?
+
+Your reputation is in tatters. The partners view you with suspicion. Chad has made it clear that you're on thin ice.
+
+But you're still here. You didn't run.
+
+In Private Equity, second chances are rare. Third chances don't exist.
+
+*Chapter 1 Complete.*
+
+*You survived. But the game just got much, much harder.*`,
+    choices: [
+      {
+        id: 'ch1_damaged_continue',
+        text: 'Continue to Chapter 2',
+        nextSceneId: 'chapter_complete',
+        effects: {
+          setFlags: ['CHAPTER_1_COMPLETE'],
+        },
+      },
+    ],
+  },
+
+  // Game Over / Restart scene
+  {
+    id: 'game_over_restart',
+    chapterId: 'chapter_1',
+    title: 'Game Over',
+    type: 'outcome',
+    atmosphere: 'quiet',
+    narrative: `**GAME OVER**
+
+Your journey ends here—for now.
+
+But every ending is a new beginning. Every failure, a lesson learned.
+
+The world of Private Equity is unforgiving. But it rewards those who learn from their mistakes.
+
+*Ready to try again?*`,
+    choices: [],
   },
 
   // Chapter complete transition
@@ -1392,6 +1636,219 @@ The room goes quiet.`,
           stats: { ethics: -10, politics: 5 },
           relationships: [{ npcId: 'stanley', change: -10, memory: 'Empty promises' }],
           setFlags: ['PROMISED_STANLEY'],
+        },
+      },
+      {
+        id: 'ch2_stanley_insult',
+        text: '"Your workers are line items. That\'s how this works."',
+        subtext: 'Be brutally honest',
+        narratorComment: 'Oh no. Oh no no no. Did you really just say that to a 72-year-old Polish immigrant in front of his family business?',
+        style: 'risky',
+        nextSceneId: 'ch2_catastrophic_insult',
+        effects: {
+          stats: { ethics: -30, stress: 40 },
+          relationships: [
+            { npcId: 'stanley', change: -100, memory: 'Called my workers line items' },
+            { npcId: 'chad', change: -30, memory: 'Destroyed the PackFancy deal' },
+          ],
+          setFlags: ['INSULTED_STANLEY', 'CATASTROPHIC_MISTAKE'],
+        },
+      },
+    ],
+  },
+
+  // CATASTROPHIC PATH: Insulted Stanley
+  {
+    id: 'ch2_catastrophic_insult',
+    chapterId: 'chapter_2',
+    title: 'The Bridge Burns',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `The room goes dead silent.
+
+Stanley Kowalski's face transforms. The weathered lines deepen. His eyes—those sharp, immigrant survivor's eyes—go cold.
+
+**"Line items."**
+
+He stands. Slowly. Like a glacier calving.
+
+**"My Maria—who has been with me thirty years—is a line item. My Eddie—who I taught to run the corrugating machine—is a line item. My family..."**
+
+He gestures at Monica and Tommy Jr., who are staring at you with open horror.
+
+**"...are LINE ITEMS."**
+
+He turns to Chad.
+
+**"Mr. Sterling. I have entertained many buyers. Investment banks, private equity, strategic acquirers. Some were smart. Some were foolish. But NONE of them have ever insulted me in my own building."**
+
+He points at you.
+
+**"Get this person out of my sight. And if you want to continue this conversation, you will call me in three months. Maybe six. Maybe never."**
+
+Chad's face is ashen. The deal is dead. Killed by a single sentence.
+
+*You just cost Sterling Partners the deal of the decade.*`,
+    choices: [],
+    nextSceneId: 'ch2_point_of_no_return',
+    requiresAcknowledgment: true,
+  },
+
+  // Chapter 2 Point of No Return
+  {
+    id: 'ch2_point_of_no_return',
+    chapterId: 'chapter_2',
+    title: 'The Ride Back',
+    type: 'decision',
+    atmosphere: 'crisis',
+    narrative: `The drive back to Manhattan is the longest 45 minutes of your life.
+
+Chad doesn't speak. Doesn't look at you. His knuckles are white on his phone.
+
+When you finally hit traffic near the Lincoln Tunnel, he turns.
+
+**"I just got off the phone with the senior partners."** His voice is flat. Dead. **"They want you gone. Immediately. No severance. No reference. No NDA—they want everyone to know what you did."**
+
+He pauses.
+
+**"But I told them to wait. Because I want to understand something first."**
+
+He leans in close.
+
+**"You had everything. A good school, a good opportunity, a deal that could have made your career. And you threw it all away because you couldn't keep your mouth shut."**
+
+**"So here's your choice. You can walk into that office tomorrow and resign. Clean exit. I'll say you weren't a good fit. Happens all the time."**
+
+**"Or you can let them fire you. In which case, I will make sure everyone in this industry knows exactly what you did. Your career in finance will be over. Permanently."**
+
+**"Which is it?"**
+
+*This is the end. One way or another.*`,
+    choices: [
+      {
+        id: 'ch2_resign_quietly',
+        text: 'Resign quietly',
+        subtext: 'Accept defeat and start over',
+        nextSceneId: 'ch2_resign_ending',
+        effects: {
+          setFlags: ['CHOSE_TO_RESIGN'],
+        },
+      },
+      {
+        id: 'ch2_get_fired',
+        text: 'Let them fire me. I\'ll take my chances.',
+        subtext: 'Face the consequences',
+        narratorComment: 'The absolute audacity. I respect it. Sort of.',
+        nextSceneId: 'ch2_fired_ending',
+        effects: {
+          stats: { ethics: 10 },
+          setFlags: ['CHOSE_TO_GET_FIRED'],
+        },
+      },
+    ],
+  },
+
+  // Chapter 2 Resign Ending
+  {
+    id: 'ch2_resign_ending',
+    chapterId: 'chapter_2',
+    title: 'The Quiet Exit',
+    type: 'outcome',
+    atmosphere: 'quiet',
+    narrative: `The next morning, you walk into HR.
+
+The resignation letter is brief: *"I have decided to pursue other opportunities."*
+
+The HR manager—a woman who has clearly done this before—nods sympathetically.
+
+**"It happens more than you'd think. The PE world isn't for everyone."**
+
+You clean out your desk. It takes three minutes.
+
+Hunter Sterling watches you leave with barely concealed glee. **"See you never,"** he mouths through the glass.
+
+But as you wait for the elevator, Sarah Chen appears.
+
+**"I heard,"** she says quietly. **"For what it's worth... that took guts. Walking away instead of getting dragged out."**
+
+She hands you a card.
+
+**"My personal number. When you land somewhere—and you will—call me. The industry is smaller than you think, but it's also got a short memory."**
+
+The elevator doors open.
+
+**"Good luck. And maybe next time... read the room before you speak."**
+
+**SIMULATION TERMINATED**
+
+*Your career at Sterling Partners lasted approximately 10 days.*
+
+*Would you like to try again?*`,
+    choices: [
+      {
+        id: 'ch2_restart',
+        text: 'Start Over',
+        nextSceneId: 'game_over_restart',
+        effects: {
+          setFlags: ['GAME_OVER_RESIGNED'],
+        },
+      },
+    ],
+  },
+
+  // Chapter 2 Fired Ending
+  {
+    id: 'ch2_fired_ending',
+    chapterId: 'chapter_2',
+    title: 'The Spectacle',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `You stand your ground.
+
+**"Fire me. Let them all see."**
+
+Chad's expression flickers—surprise? Respect? Disgust? All three?
+
+**"Your funeral."**
+
+The next morning is theatrical. Security meets you at the elevator. The partners watch from their corner offices as you're escorted to HR.
+
+The termination letter is three pages long. Words like "gross misconduct" and "material breach" jump out.
+
+**"Sign here,"** the HR director says. **"And here. And here."**
+
+You sign.
+
+As security walks you out—past the bullpen, past Hunter's smirking face, past Sarah's sympathetic eyes—something strange happens.
+
+One of the analysts starts slow-clapping.
+
+Then another.
+
+Then the whole bullpen is applauding. Not mockingly. *Genuinely.*
+
+Because everyone in that room has wanted to tell a client the truth. And you actually did it.
+
+The senior partner—the shark-eyed one—catches your eye as you pass.
+
+He nods. Once. Almost imperceptibly.
+
+*You're blacklisted from PE. But you've become a legend.*
+
+**SIMULATION TERMINATED**
+
+*Your career at Sterling Partners lasted 10 days.*
+*But the story will last forever.*
+
+*Would you like to try again?*`,
+    choices: [
+      {
+        id: 'ch2_restart_fired',
+        text: 'Start Over',
+        nextSceneId: 'game_over_restart',
+        effects: {
+          achievement: 'LEGENDARY_FAILURE',
+          setFlags: ['GAME_OVER_FIRED'],
         },
       },
     ],
