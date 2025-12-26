@@ -148,6 +148,7 @@ She's gone before you can respond.
 *A potential ally. In Private Equity, those are rarer than good deals.*`,
     nextSceneId: 'ch1_meet_chad_confident',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Meeting Chad - Confident version
@@ -306,6 +307,7 @@ He checks his Rolex.
 **"Questions asked. Now go answer them."**`,
     nextSceneId: 'ch1_first_desk',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Chad angry
@@ -339,6 +341,7 @@ He turns back, his smile completely devoid of warmth.
 *Note to self: Chad remembers everything.*`,
     nextSceneId: 'ch1_first_desk',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Chad gives guidance (slightly mocking)
@@ -370,6 +373,7 @@ He shrugs.
 *So much for mentorship.*`,
     nextSceneId: 'ch1_first_desk',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // First desk scene
@@ -518,6 +522,7 @@ He grabs his bag.
 *Congratulations. You just made an enemy whose last name is on the building.*`,
     nextSceneId: 'ch1_cim_review',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // CIM Review
@@ -1111,6 +1116,7 @@ You also print out aerial photos of the Newark site, comparing them to the airpo
 *Preparation is the armor against uncertainty. But even armor has gaps.*`,
     nextSceneId: 'ch2_site_visit_morning',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Sarah's tips
@@ -1144,6 +1150,7 @@ She pauses.
 **"And five: Bring comfortable shoes. These site visits never end when they're supposed to."**`,
     nextSceneId: 'ch2_site_visit_morning',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Overconfident path
@@ -1170,6 +1177,7 @@ A frantic hour later, you finally crash, alarm set for 5 AM.
 *Confidence is a currency. Overconfidence is a debt.*`,
     nextSceneId: 'ch2_site_visit_morning',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Site visit morning
@@ -1245,6 +1253,7 @@ He checks his phone again.
 **"The old man likes to be listened to. Let him talk. You'll learn more that way."**`,
     nextSceneId: 'ch2_arrival',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Arrival at facility
@@ -1319,6 +1328,7 @@ She glances toward a corner office.
 **"Just... be patient with him. He still thinks he can negotiate like it's 1995."**`,
     nextSceneId: 'ch2_meet_stanley',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Meet Stanley
@@ -1420,6 +1430,7 @@ He stands, extends a weathered hand.
 **"Come on. Let me show you my floor. And that 'valuable real estate' you're so excited about."**`,
     nextSceneId: 'ch2_floor_tour',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Chad handles it
@@ -1449,6 +1460,7 @@ Stanley's expression doesn't change.
 *Chad's smooth. But you notice Stanley glancing at you as you leave. You could have spoken up. You didn't.*`,
     nextSceneId: 'ch2_floor_tour',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Stanley suspicious
@@ -1480,6 +1492,7 @@ The temperature in the room drops. Monica steps forward.
 *Not the best start.*`,
     nextSceneId: 'ch2_floor_tour',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Floor tour
@@ -1569,6 +1582,7 @@ He shakes his head.
 *$8 million in deferred capex. That changes the math.*`,
     nextSceneId: 'ch2_property_reveal',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Worker intel
@@ -1602,6 +1616,7 @@ He hesitates.
 *Interesting intel. Monica might not be just the seller—she might be the problem.*`,
     nextSceneId: 'ch2_property_reveal',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Property reveal
@@ -1630,6 +1645,7 @@ Potentially $600-800 million for just the land.
 *The deal of a decade. If you can close it.*`,
     nextSceneId: 'ch2_decision_point',
     choices: [],
+    requiresAcknowledgment: true,
   },
 
   // Decision point

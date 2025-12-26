@@ -277,24 +277,26 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
             </div>
           )}
 
-          {/* Auto-advance button with countdown */}
+          {/* Continue button - manual when requiresAcknowledgment, auto-advance otherwise */}
           {showChoices && canAutoAdvance && !showEffects && (
             <div className="mt-8 mb-8">
               <button
                 onClick={handleContinue}
                 disabled={state.isTransitioning}
-                className="
+                className={`
                   w-full py-4 px-6
-                  bg-gray-900 hover:bg-gray-800
-                  border border-gray-700 hover:border-green-500
-                  text-green-400 font-mono
+                  font-mono
                   transition-all duration-200
                   disabled:opacity-50 disabled:cursor-not-allowed
                   relative overflow-hidden group
-                "
+                  ${scene.requiresAcknowledgment
+                    ? 'bg-green-900/30 hover:bg-green-900/50 border-2 border-green-500 hover:border-green-400 text-green-400 animate-pulse-subtle'
+                    : 'bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-green-500 text-green-400'
+                  }
+                `}
               >
-                {/* Progress bar for auto-advance */}
-                {isWaitingToAdvance && (
+                {/* Progress bar for auto-advance (only when not requiring acknowledgment) */}
+                {isWaitingToAdvance && !scene.requiresAcknowledgment && (
                   <div
                     className="absolute bottom-0 left-0 h-1 bg-green-500/50 transition-all duration-1000"
                     style={{
@@ -304,9 +306,16 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
                 )}
 
                 <span className="flex items-center justify-center gap-3">
-                  Continue
+                  {scene.requiresAcknowledgment ? (
+                    <>
+                      <i className="fas fa-arrow-right" />
+                      <span>Continue</span>
+                    </>
+                  ) : (
+                    'Continue'
+                  )}
                   <span className="text-gray-500 text-sm">
-                    {isWaitingToAdvance && autoAdvanceCountdown > 0 && (
+                    {isWaitingToAdvance && autoAdvanceCountdown > 0 && !scene.requiresAcknowledgment && (
                       <span>({autoAdvanceCountdown}s)</span>
                     )}
                     <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
@@ -377,6 +386,21 @@ const styles = `
 
 .animate-fade-in {
   animation: fade-in 0.4s ease-out forwards;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    opacity: 0.9;
+    box-shadow: 0 0 20px 2px rgba(34, 197, 94, 0.3);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
 }
 `;
 

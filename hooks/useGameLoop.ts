@@ -93,7 +93,8 @@ export function useGameLoop(config: GameLoopConfig = {}) {
     }
 
     // Only auto-advance if scene has no choices and has a next scene
-    if (!currentScene || !canAutoAdvance) {
+    // Don't auto-advance if scene requires acknowledgment
+    if (!currentScene || !canAutoAdvance || currentScene.requiresAcknowledgment) {
       setLoopState(s => ({ ...s, isWaitingToAdvance: false, autoAdvanceCountdown: 0 }));
       return;
     }
