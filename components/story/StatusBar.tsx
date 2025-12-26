@@ -42,7 +42,7 @@ const StatusBar: React.FC<StatusBarProps> = ({
           >
             <i className="fas fa-bars" />
           </button>
-          <span className="text-gray-600 text-sm font-mono">
+          <span className="text-gray-400 text-sm font-mono leading-tight max-w-[120px] sm:max-w-none">
             {currentScene?.title || 'FUND WARS'}
           </span>
         </div>
