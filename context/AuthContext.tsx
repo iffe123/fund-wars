@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth, googleProvider } from '../services/firebase';
-import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { signInWithPopup, signOut, onAuthStateChanged, User, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { loadGoogleSignIn } from '../services/googleAuth';
 
 interface AuthContextType {
@@ -10,6 +10,8 @@ interface AuthContextType {
   googleSdkReady: boolean;
   googleSdkError: string | null;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUpWithEmail: (email: string, password: string, displayName?: string) => Promise<{ success: boolean; error?: string }>;
   signInAsGuest: () => void;
   logout: () => Promise<void>;
 }
@@ -56,6 +58,49 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } else {
           alert(`Login Failed: ${error.message}`);
       }
+    }
+  };
+
+  const signInWithEmail = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    if (!auth) {
+      return { success: false, error: "Firebase is not configured. Please use Guest Access." };
+    }
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      return { success: true };
+    } catch (error: any) {
+      console.error("Error signing in with email", error);
+      const errorMessages: Record<string, string> = {
+        'auth/invalid-email': 'Invalid email address.',
+        'auth/user-disabled': 'This account has been disabled.',
+        'auth/user-not-found': 'No account found with this email.',
+        'auth/wrong-password': 'Incorrect password.',
+        'auth/invalid-credential': 'Invalid email or password.',
+        'auth/too-many-requests': 'Too many attempts. Please try again later.',
+      };
+      return { success: false, error: errorMessages[error.code] || error.message };
+    }
+  };
+
+  const signUpWithEmail = async (email: string, password: string, displayName?: string): Promise<{ success: boolean; error?: string }> => {
+    if (!auth) {
+      return { success: false, error: "Firebase is not configured. Please use Guest Access." };
+    }
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      if (displayName && userCredential.user) {
+        await updateProfile(userCredential.user, { displayName });
+      }
+      return { success: true };
+    } catch (error: any) {
+      console.error("Error signing up with email", error);
+      const errorMessages: Record<string, string> = {
+        'auth/email-already-in-use': 'An account with this email already exists.',
+        'auth/invalid-email': 'Invalid email address.',
+        'auth/operation-not-allowed': 'Email/password accounts are not enabled.',
+        'auth/weak-password': 'Password should be at least 6 characters.',
+      };
+      return { success: false, error: errorMessages[error.code] || error.message };
     }
   };
 
@@ -127,7 +172,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   return (
-    <AuthContext.Provider value={{ currentUser, loading, googleSdkReady, googleSdkError, signInWithGoogle, signInAsGuest, logout }}>
+    <AuthContext.Provider value={{ currentUser, loading, googleSdkReady, googleSdkError, signInWithGoogle, signInWithEmail, signUpWithEmail, signInAsGuest, logout }}>
       {children}
     </AuthContext.Provider>
   );

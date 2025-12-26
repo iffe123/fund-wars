@@ -7,7 +7,7 @@
  * - Current flags/story state
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useStoryEngine } from '../../contexts/StoryEngineContext';
 import type { NPCRelationship, PlayerStats } from '../../types/storyEngine';
 
@@ -23,6 +23,10 @@ type DrawerTab = 'stats' | 'relationships' | 'journal';
 const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose }) => {
   const { game, getRelationship } = useStoryEngine();
   const [activeTab, setActiveTab] = useState<DrawerTab>('stats');
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartY = useRef<number | null>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
 
   // Close on escape
   useEffect(() => {
@@ -34,6 +38,86 @@ const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose }) => {
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
+
+  // Reset drag offset when drawer opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setDragOffset(0);
+      setIsDragging(false);
+    }
+  }, [isOpen]);
+
+  // Touch handlers for swipe-to-close
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    dragStartY.current = e.touches[0].clientY;
+    setIsDragging(true);
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (dragStartY.current === null) return;
+
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - dragStartY.current;
+
+    // Only allow dragging down (positive diff)
+    if (diff > 0) {
+      setDragOffset(diff);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+
+    // If dragged more than 100px down, close the drawer
+    if (dragOffset > 100) {
+      onClose();
+    }
+
+    setDragOffset(0);
+    dragStartY.current = null;
+  }, [dragOffset, onClose]);
+
+  // Mouse handlers for desktop drag-to-close
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    dragStartY.current = e.clientY;
+    setIsDragging(true);
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (dragStartY.current === null || !isDragging) return;
+
+    const currentY = e.clientY;
+    const diff = currentY - dragStartY.current;
+
+    if (diff > 0) {
+      setDragOffset(diff);
+    }
+  }, [isDragging]);
+
+  const handleMouseUp = useCallback(() => {
+    if (!isDragging) return;
+
+    setIsDragging(false);
+
+    if (dragOffset > 100) {
+      onClose();
+    }
+
+    setDragOffset(0);
+    dragStartY.current = null;
+  }, [dragOffset, isDragging, onClose]);
+
+  // Global mouse up handler
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        handleMouseUp();
+      }
+    };
+
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [isDragging, handleMouseUp]);
 
   if (!game) return null;
 
@@ -50,20 +134,33 @@ const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose }) => {
 
       {/* Drawer */}
       <div
+        ref={drawerRef}
         className={`
           fixed bottom-0 left-0 right-0 z-50
           bg-gray-900 border-t border-gray-700
-          transition-transform duration-300 ease-out
           max-h-[70vh] overflow-hidden
+          ${isDragging ? '' : 'transition-transform duration-300 ease-out'}
           ${isOpen ? 'translate-y-0' : 'translate-y-full'}
         `}
+        style={{
+          transform: isOpen ? `translateY(${dragOffset}px)` : 'translateY(100%)',
+        }}
+        onMouseMove={handleMouseMove}
       >
-        {/* Handle */}
-        <div className="flex justify-center py-2">
-          <button
-            onClick={onClose}
-            className="w-12 h-1 bg-gray-600 rounded-full hover:bg-gray-500 transition-colors"
-          />
+        {/* Drag Handle */}
+        <div
+          className="flex justify-center py-3 cursor-grab active:cursor-grabbing touch-none select-none"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+        >
+          <div className="w-12 h-1.5 bg-gray-500 rounded-full hover:bg-gray-400 transition-colors" />
+        </div>
+
+        {/* Swipe hint */}
+        <div className="text-center text-gray-600 text-[10px] -mt-1 mb-1 select-none">
+          Swipe down to close
         </div>
 
         {/* Tabs */}
