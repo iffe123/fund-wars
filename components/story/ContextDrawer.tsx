@@ -18,10 +18,10 @@ interface ContextDrawerProps {
   onClose: () => void;
 }
 
-type DrawerTab = 'stats' | 'relationships' | 'journal';
+type DrawerTab = 'stats' | 'relationships' | 'journal' | 'settings';
 
 const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose }) => {
-  const { game, getRelationship } = useStoryEngine();
+  const { game, getRelationship, resetGame } = useStoryEngine();
   const [activeTab, setActiveTab] = useState<DrawerTab>('stats');
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -183,6 +183,12 @@ const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose }) => {
             icon="fa-book"
             label="Journal"
           />
+          <TabButton
+            active={activeTab === 'settings'}
+            onClick={() => setActiveTab('settings')}
+            icon="fa-cog"
+            label="Settings"
+          />
         </div>
 
         {/* Content */}
@@ -190,6 +196,7 @@ const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose }) => {
           {activeTab === 'stats' && <StatsTab stats={game.stats} />}
           {activeTab === 'relationships' && <RelationshipsTab relationships={game.relationships} />}
           {activeTab === 'journal' && <JournalTab flags={game.flags} achievements={game.achievements} />}
+          {activeTab === 'settings' && <SettingsTab onResetGame={resetGame} onClose={onClose} />}
         </div>
       </div>
     </>
@@ -398,6 +405,102 @@ const RelationshipCard: React.FC<RelationshipCardProps> = ({ relationship }) => 
   );
 };
 
+interface SettingsTabProps {
+  onResetGame: () => void;
+  onClose: () => void;
+}
+
+const SettingsTab: React.FC<SettingsTabProps> = ({ onResetGame, onClose }) => {
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleReset = () => {
+    onResetGame();
+    onClose();
+    // Clear localStorage
+    localStorage.removeItem('fundwars_autosave');
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-sm font-mono text-gray-400 mb-3 flex items-center gap-2">
+          <i className="fas fa-cog" />
+          Game Settings
+        </h3>
+
+        {/* Reset Game Section */}
+        <div className="bg-gray-800/50 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+              <i className="fas fa-undo text-red-400" />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-gray-200 mb-1">Reset Game</div>
+              <p className="text-xs text-gray-500 mb-3">
+                Start over from the beginning. All progress, stats, relationships, and achievements will be lost.
+              </p>
+
+              {!showConfirm ? (
+                <button
+                  onClick={() => setShowConfirm(true)}
+                  className="
+                    px-4 py-2
+                    bg-red-900/30 hover:bg-red-900/50
+                    border border-red-700 hover:border-red-500
+                    text-red-400 font-mono text-sm
+                    transition-all duration-200
+                    rounded
+                  "
+                >
+                  Reset Game
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-red-400 text-sm font-semibold">
+                    Are you sure? This cannot be undone.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleReset}
+                      className="
+                        px-4 py-2
+                        bg-red-700 hover:bg-red-600
+                        text-white font-mono text-sm
+                        transition-all duration-200
+                        rounded
+                      "
+                    >
+                      Yes, Reset Everything
+                    </button>
+                    <button
+                      onClick={() => setShowConfirm(false)}
+                      className="
+                        px-4 py-2
+                        bg-gray-700 hover:bg-gray-600
+                        text-gray-300 font-mono text-sm
+                        transition-all duration-200
+                        rounded
+                      "
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Version Info */}
+      <div className="text-center pt-4 border-t border-gray-800">
+        <p className="text-gray-600 text-xs font-mono">FUND WARS v9.2.0</p>
+        <p className="text-gray-700 text-xs mt-1">A Private Equity Simulator</p>
+      </div>
+    </div>
+  );
+};
+
 interface JournalTabProps {
   flags: Set<string>;
   achievements: string[];
@@ -493,6 +596,16 @@ function formatFlagAsNarrative(flag: string): string {
     'TOOK_CREDIT': 'You took full credit for your discovery.',
     'STAYED_HUMBLE': 'You stayed humble about your success.',
     'SOLO_PLAYER': 'You chose to work alone.',
+    'LEAKED_CONFIDENTIAL_INFO': 'You offered to share confidential information.',
+    'CATASTROPHIC_MISTAKE': 'You made a catastrophic mistake.',
+    'CHOSE_TO_QUIT': 'You chose to walk away.',
+    'CHOSE_TO_STAY': 'You stayed to face the consequences.',
+    'SURVIVED_CATASTROPHE': 'You survived a near career-ending mistake.',
+    'ON_PROBATION': 'You are on probation at the firm.',
+    'INSULTED_STANLEY': 'You insulted Stanley Kowalski.',
+    'CHOSE_TO_RESIGN': 'You chose to resign quietly.',
+    'CHOSE_TO_GET_FIRED': 'You chose to be fired publicly.',
+    'LEGENDARY_FAILURE': 'You became a legend for all the wrong reasons.',
   };
 
   return narratives[flag] || flag.split('_').join(' ').toLowerCase();
