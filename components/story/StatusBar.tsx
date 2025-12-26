@@ -32,57 +32,54 @@ const StatusBar: React.FC<StatusBarProps> = ({
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-b border-gray-800 pt-[env(safe-area-inset-top)]">
-      <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
-        {/* Left: Scene/Chapter info */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onMenuClick}
-            className="text-gray-400 hover:text-white transition-colors p-2 -ml-2"
-            title="Menu"
-          >
-            <i className="fas fa-bars text-lg" />
-          </button>
-          <div className="flex flex-col leading-none">
-            <span className="text-white font-semibold text-sm sm:text-base tracking-wide max-w-[140px] sm:max-w-none truncate">
-              {currentScene?.title || 'FUND WARS'}
-            </span>
-          </div>
-        </div>
-
-        {/* Center: Resource bars */}
+      <div className="max-w-4xl mx-auto px-2 sm:px-4 py-2 flex items-center gap-2">
+        {/* Left: Menu button (fixed width) */}
         <button
-          onClick={onStatsClick}
-          className="flex items-center gap-4 hover:bg-gray-900/50 px-3 py-1 rounded transition-colors"
+          onClick={onMenuClick}
+          className="text-gray-400 hover:text-white transition-colors p-2 flex-shrink-0"
+          title="Menu"
         >
-          <ResourceBar
-            label="REP"
-            value={stats.reputation}
-            max={100}
-            color="green"
-            onHover={() => setShowTooltip('reputation')}
-            onLeave={() => setShowTooltip(null)}
-          />
-          <ResourceBar
-            label="STR"
-            value={stats.stress}
-            max={100}
-            color="red"
-            inverted
-            onHover={() => setShowTooltip('stress')}
-            onLeave={() => setShowTooltip(null)}
-          />
-          <MoneyDisplay value={stats.money} />
+          <i className="fas fa-bars text-lg" />
         </button>
 
-        {/* Right: Quick actions */}
-        <div className="flex items-center gap-2">
+        {/* Center: Title + Resource bars (scrollable on narrow screens) */}
+        <div className="flex-1 overflow-x-auto scrollbar-hide">
           <button
-            className="text-gray-500 hover:text-gray-300 transition-colors p-1"
-            title="Settings"
+            onClick={onStatsClick}
+            className="flex items-center gap-3 sm:gap-4 hover:bg-gray-900/50 px-2 sm:px-3 py-1 rounded transition-colors min-w-max"
           >
-            <i className="fas fa-cog text-sm" />
+            {/* Scene title - hidden on very small screens to prioritize stats */}
+            <span className="text-white font-semibold text-sm tracking-wide max-w-[100px] truncate hidden sm:block">
+              {currentScene?.title || 'FUND WARS'}
+            </span>
+            <ResourceBar
+              label="REP"
+              value={stats.reputation}
+              max={100}
+              color="green"
+              onHover={() => setShowTooltip('reputation')}
+              onLeave={() => setShowTooltip(null)}
+            />
+            <ResourceBar
+              label="STR"
+              value={stats.stress}
+              max={100}
+              color="red"
+              inverted
+              onHover={() => setShowTooltip('stress')}
+              onLeave={() => setShowTooltip(null)}
+            />
+            <MoneyDisplay value={stats.money} />
           </button>
         </div>
+
+        {/* Right: Settings (fixed width) */}
+        <button
+          className="text-gray-500 hover:text-gray-300 transition-colors p-2 flex-shrink-0"
+          title="Settings"
+        >
+          <i className="fas fa-cog text-sm" />
+        </button>
       </div>
 
       {/* Expanded details */}

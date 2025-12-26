@@ -7,10 +7,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStoryEngine, StoryEngineProvider } from '../../contexts/StoryEngineContext';
+import { AuthProvider, useAuth } from '../../context/AuthContext';
 import TitleScreen from './TitleScreen';
 import ChapterSelect from './ChapterSelect';
 import StoryScene from './StoryScene';
 import CharacterCreate from './CharacterCreate';
+import LoginScreen from '../LoginScreen';
 
 type GameScreen = 'title' | 'character_create' | 'chapter_select' | 'playing' | 'chapter_complete';
 
@@ -288,12 +290,48 @@ const ChapterCompleteScreen: React.FC<ChapterCompleteScreenProps> = ({ onContinu
   );
 };
 
-// Main export with provider
-const StoryGame: React.FC = () => {
+// Auth wrapper component that checks for login
+const AuthenticatedGame: React.FC = () => {
+  const { currentUser, loading } = useAuth();
+
+  // Show loading spinner while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-green-400 font-mono text-xl animate-pulse mb-4">
+            INITIALIZING...
+          </div>
+          <div className="w-48 h-1 bg-gray-800 rounded overflow-hidden mx-auto">
+            <div
+              className="h-full bg-green-500 animate-pulse"
+              style={{ width: '60%' }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login screen if not authenticated
+  if (!currentUser) {
+    return <LoginScreen />;
+  }
+
+  // Show the game if authenticated
   return (
     <StoryEngineProvider>
       <StoryGameInner />
     </StoryEngineProvider>
+  );
+};
+
+// Main export with auth provider
+const StoryGame: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AuthenticatedGame />
+    </AuthProvider>
   );
 };
 
