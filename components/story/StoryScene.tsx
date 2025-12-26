@@ -153,6 +153,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
     <div className="min-h-screen bg-black text-gray-100 flex flex-col">
       {/* Status Bar */}
       <StatusBar
+        onMenuClick={() => setIsDrawerOpen(true)}
         onStatsClick={() => setShowStats(!showStats)}
         expanded={showStats}
       />
