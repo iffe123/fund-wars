@@ -25,6 +25,7 @@ interface ConsequenceLine {
   text: string;
   icon: string;
   color: string;
+  value?: string; // The actual stat change (e.g., "+5", "-10")
 }
 
 const ConsequenceAnimator: React.FC<ConsequenceAnimatorProps> = ({
@@ -52,15 +53,15 @@ const ConsequenceAnimator: React.FC<ConsequenceAnimatorProps> = ({
         if (!value) return;
 
         const isPositive = value > 0;
-        const statLabels: Record<string, { pos: string; neg: string; icon: string }> = {
-          reputation: { pos: 'Your reputation grows', neg: 'Your reputation suffers', icon: 'fa-star' },
-          stress: { pos: 'The pressure builds', neg: 'You feel more at ease', icon: 'fa-brain' },
-          ethics: { pos: 'You stayed true to yourself', neg: 'Your conscience whispers', icon: 'fa-scale-balanced' },
-          dealcraft: { pos: 'Your deal instincts sharpen', neg: 'You feel less confident', icon: 'fa-handshake' },
-          politics: { pos: 'You learn to play the game', neg: 'Office politics confuse you', icon: 'fa-chess' },
+        const statLabels: Record<string, { pos: string; neg: string; icon: string; label: string }> = {
+          reputation: { pos: 'Your reputation grows', neg: 'Your reputation suffers', icon: 'fa-star', label: 'REP' },
+          stress: { pos: 'The pressure builds', neg: 'You feel more at ease', icon: 'fa-brain', label: 'STR' },
+          ethics: { pos: 'You stayed true to yourself', neg: 'Your conscience whispers', icon: 'fa-scale-balanced', label: 'ETH' },
+          dealcraft: { pos: 'Your deal instincts sharpen', neg: 'You feel less confident', icon: 'fa-handshake', label: 'DEAL' },
+          politics: { pos: 'You learn to play the game', neg: 'Office politics confuse you', icon: 'fa-chess', label: 'POL' },
         };
 
-        const label = statLabels[stat] || { pos: `${stat} increased`, neg: `${stat} decreased`, icon: 'fa-chart-line' };
+        const label = statLabels[stat] || { pos: `${stat} increased`, neg: `${stat} decreased`, icon: 'fa-chart-line', label: stat.toUpperCase().slice(0, 4) };
 
         lines.push({
           id: `stat-${stat}`,
@@ -70,6 +71,7 @@ const ConsequenceAnimator: React.FC<ConsequenceAnimatorProps> = ({
           color: stat === 'stress'
             ? (isPositive ? 'text-red-400' : 'text-green-400')
             : (isPositive ? 'text-green-400' : 'text-red-400'),
+          value: `${isPositive ? '+' : ''}${value} ${label.label}`,
         });
       });
     }
@@ -81,10 +83,13 @@ const ConsequenceAnimator: React.FC<ConsequenceAnimatorProps> = ({
         id: 'money',
         type: 'money',
         text: isPositive
-          ? `You pocket $${effects.money.toLocaleString()}`
-          : `You spend $${Math.abs(effects.money).toLocaleString()}`,
+          ? `You pocket some cash`
+          : `You spend some money`,
         icon: 'fa-dollar-sign',
         color: isPositive ? 'text-green-400' : 'text-yellow-500',
+        value: isPositive
+          ? `+$${effects.money.toLocaleString()}`
+          : `-$${Math.abs(effects.money).toLocaleString()}`,
       });
     }
 
@@ -111,6 +116,7 @@ const ConsequenceAnimator: React.FC<ConsequenceAnimatorProps> = ({
           text: `${capitalizeFirst(rel.npcId)} ${verb}${rel.memory ? `. They'll remember: "${rel.memory}"` : ''}`,
           icon: isPositive ? 'fa-heart' : 'fa-heart-crack',
           color: isPositive ? 'text-pink-400' : 'text-gray-400',
+          value: `${isPositive ? '+' : ''}${rel.change}`,
         });
       });
     }
@@ -167,7 +173,7 @@ const ConsequenceAnimator: React.FC<ConsequenceAnimatorProps> = ({
   }
 
   return (
-    <div className={`consequence-animator space-y-2 ${className}`}>
+    <div className={`consequence-animator ${className}`}>
       {visibleLines.map((line, index) => (
         <ConsequenceLineItem
           key={line.id}
@@ -188,14 +194,22 @@ const ConsequenceLineItem: React.FC<ConsequenceLineItemProps> = ({ line, isNew }
   return (
     <div
       className={`
-        flex items-center gap-3 px-4 py-2
+        flex items-center justify-between gap-3 px-4 py-3
         ${line.color}
-        ${isNew ? 'animate-slide-in' : 'opacity-70'}
+        ${isNew ? 'animate-slide-in' : 'opacity-80'}
         transition-opacity duration-300
+        bg-black/30 rounded-md mb-1
       `}
     >
-      <i className={`fas ${line.icon} w-5 text-center`} />
-      <span className="text-sm">{line.text}</span>
+      <div className="flex items-center gap-3">
+        <i className={`fas ${line.icon} w-5 text-center text-lg`} />
+        <span className="text-sm">{line.text}</span>
+      </div>
+      {line.value && (
+        <span className="font-mono font-bold text-base whitespace-nowrap">
+          {line.value}
+        </span>
+      )}
     </div>
   );
 };
