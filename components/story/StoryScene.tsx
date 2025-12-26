@@ -56,6 +56,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
     setTextComplete(false);
     setPendingEffects(null);
     setShowEffects(false);
+    setPendingChoice(null);
 
     // Scroll to top on scene change
     sceneRef.current?.scrollTo(0, 0);
@@ -75,22 +76,19 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
     setTextComplete(true);
   }, []);
 
+  // Store the pending choice while showing effects
+  const [pendingChoice, setPendingChoice] = useState<Choice | null>(null);
+
   const handleChoiceClick = useCallback(
     (choice: Choice) => {
       if (!choice || state.isTransitioning) return;
 
-      // Show effects animation
+      // Show effects animation and wait for user acknowledgment
       if (choice.effects) {
         setPendingEffects(choice.effects);
+        setPendingChoice(choice);
         setShowEffects(true);
-
-        // Make the choice after effects are shown
-        setTimeout(() => {
-          onChoiceSelect?.(choice);
-          makeChoice(choice);
-          setShowEffects(false);
-          setPendingEffects(null);
-        }, choice.effects.relationships?.length || choice.effects.stats ? 1500 : 500);
+        // Don't auto-advance - wait for user to click Continue
       } else {
         onChoiceSelect?.(choice);
         makeChoice(choice);
@@ -98,6 +96,17 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
     },
     [makeChoice, onChoiceSelect, state.isTransitioning]
   );
+
+  // Handle continuing after viewing consequences
+  const handleConsequenceContinue = useCallback(() => {
+    if (pendingChoice) {
+      onChoiceSelect?.(pendingChoice);
+      makeChoice(pendingChoice);
+      setShowEffects(false);
+      setPendingEffects(null);
+      setPendingChoice(null);
+    }
+  }, [pendingChoice, onChoiceSelect, makeChoice]);
 
   const handleContinue = useCallback(() => {
     if (canAutoAdvance && !state.isTransitioning) {
@@ -108,23 +117,28 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
   const handleKeyPress = useCallback(
     (e: KeyboardEvent) => {
       // Number keys for choices
-      if (e.key >= '1' && e.key <= '9' && showChoices) {
+      if (e.key >= '1' && e.key <= '9' && showChoices && !showEffects) {
         const index = parseInt(e.key) - 1;
         if (availableChoices[index]?.available && !state.isTransitioning) {
           handleChoiceClick(availableChoices[index]);
         }
       }
 
-      // Space or Enter to continue or skip
-      if ((e.key === ' ' || e.key === 'Enter') && !showChoices) {
-        if (!textComplete) {
-          setTextComplete(true);
-        } else if (canAutoAdvance) {
-          skipAutoAdvance();
+      // Space or Enter to continue viewing consequences or skip text
+      if (e.key === ' ' || e.key === 'Enter') {
+        // Continue past consequences
+        if (showEffects && pendingChoice) {
+          handleConsequenceContinue();
+        } else if (!showChoices) {
+          if (!textComplete) {
+            setTextComplete(true);
+          } else if (canAutoAdvance) {
+            skipAutoAdvance();
+          }
         }
       }
     },
-    [showChoices, availableChoices, textComplete, canAutoAdvance, handleChoiceClick, skipAutoAdvance, state.isTransitioning]
+    [showChoices, showEffects, availableChoices, textComplete, canAutoAdvance, handleChoiceClick, skipAutoAdvance, state.isTransitioning, pendingChoice, handleConsequenceContinue]
   );
 
   // Keyboard controls
@@ -212,11 +226,35 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
 
           {/* Consequence Animation */}
           {showEffects && pendingEffects && (
-            <div className="mt-6 border-l-4 border-amber-500/50 pl-6">
-              <ConsequenceAnimator
-                effects={pendingEffects}
-                delay={600}
-              />
+            <div className="mt-6 p-4 bg-slate-900/80 border border-amber-500/50 rounded-lg animate-fade-in">
+              <div className="text-amber-400 text-sm font-mono mb-3 flex items-center gap-2">
+                <i className="fas fa-bolt" />
+                CONSEQUENCES
+              </div>
+              <div className="border-l-4 border-amber-500/50 pl-4">
+                <ConsequenceAnimator
+                  effects={pendingEffects}
+                  delay={500}
+                />
+              </div>
+              <button
+                onClick={handleConsequenceContinue}
+                className="
+                  mt-6 w-full py-3 px-6
+                  bg-amber-900/30 hover:bg-amber-900/50
+                  border border-amber-600 hover:border-amber-400
+                  text-amber-400 font-mono
+                  transition-all duration-200
+                  flex items-center justify-center gap-2
+                  group
+                "
+              >
+                <span>Continue</span>
+                <i className="fas fa-arrow-right text-sm" />
+                <span className="text-amber-600 text-xs ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  [SPACE]
+                </span>
+              </button>
             </div>
           )}
 
