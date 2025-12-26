@@ -160,8 +160,11 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
       {/* Main Content */}
       <div
         ref={sceneRef}
-        className="flex-1 overflow-y-auto pt-16 pb-4"
-        style={{ WebkitOverflowScrolling: 'touch' }}
+        className="flex-1 overflow-y-auto pb-4"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          paddingTop: 'calc(4rem + env(safe-area-inset-top, 0px))'
+        }}
       >
         <div className="max-w-3xl mx-auto p-6">
           {/* Scene type indicator */}

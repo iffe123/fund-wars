@@ -31,7 +31,7 @@ const StatusBar: React.FC<StatusBarProps> = ({
   const { stats } = game;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-b border-gray-800">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-b border-gray-800 pt-[env(safe-area-inset-top)]">
       <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
         {/* Left: Scene/Chapter info */}
         <div className="flex items-center gap-3">
