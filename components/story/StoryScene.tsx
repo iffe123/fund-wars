@@ -45,6 +45,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
   const [textComplete, setTextComplete] = useState(false);
   const [pendingEffects, setPendingEffects] = useState<ChoiceEffects | null>(null);
   const [showEffects, setShowEffects] = useState(false);
+  const [isFadingOut, setIsFadingOut] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
 
@@ -56,6 +57,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
     setTextComplete(false);
     setPendingEffects(null);
     setShowEffects(false);
+    setIsFadingOut(false);
     setPendingChoice(null);
 
     // Scroll to top on scene change
@@ -99,14 +101,21 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
 
   // Handle continuing after viewing consequences
   const handleConsequenceContinue = useCallback(() => {
-    if (pendingChoice) {
-      onChoiceSelect?.(pendingChoice);
-      makeChoice(pendingChoice);
-      setShowEffects(false);
-      setPendingEffects(null);
-      setPendingChoice(null);
+    if (pendingChoice && !isFadingOut) {
+      // Start fade-out animation
+      setIsFadingOut(true);
+
+      // Wait for fade-out animation to complete before transitioning
+      setTimeout(() => {
+        onChoiceSelect?.(pendingChoice);
+        makeChoice(pendingChoice);
+        setShowEffects(false);
+        setPendingEffects(null);
+        setPendingChoice(null);
+        setIsFadingOut(false);
+      }, 800); // Allow user to see consequences during fade-out
     }
-  }, [pendingChoice, onChoiceSelect, makeChoice]);
+  }, [pendingChoice, onChoiceSelect, makeChoice, isFadingOut]);
 
   const handleContinue = useCallback(() => {
     if (canAutoAdvance && !state.isTransitioning) {
@@ -226,7 +235,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
 
           {/* Consequence Animation */}
           {showEffects && pendingEffects && (
-            <div className="mt-6 p-4 bg-slate-900/80 border border-amber-500/50 rounded-lg animate-fade-in">
+            <div className={`mt-6 p-4 bg-slate-900/80 border border-amber-500/50 rounded-lg ${isFadingOut ? 'animate-fade-out' : 'animate-fade-in'}`}>
               <div className="text-amber-400 text-sm font-mono mb-3 flex items-center gap-2">
                 <i className="fas fa-bolt" />
                 CONSEQUENCES
@@ -239,7 +248,8 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
               </div>
               <button
                 onClick={handleConsequenceContinue}
-                className="
+                disabled={isFadingOut}
+                className={`
                   mt-6 w-full py-3 px-6
                   bg-amber-900/30 hover:bg-amber-900/50
                   border border-amber-600 hover:border-amber-400
@@ -247,13 +257,16 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
                   transition-all duration-200
                   flex items-center justify-center gap-2
                   group
-                "
+                  ${isFadingOut ? 'opacity-50 cursor-not-allowed' : ''}
+                `}
               >
-                <span>Continue</span>
-                <i className="fas fa-arrow-right text-sm" />
-                <span className="text-amber-600 text-xs ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  [SPACE]
-                </span>
+                <span>{isFadingOut ? 'Loading...' : 'Continue'}</span>
+                <i className={`fas ${isFadingOut ? 'fa-spinner fa-spin' : 'fa-arrow-right'} text-sm`} />
+                {!isFadingOut && (
+                  <span className="text-amber-600 text-xs ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    [SPACE]
+                  </span>
+                )}
               </button>
             </div>
           )}
@@ -386,6 +399,21 @@ const styles = `
 
 .animate-fade-in {
   animation: fade-in 0.4s ease-out forwards;
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.animate-fade-out {
+  animation: fade-out 0.8s ease-out forwards;
 }
 
 @keyframes pulse-subtle {
