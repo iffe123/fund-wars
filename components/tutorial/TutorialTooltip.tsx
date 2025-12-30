@@ -1,3 +1,13 @@
+/**
+ * @deprecated Use RPG event system in onboardingContent.ts instead
+ * This legacy tutorial component is being phased out in favor of the
+ * event-driven onboarding system. New features should use StoryEvent
+ * and the ONBOARDING_EVENTS array.
+ *
+ * Migration: All tutorial steps are now handled by ONBOARDING_EVENTS.
+ * See constants/onboardingContent.ts for the new tutorial flow.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Z_INDEX } from '../../constants/zIndex';
