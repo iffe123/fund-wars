@@ -147,19 +147,40 @@ const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose }) => {
         }}
         onMouseMove={handleMouseMove}
       >
-        {/* Drag Handle */}
-        <div
-          className="flex justify-center py-3 cursor-grab active:cursor-grabbing touch-none select-none"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onMouseDown={handleMouseDown}
-        >
-          <div className="w-12 h-1.5 bg-gray-500 rounded-full hover:bg-gray-400 transition-colors" />
+        {/* Drag Handle & Close Button */}
+        <div className="relative">
+          <div
+            className="flex justify-center py-3 cursor-grab active:cursor-grabbing touch-none select-none"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleMouseDown}
+          >
+            <div className="w-12 h-1.5 bg-gray-500 rounded-full hover:bg-gray-400 transition-colors" />
+          </div>
+
+          {/* Close button for desktop */}
+          <button
+            onClick={onClose}
+            className="
+              hidden md:flex
+              absolute right-4 top-1/2 -translate-y-1/2
+              items-center gap-2 px-3 py-1.5
+              bg-gray-800 hover:bg-gray-700
+              border border-gray-600 hover:border-gray-500
+              text-gray-400 hover:text-gray-200
+              text-xs font-mono rounded
+              transition-all duration-200
+            "
+            aria-label="Close drawer"
+          >
+            <span>Close</span>
+            <i className="fas fa-times" />
+          </button>
         </div>
 
-        {/* Swipe hint */}
-        <div className="text-center text-gray-600 text-[10px] -mt-1 mb-1 select-none">
+        {/* Swipe hint - mobile only */}
+        <div className="md:hidden text-center text-gray-600 text-[10px] -mt-1 mb-1 select-none">
           Swipe down to close
         </div>
 
