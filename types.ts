@@ -241,6 +241,18 @@ export interface PortfolioCompany {
   // NEW: Timeline
   nextBoardMeetingWeek: number;  // Game week of next board meeting
   lastFinancialUpdate: number;   // Game week of last update
+
+  // AI-Powered Due Diligence Insights
+  ddInsights?: DDInsight[];
+}
+
+// Due Diligence Insight from AI analysis
+export interface DDInsight {
+  type: 'RED_FLAG' | 'OPPORTUNITY' | 'WILDCARD';
+  title: string;
+  description: string;
+  probability: number;  // 0-100
+  impact: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
 export interface PortfolioAction {
