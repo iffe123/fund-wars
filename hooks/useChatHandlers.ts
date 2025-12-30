@@ -10,11 +10,9 @@ interface ChatHandlersDependencies {
   playerStats: PlayerStats | null;
   activeScenario: Scenario | null;
   npcs: NPC[];
-  tutorialStep: number;
   playSfx: (sfx: string) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   sendNpcMessage: (npcId: string, message: string, sender?: 'player' | 'npc', senderName?: string) => void;
-  setTutorialStep: (step: number) => void;
   updatePlayerStats: (changes: StatChanges) => void;
 }
 
@@ -36,11 +34,9 @@ export const useChatHandlers = (deps: ChatHandlersDependencies): UseChatHandlers
     playerStats,
     activeScenario,
     npcs,
-    tutorialStep,
     playSfx,
     addToast,
     sendNpcMessage,
-    setTutorialStep,
     updatePlayerStats,
   } = deps;
 
@@ -95,11 +91,6 @@ export const useChatHandlers = (deps: ChatHandlersDependencies): UseChatHandlers
       try {
         const response = await getNPCResponse(msg, targetNPC, updatedHistory, playerStats, activeScenario);
 
-        // Tutorial step progression
-        if (tutorialStep === 5 && /patent/i.test(msg)) {
-          setTutorialStep(6);
-        }
-
         // Handle game state updates from AI tools
         if (response.functionCalls) {
           response.functionCalls.forEach(call => {
@@ -140,11 +131,9 @@ export const useChatHandlers = (deps: ChatHandlersDependencies): UseChatHandlers
     npcs,
     playerStats,
     activeScenario,
-    tutorialStep,
     playSfx,
     addToast,
     sendNpcMessage,
-    setTutorialStep,
     updatePlayerStats,
   ]);
 

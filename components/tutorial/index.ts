@@ -1,3 +1,3 @@
-export { default as TutorialTooltip, TUTORIAL_STEPS } from './TutorialTooltip';
-export { default as TutorialHighlight } from './TutorialHighlight';
-export type { TutorialStep } from './TutorialTooltip';
+// Legacy tutorial components removed - now using RPG event-driven onboarding
+// See constants/onboardingContent.ts for the new onboarding system
+export {};

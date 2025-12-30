@@ -15,13 +15,11 @@ import { logEvent } from '../services/analytics';
 
 interface GameFlowDependencies {
   playerStats: PlayerStats | null;
-  tutorialStep: number;
   activeDeals: any[];
 
   // Context actions
   setGamePhase: (phase: GamePhase) => void;
   updatePlayerStats: (changes: any) => void;
-  setTutorialStep: (step: number) => void;
   advanceTime: () => void;
   addLogEntry: (entry: string) => void;
   generateNewDeals: () => void;
@@ -33,7 +31,6 @@ interface GameFlowDependencies {
   setActiveTab: (tab: 'WORKSPACE' | 'ASSETS' | 'FOUNDER' | 'DEALS') => void;
   setActiveMobileTab: (tab: 'COMMS' | 'DESK' | 'NEWS' | 'MENU') => void;
   setBootComplete: (complete: boolean) => void;
-  setShowPostTutorialGuide: (show: boolean) => void;
 
   // Utilities
   playSfx: (sfx: string) => void;
@@ -62,11 +59,9 @@ interface UseGameFlowReturn {
 export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
   const {
     playerStats,
-    tutorialStep,
     activeDeals,
     setGamePhase,
     updatePlayerStats,
-    setTutorialStep,
     advanceTime,
     addLogEntry,
     generateNewDeals,
@@ -76,7 +71,6 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
     setActiveTab,
     setActiveMobileTab,
     setBootComplete,
-    setShowPostTutorialGuide,
     playSfx,
     addToast,
     clearToasts,
@@ -138,11 +132,10 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
       portfolio: initialPortfolio,
     });
 
-    setGamePhase('LIFE_MANAGEMENT'); // Start in workspace, but with tutorial rail
+    setGamePhase('LIFE_MANAGEMENT'); // Start in workspace with RPG event-driven onboarding
     setActiveTab('WORKSPACE'); // Ensure we are on the workspace tab
-    setTutorialStep(1); // Start Tutorial
     setBootComplete(true);
-    logEvent('tutorial_start');
+    logEvent('game_start');
     addLogEntry('INIT: Career Sequence Started. Role: Analyst.');
     appendChatMessage({
       sender: 'system',
@@ -153,7 +146,6 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
     updatePlayerStats,
     setGamePhase,
     setActiveTab,
-    setTutorialStep,
     setBootComplete,
     addLogEntry,
     appendChatMessage,
@@ -241,11 +233,6 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
   const handleAdvanceTime = useCallback(() => {
     if (!playerStats) return;
 
-    if (tutorialStep > 0) {
-      addToast('COMPLETE TUTORIAL FIRST', 'error');
-      return;
-    }
-
     if (playerStats.loanBalance > 0) {
       // Clamp loan rate to reasonable bounds (5% to 50% APR)
       const activeRate = Math.max(0.05, Math.min(0.5, playerStats.loanRate || 0.28));
@@ -278,7 +265,6 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
     startWeekTransition();
   }, [
     playerStats,
-    tutorialStep,
     activeDeals,
     updatePlayerStats,
     advanceTime,

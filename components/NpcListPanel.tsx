@@ -6,29 +6,20 @@ interface NpcListPanelProps {
   npcs: NPC[];
   selectedNpcId: string;
   onSelectNpc: (npcId: string) => void;
-  tutorialStep: number;
-  onTutorialAdvance?: () => void;
 }
 
 const NpcListPanel: React.FC<NpcListPanelProps> = memo(({
   npcs,
   selectedNpcId,
   onSelectNpc,
-  tutorialStep,
-  onTutorialAdvance
 }) => {
   const handleNpcClick = (npc: NPC) => {
     onSelectNpc(npc.id);
-    // Tutorial Logic: If we click Sarah in Step 4, advance
-    if (tutorialStep === 4 && npc.id === 'sarah' && onTutorialAdvance) {
-      onTutorialAdvance();
-    }
   };
 
   return (
     <TerminalPanel
       title="COMMS"
-      data-tutorial={tutorialStep === 4 ? 'comms-tab' : undefined}
       className="h-full flex flex-col"
     >
       <div className="flex-1 bg-black">
