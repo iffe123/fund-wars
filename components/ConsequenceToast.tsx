@@ -81,7 +81,7 @@ const ConsequenceToast: React.FC<ConsequenceToastProps> = ({
   immediateResponse,
   epilogue,
   onDismiss,
-  autoDismissMs = 8000,
+  autoDismissMs = 12000, // 12 seconds - give players time to read consequences
 }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [showDetails, setShowDetails] = useState(false);

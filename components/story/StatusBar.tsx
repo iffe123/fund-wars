@@ -16,12 +16,15 @@ interface StatusBarProps {
   onMenuClick?: () => void;
   /** Callback when stats are clicked (to show drawer) */
   onStatsClick?: () => void;
+  /** Callback when settings is clicked */
+  onSettingsClick?: () => void;
 }
 
 const StatusBar: React.FC<StatusBarProps> = ({
   expanded = false,
   onMenuClick,
   onStatsClick,
+  onSettingsClick,
 }) => {
   const { game, currentScene } = useStoryEngine();
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
@@ -75,6 +78,7 @@ const StatusBar: React.FC<StatusBarProps> = ({
 
         {/* Right: Settings (fixed width) */}
         <button
+          onClick={onSettingsClick}
           className="text-gray-500 hover:text-gray-300 transition-colors p-2 flex-shrink-0"
           title="Settings"
         >
