@@ -39,7 +39,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
     isWaitingToAdvance,
     autoAdvanceCountdown,
     skipAutoAdvance,
-  } = useGameLoop({ autoAdvanceDelay: 3000 });
+  } = useGameLoop({ autoAdvanceDelay: 5000 }); // 5 seconds to read
 
   const [showChoices, setShowChoices] = useState(false);
   const [textComplete, setTextComplete] = useState(false);
@@ -47,6 +47,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
   const [showEffects, setShowEffects] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<'stats' | 'relationships' | 'journal' | 'settings'>('stats');
   const [showStats, setShowStats] = useState(false);
 
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -176,8 +177,15 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
     <div className="min-h-screen bg-black text-gray-100 flex flex-col">
       {/* Status Bar */}
       <StatusBar
-        onMenuClick={() => setIsDrawerOpen(true)}
+        onMenuClick={() => {
+          setDrawerTab('stats');
+          setIsDrawerOpen(true);
+        }}
         onStatsClick={() => setShowStats(!showStats)}
+        onSettingsClick={() => {
+          setDrawerTab('settings');
+          setIsDrawerOpen(true);
+        }}
         expanded={showStats}
       />
 
@@ -313,7 +321,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
                   <div
                     className="absolute bottom-0 left-0 h-1 bg-green-500/50 transition-all duration-1000"
                     style={{
-                      width: `${((3 - autoAdvanceCountdown) / 3) * 100}%`,
+                      width: `${((5 - autoAdvanceCountdown) / 5) * 100}%`,
                     }}
                   />
                 )}
@@ -358,7 +366,10 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
       <div className="border-t border-gray-800 p-3 bg-black">
         <div className="max-w-3xl mx-auto flex justify-between items-center text-xs font-mono text-gray-600">
           <button
-            onClick={() => setIsDrawerOpen(true)}
+            onClick={() => {
+              setDrawerTab('stats');
+              setIsDrawerOpen(true);
+            }}
             className="flex items-center gap-2 hover:text-gray-400 transition-colors"
           >
             <i className="fas fa-chevron-up" />
@@ -377,6 +388,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
       <ContextDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
+        initialTab={drawerTab}
       />
     </div>
   );

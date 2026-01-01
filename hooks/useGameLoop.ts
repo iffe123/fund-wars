@@ -20,8 +20,8 @@ interface GameLoopConfig {
 }
 
 const DEFAULT_CONFIG: GameLoopConfig = {
-  autoAdvanceDelay: 2000,
-  consequenceDelay: 800,
+  autoAdvanceDelay: 5000, // 5 seconds - give players time to read
+  consequenceDelay: 1200,  // Slightly longer for consequence animations
   autoAdvanceEnabled: true,
 };
 

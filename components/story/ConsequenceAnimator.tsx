@@ -30,7 +30,7 @@ interface ConsequenceLine {
 
 const ConsequenceAnimator: React.FC<ConsequenceAnimatorProps> = ({
   effects,
-  delay = 600,
+  delay = 800, // Increased from 600ms - give players time to read each line
   onComplete,
   className = '',
 }) => {

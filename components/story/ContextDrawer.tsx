@@ -10,19 +10,22 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useStoryEngine } from '../../contexts/StoryEngineContext';
 import type { NPCRelationship, PlayerStats } from '../../types/storyEngine';
+import { getAdvisorResponse, isGeminiApiConfigured } from '../../services/geminiService';
+
+type DrawerTab = 'stats' | 'relationships' | 'journal' | 'advisor' | 'settings';
 
 interface ContextDrawerProps {
   /** Whether the drawer is open */
   isOpen: boolean;
   /** Callback to close the drawer */
   onClose: () => void;
+  /** Initial tab to show when opened */
+  initialTab?: DrawerTab;
 }
 
-type DrawerTab = 'stats' | 'relationships' | 'journal' | 'settings';
-
-const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose }) => {
+const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose, initialTab = 'stats' }) => {
   const { game, getRelationship, resetGame } = useStoryEngine();
-  const [activeTab, setActiveTab] = useState<DrawerTab>('stats');
+  const [activeTab, setActiveTab] = useState<DrawerTab>(initialTab);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef<number | null>(null);
@@ -46,6 +49,13 @@ const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose }) => {
       setIsDragging(false);
     }
   }, [isOpen]);
+
+  // Update active tab when initialTab changes (e.g., opening directly to settings)
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   // Touch handlers for swipe-to-close
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -205,6 +215,12 @@ const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose }) => {
             label="Journal"
           />
           <TabButton
+            active={activeTab === 'advisor'}
+            onClick={() => setActiveTab('advisor')}
+            icon="fa-robot"
+            label="Advisor"
+          />
+          <TabButton
             active={activeTab === 'settings'}
             onClick={() => setActiveTab('settings')}
             icon="fa-cog"
@@ -217,6 +233,7 @@ const ContextDrawer: React.FC<ContextDrawerProps> = ({ isOpen, onClose }) => {
           {activeTab === 'stats' && <StatsTab stats={game.stats} />}
           {activeTab === 'relationships' && <RelationshipsTab relationships={game.relationships} />}
           {activeTab === 'journal' && <JournalTab flags={game.flags} achievements={game.achievements} />}
+          {activeTab === 'advisor' && <AdvisorTab stats={game.stats} />}
           {activeTab === 'settings' && <SettingsTab onResetGame={resetGame} onClose={onClose} />}
         </div>
       </div>
@@ -631,5 +648,203 @@ function formatFlagAsNarrative(flag: string): string {
 
   return narratives[flag] || flag.split('_').join(' ').toLowerCase();
 }
+
+// ============================================================================
+// AI ADVISOR TAB
+// ============================================================================
+
+interface AdvisorTabProps {
+  stats: PlayerStats;
+}
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+const AdvisorTab: React.FC<AdvisorTabProps> = ({ stats }) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isConfigured = isGeminiApiConfigured();
+
+  // Convert stats to format expected by geminiService
+  const convertedStats = {
+    ...stats,
+    level: 'ASSOCIATE' as const,
+    cash: stats.money,
+    reputation: stats.reputation,
+    stress: stats.stress,
+    loanBalance: 0,
+    loanRate: 0,
+    portfolio: [],
+    auditRisk: 0,
+    factionReputation: {
+      MANAGING_DIRECTORS: 50,
+      LIMITED_PARTNERS: 50,
+      REGULATORS: 50,
+      ANALYSTS: 50,
+      RIVALS: 50,
+    },
+    analystRating: stats.dealcraft,
+    knowledgeLog: [],
+    knowledgeFlags: [],
+    gameTime: { week: 1 },
+  };
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: input.trim(),
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      // Convert messages to history format
+      const history = messages.map(m => ({
+        sender: m.role === 'user' ? 'player' : 'advisor',
+        text: m.content,
+      }));
+
+      const response = await getAdvisorResponse(
+        userMessage.content,
+        history as any,
+        convertedStats as any,
+        null
+      );
+
+      const assistantMessage: ChatMessage = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: response,
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full min-h-[300px]">
+      {/* Header */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <i className="fas fa-robot text-green-400" />
+          <h3 className="text-sm font-mono text-green-400">AI Advisor</h3>
+          {isConfigured ? (
+            <span className="text-[10px] px-1.5 py-0.5 bg-green-900/30 text-green-400 rounded">ONLINE</span>
+          ) : (
+            <span className="text-[10px] px-1.5 py-0.5 bg-yellow-900/30 text-yellow-400 rounded">OFFLINE</span>
+          )}
+        </div>
+        <p className="text-xs text-gray-500">
+          Ask for advice on deals, strategy, or navigating office politics.
+        </p>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto space-y-3 mb-4 max-h-[200px]">
+        {messages.length === 0 && (
+          <div className="text-center py-6 text-gray-600">
+            <i className="fas fa-comments text-2xl mb-2" />
+            <p className="text-sm">No messages yet.</p>
+            <p className="text-xs mt-1">Try asking: "How should I approach this deal?"</p>
+          </div>
+        )}
+        {messages.map(message => (
+          <div
+            key={message.id}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`
+                max-w-[85%] rounded-lg px-3 py-2 text-sm
+                ${message.role === 'user'
+                  ? 'bg-green-900/30 text-green-100 border border-green-800'
+                  : 'bg-gray-800 text-gray-300 border border-gray-700'
+                }
+              `}
+            >
+              <div className="whitespace-pre-wrap">{message.content}</div>
+            </div>
+          </div>
+        ))}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-800 text-gray-400 rounded-lg px-3 py-2 text-sm border border-gray-700">
+              <i className="fas fa-spinner fa-spin mr-2" />
+              Thinking...
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask the advisor..."
+          className="
+            flex-1 bg-gray-800 border border-gray-700
+            text-gray-200 px-3 py-2 rounded
+            text-sm font-mono
+            focus:border-green-500 focus:outline-none
+            placeholder:text-gray-600
+          "
+          disabled={isLoading}
+        />
+        <button
+          onClick={handleSend}
+          disabled={isLoading || !input.trim()}
+          className="
+            px-4 py-2 bg-green-900/50 hover:bg-green-900
+            border border-green-700 hover:border-green-500
+            text-green-400 rounded
+            disabled:opacity-50 disabled:cursor-not-allowed
+            transition-all duration-200
+          "
+        >
+          <i className="fas fa-paper-plane" />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default ContextDrawer;
