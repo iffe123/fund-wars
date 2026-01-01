@@ -9,8 +9,7 @@ import FounderDashboard from './components/FounderDashboard';
 import SanityEffects from './components/SanityEffects';
 import { IntroSequence } from './components/intro';
 import SystemBoot from './components/SystemBoot';
-import { TutorialTooltip, TutorialHighlight, TUTORIAL_STEPS } from './components/tutorial';
-import PostTutorialGuide from './components/PostTutorialGuide';
+// Legacy tutorial components removed - now using RPG event-driven onboarding
 import PlayerStatsDisplay from './components/PlayerStats';
 import BottomNav from './components/BottomNav';
 import LoginScreen from './components/LoginScreen';
@@ -33,7 +32,7 @@ import { useWeekTransition } from './hooks/useWeekTransition';
 import { useAppUIState } from './hooks/useAppUIState';
 import { useAuctionFlow } from './hooks/useAuctionFlow';
 import { useChatHandlers } from './hooks/useChatHandlers';
-import { useTutorialEffects } from './hooks/useTutorialEffects';
+// useTutorialEffects removed - using RPG event-driven onboarding
 import { useGameFlow } from './hooks/useGameFlow';
 import CompetitiveAuctionModal, { AuctionResult } from './components/CompetitiveAuctionModal';
 import DealMarket from './components/DealMarket';
@@ -51,25 +50,14 @@ declare global {
   }
 }
 
-// Legacy tutorial steps text - keeping for backward compatibility during transition
-const TUTORIAL_STEPS_TEXT = [
-    "", // Step 0 (Inactive)
-    "Your desk awaits. Click [ASSETS] to see the deal Chad (your MD) just threw at you.", // Step 1
-    "PackFancy Inc. Click the row to open the Deal Memo.", // Step 2
-    "Revenue is flat. You need an edge. Click [ANALYZE] to dig deeper.", // Step 3
-    "Analysis found something. Meet SARAH in COMMS - she's your Senior Analyst.", // Step 4
-    "Ask Sarah about the patent she found.", // Step 5
-    "PATENT #8829 is real. Click [SUBMIT IOI] to lock in the deal.", // Step 6
-];
-
 // DEFAULT_CHAT moved to useChatHandlers hook
 
 const App: React.FC = () => {
   // Use Context
   const {
-    user, playerStats, npcs, activeScenario, gamePhase, difficulty, marketVolatility, tutorialStep, actionLog,
+    user, playerStats, npcs, activeScenario, gamePhase, difficulty, marketVolatility, actionLog,
     activities,
-    setGamePhase, updatePlayerStats, sendNpcMessage, setTutorialStep, advanceTime, addLogEntry, addActivity,
+    setGamePhase, updatePlayerStats, sendNpcMessage, advanceTime, addLogEntry, addActivity,
     rivalFunds, activeDeals, updateRivalFund, removeDeal, generateNewDeals, resetGame,
     // Living World System
     activeWarnings, activeDrama, activeCompanyEvent, eventQueue, pendingDecision,
@@ -96,7 +84,6 @@ const App: React.FC = () => {
     showActivityFeed,
     showPortfolioDashboard,
     showStatsModal,
-    showPostTutorialGuide,
     showTransparencyModal,
     hasSeenStatsTutorial,
     setActiveTab,
@@ -104,7 +91,6 @@ const App: React.FC = () => {
     setShowActivityFeed,
     setShowPortfolioDashboard,
     setShowStatsModal,
-    setShowPostTutorialGuide,
     setShowTransparencyModal,
     handleStatsClick,
     handleStatsModalClose,
@@ -132,11 +118,9 @@ const App: React.FC = () => {
     playerStats,
     activeScenario,
     npcs,
-    tutorialStep,
     playSfx,
     addToast,
     sendNpcMessage,
-    setTutorialStep,
     updatePlayerStats,
   });
 
@@ -172,11 +156,9 @@ const App: React.FC = () => {
     handleWarningActionWithNavigation,
   } = useGameFlow({
     playerStats,
-    tutorialStep,
     activeDeals,
     setGamePhase,
     updatePlayerStats,
-    setTutorialStep,
     advanceTime,
     addLogEntry,
     generateNewDeals,
@@ -186,7 +168,6 @@ const App: React.FC = () => {
     setActiveTab,
     setActiveMobileTab,
     setBootComplete,
-    setShowPostTutorialGuide,
     playSfx,
     addToast,
     clearToasts,
@@ -197,17 +178,7 @@ const App: React.FC = () => {
     startWeekTransition,
   });
 
-  // --- TUTORIAL EFFECTS (from useTutorialEffects hook) ---
-  const { handleTutorialStep5 } = useTutorialEffects({
-    tutorialStep,
-    activeTab,
-    activeMobileTab,
-    npcs,
-    setActiveTab,
-    setActiveMobileTab,
-    sendNpcMessage,
-    setTutorialStep,
-  });
+  // Legacy tutorial effects removed - now using RPG event-driven onboarding
 
   const currentScenario = activeScenario || SCENARIOS?.[0] || { id: 0, title: 'Loading...', description: '', choices: [], structureOptions: [] };
   const scenarioChoices = (currentScenario.choices && currentScenario.choices.length > 0)
@@ -259,14 +230,12 @@ const App: React.FC = () => {
       }
   }, [bootComplete, playAmbience]);
 
-  // Tutorial auto-navigation effects now handled by useTutorialEffects hook
-
-  // Ensure the market is live once the tutorial is cleared
+  // Ensure the market is live when ready (onboarding complete handled by RPG events)
   useEffect(() => {
-      if (tutorialStep === 0 && bootComplete && gamePhase === 'LIFE_MANAGEMENT' && activeDeals.length === 0) {
+      if (bootComplete && gamePhase === 'LIFE_MANAGEMENT' && activeDeals.length === 0) {
           generateNewDeals();
       }
-  }, [tutorialStep, bootComplete, gamePhase, activeDeals.length, generateNewDeals]);
+  }, [bootComplete, gamePhase, activeDeals.length, generateNewDeals]);
 
   // Dynamic news: refresh on each time tick (weekly advance)
   useEffect(() => {
@@ -315,7 +284,6 @@ const App: React.FC = () => {
   // handleSendMessageToAdvisor, handleSendMessageToNPC, handleNpcSelect -> useChatHandlers
   // handleStatsClick, handleStatsModalClose -> useAppUIState
   // handleConsultMachiavelli, handleWarningActionWithNavigation -> useGameFlow
-  // handleTutorialStep5 -> useTutorialEffects
 
   const handleChatBackToPortfolio = useCallback(() => {
       setShowPortfolioDashboard(true);
@@ -339,24 +307,12 @@ const App: React.FC = () => {
                   <PortfolioView
                       playerStats={playerStats}
                       onAction={(id, action) => {
-                          // Special logic for Submit IOI in tutorial
-                          if (tutorialStep === 6 && action.id === 'submit_ioi') {
-                              setTutorialStep(0); // END TUTORIAL
-                              setShowPostTutorialGuide(true); // Show guidance before scenario
-                              logEvent('tutorial_complete');
-                              appendChatMessage({ sender: 'system', text: "[SYSTEM_LOG] Tutorial Complete. First Deal IOI Submitted." });
-                          } else {
-                              handleStatChange(action.outcome.statChanges);
-                              addToast(action.outcome.logMessage, 'info');
-                              addLogEntry(action.outcome.logMessage);
-                              appendChatMessage({ sender: 'system', text: `[SYSTEM_LOG] Portfolio Action: ${action.text}` });
-                          }
+                          handleStatChange(action.outcome.statChanges);
+                          addToast(action.outcome.logMessage, 'info');
+                          addLogEntry(action.outcome.logMessage);
+                          appendChatMessage({ sender: 'system', text: `[SYSTEM_LOG] Portfolio Action: ${action.text}` });
                       }}
                       onBack={() => {
-                          if (tutorialStep > 0) {
-                              addToast('Complete the tutorial first!', 'error');
-                              return;
-                          }
                           setActiveTab('WORKSPACE');
                           playSfx('KEYPRESS');
                       }}
@@ -368,7 +324,7 @@ const App: React.FC = () => {
                           setActiveTab('FOUNDER');
                       }}
                       canAccessFounder={founderUnlocked}
-                      backDisabled={tutorialStep > 0}
+                      backDisabled={false}
                       onDiscuss={(company, advisorType) => {
                           // Map advisor type to NPC ID
                           const npcId = advisorType === 'sarah' ? 'sarah' : 'advisor';
@@ -452,10 +408,9 @@ const App: React.FC = () => {
       // Events drive everything: narrative-first, systems-second
       return (
           <EventDrivenWorkspace
-            tutorialStep={tutorialStep}
+            tutorialStep={0}
             onManageAssets={() => {
               setActiveTab('ASSETS');
-              if (tutorialStep === 1) setTutorialStep(2);
               playSfx('KEYPRESS');
             }}
             onShowPortfolioDashboard={() => setShowPortfolioDashboard(true)}
@@ -479,8 +434,6 @@ const App: React.FC = () => {
             }}
             onTutorialComplete={() => {
               // Handle tutorial completion from onboarding events
-              setTutorialStep(0);
-              setShowPostTutorialGuide(false);
               setGamePhase('SCENARIO');
               logEvent('tutorial_complete');
               addLogEntry('ONBOARDING: Complete. Ready for real deals.');
@@ -581,8 +534,6 @@ const App: React.FC = () => {
                   npcs={npcs}
                   selectedNpcId={selectedNpcId}
                   onSelectNpc={handleNpcSelect}
-                  tutorialStep={tutorialStep}
-                  onTutorialAdvance={handleTutorialStep5}
                 />
             </div>
 
@@ -803,23 +754,7 @@ const App: React.FC = () => {
             />
         )}
 
-        {/* POST-TUTORIAL GUIDE MODAL */}
-        <PostTutorialGuide
-            isOpen={showPostTutorialGuide}
-            onClose={() => {
-                setShowPostTutorialGuide(false);
-                setGamePhase('SCENARIO');
-                setActiveTab('WORKSPACE');
-                addToast("IOI SUBMITTED. Time to choose your deal structure.", "success");
-            }}
-            onContinue={() => {
-                setShowPostTutorialGuide(false);
-                setGamePhase('SCENARIO');
-                setActiveTab('WORKSPACE');
-                addToast("IOI SUBMITTED. Time to choose your deal structure.", "success");
-                playSfx('SUCCESS');
-            }}
-        />
+        {/* Legacy PostTutorialGuide removed - now using RPG event-driven onboarding */}
 
         {/* MOBILE BOTTOM NAV */}
         <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
@@ -995,34 +930,7 @@ const App: React.FC = () => {
             </div>
         )}
 
-        {/* TUTORIAL TOOLTIP LAYER - New contextual tooltip system */}
-        {tutorialStep > 0 && tutorialStep <= TUTORIAL_STEPS.length && (
-          <>
-            <TutorialHighlight
-              targetSelector={TUTORIAL_STEPS[tutorialStep - 1]?.targetSelector || ''}
-              isActive={true}
-            />
-            <TutorialTooltip
-              currentStep={tutorialStep - 1}
-              totalSteps={TUTORIAL_STEPS.length}
-              isVisible={true}
-              onDismiss={() => {
-                if (tutorialStep >= TUTORIAL_STEPS.length) {
-                  setTutorialStep(0);
-                  setShowPostTutorialGuide(true);
-                  logEvent('tutorial_complete');
-                } else {
-                  setTutorialStep(tutorialStep + 1);
-                }
-              }}
-              onSkip={() => {
-                setTutorialStep(0);
-                logEvent('tutorial_skipped');
-                addToast('Tutorial skipped. Explore at your own pace!', 'info');
-              }}
-            />
-          </>
-        )}
+        {/* Legacy TutorialTooltip/TutorialHighlight removed - using RPG event-driven onboarding */}
 
         {/* TOAST LAYER */}
         <TerminalToast toasts={toasts} removeToast={removeToast} />

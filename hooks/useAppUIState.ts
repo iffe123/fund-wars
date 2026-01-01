@@ -14,7 +14,6 @@ interface AppUIState {
 
   // Modal State
   showStatsModal: boolean;
-  showPostTutorialGuide: boolean;
   showTransparencyModal: boolean;
 
   // Tutorial State
@@ -27,7 +26,6 @@ interface AppUIActions {
   setShowActivityFeed: (show: boolean) => void;
   setShowPortfolioDashboard: (show: boolean) => void;
   setShowStatsModal: (show: boolean) => void;
-  setShowPostTutorialGuide: (show: boolean) => void;
   setShowTransparencyModal: (show: boolean) => void;
 
   // Compound actions
@@ -50,7 +48,6 @@ export const useAppUIState = (): UseAppUIStateReturn => {
 
   // Modal State
   const [showStatsModal, setShowStatsModal] = useState(false);
-  const [showPostTutorialGuide, setShowPostTutorialGuide] = useState(false);
   const [showTransparencyModal, setShowTransparencyModal] = useState(false);
 
   // Tutorial State (persisted)
@@ -92,7 +89,6 @@ export const useAppUIState = (): UseAppUIStateReturn => {
     showActivityFeed,
     showPortfolioDashboard,
     showStatsModal,
-    showPostTutorialGuide,
     showTransparencyModal,
     hasSeenStatsTutorial,
 
@@ -102,7 +98,6 @@ export const useAppUIState = (): UseAppUIStateReturn => {
     setShowActivityFeed,
     setShowPortfolioDashboard,
     setShowStatsModal,
-    setShowPostTutorialGuide,
     setShowTransparencyModal,
     handleStatsClick,
     handleStatsModalClose,
