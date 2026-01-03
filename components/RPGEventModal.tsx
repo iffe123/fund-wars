@@ -32,6 +32,101 @@ const MENTOR_AVATARS: Record<string, { icon: string; color: string; bgColor: str
   },
 };
 
+// Machiavelli Insight Component - More prominent advisor display
+const MachiavelliInsight: React.FC<{
+  hints: Record<string, string>;
+  stakes: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onConsultAdvisor?: () => void;
+}> = ({ hints, stakes, isExpanded, onToggle, onConsultAdvisor }) => {
+  const machiavelliHint = hints.machiavelli || hints.Machiavelli;
+  const hasHint = !!machiavelliHint;
+  const isHighStakes = stakes === 'HIGH' || stakes === 'CRITICAL';
+
+  if (!hasHint && !isHighStakes) return null;
+
+  return (
+    <div className={`mb-6 rounded-lg border-2 overflow-hidden transition-all ${
+      isHighStakes
+        ? 'border-purple-500/70 bg-gradient-to-br from-purple-900/40 to-slate-900/60'
+        : 'border-purple-500/30 bg-purple-900/20'
+    }`}>
+      {/* Header - Always visible */}
+      <button
+        onClick={onToggle}
+        className="w-full p-4 flex items-center justify-between hover:bg-purple-900/20 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-purple-800/50 flex items-center justify-center border border-purple-500/50">
+            <i className="fas fa-user-secret text-purple-400 text-lg"></i>
+          </div>
+          <div className="text-left">
+            <div className="text-purple-400 font-bold text-sm tracking-wide">
+              MACHIAVELLI AI
+            </div>
+            <div className="text-purple-300/70 text-xs">
+              {isHighStakes ? 'Strategic Insight Available' : 'Advisor Analysis'}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {isHighStakes && (
+            <span className="px-2 py-1 bg-purple-600/50 text-purple-200 text-xs rounded-full animate-pulse">
+              Recommended
+            </span>
+          )}
+          <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-purple-400`}></i>
+        </div>
+      </button>
+
+      {/* Expandable Content */}
+      {isExpanded && (
+        <div className="px-4 pb-4 border-t border-purple-500/20">
+          {hasHint ? (
+            <div className="mt-4">
+              <p className="text-purple-100 text-sm leading-relaxed italic">
+                "{machiavelliHint}"
+              </p>
+
+              {/* Other advisor hints if available */}
+              {Object.entries(hints).filter(([key]) =>
+                key.toLowerCase() !== 'machiavelli'
+              ).map(([advisor, hint]) => (
+                <div key={advisor} className="mt-3 pt-3 border-t border-purple-500/20">
+                  <span className="text-slate-400 text-xs font-medium capitalize">
+                    {advisor}:
+                  </span>
+                  <p className="text-slate-300 text-sm mt-1">{hint}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 text-center">
+              <p className="text-purple-300/70 text-sm mb-3">
+                This is a {stakes.toLowerCase()}-stakes decision. Consider consulting your advisor.
+              </p>
+            </div>
+          )}
+
+          {onConsultAdvisor && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onConsultAdvisor();
+              }}
+              className="mt-4 w-full py-2 px-4 bg-purple-700/50 hover:bg-purple-600/50 text-purple-200 text-sm font-medium rounded border border-purple-500/50 transition-colors flex items-center justify-center gap-2"
+            >
+              <i className="fas fa-comment-dots"></i>
+              Ask Machiavelli for Detailed Analysis
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Mentor Guidance Component
 const MentorGuidanceBox: React.FC<{ guidance: MentorGuidance }> = ({ guidance }) => {
   const mentor = MENTOR_AVATARS[guidance.character] || MENTOR_AVATARS.system;
@@ -71,23 +166,35 @@ interface RPGEventModalProps {
     success: boolean;
     skillCheck?: { passed: boolean; roll: number; threshold: number };
   }) => void;
+  onConsultAdvisor?: () => void;
 }
 
 const RPGEventModal: React.FC<RPGEventModalProps> = ({
   playerStats,
   npcs,
   onChoiceMade,
+  onConsultAdvisor,
 }) => {
   const { currentEvent, makeChoice, closeEventModal, worldFlags } = useRPGEvents();
   const availableChoices = useChoiceAvailability(playerStats, npcs);
   const [selectedChoice, setSelectedChoice] = useState<EventChoice | null>(null);
   const [showingResult, setShowingResult] = useState(false);
+  const [advisorExpanded, setAdvisorExpanded] = useState(false);
   const [lastResult, setLastResult] = useState<{
     success: boolean;
     consequences: EventConsequences;
     skillCheck?: { passed: boolean; roll: number; threshold: number; critical: boolean };
     epilogue?: string;
   } | null>(null);
+
+  // Auto-expand advisor for high-stakes events
+  React.useEffect(() => {
+    if (currentEvent && (currentEvent.stakes === 'HIGH' || currentEvent.stakes === 'CRITICAL')) {
+      setAdvisorExpanded(true);
+    } else {
+      setAdvisorExpanded(false);
+    }
+  }, [currentEvent?.id]);
 
   if (!currentEvent) {
     return null;
@@ -367,18 +474,15 @@ const RPGEventModal: React.FC<RPGEventModalProps> = ({
             <MentorGuidanceBox guidance={currentEvent.mentorGuidance} />
           )}
 
-          {/* Advisor Hints */}
-          {currentEvent.advisorHints && Object.keys(currentEvent.advisorHints).length > 0 && (
-            <div className="mb-6 space-y-2">
-              {Object.entries(currentEvent.advisorHints).map(([advisor, hint]) => (
-                <div key={advisor} className="p-3 bg-slate-800/30 rounded border-l-2 border-purple-500">
-                  <span className="text-purple-400 text-sm font-medium capitalize">
-                    {advisor}:
-                  </span>
-                  <p className="text-slate-400 text-sm mt-1">{hint}</p>
-                </div>
-              ))}
-            </div>
+          {/* Machiavelli AI Insight - Prominent Advisor Section */}
+          {(currentEvent.advisorHints || currentEvent.stakes === 'HIGH' || currentEvent.stakes === 'CRITICAL') && (
+            <MachiavelliInsight
+              hints={currentEvent.advisorHints || {}}
+              stakes={currentEvent.stakes}
+              isExpanded={advisorExpanded}
+              onToggle={() => setAdvisorExpanded(!advisorExpanded)}
+              onConsultAdvisor={onConsultAdvisor}
+            />
           )}
         </div>
 

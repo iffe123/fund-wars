@@ -439,6 +439,16 @@ const App: React.FC = () => {
               addLogEntry('ONBOARDING: Complete. Ready for real deals.');
               playSfx('SUCCESS');
             }}
+            onConsultAdvisor={() => {
+              // Open the advisor chat
+              setSelectedNpcId('advisor');
+              // On mobile, switch to COMMS tab
+              if (window.innerWidth < 768) {
+                setActiveMobileTab('COMMS');
+              }
+              playSfx('KEYPRESS');
+              addLogEntry('CONSULTING: Machiavelli AI for strategic advice.');
+            }}
           />
       );
   };
