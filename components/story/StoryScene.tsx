@@ -30,6 +30,8 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
     availableChoices,
     canAutoAdvance,
     makeChoice,
+    applyChoiceEffects,
+    navigateToScene,
     advanceScene,
     game,
     state,
@@ -86,37 +88,50 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
     (choice: Choice) => {
       if (!choice || state.isTransitioning) return;
 
-      // Show effects animation and wait for user acknowledgment
+      // If choice has effects, apply them immediately and show the effects UI
+      // This ensures stats update in StatusBar right away
       if (choice.effects) {
+        // Apply effects immediately - stats in StatusBar update now!
+        applyChoiceEffects(choice);
+
+        // Store for visual display
         setPendingEffects(choice.effects);
         setPendingChoice(choice);
         setShowEffects(true);
-        // Don't auto-advance - wait for user to click Continue
+
+        // Notify callback
+        onChoiceSelect?.(choice);
+        // Note: Scene transition happens in handleConsequenceContinue when user clicks Continue
       } else {
+        // No effects to show, just make the choice and transition normally
         onChoiceSelect?.(choice);
         makeChoice(choice);
       }
     },
-    [makeChoice, onChoiceSelect, state.isTransitioning]
+    [applyChoiceEffects, makeChoice, onChoiceSelect, state.isTransitioning]
   );
 
   // Handle continuing after viewing consequences
+  // Effects were already applied in handleChoiceClick (stats updated immediately)
+  // This handles the visual transition and scene navigation
   const handleConsequenceContinue = useCallback(() => {
     if (pendingChoice && !isFadingOut) {
       // Start fade-out animation
       setIsFadingOut(true);
 
-      // Wait for fade-out animation to complete before transitioning
+      // Wait for fade-out animation to complete, then navigate to next scene
       setTimeout(() => {
-        onChoiceSelect?.(pendingChoice);
-        makeChoice(pendingChoice);
+        // Navigate to the next scene now that user has acknowledged the consequences
+        navigateToScene(pendingChoice.nextSceneId);
+
+        // Clear the consequence display state
         setShowEffects(false);
         setPendingEffects(null);
         setPendingChoice(null);
         setIsFadingOut(false);
       }, 800); // Allow user to see consequences during fade-out
     }
-  }, [pendingChoice, onChoiceSelect, makeChoice, isFadingOut]);
+  }, [pendingChoice, isFadingOut, navigateToScene]);
 
   const handleContinue = useCallback(() => {
     if (canAutoAdvance && !state.isTransitioning) {

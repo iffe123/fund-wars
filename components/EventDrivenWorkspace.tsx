@@ -344,7 +344,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
           immediateResponse={activeConsequence.immediateResponse}
           epilogue={activeConsequence.epilogue}
           onDismiss={() => setActiveConsequence(null)}
-          autoDismissMs={6000}
+          autoDismissMs={15000} // 15 seconds - give players time to read consequences
         />
       )}
     </>

@@ -380,6 +380,8 @@ interface StoryEngineContextType {
   loadGame: (saveData: GameState) => void;
   startChapter: (chapterId: string) => void;
   makeChoice: (choice: Choice) => void;
+  applyChoiceEffects: (choice: Choice) => void; // Apply effects immediately without navigation
+  navigateToScene: (sceneId: string) => void; // Navigate to a specific scene
   advanceScene: () => void; // For auto-advance scenes
   completeChapter: () => void;
   resetGame: () => void;
@@ -455,6 +457,29 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
     // Navigate to next scene after a brief transition
     setTimeout(() => {
       dispatch({ type: 'NAVIGATE_TO_SCENE', payload: { sceneId: choice.nextSceneId } });
+    }, 300);
+  }, []);
+
+  // Apply choice effects immediately without triggering scene navigation
+  // Use this when you want to update stats but control navigation separately
+  const applyChoiceEffects = useCallback((choice: Choice) => {
+    if (choice.effects) {
+      dispatch({ type: 'APPLY_EFFECTS', payload: choice.effects });
+    }
+    // Deduct money cost if applicable
+    if (choice.requirements?.moneyCost && state.game) {
+      dispatch({
+        type: 'APPLY_EFFECTS',
+        payload: { money: -choice.requirements.moneyCost },
+      });
+    }
+  }, [state.game]);
+
+  // Navigate to a specific scene
+  const navigateToScene = useCallback((sceneId: string) => {
+    dispatch({ type: 'SET_TRANSITIONING', payload: true });
+    setTimeout(() => {
+      dispatch({ type: 'NAVIGATE_TO_SCENE', payload: { sceneId } });
     }, 300);
   }, []);
 
@@ -562,6 +587,8 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
     loadGame,
     startChapter,
     makeChoice,
+    applyChoiceEffects,
+    navigateToScene,
     advanceScene,
     completeChapter,
     resetGame,

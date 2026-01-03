@@ -22,7 +22,7 @@ export const ConsequenceDisplay: React.FC<ConsequenceDisplayProps> = ({
   narrative,
   changes,
   onDismiss,
-  autoDismissMs = 5000,
+  autoDismissMs = 10000, // 10 seconds - give players time to read
 }) => {
   const [visible, setVisible] = useState(true);
   const [animatingChanges, setAnimatingChanges] = useState<number[]>([]);
