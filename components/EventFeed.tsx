@@ -31,6 +31,7 @@ interface EventFeedProps {
   onDismissEvent: (eventId: string) => void;
   onAdvanceWeek: () => void;
   onRefreshEvents: () => void;
+  onConsultAdvisor?: () => void;
 
   // Optional
   className?: string;
@@ -77,6 +78,7 @@ const EventFeed: React.FC<EventFeedProps> = ({
   onDismissEvent,
   onAdvanceWeek,
   onRefreshEvents,
+  onConsultAdvisor,
   className = '',
 }) => {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(
@@ -145,6 +147,7 @@ const EventFeed: React.FC<EventFeedProps> = ({
               npcs={npcs}
               worldFlags={worldFlags}
               onChoice={(choice) => handleChoice(priorityEvent, choice)}
+              onConsultAdvisor={onConsultAdvisor}
               expanded={expandedEventId === priorityEvent.id}
               className="ml-2"
             />
@@ -176,6 +179,7 @@ const EventFeed: React.FC<EventFeedProps> = ({
                 worldFlags={worldFlags}
                 onChoice={(choice) => handleChoice(event, choice)}
                 onDismiss={() => onDismissEvent(event.id)}
+                onConsultAdvisor={onConsultAdvisor}
                 expanded={expandedEventId === event.id && !priorityEvent}
                 className={priorityEvent ? 'opacity-60 pointer-events-none' : ''}
               />

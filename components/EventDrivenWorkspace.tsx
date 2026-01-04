@@ -32,6 +32,7 @@ interface EventDrivenWorkspaceProps {
   addLogEntry: (message: string) => void;
   onSwitchTab?: (tab: 'ASSETS' | 'COMMS' | 'NEWS' | 'SYSTEM') => void;
   onTutorialComplete?: () => void;
+  onConsultAdvisor?: () => void;
 }
 
 const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
@@ -45,6 +46,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
   addLogEntry,
   onSwitchTab,
   onTutorialComplete,
+  onConsultAdvisor,
 }) => {
   const {
     playerStats,
@@ -245,6 +247,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
             onDismissEvent={() => {}} // No dismissing onboarding events
             onAdvanceWeek={() => {}} // No advancing during onboarding
             onRefreshEvents={() => {}} // No refreshing during onboarding
+            onConsultAdvisor={onConsultAdvisor}
             className="flex-1"
           />
         </TerminalPanel>
@@ -310,6 +313,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
           onDismissEvent={handleDismissEvent}
           onAdvanceWeek={handleAdvanceWeek}
           onRefreshEvents={handleRefreshEvents}
+          onConsultAdvisor={onConsultAdvisor}
           className="flex-1"
         />
 

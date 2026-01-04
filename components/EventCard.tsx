@@ -16,6 +16,7 @@ interface EventCardProps {
   worldFlags: Set<string>;
   onChoice: (choice: EventChoice) => void;
   onDismiss?: () => void;
+  onConsultAdvisor?: () => void;
   expanded?: boolean;
   className?: string;
 }
@@ -125,12 +126,16 @@ const EventCard: React.FC<EventCardProps> = ({
   worldFlags,
   onChoice,
   onDismiss,
+  onConsultAdvisor,
   expanded = false,
   className = '',
 }) => {
   const [isExpanded, setIsExpanded] = useState(expanded);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [advisorExpanded, setAdvisorExpanded] = useState(
+    event.stakes === 'HIGH' || event.stakes === 'CRITICAL'
+  );
 
   const style = stakeStyles[event.stakes] || stakeStyles.LOW;
   const categoryIcon = categoryIcons[event.category] || 'fa-circle-info';
@@ -232,19 +237,72 @@ const EventCard: React.FC<EventCardProps> = ({
             </div>
           )}
 
-          {/* Advisor Hints */}
-          {event.advisorHints && (
-            <div className="space-y-2">
-              {event.advisorHints.machiavelli && (
-                <div className="text-xs bg-purple-900/30 border border-purple-700/50 p-2 rounded">
-                  <span className="text-purple-400 font-bold">Machiavelli:</span>{' '}
-                  <span className="text-purple-300 italic">"{event.advisorHints.machiavelli}"</span>
+          {/* Machiavelli AI Advisor Panel */}
+          {(event.advisorHints?.machiavelli || event.stakes === 'HIGH' || event.stakes === 'CRITICAL') && (
+            <div className={`rounded-lg border overflow-hidden transition-all ${
+              event.stakes === 'HIGH' || event.stakes === 'CRITICAL'
+                ? 'border-purple-500/60 bg-gradient-to-br from-purple-900/30 to-slate-900/50'
+                : 'border-purple-700/40 bg-purple-900/20'
+            }`}>
+              {/* Advisor Header - Always Visible */}
+              <button
+                onClick={() => setAdvisorExpanded(!advisorExpanded)}
+                className="w-full p-3 flex items-center justify-between hover:bg-purple-900/20 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-purple-800/50 flex items-center justify-center border border-purple-500/50">
+                    <i className="fas fa-user-secret text-purple-400 text-sm"></i>
+                  </div>
+                  <div className="text-left">
+                    <div className="text-purple-400 font-bold text-xs tracking-wide">
+                      MACHIAVELLI AI
+                    </div>
+                    <div className="text-purple-300/60 text-[10px]">
+                      {event.advisorHints?.machiavelli ? 'Strategic insight available' : 'High-stakes - advice recommended'}
+                    </div>
+                  </div>
                 </div>
-              )}
-              {event.advisorHints.sarah && (
-                <div className="text-xs bg-blue-900/30 border border-blue-700/50 p-2 rounded">
-                  <span className="text-blue-400 font-bold">Sarah:</span>{' '}
-                  <span className="text-blue-300 italic">"{event.advisorHints.sarah}"</span>
+                <div className="flex items-center gap-2">
+                  {(event.stakes === 'HIGH' || event.stakes === 'CRITICAL') && (
+                    <span className="px-1.5 py-0.5 bg-purple-600/50 text-purple-200 text-[10px] rounded animate-pulse">
+                      Consult
+                    </span>
+                  )}
+                  <i className={`fas fa-chevron-${advisorExpanded ? 'up' : 'down'} text-purple-400 text-xs`}></i>
+                </div>
+              </button>
+
+              {/* Advisor Content - Expandable */}
+              {advisorExpanded && (
+                <div className="px-3 pb-3 border-t border-purple-500/20">
+                  {event.advisorHints?.machiavelli && (
+                    <p className="text-purple-200 text-xs italic mt-2 leading-relaxed">
+                      "{event.advisorHints.machiavelli}"
+                    </p>
+                  )}
+                  {event.advisorHints?.sarah && (
+                    <div className="mt-2 pt-2 border-t border-purple-500/20">
+                      <span className="text-blue-400 text-[10px] font-bold">Sarah:</span>{' '}
+                      <span className="text-blue-300/80 text-xs italic">"{event.advisorHints.sarah}"</span>
+                    </div>
+                  )}
+                  {!event.advisorHints?.machiavelli && (
+                    <p className="text-purple-300/60 text-xs mt-2">
+                      This is a {event.stakes.toLowerCase()}-stakes decision. Consider getting advice.
+                    </p>
+                  )}
+                  {onConsultAdvisor && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onConsultAdvisor();
+                      }}
+                      className="mt-2 w-full py-1.5 px-3 bg-purple-700/40 hover:bg-purple-600/40 text-purple-200 text-xs font-medium rounded border border-purple-500/40 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <i className="fas fa-comment-dots"></i>
+                      Ask Machiavelli
+                    </button>
+                  )}
                 </div>
               )}
             </div>
