@@ -2353,6 +2353,2608 @@ Your first real recommendation is on the record. The consequences—good or bad�
 
 The Kowalski family is just the beginning. In Private Equity, every deal creates ripples. And sometimes, waves.`,
     choices: [],
+    nextSceneId: 'ch3_opening',
+  },
+];
+
+// ============================================================================
+// CHAPTER 3: THE NEGOTIATION
+// ============================================================================
+
+const CHAPTER_3_SCENES: Scene[] = [
+  // Opening Scene - The Table
+  {
+    id: 'ch3_opening',
+    chapterId: 'chapter_3',
+    title: 'The Table',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `**CHAPTER 3: THE NEGOTIATION**
+
+*Three Weeks Later*
+
+The PackFancy conference room feels smaller than you remember. Maybe it's the tension.
+
+On one side: Sterling Partners. Chad sits at the head, flanked by you and the legal team. Across the table: the Kowalski family in force—Stanley with his weathered hands folded, Monica shuffling papers nervously, and Tommy Jr. glaring at everyone.
+
+Between you all: a term sheet that could make or break careers.
+
+**"Let's talk numbers,"** Chad begins. **"We've prepared an offer that we believe reflects fair value."**
+
+Monica's pen stops moving. Stanley's eyes narrow.
+
+*This is where it gets real.*`,
+    choices: [
+      {
+        id: 'ch3_opening_aggressive',
+        text: 'Push hard from the start',
+        subtext: 'Establish dominance early',
+        nextSceneId: 'ch3_aggressive_open',
+        requirements: {
+          requiredFlags: ['CHAPTER_2_COMPLETE'],
+        },
+        effects: {
+          stats: { stress: 10 },
+          setFlags: ['AGGRESSIVE_NEGOTIATOR'],
+        },
+      },
+      {
+        id: 'ch3_opening_rapport',
+        text: 'Build rapport first',
+        subtext: 'Relationships matter',
+        nextSceneId: 'ch3_rapport_open',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['DIPLOMATIC_APPROACH'],
+        },
+      },
+      {
+        id: 'ch3_opening_observe',
+        text: 'Let Chad lead, observe carefully',
+        subtext: 'Watch and learn',
+        nextSceneId: 'ch3_observe_open',
+        effects: {
+          stats: { dealcraft: 3 },
+          setFlags: ['CAREFUL_OBSERVER'],
+        },
+      },
+    ],
+  },
+
+  // Aggressive opening
+  {
+    id: 'ch3_aggressive_open',
+    chapterId: 'chapter_3',
+    title: 'Power Play',
+    type: 'dialogue',
+    atmosphere: 'crisis',
+    speaker: {
+      id: 'player',
+      name: 'You',
+      mood: 'neutral',
+    },
+    narrative: `Before Chad can continue, you slide the valuation summary across the table.
+
+**"The equipment maintenance backlog alone represents $8 million in deferred capex,"** you say. **"Your financials didn't disclose that."**
+
+The room goes cold.
+
+Monica's face drains of color. Tommy Jr. starts to stand, but Stanley's hand stops him.
+
+**"Kid's got sharp eyes,"** Stanley says slowly. **"Too sharp, maybe."**
+
+Chad shoots you a warning look. You've shown your cards early—maybe too early.`,
+    choices: [
+      {
+        id: 'ch3_double_down',
+        text: 'Double down on the pressure',
+        subtext: 'They\'re off balance—keep pushing',
+        nextSceneId: 'ch3_pressure_point',
+        effects: {
+          stats: { reputation: -5, dealcraft: 5 },
+          relationships: [{ npcId: 'stanley', change: -20, memory: 'Publicly embarrassed us' }],
+        },
+      },
+      {
+        id: 'ch3_soften',
+        text: 'Soften the approach',
+        subtext: 'You made your point',
+        nextSceneId: 'ch3_soften_after',
+        effects: {
+          stats: { politics: 3 },
+          relationships: [{ npcId: 'monica', change: -10, memory: 'Called out our capex issue' }],
+        },
+      },
+    ],
+  },
+
+  // Rapport opening
+  {
+    id: 'ch3_rapport_open',
+    chapterId: 'chapter_3',
+    title: 'Common Ground',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'player',
+      name: 'You',
+      mood: 'neutral',
+    },
+    narrative: `**"Mr. Kowalski,"** you begin, **"before we get to numbers, I want to say—what you've built here is remarkable. Three generations of family ownership. That's rare."**
+
+Stanley's posture shifts almost imperceptibly. Less defensive.
+
+**"Not many young folks appreciate that anymore,"** he says. **"Everyone wants the quick buck."**
+
+**"We want to honor what you've built,"** you continue. **"This deal needs to work for everyone."**
+
+Monica exchanges a glance with her father. Tommy Jr. still looks skeptical, but the tension has eased.
+
+Chad nods approvingly. *Nice move.*`,
+    choices: [
+      {
+        id: 'ch3_rapport_transition',
+        text: 'Transition to business',
+        subtext: 'Time to talk numbers',
+        nextSceneId: 'ch3_business_transition',
+        effects: {
+          relationships: [{ npcId: 'stanley', change: 15, memory: 'Showed respect for our legacy' }],
+          stats: { politics: 5 },
+        },
+      },
+      {
+        id: 'ch3_rapport_more',
+        text: 'Keep building the relationship',
+        subtext: 'Trust takes time',
+        nextSceneId: 'ch3_deeper_rapport',
+        effects: {
+          relationships: [{ npcId: 'stanley', change: 25, memory: 'Genuinely seemed to care' }],
+          stats: { stress: 5 },
+        },
+      },
+    ],
+  },
+
+  // Observe opening
+  {
+    id: 'ch3_observe_open',
+    chapterId: 'chapter_3',
+    title: 'The Watcher',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You stay quiet, watching. Chad presents the offer. The legal team drones about structure.
+
+But you're focused on the family.
+
+Stanley: Checks his watch twice. Impatient or nervous?
+
+Monica: Won't make eye contact with her father. Something there.
+
+Tommy Jr.: Keeps clenching his jaw. He wants to fight.
+
+*There are cracks in this family. The question is whether to exploit them or bridge them.*`,
+    choices: [
+      {
+        id: 'ch3_exploit_dynamics',
+        text: 'Note the tensions for later',
+        subtext: 'Knowledge is leverage',
+        nextSceneId: 'ch3_leverage_noted',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['FAMILY_TENSIONS_NOTED'],
+        },
+      },
+      {
+        id: 'ch3_bridge_dynamics',
+        text: 'Try to ease the family tension',
+        subtext: 'A unified seller is easier to work with',
+        nextSceneId: 'ch3_bridge_attempt',
+        effects: {
+          stats: { ethics: 5 },
+          setFlags: ['TRIED_TO_HELP_FAMILY'],
+        },
+      },
+    ],
+  },
+
+  // Pressure point scene
+  {
+    id: 'ch3_pressure_point',
+    chapterId: 'chapter_3',
+    title: 'Breaking Point',
+    type: 'dialogue',
+    atmosphere: 'crisis',
+    speaker: {
+      id: 'tommy',
+      name: 'Tommy Jr.',
+      mood: 'angry',
+    },
+    narrative: `**"You know what?"** Tommy slams his hand on the table. **"I've had enough of this."**
+
+He's on his feet now, pointing at you.
+
+**"You come into our company, find one thing wrong, and think you can shake us down? My grandfather built this from nothing. My father kept it alive through three recessions."**
+
+**"Tommy—"** Monica tries.
+
+**"No! These Wall Street vultures don't get to pick our bones!"**
+
+Stanley stands slowly. The room holds its breath.
+
+**"Sit down, son."** His voice is quiet but iron. **"We're not done here."**
+
+Tommy sits. But the damage is done. The negotiation just got personal.`,
+    choices: [
+      {
+        id: 'ch3_apologize',
+        text: 'Apologize for the aggressive approach',
+        subtext: 'De-escalate',
+        nextSceneId: 'ch3_de_escalate',
+        effects: {
+          stats: { ethics: 5 },
+          relationships: [{ npcId: 'tommy', change: 10, memory: 'At least apologized' }],
+        },
+      },
+      {
+        id: 'ch3_stay_firm',
+        text: 'Hold your ground',
+        subtext: 'Don\'t show weakness',
+        nextSceneId: 'ch3_standoff',
+        effects: {
+          stats: { reputation: 5 },
+          relationships: [{ npcId: 'stanley', change: -15, memory: 'Wouldn\'t back down' }],
+        },
+      },
+    ],
+  },
+
+  // Soften after aggression
+  {
+    id: 'ch3_soften_after',
+    chapterId: 'chapter_3',
+    title: 'Course Correction',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'player',
+      name: 'You',
+      mood: 'neutral',
+    },
+    narrative: `**"I apologize if that came across harshly,"** you say. **"We're not here to play gotcha. We just want a deal that works for everyone—and that requires honest numbers."**
+
+Stanley studies you for a long moment.
+
+**"Fair enough,"** he finally says. **"Monica, let's talk about that maintenance schedule."**
+
+The tension drops by half. Not gone, but manageable.
+
+Chad leans back, satisfied. You caught yourself before going too far.`,
+    choices: [
+      {
+        id: 'ch3_proceed_discussion',
+        text: 'Continue with constructive discussion',
+        nextSceneId: 'ch3_business_transition',
+        effects: {
+          stats: { politics: 5 },
+          relationships: [{ npcId: 'monica', change: 5, memory: 'Walked back the attack' }],
+        },
+      },
+    ],
+  },
+
+  // Business transition (convergence point)
+  {
+    id: 'ch3_business_transition',
+    chapterId: 'chapter_3',
+    title: 'Down to Business',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `The conversation shifts to specifics.
+
+Purchase price. Earnout structure. Employment guarantees. Real estate carve-out.
+
+Each item is a battlefield. Each concession, a small victory or defeat.
+
+After two hours, the shape of a deal begins to emerge:
+
+**Offer: $85 million**
+- $70M cash at close
+- $15M earnout over 3 years
+- Stanley stays as "Chairman Emeritus" (advisory role)
+- 18-month employment guarantee for key staff
+
+Monica is taking furious notes. Tommy looks sick. Stanley's face is unreadable.
+
+**"We need to discuss this privately,"** Stanley says. **"Can we reconvene tomorrow?"**`,
+    choices: [
+      {
+        id: 'ch3_give_time',
+        text: 'Agree to reconvene tomorrow',
+        subtext: 'Let them process',
+        nextSceneId: 'ch3_recess',
+        effects: {
+          stats: { politics: 3 },
+        },
+      },
+      {
+        id: 'ch3_push_decision',
+        text: 'Push for a decision today',
+        subtext: 'Time pressure works',
+        nextSceneId: 'ch3_push_close',
+        effects: {
+          stats: { stress: 10 },
+          setFlags: ['PUSHED_FOR_SPEED'],
+        },
+      },
+    ],
+  },
+
+  // Deeper rapport path
+  {
+    id: 'ch3_deeper_rapport',
+    chapterId: 'chapter_3',
+    title: 'Stories',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'stanley',
+      name: 'Stanley Kowalski',
+      mood: 'neutral',
+    },
+    narrative: `Stanley starts talking about the old days. 1975. His father's small shop in Jersey City. The move to Newark. The growth years.
+
+**"We almost went under in '08,"** he admits. **"Banks wouldn't touch us. Had to mortgage my house. Monica's college fund."**
+
+Monica looks down. You hadn't known that.
+
+**"But we made it. Every recession, every crisis, we survived. Because this family doesn't quit."**
+
+His eyes find yours.
+
+**"So you understand—this isn't just business for us. This is our blood."**
+
+The room is silent. Even Chad looks moved.`,
+    choices: [
+      {
+        id: 'ch3_honor_legacy',
+        text: '"We\'ll honor that legacy."',
+        subtext: 'Make a promise',
+        nextSceneId: 'ch3_promise_made',
+        effects: {
+          stats: { ethics: 10 },
+          relationships: [{ npcId: 'stanley', change: 20, memory: 'Promised to honor our legacy' }],
+          setFlags: ['LEGACY_PROMISE'],
+        },
+      },
+      {
+        id: 'ch3_business_reality',
+        text: '"We have to be realistic about what we can guarantee."',
+        subtext: 'Don\'t overpromise',
+        nextSceneId: 'ch3_honest_limits',
+        effects: {
+          stats: { dealcraft: 5 },
+          relationships: [{ npcId: 'stanley', change: -5, memory: 'Wouldn\'t commit to our legacy' }],
+        },
+      },
+    ],
+  },
+
+  // Leverage noted path
+  {
+    id: 'ch3_leverage_noted',
+    chapterId: 'chapter_3',
+    title: 'Information Gathering',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You file away what you've seen:
+
+**Stanley:** Ready to sell, but wants his legacy protected. Pride is his weakness.
+
+**Monica:** Hiding something about the financials. Defensive when challenged. Might crack under pressure.
+
+**Tommy Jr.:** Emotional. Against the sale. Could be an ally—or a saboteur.
+
+*In negotiations, information is ammunition. You're building an arsenal.*
+
+The formal presentation continues, but you're already thinking three moves ahead.`,
+    choices: [
+      {
+        id: 'ch3_exploit_tommy',
+        text: 'Tommy seems like the weak link',
+        subtext: 'He might reveal useful information',
+        nextSceneId: 'ch3_tommy_approach',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['TARGETING_TOMMY'],
+        },
+      },
+      {
+        id: 'ch3_exploit_monica',
+        text: 'Monica knows more than she\'s saying',
+        subtext: 'The CFO always knows the bodies',
+        nextSceneId: 'ch3_monica_approach',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['TARGETING_MONICA'],
+        },
+      },
+    ],
+  },
+
+  // Bridge attempt path
+  {
+    id: 'ch3_bridge_attempt',
+    chapterId: 'chapter_3',
+    title: 'The Mediator',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `During a break, you catch Tommy alone by the coffee machine.
+
+**"Look,"** you say quietly, **"I know this is hard. Selling your family business feels like losing something."**
+
+He stares at you, surprised.
+
+**"What do you know about it?"**
+
+**"Nothing. But I can see you care. That matters."**
+
+His guard drops slightly.
+
+**"Dad thinks this is the only way. Monica's been pushing for it. I just..."** He shakes his head. **"Thirty years of my life, you know?"**
+
+*You've created an opening. What you do with it is up to you.*`,
+    choices: [
+      {
+        id: 'ch3_genuine_help',
+        text: 'Genuinely try to address his concerns',
+        subtext: 'Maybe there\'s a way to help',
+        nextSceneId: 'ch3_helping_tommy',
+        effects: {
+          stats: { ethics: 10 },
+          relationships: [{ npcId: 'tommy', change: 25, memory: 'Actually listened to me' }],
+        },
+      },
+      {
+        id: 'ch3_tactical_sympathy',
+        text: 'Use the opening strategically',
+        subtext: 'Information is power',
+        nextSceneId: 'ch3_tommy_intel',
+        effects: {
+          stats: { dealcraft: 5 },
+          relationships: [{ npcId: 'tommy', change: 10, memory: 'Seemed sympathetic' }],
+        },
+      },
+    ],
+  },
+
+  // De-escalate scene
+  {
+    id: 'ch3_de_escalate',
+    chapterId: 'chapter_3',
+    title: 'Walking It Back',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'player',
+      name: 'You',
+      mood: 'worried',
+    },
+    narrative: `**"I apologize. That was out of line."**
+
+You look directly at Tommy.
+
+**"You're right to defend your family's legacy. I should have raised the capex issue more diplomatically."**
+
+Tommy's jaw unclenches. Just slightly.
+
+Stanley nods slowly.
+
+**"Takes a big person to admit a mistake. Let's start over."**
+
+Chad exhales with relief. The negotiation continues—on much better footing.`,
+    choices: [
+      {
+        id: 'ch3_continue_carefully',
+        text: 'Proceed more carefully',
+        nextSceneId: 'ch3_business_transition',
+        effects: {
+          stats: { ethics: 5, politics: 5 },
+          relationships: [
+            { npcId: 'tommy', change: 15, memory: 'Apologized sincerely' },
+            { npcId: 'stanley', change: 10, memory: 'Showed humility' },
+          ],
+        },
+      },
+    ],
+  },
+
+  // Standoff scene
+  {
+    id: 'ch3_standoff',
+    chapterId: 'chapter_3',
+    title: 'Impasse',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `The silence stretches. You don't blink.
+
+Neither does Stanley.
+
+**"We're not backing down on the valuation,"** Chad finally says. **"The numbers are the numbers."**
+
+**"Then maybe we don't have a deal,"** Stanley replies.
+
+Monica looks panicked. Tommy looks triumphant.
+
+*You've pushed too hard. But sometimes you have to lose a battle to win a war.*`,
+    choices: [
+      {
+        id: 'ch3_tactical_retreat',
+        text: 'Suggest a recess to regroup',
+        subtext: 'Live to fight another day',
+        nextSceneId: 'ch3_recess',
+        effects: {
+          stats: { stress: 15 },
+        },
+      },
+      {
+        id: 'ch3_call_bluff',
+        text: 'Call their bluff',
+        subtext: 'They need this deal too',
+        nextSceneId: 'ch3_bluff_called',
+        effects: {
+          stats: { reputation: 10, stress: 20 },
+          setFlags: ['CALLED_BLUFF'],
+        },
+      },
+    ],
+  },
+
+  // Recess scene
+  {
+    id: 'ch3_recess',
+    chapterId: 'chapter_3',
+    title: 'Intermission',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `The Kowalski family retreats to their side of the building. Sterling's team huddles in the parking lot.
+
+**"Well,"** Chad says, lighting a cigarette he's definitely not supposed to have, **"that could have gone better. Or worse."**
+
+**"They'll come back,"** the lead lawyer predicts. **"They need this deal. The company's burning cash."**
+
+**"But at what price?"** Chad muses. **"And what concessions?"**
+
+He looks at you.
+
+**"What's your read?"**`,
+    choices: [
+      {
+        id: 'ch3_read_optimistic',
+        text: '"They\'ll accept. Stanley wants this done."',
+        subtext: 'Confidence',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { dealcraft: 3 },
+          setFlags: ['PREDICTED_SUCCESS'],
+        },
+      },
+      {
+        id: 'ch3_read_cautious',
+        text: '"We might need to sweeten the deal."',
+        subtext: 'Pragmatism',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { politics: 3 },
+          setFlags: ['SUGGESTED_CONCESSIONS'],
+        },
+      },
+      {
+        id: 'ch3_read_uncertain',
+        text: '"Honestly? I\'m not sure. Tommy\'s a wild card."',
+        subtext: 'Honesty',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { ethics: 3 },
+          setFlags: ['ADMITTED_UNCERTAINTY'],
+        },
+      },
+    ],
+  },
+
+  // Push for close scene
+  {
+    id: 'ch3_push_close',
+    chapterId: 'chapter_3',
+    title: 'Now or Never',
+    type: 'dialogue',
+    atmosphere: 'crisis',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'neutral',
+    },
+    narrative: `**"With respect, Stanley, we've been at this for months. Our partners are getting impatient. Other opportunities are emerging."**
+
+Chad's playing hardball. Classic PE move.
+
+**"We need a decision today. Or we walk."**
+
+Stanley's face hardens. Monica whispers something to him urgently.
+
+After an agonizing pause:
+
+**"Fine. Let's talk final numbers."**
+
+*The gamble worked. But at what cost?*`,
+    choices: [
+      {
+        id: 'ch3_close_aggressive_terms',
+        text: 'Push for aggressive terms',
+        subtext: 'Strike while they\'re pressured',
+        nextSceneId: 'ch3_aggressive_close',
+        effects: {
+          stats: { dealcraft: 10, ethics: -10 },
+          setFlags: ['AGGRESSIVE_TERMS'],
+        },
+      },
+      {
+        id: 'ch3_close_fair_terms',
+        text: 'Offer reasonable terms',
+        subtext: 'Win-win is sustainable',
+        nextSceneId: 'ch3_fair_close',
+        effects: {
+          stats: { ethics: 5, politics: 5 },
+          setFlags: ['FAIR_TERMS'],
+        },
+      },
+    ],
+  },
+
+  // Promise made scene
+  {
+    id: 'ch3_promise_made',
+    chapterId: 'chapter_3',
+    title: 'The Promise',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'player',
+      name: 'You',
+      mood: 'neutral',
+    },
+    narrative: `**"Mr. Kowalski, I give you my word. We will treat your employees with respect. We will maintain quality. We will not strip this company and leave a corpse."**
+
+Stanley's eyes glisten.
+
+**"You know, most of your kind... they say whatever it takes to close. Then the layoffs start week one."**
+
+**"I'm not most of my kind."**
+
+He extends his hand. You shake it.
+
+**"I'm going to hold you to that."**
+
+*You've made a promise. In Private Equity, promises have a way of becoming complicated.*`,
+    choices: [
+      {
+        id: 'ch3_proceed_deal',
+        text: 'Proceed with the deal',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { reputation: 10 },
+          relationships: [{ npcId: 'stanley', change: 30, memory: 'Made a promise and shook on it' }],
+        },
+      },
+    ],
+  },
+
+  // Honest limits scene
+  {
+    id: 'ch3_honest_limits',
+    chapterId: 'chapter_3',
+    title: 'Managing Expectations',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'player',
+      name: 'You',
+      mood: 'neutral',
+    },
+    narrative: `**"Mr. Kowalski, I wish I could promise to keep everything exactly as it is. But that wouldn't be honest."**
+
+His face tightens.
+
+**"What we can promise,"** you continue, **"is thoughtful transitions. No mass layoffs. Investments in modernization that actually help your people."**
+
+**"That's not nothing,"** Monica says quietly.
+
+**"It's not enough,"** Tommy mutters.
+
+Stanley sighs.
+
+**"At least you're not lying to my face. Let's keep talking."**
+
+*Honesty isn't always rewarded. But at least you can live with yourself.*`,
+    choices: [
+      {
+        id: 'ch3_continue_honest',
+        text: 'Continue negotiations',
+        nextSceneId: 'ch3_business_transition',
+        effects: {
+          stats: { ethics: 5 },
+          relationships: [{ npcId: 'monica', change: 10, memory: 'Was honest about limitations' }],
+        },
+      },
+    ],
+  },
+
+  // Tommy approach scene
+  {
+    id: 'ch3_tommy_approach',
+    chapterId: 'chapter_3',
+    title: 'The Son',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'tommy',
+      name: 'Tommy Jr.',
+      mood: 'worried',
+    },
+    narrative: `You catch Tommy during a break.
+
+**"You really don't want this deal, do you?"**
+
+He looks at you with surprise and suspicion.
+
+**"Would you? Watch your whole life get sold to strangers?"**
+
+**"So why is your family selling?"**
+
+His guard drops slightly.
+
+**"Dad's tired. Monica says the banks are circling. And me?"** He laughs bitterly. **"I'm just the operations guy. Nobody listens to me."**
+
+*Interesting. Tommy has information—and resentment.*`,
+    choices: [
+      {
+        id: 'ch3_tommy_ally',
+        text: 'Offer to include him in post-acquisition plans',
+        subtext: 'Make him a stakeholder',
+        nextSceneId: 'ch3_tommy_deal',
+        effects: {
+          relationships: [{ npcId: 'tommy', change: 20, memory: 'Offered me a real role' }],
+          setFlags: ['TOMMY_ALLY'],
+        },
+      },
+      {
+        id: 'ch3_tommy_extract',
+        text: 'Probe for more information about the financial pressure',
+        subtext: 'Use his frustration',
+        nextSceneId: 'ch3_tommy_intel',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['EXTRACTED_INTEL'],
+        },
+      },
+    ],
+  },
+
+  // Monica approach scene
+  {
+    id: 'ch3_monica_approach',
+    chapterId: 'chapter_3',
+    title: 'The CFO',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'monica',
+      name: 'Monica Kowalski',
+      mood: 'worried',
+    },
+    narrative: `You approach Monica while the others are distracted.
+
+**"The capex disclosure—that wasn't intentional, was it?"**
+
+She freezes.
+
+**"I... we had to present the company in the best light. Dad doesn't know how bad some of the equipment really is."**
+
+**"How bad?"**
+
+She hesitates.
+
+**"Another year, maybe two, before major failures. If we don't sell now..."**
+
+*The CFO is more desperate than she's showing. This changes the leverage.*`,
+    choices: [
+      {
+        id: 'ch3_monica_reassure',
+        text: 'Reassure her—you\'ll help make this work',
+        subtext: 'Build trust',
+        nextSceneId: 'ch3_monica_trust',
+        effects: {
+          relationships: [{ npcId: 'monica', change: 20, memory: 'Didn\'t use my confession against us' }],
+          setFlags: ['MONICA_TRUSTS'],
+        },
+      },
+      {
+        id: 'ch3_monica_leverage',
+        text: 'Note the urgency—adjust negotiation accordingly',
+        subtext: 'They need this more than us',
+        nextSceneId: 'ch3_monica_exploited',
+        effects: {
+          stats: { dealcraft: 10 },
+          setFlags: ['KNOWS_SELLER_DESPERATE'],
+        },
+      },
+    ],
+  },
+
+  // Helping Tommy scene
+  {
+    id: 'ch3_helping_tommy',
+    chapterId: 'chapter_3',
+    title: 'A Real Conversation',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'tommy',
+      name: 'Tommy Jr.',
+      mood: 'neutral',
+    },
+    narrative: `**"What would you want?"** you ask. **"If this deal goes through—what would make it work for you?"**
+
+Tommy blinks. Apparently no one's asked him that.
+
+**"I... I want to matter. I've run operations here for fifteen years. I know every machine, every worker, every customer. But PE firms always bring in their own people."**
+
+**"What if we didn't?"**
+
+**"What?"**
+
+**"What if you stayed on? Real authority. Real stake in the outcome."**
+
+For the first time, Tommy looks at you without hostility.
+
+**"You'd do that?"**
+
+*Sometimes the best deal is the one where everyone wins.*`,
+    choices: [
+      {
+        id: 'ch3_tommy_deal_offer',
+        text: 'Propose it formally to Chad',
+        nextSceneId: 'ch3_tommy_proposal',
+        effects: {
+          stats: { ethics: 10, politics: 5 },
+          relationships: [{ npcId: 'tommy', change: 30, memory: 'Actually fought for me' }],
+          setFlags: ['TOMMY_RETENTION_DEAL'],
+        },
+      },
+    ],
+  },
+
+  // Tommy intel scene
+  {
+    id: 'ch3_tommy_intel',
+    chapterId: 'chapter_3',
+    title: 'Intelligence Gathered',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `Tommy keeps talking, barely noticing your careful questions.
+
+**Key intel gathered:**
+- The equipment is worse than reported—three major machines need replacement within 18 months
+- Monica's been hiding a $2M inventory write-off from the board
+- A key customer (35% of revenue) is threatening to leave if quality issues continue
+- Stanley doesn't know most of this
+
+*You now have ammunition. How you use it will define what kind of dealmaker you are.*`,
+    choices: [
+      {
+        id: 'ch3_use_intel_hard',
+        text: 'Use this to negotiate a lower price',
+        subtext: 'Business is business',
+        nextSceneId: 'ch3_hardball_intel',
+        effects: {
+          stats: { dealcraft: 10, ethics: -15 },
+          setFlags: ['USED_INTEL_HARD'],
+        },
+      },
+      {
+        id: 'ch3_use_intel_soft',
+        text: 'Use this to structure better protections',
+        subtext: 'Informed but not exploitative',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['USED_INTEL_SOFT'],
+        },
+      },
+    ],
+  },
+
+  // Tommy deal scene
+  {
+    id: 'ch3_tommy_deal',
+    chapterId: 'chapter_3',
+    title: 'Unexpected Alliance',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'tommy',
+      name: 'Tommy Jr.',
+      mood: 'happy',
+    },
+    narrative: `**"You're serious?"** Tommy's whole demeanor has changed.
+
+**"Operations expertise is valuable. You know this business better than anyone we could hire."**
+
+**"Monica always said I should go get an MBA, stop being just the 'factory guy.'"**
+
+**"Some of the best operators I've met never set foot in business school."**
+
+Tommy actually smiles.
+
+**"You know what? Maybe this sale doesn't have to be a funeral."**
+
+*You've just turned an obstacle into an ally.*`,
+    choices: [
+      {
+        id: 'ch3_tommy_partnership',
+        text: 'Formalize the partnership',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          relationships: [{ npcId: 'tommy', change: 25, memory: 'Made me feel valued' }],
+          setFlags: ['TOMMY_PARTNER'],
+        },
+      },
+    ],
+  },
+
+  // Tommy proposal scene
+  {
+    id: 'ch3_tommy_proposal',
+    chapterId: 'chapter_3',
+    title: 'The Pitch',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'neutral',
+    },
+    narrative: `You pull Chad aside.
+
+**"I think we should keep Tommy on. Give him a real role. Maybe even equity participation."**
+
+Chad raises an eyebrow.
+
+**"That's... not typical. PE usually means new management."**
+
+**"He knows the operations cold. And right now he's our biggest obstacle. Make him a stakeholder, and he becomes an asset."**
+
+Chad considers.
+
+**"That's actually not stupid. I'll think about it."**
+
+*High praise from Chad.*`,
+    choices: [
+      {
+        id: 'ch3_proposal_accepted',
+        text: 'Return to negotiations',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { politics: 10 },
+          relationships: [{ npcId: 'chad', change: 15, memory: 'Had a good strategic idea' }],
+        },
+      },
+    ],
+  },
+
+  // Monica trust scene
+  {
+    id: 'ch3_monica_trust',
+    chapterId: 'chapter_3',
+    title: 'A Secret Kept',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'monica',
+      name: 'Monica Kowalski',
+      mood: 'neutral',
+    },
+    narrative: `**"I won't use this against your family,"** you say. **"But we should build protections into the deal for the real equipment needs. It protects everyone."**
+
+Monica looks at you like you're an alien.
+
+**"Why? You could crush our valuation with this."**
+
+**"Because a deal that blows up six months later helps no one. I'd rather close something sustainable."**
+
+She takes a breath.
+
+**"I... thank you. Maybe you're not all sharks."**
+
+*Trust is worth more than leverage. Sometimes.*`,
+    choices: [
+      {
+        id: 'ch3_monica_partnership',
+        text: 'Work together on realistic projections',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { ethics: 10 },
+          relationships: [{ npcId: 'monica', change: 30, memory: 'Could have destroyed us, didn\'t' }],
+          setFlags: ['MONICA_PARTNER'],
+        },
+      },
+    ],
+  },
+
+  // Monica exploited scene
+  {
+    id: 'ch3_monica_exploited',
+    chapterId: 'chapter_3',
+    title: 'Leverage Noted',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You file away Monica's confession.
+
+The seller is more desperate than they're showing. The equipment problems are worse than disclosed. They need to close before the truth comes out.
+
+*This is leverage. Pure, clean leverage.*
+
+Back at the table, you catch Chad's eye and give a slight nod. He understands.
+
+**"Perhaps we should revisit the valuation..."** he begins.
+
+Monica's face goes pale.`,
+    choices: [
+      {
+        id: 'ch3_exploit_fully',
+        text: 'Push for a significant price reduction',
+        nextSceneId: 'ch3_hardball_intel',
+        effects: {
+          stats: { dealcraft: 10, ethics: -20 },
+          relationships: [{ npcId: 'monica', change: -30, memory: 'Used my confession against us' }],
+        },
+      },
+      {
+        id: 'ch3_exploit_moderately',
+        text: 'Push for modest adjustments',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['MODERATE_PRESSURE'],
+        },
+      },
+    ],
+  },
+
+  // Hardball intel scene
+  {
+    id: 'ch3_hardball_intel',
+    chapterId: 'chapter_3',
+    title: 'The Hammer',
+    type: 'dialogue',
+    atmosphere: 'crisis',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'smug',
+    },
+    narrative: `Armed with your intelligence, Chad goes for the kill.
+
+**"We've become aware of... additional issues. Equipment problems beyond what was disclosed. Customer concentration risk. Potential write-offs."**
+
+Stanley turns to Monica.
+
+**"Is this true?"**
+
+She can't meet his eyes.
+
+**"We need to revise our offer. Significantly."**
+
+The new number is $15 million less than before. Stanley looks like he's aged ten years.
+
+*You got the better deal. But at what cost?*`,
+    choices: [
+      {
+        id: 'ch3_hardball_continue',
+        text: 'This is business—proceed',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { dealcraft: 10, ethics: -10 },
+          relationships: [{ npcId: 'stanley', change: -25, memory: 'Humiliated my family' }],
+          setFlags: ['HARDBALL_DEAL'],
+        },
+      },
+    ],
+  },
+
+  // Bluff called scene
+  {
+    id: 'ch3_bluff_called',
+    chapterId: 'chapter_3',
+    title: 'Chicken',
+    type: 'dialogue',
+    atmosphere: 'crisis',
+    speaker: {
+      id: 'stanley',
+      name: 'Stanley Kowalski',
+      mood: 'angry',
+    },
+    narrative: `**"Walk, then."** Stanley stands. **"I've had other offers. Maybe they won't try to rob me."**
+
+He's bluffing. You're almost sure.
+
+But almost isn't certain.
+
+The moment stretches. Monica looks terrified. Tommy looks hopeful.
+
+Chad's poker face doesn't crack.
+
+**"Stanley—"** Monica starts.
+
+**"Quiet."**
+
+Finally, Chad speaks: **"Perhaps we can find middle ground. Sit down. Let's talk."**
+
+Stanley hesitates... then sits.
+
+*The bluff held. Barely.*`,
+    choices: [
+      {
+        id: 'ch3_negotiate_from_strength',
+        text: 'Negotiate from this position of strength',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { dealcraft: 10, stress: 10 },
+          setFlags: ['BLUFF_SUCCEEDED'],
+        },
+      },
+    ],
+  },
+
+  // Aggressive close scene
+  {
+    id: 'ch3_aggressive_close',
+    chapterId: 'chapter_3',
+    title: 'Pressing the Advantage',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `You press hard on every term:
+
+- Purchase price reduced by $7 million
+- Earnout conditions tightened (harder to achieve)
+- Employment guarantees shortened to 6 months
+- Real estate held separately (maximum flexibility)
+
+Monica looks sick. Tommy has left the room. Stanley signs with a trembling hand.
+
+**"I hope you're proud of yourselves,"** he says.
+
+Chad collects the papers without emotion.
+
+*You got the deal you wanted. But some deals leave scars.*`,
+    choices: [
+      {
+        id: 'ch3_aggressive_complete',
+        text: 'The deal is what matters',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { money: 10000, ethics: -15 },
+          setFlags: ['AGGRESSIVE_DEAL'],
+        },
+      },
+    ],
+  },
+
+  // Fair close scene
+  {
+    id: 'ch3_fair_close',
+    chapterId: 'chapter_3',
+    title: 'Finding Balance',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You structure terms that work for everyone:
+
+- Purchase price adjusted moderately for the capex issues
+- Earnout structured achievably—if they hit targets, they get paid
+- 18-month employment guarantees maintained
+- Legacy considerations for Stanley's role
+
+It's not the most aggressive deal possible. But it's one everyone can live with.
+
+**"This is fair,"** Stanley says finally. **"We can work with this."**
+
+Chad glances at you. A slight nod of approval.
+
+*Sometimes the best deal isn't the one that extracts every dollar—it's the one that actually closes.*`,
+    choices: [
+      {
+        id: 'ch3_fair_complete',
+        text: 'A deal everyone can live with',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          stats: { reputation: 10, ethics: 5 },
+          setFlags: ['FAIR_DEAL'],
+        },
+      },
+    ],
+  },
+
+  // Night before scene
+  {
+    id: 'ch3_night_before',
+    chapterId: 'chapter_3',
+    title: 'The Night Before',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `It's 11 PM. The deal is agreed in principle. Tomorrow: signatures, wire transfers, press releases.
+
+You're at your desk, reviewing the final documents. The office is empty except for the cleaning crew.
+
+Your phone buzzes. A text from an unknown number:
+
+*"You should know what you're really buying. Meet me in the parking garage. -T"*
+
+Tommy.`,
+    choices: [
+      {
+        id: 'ch3_meet_tommy',
+        text: 'Go meet him',
+        subtext: 'What does he want?',
+        nextSceneId: 'ch3_garage_meeting',
+        effects: {
+          stats: { stress: 10 },
+        },
+      },
+      {
+        id: 'ch3_ignore_tommy',
+        text: 'Ignore the message',
+        subtext: 'The deal is done',
+        nextSceneId: 'ch3_morning_arrives',
+        effects: {
+          setFlags: ['IGNORED_TOMMY_WARNING'],
+        },
+      },
+      {
+        id: 'ch3_tell_chad',
+        text: 'Tell Chad about the message',
+        subtext: 'This could be important',
+        nextSceneId: 'ch3_chad_notified',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['TOLD_CHAD_WARNING'],
+        },
+      },
+    ],
+  },
+
+  // Garage meeting scene
+  {
+    id: 'ch3_garage_meeting',
+    chapterId: 'chapter_3',
+    title: 'In the Shadows',
+    type: 'dialogue',
+    atmosphere: 'crisis',
+    speaker: {
+      id: 'tommy',
+      name: 'Tommy Jr.',
+      mood: 'worried',
+    },
+    narrative: `Tommy is waiting by a concrete pillar, looking like he hasn't slept in days.
+
+**"Thanks for coming."**
+
+**"What is this about?"**
+
+He hands you a folder.
+
+**"Environmental study from 2019. Monica buried it. There's contamination under the Newark facility. PCBs from the old manufacturing process."**
+
+You flip through the pages. The numbers are damning.
+
+**"This could kill the deal."**
+
+**"I know."** Tommy's voice is hollow. **"But you need to know what you're buying. What you're really buying."**
+
+*Your move.*`,
+    choices: [
+      {
+        id: 'ch3_halt_deal',
+        text: 'This changes everything—we need to halt the deal',
+        subtext: 'Environmental liability is no joke',
+        nextSceneId: 'ch3_deal_halted',
+        effects: {
+          stats: { ethics: 15 },
+          setFlags: ['ENVIRONMENTAL_ISSUE_RAISED'],
+        },
+      },
+      {
+        id: 'ch3_price_adjustment',
+        text: 'We can still close—with price adjustment and indemnities',
+        subtext: 'Every problem has a price',
+        nextSceneId: 'ch3_last_minute_changes',
+        effects: {
+          stats: { dealcraft: 10 },
+          setFlags: ['ENVIRONMENTAL_PRICED_IN'],
+        },
+      },
+      {
+        id: 'ch3_ignore_info',
+        text: 'Tommy, why are you sabotaging your own family\'s sale?',
+        subtext: 'Question his motives',
+        nextSceneId: 'ch3_tommy_motives',
+        effects: {
+          stats: { politics: 5 },
+        },
+      },
+    ],
+  },
+
+  // Morning arrives scene
+  {
+    id: 'ch3_morning_arrives',
+    chapterId: 'chapter_3',
+    title: 'Closing Day',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `Morning arrives. Signing day.
+
+The conference room is packed: lawyers, bankers, the Kowalski family, Sterling Partners' senior leadership.
+
+Documents are signed. Wires are confirmed. Hands are shaken.
+
+**"Congratulations,"** Chad says. **"PackFancy is ours."**
+
+Stanley looks tired but relieved. Monica avoids your eyes. Tommy is conspicuously absent.
+
+*The deal is closed. Whatever Tommy wanted to tell you, it's too late now.*`,
+    choices: [
+      {
+        id: 'ch3_closing_celebration',
+        text: 'Celebrate the win',
+        nextSceneId: 'ch3_chapter_end_standard',
+        effects: {
+          stats: { money: 5000 },
+          setFlags: ['STANDARD_CLOSE'],
+        },
+      },
+    ],
+  },
+
+  // Chad notified scene
+  {
+    id: 'ch3_chad_notified',
+    chapterId: 'chapter_3',
+    title: 'Escalation',
+    type: 'dialogue',
+    atmosphere: 'crisis',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'worried',
+    },
+    narrative: `You forward the text to Chad. He calls immediately.
+
+**"Tommy Kowalski? What does he want?"**
+
+**"Don't know yet. Could be nothing. Could be a last-minute sabotage attempt."**
+
+**"Meet him. Find out. But be careful—if he's trying to blow up this deal, we need to know why."**
+
+**"And if he has something real?"**
+
+Chad pauses.
+
+**"Then we deal with it. But for God's sake, don't promise him anything."**`,
+    choices: [
+      {
+        id: 'ch3_meet_with_backup',
+        text: 'Meet Tommy with Chad informed',
+        nextSceneId: 'ch3_garage_meeting',
+        effects: {
+          setFlags: ['CHAD_AWARE'],
+        },
+      },
+    ],
+  },
+
+  // Deal halted scene
+  {
+    id: 'ch3_deal_halted',
+    chapterId: 'chapter_3',
+    title: 'Emergency Stop',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `You call Chad immediately. The signing is postponed.
+
+The next week is chaos. Environmental consultants. Lawyers. Angry phone calls.
+
+The contamination is real—cleanup estimates range from $3 million to $12 million, depending on scope.
+
+**"Monica knew,"** Stanley says, looking broken. **"My own daughter hid this from me."**
+
+The deal restructures completely. New terms. New prices. New timeline.
+
+*You did the right thing. But "right" in PE is never simple.*`,
+    choices: [
+      {
+        id: 'ch3_restructured_deal',
+        text: 'Close the restructured deal',
+        nextSceneId: 'ch3_chapter_end_ethical',
+        effects: {
+          stats: { ethics: 15, reputation: 10 },
+          relationships: [
+            { npcId: 'tommy', change: 30, memory: 'Did the right thing' },
+            { npcId: 'monica', change: -40, memory: 'Exposed my failure' },
+          ],
+        },
+      },
+    ],
+  },
+
+  // Last minute changes scene
+  {
+    id: 'ch3_last_minute_changes',
+    chapterId: 'chapter_3',
+    title: 'The 11th Hour',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `You work through the night with lawyers.
+
+By morning, you have new terms:
+- Price reduced by $5 million
+- Full environmental indemnity from the sellers
+- Escrow holdback for potential cleanup
+- Monica personally liable for any undisclosed issues
+
+The signing happens—but with Tommy's disclosure on the table.
+
+Monica's career is effectively over. She'll face personal liability for the cover-up.
+
+Stanley signs without looking at his daughter.
+
+*The deal closes. But families break.*`,
+    choices: [
+      {
+        id: 'ch3_adjusted_close',
+        text: 'Sign the papers',
+        nextSceneId: 'ch3_chapter_end_pragmatic',
+        effects: {
+          stats: { dealcraft: 15 },
+          relationships: [{ npcId: 'monica', change: -50, memory: 'Destroyed my career' }],
+          setFlags: ['ADJUSTED_DEAL_CLOSED'],
+        },
+      },
+    ],
+  },
+
+  // Tommy motives scene
+  {
+    id: 'ch3_tommy_motives',
+    chapterId: 'chapter_3',
+    title: 'The Real Reason',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'tommy',
+      name: 'Tommy Jr.',
+      mood: 'angry',
+    },
+    narrative: `Tommy's face hardens.
+
+**"Sabotage? You think I want to destroy my family?"**
+
+**"Then why show me this?"**
+
+**"Because Monica's been running this company into the ground and Dad can't see it. Because if you buy this mess without knowing what's underneath, you'll fail. And then everyone loses."**
+
+He takes a breath.
+
+**"I'm not trying to kill the deal. I'm trying to save it. The real one. The one where PackFancy actually has a future."**
+
+*Maybe you misjudged him.*`,
+    choices: [
+      {
+        id: 'ch3_reconsider_tommy',
+        text: 'Work with Tommy to find a solution',
+        nextSceneId: 'ch3_last_minute_changes',
+        effects: {
+          relationships: [{ npcId: 'tommy', change: 20, memory: 'Finally understood' }],
+        },
+      },
+      {
+        id: 'ch3_proceed_anyway',
+        text: 'This is a family matter—close the deal as-is',
+        nextSceneId: 'ch3_morning_arrives',
+        effects: {
+          stats: { stress: 15 },
+          setFlags: ['IGNORED_ENVIRONMENTAL'],
+        },
+      },
+    ],
+  },
+
+  // Chapter end - standard
+  {
+    id: 'ch3_chapter_end_standard',
+    chapterId: 'chapter_3',
+    title: 'Deal Closed',
+    type: 'chapter_end',
+    atmosphere: 'celebration',
+    narrative: `The champagne flows. PackFancy is now a Sterling Partners portfolio company.
+
+Chad raises a glass.
+
+**"To our newest acquisition. And to the analyst who found the value."**
+
+Eyes turn to you. You've proven yourself.
+
+*But somewhere, Tommy Kowalski is sitting alone with a folder full of truths no one wanted to hear.*
+
+*Chapter 3 Complete.*
+
+*You closed your first deal. What comes next will test whether you made the right calls.*`,
+    choices: [
+      {
+        id: 'ch3_standard_continue',
+        text: 'Continue to Chapter 4',
+        nextSceneId: 'ch3_complete',
+        effects: {
+          stats: { money: 7500 },
+          achievement: 'DEAL_CLOSER',
+          setFlags: ['CHAPTER_3_COMPLETE'],
+        },
+      },
+    ],
+  },
+
+  // Chapter end - ethical
+  {
+    id: 'ch3_chapter_end_ethical',
+    chapterId: 'chapter_3',
+    title: 'The Right Way',
+    type: 'chapter_end',
+    atmosphere: 'quiet',
+    narrative: `The deal closes—smaller, cleaner, more honest.
+
+**"You cost us money,"** Chad says afterward. **"Maybe $10 million in value we could have extracted."**
+
+**"And saved us from a $12 million environmental lawsuit."**
+
+He doesn't argue.
+
+**"The partners aren't happy. But I told them: this one has integrity. That's worth something."**
+
+Tommy catches your eye across the room and nods.
+
+*You chose the harder path. Time will tell if it was the wiser one.*
+
+*Chapter 3 Complete.*
+
+*Integrity has a price. But so does its absence.*`,
+    choices: [
+      {
+        id: 'ch3_ethical_continue',
+        text: 'Continue to Chapter 4',
+        nextSceneId: 'ch3_complete',
+        effects: {
+          stats: { money: 4000, ethics: 10 },
+          achievement: 'ETHICAL_CLOSER',
+          setFlags: ['CHAPTER_3_COMPLETE'],
+        },
+      },
+    ],
+  },
+
+  // Chapter end - pragmatic
+  {
+    id: 'ch3_chapter_end_pragmatic',
+    chapterId: 'chapter_3',
+    title: 'Pragmatic Victory',
+    type: 'chapter_end',
+    atmosphere: 'office',
+    narrative: `The deal closes with protections in place.
+
+Not perfect. Not pretty. But closed.
+
+**"That was surgical,"** Chad admits in the car back. **"The way you handled the last-minute disclosure. Turned a disaster into an adjusted win."**
+
+**"Monica's finished though."**
+
+**"Monica lied. That has consequences."** He shrugs. **"You didn't destroy her. She destroyed herself."**
+
+*You found a middle path. Protected Sterling, closed the deal, exposed the truth. Not everyone survived. But the deal did.*
+
+*Chapter 3 Complete.*
+
+*In PE, every deal leaves bodies. The question is whose.*`,
+    choices: [
+      {
+        id: 'ch3_pragmatic_continue',
+        text: 'Continue to Chapter 4',
+        nextSceneId: 'ch3_complete',
+        effects: {
+          stats: { money: 6000, dealcraft: 5 },
+          achievement: 'PRAGMATIC_CLOSER',
+          setFlags: ['CHAPTER_3_COMPLETE'],
+        },
+      },
+    ],
+  },
+
+  // Chapter complete transition
+  {
+    id: 'ch3_complete',
+    chapterId: 'chapter_3',
+    title: 'Chapter Complete',
+    type: 'chapter_end',
+    atmosphere: 'celebration',
+    requiresAcknowledgment: true,
+    narrative: `**CHAPTER 3 COMPLETE**
+
+*The Negotiation*
+
+PackFancy is now part of the Sterling Partners portfolio. Your first deal has closed.
+
+But in Private Equity, closing is just the beginning. Now comes the hard part: delivering on the promises you made—or didn't make.
+
+The real test is still ahead.`,
+    choices: [],
+    nextSceneId: 'ch4_opening',
+  },
+];
+
+// ============================================================================
+// CHAPTER 4: THE RECKONING
+// ============================================================================
+
+const CHAPTER_4_SCENES: Scene[] = [
+  // Opening Scene - Six Months Later
+  {
+    id: 'ch4_opening',
+    chapterId: 'chapter_4',
+    title: 'Six Months Later',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `**CHAPTER 4: THE RECKONING**
+
+*Six Months Later*
+
+The PackFancy acquisition was supposed to be a proving ground. A stepping stone.
+
+Instead, it's become a crucible.
+
+Six months in, and the portfolio company is bleeding. Revenue down 15%. The equipment failures came faster than anyone predicted. Two key customers left for competitors.
+
+And now you're sitting in Chad's office, looking at a report that will change everything.
+
+**"The board meets tomorrow,"** Chad says. His face is grim. **"They want answers. And they're looking at you."**
+
+*The deal you closed is falling apart. What happens next depends on the choices you made—and the ones you're about to make.*`,
+    choices: [
+      {
+        id: 'ch4_accept_responsibility',
+        text: 'Accept responsibility for the situation',
+        subtext: 'Own the problems',
+        nextSceneId: 'ch4_take_ownership',
+        effects: {
+          stats: { ethics: 10, stress: 15 },
+          setFlags: ['ACCEPTED_RESPONSIBILITY'],
+        },
+      },
+      {
+        id: 'ch4_deflect_blame',
+        text: 'Point to factors outside your control',
+        subtext: 'The market changed, the sellers lied',
+        nextSceneId: 'ch4_deflection',
+        effects: {
+          stats: { politics: 5, ethics: -10 },
+          setFlags: ['DEFLECTED_BLAME'],
+        },
+      },
+      {
+        id: 'ch4_propose_solution',
+        text: 'Come with a turnaround plan',
+        subtext: 'Problems need solutions',
+        nextSceneId: 'ch4_turnaround_pitch',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['PROPOSED_TURNAROUND'],
+        },
+      },
+    ],
+  },
+
+  // Take ownership scene
+  {
+    id: 'ch4_take_ownership',
+    chapterId: 'chapter_4',
+    title: 'Accountability',
+    type: 'dialogue',
+    atmosphere: 'crisis',
+    speaker: {
+      id: 'player',
+      name: 'You',
+      mood: 'worried',
+    },
+    narrative: `**"The problems at PackFancy are real, and I bear responsibility for the deal. I should have pushed harder on the equipment due diligence. I should have insisted on longer warranties."**
+
+Chad studies you.
+
+**"That's... refreshingly honest. Most associates would be building a bunker of excuses right now."**
+
+**"Excuses don't fix companies."**
+
+**"No. They don't."** He leans back. **"Alright. You own it. Now what are you going to do about it?"**
+
+*Accountability is the first step. But it's not a solution.*`,
+    choices: [
+      {
+        id: 'ch4_ownership_turnaround',
+        text: 'Present a turnaround strategy',
+        nextSceneId: 'ch4_turnaround_pitch',
+        effects: {
+          relationships: [{ npcId: 'chad', change: 10, memory: 'Took responsibility like a professional' }],
+        },
+      },
+    ],
+  },
+
+  // Deflection scene
+  {
+    id: 'ch4_deflection',
+    chapterId: 'chapter_4',
+    title: 'The Blame Game',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'disappointed',
+    },
+    narrative: `**"The sellers misrepresented the equipment condition. The market shifted. Our operating team was slow to implement changes—"**
+
+Chad holds up a hand.
+
+**"Stop."**
+
+His voice is cold.
+
+**"I've heard this speech a hundred times from a hundred failed dealmakers. None of them work here anymore."**
+
+**"I'm not saying I'm blameless—"**
+
+**"Then don't sound like you are."** He sighs. **"Look, the board doesn't want excuses. They want to know if this investment is salvageable. So: is it?"**
+
+*You've lost ground. Time to recover.*`,
+    choices: [
+      {
+        id: 'ch4_deflection_recover',
+        text: 'Pivot to solutions',
+        nextSceneId: 'ch4_turnaround_pitch',
+        effects: {
+          relationships: [{ npcId: 'chad', change: -10, memory: 'Tried to blame others first' }],
+        },
+      },
+    ],
+  },
+
+  // Turnaround pitch scene
+  {
+    id: 'ch4_turnaround_pitch',
+    chapterId: 'chapter_4',
+    title: 'The Plan',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `You pull out your notes. Three AM work, fueled by desperation and cold coffee.
+
+**"Here's what I'm proposing:"**
+
+**Option A: Aggressive Restructuring**
+- Immediate workforce reduction (30% of staff)
+- Sell the Newark real estate (the hidden value you originally found)
+- Use proceeds to recapitalize equipment
+- Expected turnaround: 18 months
+
+**Option B: Strategic Pivot**
+- Shift from manufacturing to distribution
+- Partner with overseas producers
+- Retain brand and customer relationships
+- Expected turnaround: 24 months
+
+**Option C: Managed Exit**
+- Acknowledge the investment won't meet targets
+- Find a strategic buyer or merge with competitor
+- Minimize losses, preserve reputation
+- Timeline: 6-9 months
+
+Chad reads through your analysis in silence.
+
+**"And your recommendation?"**`,
+    choices: [
+      {
+        id: 'ch4_recommend_aggressive',
+        text: 'Aggressive restructuring',
+        subtext: 'Maximum returns, maximum pain',
+        nextSceneId: 'ch4_aggressive_path',
+        requirements: {
+          blockedByFlags: ['LEGACY_PROMISE'],
+        },
+        effects: {
+          stats: { dealcraft: 10, ethics: -15 },
+          setFlags: ['CHOSE_AGGRESSIVE'],
+        },
+      },
+      {
+        id: 'ch4_recommend_pivot',
+        text: 'Strategic pivot',
+        subtext: 'Transform the business model',
+        nextSceneId: 'ch4_pivot_path',
+        effects: {
+          stats: { dealcraft: 5, politics: 5 },
+          setFlags: ['CHOSE_PIVOT'],
+        },
+      },
+      {
+        id: 'ch4_recommend_exit',
+        text: 'Managed exit',
+        subtext: 'Cut losses, learn lessons',
+        nextSceneId: 'ch4_exit_path',
+        effects: {
+          stats: { reputation: -5, ethics: 5 },
+          setFlags: ['CHOSE_EXIT'],
+        },
+      },
+      {
+        id: 'ch4_recommend_ethical',
+        text: 'Modified restructuring—protect employees',
+        subtext: 'Honor your promises',
+        requirements: {
+          requiredFlags: ['LEGACY_PROMISE'],
+        },
+        nextSceneId: 'ch4_ethical_restructure',
+        effects: {
+          stats: { ethics: 15 },
+          setFlags: ['CHOSE_ETHICAL_RESTRUCTURE'],
+        },
+      },
+    ],
+  },
+
+  // Aggressive path scene
+  {
+    id: 'ch4_aggressive_path',
+    chapterId: 'chapter_4',
+    title: 'The Hard Way',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `Chad nods slowly.
+
+**"Aggressive restructuring. That's the PE playbook. Cut deep, recapitalize, sell high."**
+
+**"It works."**
+
+**"It does. When it works."** He pauses. **"The Newark real estate sale—that was your original thesis. Selling it now feels like admitting the rest of the deal was a mistake."**
+
+**"The real estate was always the value. We just... got distracted by the operating business."**
+
+**"Alright. I'll take it to the board. But you're going to be the one telling Stanley Kowalski that half his workforce is getting fired."**
+
+*You're about to learn what your promises are worth.*`,
+    choices: [
+      {
+        id: 'ch4_aggressive_continue',
+        text: 'Proceed with the plan',
+        nextSceneId: 'ch4_kowalski_confrontation',
+        effects: {
+          stats: { stress: 20 },
+          setFlags: ['AGGRESSIVE_APPROVED'],
+        },
+      },
+    ],
+  },
+
+  // Pivot path scene
+  {
+    id: 'ch4_pivot_path',
+    chapterId: 'chapter_4',
+    title: 'Reinvention',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'neutral',
+    },
+    narrative: `**"A strategic pivot."** Chad considers. **"That's... ambitious. You're essentially proposing we turn a manufacturing company into a brand management company."**
+
+**"The brand has value. The customer relationships have value. The manufacturing capability is a liability."**
+
+**"But the manufacturing is what the Kowalskis built. What Stanley's father built."**
+
+**"And it's what's killing them."**
+
+Chad drums his fingers on the desk.
+
+**"The board will have questions. The timeline is long. And Tommy Kowalski is going to lose his mind when he hears 'offshore production.'"**
+
+**"I know. But it's the path that preserves the most jobs while actually fixing the business."**
+
+**"Alright. Let's see if you can sell it."**`,
+    choices: [
+      {
+        id: 'ch4_pivot_continue',
+        text: 'Prepare for the board meeting',
+        nextSceneId: 'ch4_board_meeting',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['PIVOT_APPROVED'],
+        },
+      },
+    ],
+  },
+
+  // Exit path scene
+  {
+    id: 'ch4_exit_path',
+    chapterId: 'chapter_4',
+    title: 'Knowing When to Fold',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'disappointed',
+    },
+    narrative: `Chad is silent for a long moment.
+
+**"A managed exit. You're recommending we write off a $85 million investment."**
+
+**"I'm recommending we stop throwing good money after bad. Sell now, we might recover 60 cents on the dollar. Wait another year, we might get 30."**
+
+**"The partners won't like hearing that their rising star's first deal is a loss."**
+
+**"Better a managed loss than a catastrophic one."**
+
+Chad looks at you with something that might be respect—or pity.
+
+**"You know this will follow you, right? 'The analyst who recommended giving up.' That's a reputation."**
+
+**"Better than 'the analyst who kept doubling down on a disaster.'"**
+
+**"Maybe. Let's see if the board agrees."**`,
+    choices: [
+      {
+        id: 'ch4_exit_continue',
+        text: 'Face the board',
+        nextSceneId: 'ch4_board_meeting',
+        effects: {
+          stats: { ethics: 5, reputation: -10 },
+          setFlags: ['EXIT_APPROVED'],
+        },
+      },
+    ],
+  },
+
+  // Ethical restructure path
+  {
+    id: 'ch4_ethical_restructure',
+    chapterId: 'chapter_4',
+    title: 'A Promise Kept',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'player',
+      name: 'You',
+      mood: 'neutral',
+    },
+    narrative: `**"I made Stanley Kowalski a promise. No mass layoffs. Thoughtful transitions."**
+
+Chad's eyebrows rise.
+
+**"You remember that?"**
+
+**"I shook his hand. That means something to me."**
+
+**"Even if it costs us money?"**
+
+**"Especially then."** You take a breath. **"The restructuring can work without gutting the workforce. It'll take longer. Returns will be lower. But we won't leave a corpse."**
+
+Chad studies you for a long moment.
+
+**"You know, most people in this business... they say whatever they need to close. Then they forget."**
+
+**"I'm not most people."**
+
+**"No. You're not."** He almost smiles. **"Alright. Let's see if integrity pays dividends."**`,
+    choices: [
+      {
+        id: 'ch4_ethical_continue',
+        text: 'Proceed with the ethical approach',
+        nextSceneId: 'ch4_board_meeting',
+        effects: {
+          stats: { ethics: 20, reputation: 10 },
+          relationships: [{ npcId: 'chad', change: 20, memory: 'Kept a promise even when it cost' }],
+          setFlags: ['ETHICAL_APPROVED'],
+        },
+      },
+    ],
+  },
+
+  // Kowalski confrontation scene
+  {
+    id: 'ch4_kowalski_confrontation',
+    chapterId: 'chapter_4',
+    title: 'Facing Stanley',
+    type: 'dialogue',
+    atmosphere: 'crisis',
+    speaker: {
+      id: 'stanley',
+      name: 'Stanley Kowalski',
+      mood: 'angry',
+    },
+    narrative: `The meeting takes place in the same conference room where you closed the deal. Stanley looks older.
+
+**"Thirty percent."** His voice is hollow. **"You're firing thirty percent of my people."**
+
+**"The company needs to be restructured to survive—"**
+
+**"Don't give me corporate speak!"** He slams the table. **"These are people! Maria in accounting—she's been here twenty years. Tom in shipping—his wife just had twins."**
+
+**"Mr. Kowalski—"**
+
+**"You shook my hand."** His voice cracks. **"You looked me in the eye and said you'd treat my people with respect."**
+
+The silence is crushing.
+
+**"This is what respect looks like,"** you say quietly. **"If we don't restructure, everyone loses their job. Not thirty percent. Everyone."**
+
+Stanley stares at you. Something in his eyes breaks.
+
+**"Get out. Just... get out."**`,
+    choices: [
+      {
+        id: 'ch4_confrontation_leave',
+        text: 'Leave him to his grief',
+        nextSceneId: 'ch4_aftermath_aggressive',
+        effects: {
+          stats: { stress: 25, ethics: -10 },
+          relationships: [{ npcId: 'stanley', change: -50, memory: 'Broke every promise' }],
+        },
+      },
+      {
+        id: 'ch4_confrontation_stay',
+        text: 'Stay. Explain the full picture.',
+        nextSceneId: 'ch4_full_explanation',
+        effects: {
+          stats: { stress: 15 },
+        },
+      },
+    ],
+  },
+
+  // Full explanation scene
+  {
+    id: 'ch4_full_explanation',
+    chapterId: 'chapter_4',
+    title: 'The Truth',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'player',
+      name: 'You',
+      mood: 'worried',
+    },
+    narrative: `**"Mr. Kowalski, please. Let me show you the numbers."**
+
+You spread the financials on the table. The declining revenue. The equipment failures. The customer losses.
+
+**"Your company was dying when we bought it. Monica's CFO work—she was hiding how bad it really was. From you. From us. From everyone."**
+
+Stanley's anger wavers.
+
+**"If we do nothing, PackFancy closes in eighteen months. Everyone loses their jobs. The buildings get sold. The name disappears."**
+
+**"If we restructure—yes, thirty percent lose their jobs. But seventy percent keep them. And in two years, we're hiring again."**
+
+**"You swear to that?"**
+
+**"I can't swear to anything in business. But I can promise I'll fight for it."**
+
+Stanley is silent for a long time.
+
+**"That's the most honest thing anyone from your firm has ever said to me."**`,
+    choices: [
+      {
+        id: 'ch4_explanation_understood',
+        text: 'Ask for his support',
+        nextSceneId: 'ch4_stanley_support',
+        effects: {
+          relationships: [{ npcId: 'stanley', change: 20, memory: 'Told me the truth, even when it hurt' }],
+        },
+      },
+    ],
+  },
+
+  // Stanley support scene
+  {
+    id: 'ch4_stanley_support',
+    chapterId: 'chapter_4',
+    title: 'Unexpected Ally',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'stanley',
+      name: 'Stanley Kowalski',
+      mood: 'neutral',
+    },
+    narrative: `Stanley looks at the papers, then at you.
+
+**"When I was twenty-five, my father had to lay off half our workers. Depression-era thinking, he called it. 'You can't save everyone, but you can save some.'"**
+
+He sighs.
+
+**"I've spent fifty years trying to prove him wrong. Building a company where layoffs never happened. Where loyalty meant something."**
+
+**"It did mean something. It still does."**
+
+**"Maybe."** He stands slowly. **"I'll support your restructuring. On one condition: you look every person you fire in the eye. You explain why. And you help them find something else."**
+
+**"Deal."**
+
+**"Then let's go save what's left of my father's company."**`,
+    choices: [
+      {
+        id: 'ch4_support_proceed',
+        text: 'Begin the restructuring together',
+        nextSceneId: 'ch4_board_meeting',
+        effects: {
+          stats: { ethics: 10, politics: 10 },
+          relationships: [{ npcId: 'stanley', change: 30, memory: 'We worked together to save the company' }],
+          setFlags: ['STANLEY_ALLY'],
+        },
+      },
+    ],
+  },
+
+  // Aftermath aggressive scene
+  {
+    id: 'ch4_aftermath_aggressive',
+    chapterId: 'chapter_4',
+    title: 'The Cost',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `You drive back to Manhattan in silence.
+
+The restructuring will proceed. The layoffs will happen. The real estate will sell.
+
+On paper, it's the right call. The numbers work. The investors will be satisfied.
+
+But Stanley Kowalski's face will haunt you.
+
+Your phone buzzes. A text from an unknown number:
+
+*"You're worse than Monica. At least she was family."*
+
+Tommy.
+
+*Some victories feel like defeats.*`,
+    choices: [
+      {
+        id: 'ch4_aftermath_continue',
+        text: 'Push forward',
+        nextSceneId: 'ch4_board_meeting',
+        effects: {
+          stats: { stress: 10 },
+          relationships: [{ npcId: 'tommy', change: -40, memory: 'Betrayed everything' }],
+        },
+      },
+    ],
+  },
+
+  // Board meeting scene
+  {
+    id: 'ch4_board_meeting',
+    chapterId: 'chapter_4',
+    title: 'The Board',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `The Sterling Partners boardroom. Mahogany table. Leather chairs. Portraits of founders on the walls.
+
+The partners file in: graying men in expensive suits, a few younger faces trying to look equally serious.
+
+Hunter Sterling—the nephew you met on day one—is notably present. He's been waiting for you to fail.
+
+Chad presents the situation. The numbers. The options.
+
+Then all eyes turn to you.
+
+**"Walk us through your recommendation,"** the managing partner says.
+
+*This is the moment. Everything you've done—every choice, every relationship, every compromise—has led here.*`,
+    choices: [
+      {
+        id: 'ch4_board_present',
+        text: 'Present your case',
+        nextSceneId: 'ch4_board_presentation',
+        effects: {
+          stats: { stress: 15 },
+        },
+      },
+    ],
+  },
+
+  // Board presentation scene
+  {
+    id: 'ch4_board_presentation',
+    chapterId: 'chapter_4',
+    title: 'Making the Case',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `You stand. Your voice is steady.
+
+The presentation flows: market analysis, operational review, financial projections. You answer questions crisply. Challenge pushback confidently.
+
+Hunter tries to interrupt twice. Both times, Chad shuts him down.
+
+After forty-five minutes, the managing partner holds up a hand.
+
+**"Enough. We've heard the analysis."** He looks around the table. **"Comments?"**
+
+The discussion is brief. The partners have already decided—they just needed to see if you'd crack under pressure.
+
+**"Motion to approve the restructuring plan as presented."**
+
+Hands go up.
+
+**"Carried. Meeting adjourned."**
+
+*You've survived the board. But the real test is just beginning.*`,
+    choices: [
+      {
+        id: 'ch4_board_aftermath',
+        text: 'Leave the boardroom',
+        nextSceneId: 'ch4_post_board',
+        effects: {
+          stats: { reputation: 10 },
+          achievement: 'BOARD_SURVIVOR',
+        },
+      },
+    ],
+  },
+
+  // Post board scene
+  {
+    id: 'ch4_post_board',
+    chapterId: 'chapter_4',
+    title: 'After the Vote',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'neutral',
+    },
+    narrative: `Chad catches you in the hallway.
+
+**"Not bad in there. You handled the pressure."**
+
+**"Thanks."**
+
+**"Don't thank me yet."** He looks at you seriously. **"The board approved the plan. Now you have to execute it. Six months to show results, or PackFancy gets sold for parts and you get reassigned to due diligence purgatory."**
+
+**"I understand."**
+
+**"Do you?"** He pauses. **"Hunter's been whispering to the partners. Says you're in over your head. That the PackFancy deal proves you got lucky on the real estate analysis but don't have what it takes for the long game."**
+
+**"And what do you think?"**
+
+Chad almost smiles.
+
+**"I think the next six months will answer that question. Don't disappoint me."**`,
+    choices: [
+      {
+        id: 'ch4_accept_challenge',
+        text: 'Accept the challenge',
+        nextSceneId: 'ch4_execution_montage',
+        effects: {
+          stats: { dealcraft: 5 },
+        },
+      },
+    ],
+  },
+
+  // Execution montage scene
+  {
+    id: 'ch4_execution_montage',
+    chapterId: 'chapter_4',
+    title: 'The Grind',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Six months of execution.*
+
+Week 1: The layoffs. You honor Stanley's request—looking each person in the eye, explaining why, connecting them with outplacement services.
+
+Week 4: The equipment upgrade begins. New machinery from Germany. Training programs for the remaining staff.
+
+Week 8: The real estate sale closes. $45 million—less than you projected, but enough.
+
+Week 12: The first customer win in months. A regional retailer impressed by improved quality.
+
+Week 16: Tommy Kowalski returns to the facility. He's been avoiding you. Today, he has something to say.
+
+Week 20: The board review approaches. The numbers are... complicated.
+
+*You've done everything you can. Now comes the reckoning.*`,
+    choices: [
+      {
+        id: 'ch4_face_tommy',
+        text: 'Face Tommy first',
+        nextSceneId: 'ch4_tommy_return',
+        effects: {
+          stats: { stress: 5 },
+        },
+      },
+    ],
+  },
+
+  // Tommy return scene
+  {
+    id: 'ch4_tommy_return',
+    chapterId: 'chapter_4',
+    title: 'The Prodigal Son',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'tommy',
+      name: 'Tommy Jr.',
+      mood: 'neutral',
+    },
+    narrative: `Tommy finds you in the break room.
+
+**"I hated you,"** he says without preamble. **"After the layoffs. I thought you were just another suit counting bodies."**
+
+**"I understand."**
+
+**"But I watched you. These last few months. The way you handled Maria's departure—getting her that job at the competitor. The way you actually listened when the floor workers had suggestions about the new equipment."**
+
+He pauses.
+
+**"My father... he's starting to come around. Says maybe you're different."**
+
+**"And you?"**
+
+Tommy looks at the floor.
+
+**"I think you might actually be trying to save this place. Not just squeeze it dry."**
+
+**"That's the goal."**
+
+**"Then let me help. I know this business better than anyone. If you're really committed to a turnaround, you need me."**`,
+    choices: [
+      {
+        id: 'ch4_accept_tommy',
+        text: 'Bring Tommy into the turnaround team',
+        nextSceneId: 'ch4_tommy_joins',
+        effects: {
+          relationships: [{ npcId: 'tommy', change: 30, memory: 'Gave me a real chance' }],
+          setFlags: ['TOMMY_TURNAROUND_PARTNER'],
+        },
+      },
+      {
+        id: 'ch4_reject_tommy',
+        text: 'Keep him at arm\'s length',
+        subtext: 'He\'s unpredictable',
+        nextSceneId: 'ch4_tommy_rejected',
+        effects: {
+          stats: { politics: 5 },
+          relationships: [{ npcId: 'tommy', change: -10, memory: 'Still didn\'t trust me' }],
+        },
+      },
+    ],
+  },
+
+  // Tommy joins scene
+  {
+    id: 'ch4_tommy_joins',
+    chapterId: 'chapter_4',
+    title: 'Alliance',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'player',
+      name: 'You',
+      mood: 'neutral',
+    },
+    narrative: `**"You're in. But I need you all-in, Tommy. No more midnight texts. No more surprises. If there's a problem, we face it together."**
+
+**"Deal."** He extends his hand.
+
+You shake it. Different from Stanley's handshake six months ago—that was a promise you weren't sure you could keep. This one feels earned.
+
+**"First order of business: the quality control issues on Line 3. The new equipment is great, but the operators are struggling with the transition."**
+
+**"I've been working with them. Have some ideas."**
+
+**"Then let's hear them."**
+
+*The Kowalski family—or at least half of it—is on your side again.*`,
+    choices: [
+      {
+        id: 'ch4_tommy_work',
+        text: 'Work together on the turnaround',
+        nextSceneId: 'ch4_final_review',
+        effects: {
+          stats: { dealcraft: 10 },
+        },
+      },
+    ],
+  },
+
+  // Tommy rejected scene
+  {
+    id: 'ch4_tommy_rejected',
+    chapterId: 'chapter_4',
+    title: 'Distance',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'tommy',
+      name: 'Tommy Jr.',
+      mood: 'disappointed',
+    },
+    narrative: `**"I appreciate the offer, Tommy. But right now, the turnaround needs focused execution. Too many cooks..."**
+
+His face hardens.
+
+**"Too many cooks. Right. Because the family that built this company for fifty years is just... interference."**
+
+**"That's not what I meant."**
+
+**"Sure."** He turns to leave. **"Good luck with your focused execution. Hope it works out better than the focused acquisition did."**
+
+The door closes harder than necessary.
+
+*You've kept your team tight. But you may have lost an ally.*`,
+    choices: [
+      {
+        id: 'ch4_tommy_rejected_continue',
+        text: 'Continue with the turnaround',
+        nextSceneId: 'ch4_final_review',
+        effects: {
+          stats: { stress: 10 },
+        },
+      },
+    ],
+  },
+
+  // Final review scene
+  {
+    id: 'ch4_final_review',
+    chapterId: 'chapter_4',
+    title: 'Judgment Day',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Week 24. The final board review.*
+
+The numbers are in:
+
+**Revenue:** Up 8% from the low point, still down 7% from acquisition
+**EBITDA:** Positive for the first time in two quarters
+**Customer retention:** Stabilized, two new accounts signed
+**Workforce:** Down 25% from acquisition, morale improving
+**Equipment:** New machinery fully operational
+**Real estate:** Sold, proceeds deployed
+
+It's not a home run. But it's not a disaster either.
+
+Chad reviews the summary.
+
+**"Well. You didn't save the world. But you stopped the bleeding."**
+
+**"Is that enough?"**
+
+**"Let's find out."**`,
+    choices: [
+      {
+        id: 'ch4_final_board',
+        text: 'Enter the boardroom',
+        nextSceneId: 'ch4_final_board_meeting',
+        effects: {
+          stats: { stress: 20 },
+        },
+      },
+    ],
+  },
+
+  // Final board meeting scene
+  {
+    id: 'ch4_final_board_meeting',
+    chapterId: 'chapter_4',
+    title: 'The Verdict',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `The board reviews the results. Questions are asked. Data is challenged.
+
+Hunter makes one last attempt to undercut you—pointing out the deal still hasn't returned to acquisition value.
+
+But the managing partner cuts him off.
+
+**"The question isn't whether this deal hit our original targets. The question is whether it would have been worse without intervention."**
+
+He looks at you.
+
+**"Based on what I've seen, the answer is clearly yes. The turnaround isn't complete, but the trajectory is positive. The company is viable."**
+
+A murmur of agreement around the table.
+
+**"More importantly, I've seen something rare in this business: an associate who takes responsibility, executes under pressure, and maintains relationships even when delivering hard news."**
+
+**"That's the kind of person we promote."**
+
+The room goes quiet.
+
+**"Effective immediately, you're being promoted to Vice President. Congratulations."**`,
+    choices: [
+      {
+        id: 'ch4_promotion_accept',
+        text: 'Accept the promotion',
+        nextSceneId: 'ch4_chapter_end',
+        effects: {
+          stats: { money: 25000, reputation: 20 },
+          achievement: 'VICE_PRESIDENT',
+        },
+      },
+    ],
+  },
+
+  // Chapter end
+  {
+    id: 'ch4_chapter_end',
+    chapterId: 'chapter_4',
+    title: 'A New Beginning',
+    type: 'chapter_end',
+    atmosphere: 'celebration',
+    narrative: `*Later that evening*
+
+Chad finds you at the office bar, nursing a drink.
+
+**"VP. Not bad for someone who almost torpedoed their first deal."**
+
+**"Almost?"**
+
+**"The key word."** He sits down. **"You know what separates the people who make it in this business from the ones who wash out?"**
+
+**"Returns?"**
+
+**"No. Anyone can get lucky with returns."** He takes a sip. **"It's the ability to sit with uncertainty. To make decisions without perfect information. To live with consequences."**
+
+**"Sounds exhausting."**
+
+**"It is. But it's also..."** He searches for the word. **"Meaningful. In a way that most jobs aren't."**
+
+He raises his glass.
+
+**"To your first deal. May your second be cleaner."**
+
+**"And my third?"**
+
+**"Let's not get ahead of ourselves."**
+
+*The PackFancy chapter is closing. But in Private Equity, every ending is just another beginning.*
+
+**CHAPTER 4 COMPLETE**
+
+*You've survived your first deal cycle—from acquisition to turnaround. You've made promises and kept some. Broken others. Built relationships and burned bridges.*
+
+*You're a Vice President now. New deals await. New choices. New consequences.*
+
+*This is the game. And you're still playing.*`,
+    choices: [],
+    requiresAcknowledgment: true,
   },
 ];
 
@@ -2384,6 +4986,32 @@ export const STORY_CHAPTERS: Chapter[] = [
     estimatedMinutes: 20,
     theme: 'rising_action',
   },
+  {
+    id: 'chapter_3',
+    number: 3,
+    title: 'The Negotiation',
+    teaser: 'The term sheet is on the table. The Kowalski family waits across from you. Every word matters now.',
+    openingSceneId: 'ch3_opening',
+    endingSceneIds: ['ch3_chapter_end_standard', 'ch3_chapter_end_ethical', 'ch3_chapter_end_pragmatic'],
+    requirements: {
+      completedChapters: ['chapter_2'],
+    },
+    estimatedMinutes: 25,
+    theme: 'crisis',
+  },
+  {
+    id: 'chapter_4',
+    number: 4,
+    title: 'The Reckoning',
+    teaser: 'Six months after closing, PackFancy is struggling. The board wants answers. Time to prove your worth.',
+    openingSceneId: 'ch4_opening',
+    endingSceneIds: ['ch4_chapter_end'],
+    requirements: {
+      completedChapters: ['chapter_3'],
+    },
+    estimatedMinutes: 30,
+    theme: 'resolution',
+  },
 ];
 
 // ============================================================================
@@ -2393,6 +5021,8 @@ export const STORY_CHAPTERS: Chapter[] = [
 export const STORY_SCENES: Scene[] = [
   ...CHAPTER_1_SCENES,
   ...CHAPTER_2_SCENES,
+  ...CHAPTER_3_SCENES,
+  ...CHAPTER_4_SCENES,
 ];
 
 // ============================================================================
