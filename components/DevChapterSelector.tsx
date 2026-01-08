@@ -35,12 +35,12 @@ const DevChapterSelector: React.FC<DevChapterSelectorProps> = ({ onChapterStart 
 
   return (
     <div
-      className="fixed top-2 right-28"
+      className="fixed top-16 left-4"
       style={{ zIndex: Z_INDEX.max }}
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-purple-800 text-white text-[10px] px-3 py-1 border border-purple-500 rounded hover:bg-purple-700 flex items-center gap-1"
+        className="bg-purple-800 text-white text-[10px] px-3 py-2 border-2 border-yellow-400 rounded shadow-lg hover:bg-purple-700 flex items-center gap-1 animate-pulse"
       >
         <span className="text-yellow-300 font-bold">DEV</span>
         <span>Chapters</span>
@@ -48,7 +48,7 @@ const DevChapterSelector: React.FC<DevChapterSelectorProps> = ({ onChapterStart 
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-1 bg-slate-900 border border-purple-500 rounded shadow-lg min-w-[200px]">
+        <div className="absolute top-full left-0 mt-1 bg-slate-900 border-2 border-purple-500 rounded shadow-lg min-w-[220px]">
           <div className="p-2 border-b border-purple-500/50 bg-purple-900/30">
             <div className="text-[10px] text-purple-300 uppercase tracking-wider font-bold">
               Jump to Chapter (Dev Only)
