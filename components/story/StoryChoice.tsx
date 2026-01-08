@@ -17,26 +17,13 @@ interface StoryChoiceProps {
 const StoryChoice: React.FC<StoryChoiceProps> = ({ choice, index, onClick, disabled }) => {
   const isLocked = !choice.available;
 
-  // Get style based on choice type
+  // Get style based on choice type - all choices now look the same to hide hints
   const getStyleClasses = () => {
     if (isLocked) {
       return 'border-gray-800 bg-gray-900/50 text-gray-600 cursor-not-allowed';
     }
-
-    switch (choice.style) {
-      case 'risky':
-        return 'border-red-900 hover:border-red-500 bg-red-950/30 hover:bg-red-950/50 text-red-400';
-      case 'safe':
-        return 'border-blue-900 hover:border-blue-500 bg-blue-950/30 hover:bg-blue-950/50 text-blue-400';
-      case 'ethical':
-        return 'border-green-900 hover:border-green-500 bg-green-950/30 hover:bg-green-950/50 text-green-400';
-      case 'unethical':
-        return 'border-purple-900 hover:border-purple-500 bg-purple-950/30 hover:bg-purple-950/50 text-purple-400';
-      case 'hidden':
-        return 'border-yellow-900 hover:border-yellow-500 bg-yellow-950/30 hover:bg-yellow-950/50 text-yellow-400';
-      default:
-        return 'border-gray-700 hover:border-green-500 bg-gray-900 hover:bg-gray-800 text-gray-100';
-    }
+    // All available choices use neutral styling - no hints about risk/safety
+    return 'border-gray-700 hover:border-green-500 bg-gray-900 hover:bg-gray-800 text-gray-100';
   };
 
   // Get keyboard shortcut
@@ -90,40 +77,13 @@ const StoryChoice: React.FC<StoryChoiceProps> = ({ choice, index, onClick, disab
           </div>
         )}
 
-        {/* Effect hints */}
-        {choice.effects && !isLocked && (
-          <div className="flex gap-2 mt-2 text-xs">
-            {choice.effects.stats?.reputation && choice.effects.stats.reputation > 0 && (
-              <span className="text-green-500">+REP</span>
-            )}
-            {choice.effects.stats?.reputation && choice.effects.stats.reputation < 0 && (
-              <span className="text-red-500">-REP</span>
-            )}
-            {choice.effects.stats?.stress && choice.effects.stats.stress > 0 && (
-              <span className="text-red-400">+STRESS</span>
-            )}
-            {choice.effects.stats?.stress && choice.effects.stats.stress < 0 && (
-              <span className="text-green-400">-STRESS</span>
-            )}
-            {choice.effects.money && choice.effects.money > 0 && (
-              <span className="text-yellow-500">+$</span>
-            )}
-            {choice.effects.money && choice.effects.money < 0 && (
-              <span className="text-red-500">-$</span>
-            )}
-            {choice.requirements?.moneyCost && (
-              <span className="text-yellow-600">
-                -${choice.requirements.moneyCost.toLocaleString()}
-              </span>
-            )}
+        {/* Money cost indicator - only show if there's an upfront cost requirement */}
+        {choice.requirements?.moneyCost && !isLocked && (
+          <div className="mt-2 text-xs text-yellow-600">
+            Cost: ${choice.requirements.moneyCost.toLocaleString()}
           </div>
         )}
       </div>
-
-      {/* Risk indicator for risky choices */}
-      {choice.style === 'risky' && !isLocked && (
-        <div className="absolute bottom-2 right-3 text-xs text-red-600 font-mono">RISKY</div>
-      )}
     </button>
   );
 };
