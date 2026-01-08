@@ -469,21 +469,12 @@ const RPGEventModal: React.FC<RPGEventModalProps> = ({
             </div>
           )}
 
-          {/* Mentor Guidance (Tutorial/Onboarding) */}
-          {currentEvent.mentorGuidance && (
+          {/* Mentor Guidance (Tutorial/Onboarding only) */}
+          {currentEvent.mentorGuidance && currentEvent.isOnboarding && (
             <MentorGuidanceBox guidance={currentEvent.mentorGuidance} />
           )}
 
-          {/* Machiavelli AI Insight - Prominent Advisor Section */}
-          {(currentEvent.advisorHints || currentEvent.stakes === 'HIGH' || currentEvent.stakes === 'CRITICAL') && (
-            <MachiavelliInsight
-              hints={currentEvent.advisorHints || {}}
-              stakes={currentEvent.stakes}
-              isExpanded={advisorExpanded}
-              onToggle={() => setAdvisorExpanded(!advisorExpanded)}
-              onConsultAdvisor={onConsultAdvisor}
-            />
-          )}
+          {/* Advisor hints removed - player must learn from consequences */}
         </div>
 
         {/* Choices */}
@@ -508,24 +499,13 @@ const RPGEventModal: React.FC<RPGEventModalProps> = ({
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <span className="text-xl">
-                      {getAlignmentIcon(choice.alignment)}
-                    </span>
+                    <span className="text-xl">💭</span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className={`font-bold ${isAvailable ? 'text-slate-200' : 'text-slate-500'}`}>
                           {choice.label}
                         </span>
-                        {choice.skillCheck && (
-                          <span className="text-xs px-2 py-0.5 bg-purple-900/50 text-purple-400 rounded">
-                            Skill Check ({choice.skillCheck.skill}: {choice.skillCheck.threshold})
-                          </span>
-                        )}
-                        {choice.successChance && choice.successChance < 100 && (
-                          <span className="text-xs px-2 py-0.5 bg-amber-900/50 text-amber-400 rounded">
-                            {choice.successChance}% success
-                          </span>
-                        )}
+                        {/* Skill check and success chance hidden - player learns through experience */}
                       </div>
                       <p className={`text-sm mt-1 ${isAvailable ? 'text-slate-400' : 'text-slate-600'}`}>
                         {choice.description}

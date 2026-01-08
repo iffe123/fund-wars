@@ -391,6 +391,7 @@ interface StoryEngineContextType {
   getRelationship: (npcId: string) => NPCRelationship | undefined;
   hasFlag: (flag: string) => boolean;
   getStat: (stat: keyof PlayerStats) => number;
+  applyStatChanges: (changes: Partial<PlayerStats>) => void;
 }
 
 const StoryEngineContext = createContext<StoryEngineContextType | null>(null);
@@ -563,6 +564,15 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
     [state.game]
   );
 
+  // Apply stat changes directly (used by puzzles, dialogues, etc.)
+  const applyStatChanges = useCallback(
+    (changes: Partial<PlayerStats>) => {
+      if (!state.game) return;
+      dispatch({ type: 'APPLY_EFFECTS', payload: { stats: changes } });
+    },
+    [state.game]
+  );
+
   // Auto-save effect (could be enhanced)
   useEffect(() => {
     if (state.game && state.isInitialized) {
@@ -597,6 +607,7 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
     getRelationship,
     hasFlag,
     getStat,
+    applyStatChanges,
   };
 
   return (

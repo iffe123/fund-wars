@@ -8,11 +8,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStoryEngine, StoryEngineProvider } from '../../contexts/StoryEngineContext';
 import { AuthProvider, useAuth } from '../../context/AuthContext';
+import { ChallengeProvider, useChallenges, useActiveChallenge } from '../../contexts/ChallengeContext';
 import TitleScreen from './TitleScreen';
 import ChapterSelect from './ChapterSelect';
 import StoryScene from './StoryScene';
 import CharacterCreate from './CharacterCreate';
 import LoginScreen from '../LoginScreen';
+import PuzzleModal from '../PuzzleModal';
+import NPCDialogueModal from '../NPCDialogueModal';
+import type { PuzzleResult } from '../../types/puzzles';
+import type { DialogueResult } from '../../types/npcDialogue';
 
 type GameScreen = 'title' | 'character_create' | 'chapter_select' | 'playing' | 'chapter_complete' | 'game_over';
 
@@ -27,10 +32,57 @@ const StoryGameInner: React.FC = () => {
     startChapter,
     resetGame,
     getAvailableChapters,
+    applyStatChanges,
   } = useStoryEngine();
+
+  // Challenge system hooks
+  const {
+    state: challengeState,
+    completePuzzle,
+    skipPuzzle,
+    completeDialogue,
+    checkTriggers
+  } = useChallenges();
+  const { activePuzzle, activeDialogue } = useActiveChallenge();
 
   const [screen, setScreen] = useState<GameScreen>('title');
   const [hasSavedGame, setHasSavedGame] = useState(false);
+
+  // Check for challenge triggers when playing
+  useEffect(() => {
+    if (screen === 'playing' && game) {
+      const flags = game.flags ? Array.from(game.flags) : [];
+      checkTriggers(game.stats.week || 1, flags);
+    }
+  }, [screen, game?.stats.week, checkTriggers]);
+
+  // Handle puzzle completion - apply stat changes
+  const handlePuzzleComplete = useCallback((result: PuzzleResult) => {
+    completePuzzle(result);
+    // Apply rewards or penalties to game stats
+    if (result.passed && result.reward) {
+      applyStatChanges({
+        reputation: result.reward.reputation || 0,
+        financialEngineering: result.reward.financialEngineering || 0,
+      });
+    } else if (!result.passed && result.penalty) {
+      applyStatChanges({
+        stress: result.penalty.stress || 0,
+      });
+    }
+  }, [completePuzzle, applyStatChanges]);
+
+  // Handle dialogue completion - apply relationship changes
+  const handleDialogueComplete = useCallback((result: DialogueResult) => {
+    completeDialogue(result);
+    // Apply stat changes from dialogue
+    if (result.effects) {
+      applyStatChanges({
+        reputation: result.effects.reputation || 0,
+        stress: result.effects.stress || 0,
+      });
+    }
+  }, [completeDialogue, applyStatChanges]);
 
   // Check for saved game on mount
   useEffect(() => {
@@ -135,7 +187,30 @@ const StoryGameInner: React.FC = () => {
           </div>
         );
       }
-      return <StoryScene scene={currentScene} />;
+      return (
+        <>
+          <StoryScene scene={currentScene} />
+          {/* Challenge Overlays */}
+          {activePuzzle && (
+            <PuzzleModal
+              puzzle={activePuzzle}
+              onComplete={handlePuzzleComplete}
+              onSkip={skipPuzzle}
+            />
+          )}
+          {activeDialogue && game && (
+            <NPCDialogueModal
+              dialogue={activeDialogue}
+              playerStats={{
+                reputation: game.stats.reputation || 50,
+                financialEngineering: game.stats.financialEngineering || 10,
+              }}
+              flags={game.flags ? Array.from(game.flags) : []}
+              onComplete={handleDialogueComplete}
+            />
+          )}
+        </>
+      );
 
     case 'chapter_complete':
       return (
@@ -471,7 +546,9 @@ const AuthenticatedGame: React.FC = () => {
   // Show the game if authenticated
   return (
     <StoryEngineProvider>
-      <StoryGameInner />
+      <ChallengeProvider>
+        <StoryGameInner />
+      </ChallengeProvider>
     </StoryEngineProvider>
   );
 };
