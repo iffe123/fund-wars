@@ -429,10 +429,11 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
     });
   }, [state.currentScene, state.game]);
 
-  // Can auto-advance (scene with no choices but has nextSceneId)
+  // Can auto-advance (scene with no choices but has nextSceneId or requiresAcknowledgment)
   const canAutoAdvance = useMemo(() => {
     if (!state.currentScene) return false;
-    return state.currentScene.choices.length === 0 && !!state.currentScene.nextSceneId;
+    return state.currentScene.choices.length === 0 &&
+      (!!state.currentScene.nextSceneId || !!state.currentScene.requiresAcknowledgment);
   }, [state.currentScene]);
 
   // Is actively playing

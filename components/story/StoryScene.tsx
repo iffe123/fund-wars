@@ -33,6 +33,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
     applyChoiceEffects,
     navigateToScene,
     advanceScene,
+    completeChapter,
     game,
     state,
   } = useStoryEngine();
@@ -135,9 +136,14 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
 
   const handleContinue = useCallback(() => {
     if (canAutoAdvance && !state.isTransitioning) {
-      advanceScene();
+      if (scene.nextSceneId) {
+        advanceScene();
+      } else if (scene.requiresAcknowledgment) {
+        // Scene requires acknowledgment but has no next scene - complete the chapter
+        completeChapter();
+      }
     }
-  }, [canAutoAdvance, advanceScene, state.isTransitioning]);
+  }, [canAutoAdvance, advanceScene, completeChapter, scene.nextSceneId, scene.requiresAcknowledgment, state.isTransitioning]);
 
   const handleKeyPress = useCallback(
     (e: KeyboardEvent) => {
