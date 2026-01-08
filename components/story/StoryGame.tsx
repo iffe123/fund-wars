@@ -16,6 +16,7 @@ import CharacterCreate from './CharacterCreate';
 import LoginScreen from '../LoginScreen';
 import PuzzleModal from '../PuzzleModal';
 import NPCDialogueModal from '../NPCDialogueModal';
+import DevChapterSelector from '../DevChapterSelector';
 import type { PuzzleResult } from '../../types/puzzles';
 import type { DialogueResult } from '../../types/npcDialogue';
 
@@ -162,33 +163,60 @@ const StoryGameInner: React.FC = () => {
     setScreen('title');
   }, [resetGame]);
 
+  // Handle dev chapter selection - jump directly to playing
+  const handleDevChapterStart = useCallback(() => {
+    setScreen('playing');
+  }, []);
+
   // Render based on current screen
+  // DEV: Chapter selector overlay for quick testing
+  const devOverlay = import.meta.env.DEV ? (
+    <DevChapterSelector onChapterStart={handleDevChapterStart} />
+  ) : null;
+
   switch (screen) {
     case 'title':
       return (
-        <TitleScreen
-          onNewGame={handleNewGame}
-          onContinue={handleContinue}
-          hasSavedGame={hasSavedGame}
-        />
+        <>
+          {devOverlay}
+          <TitleScreen
+            onNewGame={handleNewGame}
+            onContinue={handleContinue}
+            hasSavedGame={hasSavedGame}
+          />
+        </>
       );
 
     case 'character_create':
-      return <CharacterCreate onComplete={handleCharacterCreated} onBack={handleBackToMenu} />;
+      return (
+        <>
+          {devOverlay}
+          <CharacterCreate onComplete={handleCharacterCreated} onBack={handleBackToMenu} />
+        </>
+      );
 
     case 'chapter_select':
-      return <ChapterSelect onChapterSelect={handleChapterSelect} onBack={handleBackToMenu} />;
+      return (
+        <>
+          {devOverlay}
+          <ChapterSelect onChapterSelect={handleChapterSelect} onBack={handleBackToMenu} />
+        </>
+      );
 
     case 'playing':
       if (!currentScene) {
         return (
-          <div className="min-h-screen bg-black flex items-center justify-center">
-            <div className="text-green-400 font-mono">Loading scene...</div>
-          </div>
+          <>
+            {devOverlay}
+            <div className="min-h-screen bg-black flex items-center justify-center">
+              <div className="text-green-400 font-mono">Loading scene...</div>
+            </div>
+          </>
         );
       }
       return (
         <>
+          {devOverlay}
           <StoryScene scene={currentScene} />
           {/* Challenge Overlays */}
           {activePuzzle && (
@@ -214,18 +242,24 @@ const StoryGameInner: React.FC = () => {
 
     case 'chapter_complete':
       return (
-        <ChapterCompleteScreen
-          onContinue={handleChapterCompleteAcknowledge}
-          onMainMenu={handleBackToMenu}
-        />
+        <>
+          {devOverlay}
+          <ChapterCompleteScreen
+            onContinue={handleChapterCompleteAcknowledge}
+            onMainMenu={handleBackToMenu}
+          />
+        </>
       );
 
     case 'game_over':
       return (
-        <GameOverScreen
-          onRestart={handleRestart}
-          game={game}
-        />
+        <>
+          {devOverlay}
+          <GameOverScreen
+            onRestart={handleRestart}
+            game={game}
+          />
+        </>
       );
 
     default:
