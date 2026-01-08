@@ -2342,8 +2342,9 @@ The rest of the drive is silent.
     id: 'ch2_complete',
     chapterId: 'chapter_2',
     title: 'Chapter Complete',
-    type: 'outcome',
+    type: 'chapter_end',
     atmosphere: 'celebration',
+    requiresAcknowledgment: true,
     narrative: `**CHAPTER 2 COMPLETE**
 
 *The First Deal*
