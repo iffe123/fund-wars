@@ -443,6 +443,439 @@ export const NPC_DRAMA_TEMPLATES: DramaGenerator[] = [
       ],
     };
   },
+
+  // ==================== NEW NPC DRAMA EVENTS ====================
+
+  // Victoria Chen rivalry - Competitor MP
+  (npcs, currentWeek) => {
+    const victoria = npcs.find(n => n.id === 'victoria');
+    const chad = npcs.find(n => n.id === 'chad');
+    if (!victoria || !chad) return null;
+    if (victoria.relationship < 30 || chad.relationship < 40) return null;
+
+    return {
+      id: 'victoria_poaching',
+      title: 'Victoria Makes a Move',
+      description: `Victoria Chen from Meridian Partners just called. "I've been watching you. You're wasted at that firm. I have a Principal role open—more carry, better deals, actual respect. Think about it." Chad doesn't know about this call. Yet.`,
+      involvedNpcs: ['victoria', 'chad'],
+      playerMustChooseSide: true,
+      urgency: 'MEDIUM',
+      expiresWeek: currentWeek + 3,
+      choices: [
+        {
+          text: 'Take the meeting',
+          description: 'Hear her out. What\'s the harm in talking?',
+          outcome: {
+            description: 'You meet Victoria for coffee. The offer is real. The path forward at your current firm suddenly feels less certain.',
+            statChanges: {
+              stress: 10,
+              npcRelationshipUpdate: { npcId: 'victoria', change: 20, trustChange: 15, memory: 'Took me seriously' },
+              setsFlags: ['CONSIDERING_MERIDIAN'],
+            },
+          },
+        },
+        {
+          text: 'Tell Chad immediately',
+          description: 'Loyalty to the firm. Use this as leverage.',
+          outcome: {
+            description: 'Chad is furious—at Victoria, not you. "That snake." He promises to "take care of you" at bonus time. Whether that happens remains to be seen.',
+            statChanges: {
+              npcRelationshipUpdate: { npcId: 'chad', change: 25, trustChange: 20, memory: 'Stayed loyal when tested' },
+              npcRelationshipUpdate2: { npcId: 'victoria', change: -30, memory: 'Ratted me out' },
+            },
+          },
+        },
+        {
+          text: 'Politely decline',
+          description: 'Not interested. You\'re building something here.',
+          outcome: {
+            description: 'Victoria seems genuinely surprised. "Your loss." She moves on to someone else. The door is closed.',
+            statChanges: {
+              reputation: 5,
+              npcRelationshipUpdate: { npcId: 'victoria', change: -10, memory: 'Turned me down flat' },
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // Hans Gruber LP concerns
+  (npcs, currentWeek) => {
+    const hans = npcs.find(n => n.id === 'lp_swiss');
+    if (!hans || hans.relationship < 35) return null;
+
+    return {
+      id: 'hans_concerns',
+      title: 'The Swiss Banker\'s Concerns',
+      description: `Hans Gruber requests a private call. "I've been reviewing the quarterly reports. The leverage ratios on your recent deals concern me. We have capital preservation mandates. I need assurances." He's your largest LP.`,
+      involvedNpcs: ['lp_swiss'],
+      playerMustChooseSide: true,
+      urgency: 'HIGH',
+      expiresWeek: currentWeek + 2,
+      choices: [
+        {
+          text: 'Provide detailed risk analysis',
+          description: 'Walk him through every covenant, every stress test.',
+          outcome: {
+            description: 'After three hours on the phone, Hans is mollified. "You clearly understand the risks." He increases his commitment to your next fund.',
+            statChanges: {
+              energy: -20,
+              reputation: 10,
+              npcRelationshipUpdate: { npcId: 'lp_swiss', change: 20, trustChange: 15, memory: 'Took my concerns seriously' },
+              factionReputation: { LIMITED_PARTNERS: 10, MANAGING_DIRECTORS: 0, ANALYSTS: 0, REGULATORS: 0, RIVALS: 0 },
+            },
+          },
+        },
+        {
+          text: 'Dismiss his concerns',
+          description: 'He\'s too conservative. Your returns speak for themselves.',
+          outcome: {
+            description: 'Hans goes quiet. "I see." Two weeks later, you hear he\'s doing reference calls on competing funds. Your biggest LP is shopping.',
+            statChanges: {
+              stress: 25,
+              npcRelationshipUpdate: { npcId: 'lp_swiss', change: -30, trustChange: -25, memory: 'Dismissed my legitimate concerns' },
+              factionReputation: { LIMITED_PARTNERS: -15, MANAGING_DIRECTORS: 0, ANALYSTS: 0, REGULATORS: 0, RIVALS: 0 },
+            },
+          },
+        },
+        {
+          text: 'Offer a side letter with downside protection',
+          description: 'Give him preferential terms to keep him happy.',
+          outcome: {
+            description: 'Hans accepts the side letter. Other LPs find out and demand the same terms. You\'ve opened Pandora\'s box.',
+            statChanges: {
+              npcRelationshipUpdate: { npcId: 'lp_swiss', change: 15, memory: 'Gave me special treatment' },
+              reputation: -10,
+              stress: 15,
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // Dad's disapproval
+  (npcs, currentWeek) => {
+    const dad = npcs.find(n => n.id === 'dad');
+    const mom = npcs.find(n => n.id === 'mom');
+    if (!dad || !mom) return null;
+    if (dad.relationship < 40) return null;
+
+    return {
+      id: 'dad_career_talk',
+      title: 'Dad Has Questions',
+      description: `Sunday dinner. Dad puts down his fork. "I read an article about private equity. They called you people 'corporate raiders' who destroy jobs. Is that what you do? Is that what I raised you for?" Mom looks mortified. The mashed potatoes are getting cold.`,
+      involvedNpcs: ['dad', 'mom'],
+      playerMustChooseSide: false,
+      urgency: 'LOW',
+      expiresWeek: currentWeek + 4,
+      choices: [
+        {
+          text: 'Defend your profession passionately',
+          description: 'Explain value creation, operational improvement, capital allocation.',
+          outcome: {
+            description: 'Dad listens. Really listens. "I still don\'t like it, but I can see you believe in what you do." Mom squeezes your hand under the table.',
+            statChanges: {
+              energy: -10,
+              npcRelationshipUpdate: { npcId: 'dad', change: 15, trustChange: 10, memory: 'Actually explained the job to me' },
+              npcRelationshipUpdate2: { npcId: 'mom', change: 10, memory: 'Handled your father with grace' },
+            },
+          },
+        },
+        {
+          text: 'Admit it\'s complicated',
+          description: 'Some of what he read is true. You wrestle with it.',
+          outcome: {
+            description: 'Dad nods slowly. "At least you\'re honest." The conversation shifts to sports. Something has thawed between you.',
+            statChanges: {
+              ethics: 5,
+              npcRelationshipUpdate: { npcId: 'dad', change: 20, trustChange: 15, memory: 'Showed humility about the work' },
+            },
+          },
+        },
+        {
+          text: 'Tell him you don\'t need his approval',
+          description: 'You\'re an adult. You make your own choices.',
+          outcome: {
+            description: 'The table goes silent. Mom starts crying. Dad gets up and leaves. Christmas is going to be very awkward this year.',
+            statChanges: {
+              stress: 20,
+              npcRelationshipUpdate: { npcId: 'dad', change: -35, trustChange: -20, memory: 'Threw my concern back in my face' },
+              npcRelationshipUpdate2: { npcId: 'mom', change: -15, memory: 'Made dinner a disaster' },
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // Marcus Webb backstab
+  (npcs, currentWeek) => {
+    const marcus = npcs.find(n => n.id === 'marcus');
+    if (!marcus || marcus.relationship < 30) return null;
+
+    return {
+      id: 'marcus_backstab',
+      title: 'Marcus\'s True Colors',
+      description: `You just lost a deal you thought was locked up. Word on the street: Marcus Webb from Apex Equity leaked your bid to the seller to drive up the price, then swooped in with his own offer. He's at the same conference as you right now.`,
+      involvedNpcs: ['marcus'],
+      playerMustChooseSide: true,
+      urgency: 'HIGH',
+      expiresWeek: currentWeek + 1,
+      choices: [
+        {
+          text: 'Confront him publicly',
+          description: 'Make a scene at the conference. Let everyone know what he did.',
+          outcome: {
+            description: 'You corner Marcus at the cocktail hour. "Everyone, let me tell you about Marcus\'s negotiation tactics." The room goes quiet. Marcus laughs it off, but the damage is done. To both of you.',
+            statChanges: {
+              reputation: -10,
+              stress: 15,
+              npcRelationshipUpdate: { npcId: 'marcus', change: -40, memory: 'Humiliated me in front of the industry' },
+              setsFlags: ['PUBLIC_FEUD_MARCUS'],
+            },
+          },
+        },
+        {
+          text: 'Play the long game',
+          description: 'Remember this. Wait for the right moment to return the favor.',
+          outcome: {
+            description: 'You smile at Marcus across the room. He knows you know. The score will be settled, but on your terms, at your time.',
+            statChanges: {
+              stress: 10,
+              npcRelationshipUpdate: { npcId: 'marcus', change: -20, memory: 'Knows what I did but is biding time' },
+              setsFlags: ['OWES_MARCUS'],
+            },
+          },
+        },
+        {
+          text: 'Let it go—focus on the next deal',
+          description: 'This is the business. Everyone plays rough sometimes.',
+          outcome: {
+            description: 'You buy Marcus a drink. "Nice move. I would have done the same." He looks confused, then relieved. In this industry, today\'s enemy is tomorrow\'s co-investor.',
+            statChanges: {
+              reputation: 5,
+              npcRelationshipUpdate: { npcId: 'marcus', change: 10, memory: 'Surprisingly gracious about the backstab' },
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // Sarah's burnout
+  (npcs, currentWeek) => {
+    const sarah = npcs.find(n => n.id === 'sarah');
+    if (!sarah || sarah.relationship < 50) return null;
+
+    return {
+      id: 'sarah_burnout',
+      title: 'Sarah\'s Breaking Point',
+      description: `Sarah comes to you after hours. She looks exhausted. "I can't do this anymore. The hours, the pressure, the way Chad treats us. I'm thinking about quitting. Going to business school. Starting over." She's one of your best analysts.`,
+      involvedNpcs: ['sarah'],
+      playerMustChooseSide: false,
+      urgency: 'MEDIUM',
+      expiresWeek: currentWeek + 3,
+      choices: [
+        {
+          text: 'Mentor her through it',
+          description: 'Share your own struggles. Help her find meaning in the work.',
+          outcome: {
+            description: 'You spend hours over coffee talking about careers, purpose, and what comes next. Sarah decides to stay, at least for now. You\'ve built something real here.',
+            statChanges: {
+              energy: -15,
+              npcRelationshipUpdate: { npcId: 'sarah', change: 30, trustChange: 25, memory: 'Was there when I was falling apart' },
+            },
+          },
+        },
+        {
+          text: 'Offer to help with the MBA applications',
+          description: 'If she wants to leave, support her decision.',
+          outcome: {
+            description: 'You write her a glowing recommendation. She gets into Wharton. You lose a great analyst, but you\'ve made a friend for life. The network grows.',
+            statChanges: {
+              reputation: 10,
+              npcRelationshipUpdate: { npcId: 'sarah', change: 25, trustChange: 30, memory: 'Helped me escape and supported my dreams' },
+            },
+          },
+        },
+        {
+          text: 'Tell her to toughen up',
+          description: 'Everyone goes through this. It\'s part of paying dues.',
+          outcome: {
+            description: 'Sarah\'s face hardens. "I thought you were different." She quits the next week. No two weeks notice. You\'re drowning in her workload.',
+            statChanges: {
+              stress: 25,
+              npcRelationshipUpdate: { npcId: 'sarah', change: -40, memory: 'Showed no empathy when I needed it most' },
+              reputation: -5,
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // Hunter and Chad conspiracy
+  (npcs, currentWeek) => {
+    const hunter = npcs.find(n => n.id === 'hunter');
+    const chad = npcs.find(n => n.id === 'chad');
+    if (!hunter || !chad) return null;
+    if (hunter.relationship > 50 || chad.relationship < 30) return null;
+
+    return {
+      id: 'hunter_chad_conspiracy',
+      title: 'Whispers in the Corner Office',
+      description: `You walk past Chad's office and hear Hunter's voice inside. They stop talking when they see you. Later, you hear them mention your name and the word "restructure." Something is happening behind closed doors.`,
+      involvedNpcs: ['hunter', 'chad'],
+      playerMustChooseSide: true,
+      urgency: 'HIGH',
+      expiresWeek: currentWeek + 2,
+      choices: [
+        {
+          text: 'Confront Chad directly',
+          description: 'Demand to know what they were discussing.',
+          outcome: {
+            description: 'Chad waves you off. "Relax. We were discussing team structure. You\'re fine." But the look he exchanges with Hunter tells a different story.',
+            statChanges: {
+              stress: 20,
+              npcRelationshipUpdate: { npcId: 'chad', change: -10, memory: 'Got paranoid about a private conversation' },
+              npcRelationshipUpdate2: { npcId: 'hunter', change: -5, memory: 'Knows we were talking about something' },
+            },
+          },
+        },
+        {
+          text: 'Start documenting everything',
+          description: 'Keep records. Prepare for the worst.',
+          outcome: {
+            description: 'You start saving emails, noting conversations, building a paper trail. If they try something, you\'ll be ready. The paranoia is exhausting, but necessary.',
+            statChanges: {
+              stress: 15,
+              analystRating: 10,
+              setsFlags: ['DOCUMENTING_CONSPIRACY'],
+            },
+          },
+        },
+        {
+          text: 'Build alliances with other partners',
+          description: 'If a political fight is coming, you need allies.',
+          outcome: {
+            description: 'You start taking other partners to lunch. Building relationships. If Hunter and Chad are plotting, they\'ll find you\'re not isolated.',
+            statChanges: {
+              energy: -10,
+              reputation: 5,
+              factionReputation: { MANAGING_DIRECTORS: 10, LIMITED_PARTNERS: 0, ANALYSTS: 0, REGULATORS: 0, RIVALS: 0 },
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // Emma meets Sarah
+  (npcs, currentWeek) => {
+    const emma = npcs.find(n => n.id === 'girlfriend_emma');
+    const sarah = npcs.find(n => n.id === 'sarah');
+    if (!emma || !sarah) return null;
+    if (emma.relationship < 60 || sarah.relationship < 40) return null;
+
+    return {
+      id: 'emma_meets_sarah',
+      title: 'The Dinner Party Disaster',
+      description: `You finally bring Emma to a work event. She spots Sarah across the room. "So that's Sarah. She's pretty." Emma's smile doesn't reach her eyes. Sarah comes over to say hi. The conversation is excruciatingly polite.`,
+      involvedNpcs: ['girlfriend_emma', 'sarah'],
+      playerMustChooseSide: false,
+      urgency: 'LOW',
+      expiresWeek: currentWeek + 4,
+      choices: [
+        {
+          text: 'Stay by Emma\'s side all night',
+          description: 'Make it clear where your priorities are.',
+          outcome: {
+            description: 'You hold Emma\'s hand all evening. She relaxes. Sarah notices and keeps her distance. The message is received, by everyone.',
+            statChanges: {
+              npcRelationshipUpdate: { npcId: 'girlfriend_emma', change: 20, trustChange: 15, memory: 'Made me feel like a priority' },
+              npcRelationshipUpdate2: { npcId: 'sarah', change: -10, memory: 'Clearly avoided me at the party' },
+            },
+          },
+        },
+        {
+          text: 'Facilitate a real conversation between them',
+          description: 'They might actually like each other.',
+          outcome: {
+            description: 'You engineer a conversation. Turns out they have a lot in common. By the end of the night, they\'re exchanging Instagram handles. Crisis averted. Maybe.',
+            statChanges: {
+              stress: -10,
+              npcRelationshipUpdate: { npcId: 'girlfriend_emma', change: 10, memory: 'Sarah is actually nice' },
+              npcRelationshipUpdate2: { npcId: 'sarah', change: 10, memory: 'Emma is cooler than I expected' },
+            },
+          },
+        },
+        {
+          text: 'Let them figure it out themselves',
+          description: 'You have networking to do. They\'re adults.',
+          outcome: {
+            description: 'You get pulled into conversations with partners. When you look back, Emma is alone at the bar, looking miserable. Sarah is nowhere to be seen. The ride home is silent.',
+            statChanges: {
+              reputation: 10,
+              npcRelationshipUpdate: { npcId: 'girlfriend_emma', change: -20, trustChange: -15, memory: 'Left me alone at a party I didn\'t want to go to' },
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // Brother Mike's startup actually works
+  (npcs, currentWeek) => {
+    const mike = npcs.find(n => n.id === 'brother_mike');
+    if (!mike || mike.relationship < 50) return null;
+
+    return {
+      id: 'mike_success',
+      title: 'Mike\'s Big News',
+      description: `Mike calls, excited. "Remember that idea you said was stupid? We just got a term sheet. $5M Series A, $20M pre-money valuation. They want you on the cap table. What do you say now, big shot?"`,
+      involvedNpcs: ['brother_mike'],
+      playerMustChooseSide: true,
+      urgency: 'MEDIUM',
+      expiresWeek: currentWeek + 2,
+      choices: [
+        {
+          text: 'Invest and apologize',
+          description: 'You were wrong. Put your money where your mouth should have been.',
+          outcome: {
+            description: 'You wire $50K and call Mike to apologize. "I should have believed in you." Family dinner is going to be a lot warmer this Thanksgiving.',
+            statChanges: {
+              cash: -50000,
+              ethics: 10,
+              npcRelationshipUpdate: { npcId: 'brother_mike', change: 40, trustChange: 30, memory: 'Admitted being wrong and backed me' },
+            },
+          },
+        },
+        {
+          text: 'Pass but offer congratulations',
+          description: 'You have conflict of interest concerns. But wish him well.',
+          outcome: {
+            description: 'Mike is disappointed but understands. "Professional stuff, I get it." The relationship survives. But something\'s different now.',
+            statChanges: {
+              npcRelationshipUpdate: { npcId: 'brother_mike', change: 5, memory: 'Still didn\'t invest but at least was gracious' },
+            },
+          },
+        },
+        {
+          text: 'Demand better terms for yourself',
+          description: 'If you\'re going to invest, you want preferred shares and a board observer seat.',
+          outcome: {
+            description: 'Mike\'s excitement turns to anger. "You can\'t just be happy for me? It always has to be a deal with you." He hangs up. The term sheet closes without you.',
+            statChanges: {
+              npcRelationshipUpdate: { npcId: 'brother_mike', change: -30, trustChange: -25, memory: 'Tried to shark my Series A' },
+              reputation: -5,
+            },
+          },
+        },
+      ],
+    };
+  },
 ];
 
 /**

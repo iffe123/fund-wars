@@ -448,6 +448,426 @@ export const COMPANY_EVENTS: Record<CompanyEventType, EventGenerator> = {
       },
     ],
   }),
+
+  // ==================== NEW COMPANY EVENTS ====================
+
+  CYBERSECURITY_BREACH: (company) => ({
+    id: `cyber_${company.id}_${Date.now()}`,
+    type: 'CYBERSECURITY_BREACH',
+    title: 'Data Breach Detected',
+    description: `${company.name}'s security team just discovered unauthorized access to customer databases. It's unclear how long the breach lasted or how much data was exfiltrated. The clock is ticking on disclosure requirements.`,
+    severity: 'CRITICAL',
+    consultWithMachiavelli: true,
+    expiresWeek: 1,
+    options: [
+      {
+        id: 'immediate_disclosure',
+        label: 'Immediate public disclosure',
+        description: 'Get ahead of the story. Full transparency.',
+        outcomeText: 'The market reacts badly, but regulators appreciate the transparency. Trust preserved long-term.',
+        statChanges: { reputation: 5, stress: 25, ethics: 15, auditRisk: -10 },
+        companyChanges: {
+          currentValuation: Math.round(company.currentValuation * 0.85),
+          customerChurn: company.customerChurn + 0.03,
+        },
+      },
+      {
+        id: 'quiet_investigation',
+        label: 'Investigate quietly first',
+        description: 'Assess the damage before going public.',
+        outcomeText: 'You buy time, but if this leaks, the cover-up becomes the story.',
+        statChanges: { stress: 30, ethics: -20, auditRisk: 20 },
+        companyChanges: {},
+        risk: 60,
+      },
+      {
+        id: 'hire_crisis_firm',
+        label: 'Hire elite crisis management',
+        description: 'Bring in the best PR and legal teams money can buy.',
+        outcomeText: 'The professionals take over. Expensive, but they know how to manage these situations.',
+        statChanges: { cash: -2000000, stress: 15 },
+        companyChanges: {
+          cashBalance: company.cashBalance - 2000000,
+        },
+      },
+    ],
+  }),
+
+  KEY_EMPLOYEE_POACHING: (company) => ({
+    id: `poach_${company.id}_${Date.now()}`,
+    type: 'KEY_EMPLOYEE_POACHING',
+    title: 'Talent Raid',
+    description: `A well-funded competitor is aggressively recruiting ${company.name}'s top engineers. Three key technical leads have received offers at 50% premiums. They're wavering.`,
+    severity: 'WARNING',
+    expiresWeek: 2,
+    options: [
+      {
+        id: 'match_offers',
+        label: 'Match the offers',
+        description: 'Retain talent at any cost.',
+        outcomeText: 'You keep your stars, but now everyone knows the price of loyalty.',
+        statChanges: { cash: -800000 },
+        companyChanges: {
+          cashBalance: company.cashBalance - 800000,
+        },
+      },
+      {
+        id: 'let_them_go',
+        label: 'Let them walk',
+        description: 'No one is irreplaceable. Promote from within.',
+        outcomeText: 'Key knowledge walks out the door. The remaining team is demoralized but also sees opportunity.',
+        statChanges: { reputation: -5 },
+        companyChanges: {
+          ceoPerformance: company.ceoPerformance - 10,
+          employeeCount: company.employeeCount - 3,
+        },
+      },
+      {
+        id: 'promote_and_equity',
+        label: 'Promote them and accelerate vesting',
+        description: 'Golden handcuffs. Make leaving too expensive.',
+        outcomeText: 'New titles, accelerated equity. They stay, but you\'ve set a precedent.',
+        statChanges: {},
+        companyChanges: {
+          ceoPerformance: company.ceoPerformance + 5,
+        },
+      },
+    ],
+  }),
+
+  PRODUCT_RECALL: (company) => ({
+    id: `recall_${company.id}_${Date.now()}`,
+    type: 'PRODUCT_RECALL',
+    title: 'Product Quality Crisis',
+    description: `Quality control just flagged a serious defect in ${company.name}'s flagship product. Three customers have reported injuries. Legal is panicking. The factory is still running.`,
+    severity: 'CRITICAL',
+    consultWithMachiavelli: true,
+    expiresWeek: 1,
+    options: [
+      {
+        id: 'full_recall',
+        label: 'Immediate voluntary recall',
+        description: 'Pull everything from shelves. Fix it right.',
+        outcomeText: 'Massive short-term cost, but you\'ve done the right thing. The brand survives.',
+        statChanges: { ethics: 20, reputation: 10 },
+        companyChanges: {
+          revenue: Math.round(company.revenue * 0.85),
+          cashBalance: company.cashBalance - 5000000,
+        },
+      },
+      {
+        id: 'silent_fix',
+        label: 'Quietly fix future production',
+        description: 'Don\'t acknowledge the problem. Just fix it going forward.',
+        outcomeText: 'You save money. For now. The lawsuits will come eventually.',
+        statChanges: { ethics: -30, auditRisk: 25 },
+        companyChanges: {},
+        risk: 70,
+      },
+      {
+        id: 'blame_user_error',
+        label: 'Claim user error',
+        description: 'The product was used incorrectly. Deny responsibility.',
+        outcomeText: 'Your legal team crafts a strong defense. The PR looks terrible.',
+        statChanges: { ethics: -25, reputation: -15 },
+        companyChanges: {
+          customerChurn: company.customerChurn + 0.05,
+        },
+      },
+    ],
+  }),
+
+  LAWSUIT_FILED: (company) => ({
+    id: `lawsuit_${company.id}_${Date.now()}`,
+    type: 'LAWSUIT_FILED',
+    title: 'Class Action Filed',
+    description: `A class action lawsuit has been filed against ${company.name} alleging anticompetitive practices. The plaintiffs are well-funded and their lawyers are experienced. Discovery will be brutal.`,
+    severity: 'WARNING',
+    expiresWeek: 3,
+    options: [
+      {
+        id: 'settle_quickly',
+        label: 'Settle quickly',
+        description: 'Pay to make it go away before discovery.',
+        outcomeText: 'Settlement reached. The terms are confidential, but the check was significant.',
+        statChanges: { cash: -4000000, stress: -10 },
+        companyChanges: {
+          cashBalance: company.cashBalance - 4000000,
+        },
+      },
+      {
+        id: 'fight_vigorously',
+        label: 'Fight in court',
+        description: 'We did nothing wrong. Prove it in court.',
+        outcomeText: 'Years of litigation ahead. Legal fees will compound. But sometimes you have to stand on principle.',
+        statChanges: { stress: 20, cash: -1500000 },
+        companyChanges: {
+          cashBalance: company.cashBalance - 1500000,
+        },
+        risk: 50,
+      },
+      {
+        id: 'countersue',
+        label: 'Countersue aggressively',
+        description: 'Attack is the best defense. File counterclaims.',
+        outcomeText: 'Legal warfare. The plaintiffs didn\'t expect this level of aggression.',
+        statChanges: { reputation: -10, cash: -2000000, stress: 25 },
+        companyChanges: {
+          cashBalance: company.cashBalance - 2000000,
+        },
+      },
+    ],
+  }),
+
+  VIRAL_PR_CRISIS: (company) => ({
+    id: `viral_${company.id}_${Date.now()}`,
+    type: 'VIRAL_PR_CRISIS',
+    title: 'Social Media Firestorm',
+    description: `A video of ${company.name}'s CEO making insensitive comments at a private event just went viral. The hashtag #Boycott${company.name.replace(/\s+/g, '')} is trending. Advertisers are calling.`,
+    severity: 'CRITICAL',
+    expiresWeek: 1,
+    options: [
+      {
+        id: 'ceo_apology',
+        label: 'CEO public apology tour',
+        description: 'Full accountability. Morning shows, press conference, the works.',
+        outcomeText: 'The apology is seen as genuine. The news cycle moves on. Some damage remains.',
+        statChanges: { reputation: -5, stress: 20 },
+        companyChanges: {
+          ceoPerformance: company.ceoPerformance - 20,
+        },
+      },
+      {
+        id: 'fire_ceo',
+        label: 'Fire the CEO immediately',
+        description: 'Swift, decisive action. Send a message.',
+        outcomeText: 'The board announces the departure. The stock stabilizes. Leadership vacuum created.',
+        statChanges: { reputation: 5 },
+        companyChanges: {
+          ceoPerformance: 50, // New interim CEO
+          boardAlignment: company.boardAlignment - 20,
+        },
+      },
+      {
+        id: 'wait_it_out',
+        label: 'Wait for the news cycle to move on',
+        description: 'Say nothing. Let it blow over.',
+        outcomeText: 'The internet has a short memory. Mostly. But some customers don\'t forget.',
+        statChanges: {},
+        companyChanges: {
+          customerChurn: company.customerChurn + 0.04,
+          revenue: Math.round(company.revenue * 0.95),
+        },
+        risk: 40,
+      },
+    ],
+  }),
+
+  PARTNERSHIP_OPPORTUNITY: (company) => ({
+    id: `partner_${company.id}_${Date.now()}`,
+    type: 'PARTNERSHIP_OPPORTUNITY',
+    title: 'Strategic Partnership Offer',
+    description: `A major tech platform wants to integrate ${company.name}'s product as a default option. It could double your distribution overnight. But they want exclusivity and a revenue share that will hurt margins.`,
+    severity: 'INFO',
+    expiresWeek: 3,
+    options: [
+      {
+        id: 'accept_terms',
+        label: 'Accept their terms',
+        description: 'Scale trumps margin. Get the distribution.',
+        outcomeText: 'The partnership launches. Revenue doubles. Margins halve. Net-net positive for valuation.',
+        statChanges: { reputation: 10 },
+        companyChanges: {
+          revenue: Math.round(company.revenue * 1.8),
+          ebitdaMargin: company.ebitdaMargin * 0.6,
+        },
+      },
+      {
+        id: 'negotiate_better',
+        label: 'Push back on terms',
+        description: 'They need you too. Negotiate harder.',
+        outcomeText: 'After weeks of back-and-forth, you get better terms. Or they walk.',
+        statChanges: { stress: 15 },
+        companyChanges: {},
+        risk: 35,
+      },
+      {
+        id: 'decline_partnership',
+        label: 'Decline and stay independent',
+        description: 'Preserve optionality. Don\'t become dependent.',
+        outcomeText: 'You keep control. The platform partners with your competitor instead.',
+        statChanges: { reputation: -5 },
+        companyChanges: {},
+      },
+    ],
+  }),
+
+  TECHNOLOGY_DISRUPTION: (company) => ({
+    id: `disruption_${company.id}_${Date.now()}`,
+    type: 'TECHNOLOGY_DISRUPTION',
+    title: 'Technological Disruption',
+    description: `A new AI-powered solution just launched that could make ${company.name}'s core product obsolete within 18 months. The technology is real. Your R&D team is panicking.`,
+    severity: 'CRITICAL',
+    consultWithMachiavelli: true,
+    expiresWeek: 2,
+    options: [
+      {
+        id: 'acquire_disruptor',
+        label: 'Acquire the disruptor',
+        description: 'If you can\'t beat them, buy them.',
+        outcomeText: 'Acquisition completed. You now own the technology that would have killed you.',
+        statChanges: { cash: -10000000, reputation: 15 },
+        companyChanges: {
+          cashBalance: company.cashBalance - 10000000,
+          revenueGrowth: company.revenueGrowth + 0.15,
+        },
+      },
+      {
+        id: 'accelerate_rd',
+        label: 'Build competing technology',
+        description: 'Double down on R&D. Build your own solution.',
+        outcomeText: 'R&D budget triples. The race is on. You\'re behind, but not out.',
+        statChanges: { stress: 20 },
+        companyChanges: {
+          cashBalance: company.cashBalance - 3000000,
+        },
+        risk: 50,
+      },
+      {
+        id: 'pivot_business',
+        label: 'Pivot to services',
+        description: 'If the product becomes commodity, sell expertise.',
+        outcomeText: 'You shift focus to implementation and consulting. Lower growth, higher margins.',
+        statChanges: {},
+        companyChanges: {
+          revenueGrowth: -0.1,
+          ebitdaMargin: company.ebitdaMargin + 0.1,
+        },
+      },
+    ],
+  }),
+
+  CEO_SCANDAL: (company) => ({
+    id: `scandal_${company.id}_${Date.now()}`,
+    type: 'CEO_SCANDAL',
+    title: 'CEO Personal Scandal',
+    description: `${company.name}'s CEO has been accused of serious personal misconduct. The allegations are detailed and credible. Media requests are flooding in. The board needs to act.`,
+    severity: 'CRITICAL',
+    consultWithMachiavelli: true,
+    expiresWeek: 1,
+    options: [
+      {
+        id: 'immediate_termination',
+        label: 'Terminate immediately',
+        description: 'Swift, decisive action. Zero tolerance.',
+        outcomeText: 'The CEO is out. The company moves forward. Leadership transition is bumpy but necessary.',
+        statChanges: { ethics: 20, reputation: 10 },
+        companyChanges: {
+          ceoPerformance: 40, // New interim CEO
+          boardAlignment: company.boardAlignment + 10,
+        },
+      },
+      {
+        id: 'paid_leave_investigation',
+        label: 'Paid leave pending investigation',
+        description: 'Due process. Investigate before acting.',
+        outcomeText: 'The investigation drags on. Every day brings new headlines. The company is paralyzed.',
+        statChanges: { stress: 25 },
+        companyChanges: {
+          ceoPerformance: company.ceoPerformance - 30,
+        },
+        risk: 60,
+      },
+      {
+        id: 'stand_by_ceo',
+        label: 'Publicly support the CEO',
+        description: 'Innocent until proven guilty. Stand by your leader.',
+        outcomeText: 'The board issues a statement of support. If the allegations prove true, you\'re complicit.',
+        statChanges: { ethics: -30, reputation: -20 },
+        companyChanges: {},
+        risk: 70,
+      },
+    ],
+  }),
+
+  DEBT_COVENANT_BREACH: (company) => ({
+    id: `covenant_${company.id}_${Date.now()}`,
+    type: 'DEBT_COVENANT_BREACH',
+    title: 'Debt Covenant Breach',
+    description: `${company.name} just missed its EBITDA coverage ratio by 0.2x. Technically, the lenders can call the loan. They're 'reviewing the situation.' Your CFO is on a plane to meet them.`,
+    severity: 'CRITICAL',
+    expiresWeek: 1,
+    options: [
+      {
+        id: 'negotiate_amendment',
+        label: 'Negotiate covenant amendment',
+        description: 'Ask for forgiveness. Pay an amendment fee.',
+        outcomeText: 'The lenders agree to modified terms. The fee is steep, but the loan remains in place.',
+        statChanges: { cash: -1500000, stress: 20 },
+        companyChanges: {
+          cashBalance: company.cashBalance - 1500000,
+        },
+      },
+      {
+        id: 'equity_injection',
+        label: 'Inject equity to cure breach',
+        description: 'Write a check to fix the ratio.',
+        outcomeText: 'Your equity injection cures the breach. The lenders are satisfied. Your ownership dilutes.',
+        statChanges: { cash: -5000000 },
+        companyChanges: {
+          debt: Math.round(company.debt * 0.9),
+        },
+      },
+      {
+        id: 'refinance_completely',
+        label: 'Find new lenders',
+        description: 'Refinance the entire debt package.',
+        outcomeText: 'After weeks of roadshows, new lenders emerge. The terms are worse, but you survive.',
+        statChanges: { stress: 30 },
+        companyChanges: {
+          debt: Math.round(company.debt * 1.1), // Higher debt load from worse terms
+        },
+        risk: 40,
+      },
+    ],
+  }),
+
+  ACQUISITION_OFFER_RECEIVED: (company) => ({
+    id: `offer_${company.id}_${Date.now()}`,
+    type: 'ACQUISITION_OFFER_RECEIVED',
+    title: 'Unsolicited Acquisition Offer',
+    description: `A private equity competitor just made an unsolicited offer for ${company.name} at a 40% premium. They want exclusivity for 30 days. The offer is compelling, but you had bigger plans.`,
+    severity: 'INFO',
+    consultWithMachiavelli: true,
+    expiresWeek: 2,
+    options: [
+      {
+        id: 'accept_offer',
+        label: 'Accept the offer',
+        description: 'A bird in hand. Take the premium and exit.',
+        outcomeText: 'Deal closes in 60 days. You book a solid return. Was there more value to unlock? You\'ll never know.',
+        statChanges: { reputation: 10, cash: Math.round(company.currentValuation * 0.4) },
+        companyChanges: { isInExitProcess: true, exitType: 'SECONDARY_SALE' },
+      },
+      {
+        id: 'shop_the_offer',
+        label: 'Use offer to solicit competing bids',
+        description: 'Let everyone know there\'s interest. Create an auction.',
+        outcomeText: 'Other buyers emerge. The price goes higher. Or the original buyer walks.',
+        statChanges: { stress: 20 },
+        companyChanges: {},
+        risk: 30,
+      },
+      {
+        id: 'reject_outright',
+        label: 'Reject and continue executing',
+        description: 'You have a plan. Stick to it.',
+        outcomeText: 'You send a polite rejection. The buyer moves on. Your team is focused on the original strategy.',
+        statChanges: { reputation: 5 },
+        companyChanges: {},
+      },
+    ],
+  }),
 };
 
 /**
@@ -492,6 +912,7 @@ export const shouldTriggerEvent = (
   if (company.currentValuation > 100000000) {
     possibleEvents.push('ACTIVIST_INVESTOR');
     possibleEvents.push('STRATEGIC_BUYER_INTEREST');
+    possibleEvents.push('ACQUISITION_OFFER_RECEIVED');
   }
   if (company.revenueGrowth > 0.2 && company.currentValuation > 50000000) {
     possibleEvents.push('IPO_WINDOW');
@@ -502,6 +923,17 @@ export const shouldTriggerEvent = (
     possibleEvents.push('SUPPLY_CHAIN_CRISIS');
     possibleEvents.push('UNION_DISPUTE');
   }
+
+  // New event triggers
+  if (Math.random() > 0.85) possibleEvents.push('CYBERSECURITY_BREACH');
+  if (company.revenueGrowth > 0.15) possibleEvents.push('KEY_EMPLOYEE_POACHING');
+  if (Math.random() > 0.92) possibleEvents.push('PRODUCT_RECALL');
+  if (Math.random() > 0.88) possibleEvents.push('LAWSUIT_FILED');
+  if (company.ceoPerformance > 70 && Math.random() > 0.9) possibleEvents.push('VIRAL_PR_CRISIS');
+  if (company.revenueGrowth > 0.25) possibleEvents.push('PARTNERSHIP_OPPORTUNITY');
+  if (Math.random() > 0.9) possibleEvents.push('TECHNOLOGY_DISRUPTION');
+  if (Math.random() > 0.95) possibleEvents.push('CEO_SCANDAL');
+  if (company.debt > company.ebitda * 5) possibleEvents.push('DEBT_COVENANT_BREACH');
 
   if (possibleEvents.length === 0) return null;
 

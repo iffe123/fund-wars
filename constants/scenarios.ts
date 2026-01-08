@@ -858,6 +858,838 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
   },
+  // ==================== NEW DEAL SCENARIOS ====================
+  {
+    id: 6,
+    title: "The Distressed Hospital Chain",
+    description: "A regional hospital chain with 12 facilities is drowning in debt. COVID backlogs, nursing shortages, and Medicare rate cuts have pushed them to the brink. The PE vultures are circling. There's real estate value here, but also real patients.",
+    minReputation: 30,
+    triggerTags: ['healthcare', 'distressed'],
+    choices: [
+      {
+        text: "Acquire and optimize operations.",
+        sarcasticGuidance: "Healthcare PE. Where 'optimization' means figuring out how few nurses you legally need.",
+        outcome: {
+          description: "You close the deal. The turnaround will be brutal—layoffs, facility closures, battles with unions. But if you can stabilize it, the real estate alone is worth 2x your investment.",
+          statChanges: { reputation: +15, stress: +25, cash: -50000, score: +800, ethics: -15 },
+        },
+      },
+      {
+        text: "Strip the real estate, sell the operations.",
+        sarcasticGuidance: "Classic sale-leaseback. Extract the land, burden the hospitals with rent. Elegant and soulless.",
+        outcome: {
+          description: "You separate the real estate into a REIT and lease it back to the operating company at market rates. The hospitals now pay rent they can't afford. But your returns look spectacular.",
+          statChanges: { reputation: -10, cash: +100000, score: +600, ethics: -30, factionReputation: { REGULATORS: -15, LIMITED_PARTNERS: +10 } },
+        },
+      },
+      {
+        text: "Pass. Healthcare is a minefield.",
+        sarcasticGuidance: "Regulatory risk, headline risk, actual sick people. Too many variables you can't model.",
+        outcome: {
+          description: "You walk away. Six months later, the chain files for bankruptcy and three rural hospitals close. You feel... nothing. That's probably fine.",
+          statChanges: { stress: -5, score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 7,
+    title: "The AI Hype Machine",
+    description: "A startup claims to have 'revolutionary AI' that can predict consumer behavior with 99% accuracy. Their pitch deck is beautiful. Their revenue is $200K. They want a $500M valuation. The founder was on the cover of Wired.",
+    minReputation: 20,
+    triggerTags: ['tech', 'venture'],
+    choices: [
+      {
+        text: "Lead the Series C at their valuation.",
+        sarcasticGuidance: "FOMO is a legitimate investment thesis. Everyone else is in. What could go wrong?",
+        outcome: {
+          description: "You wire $50M for 10% of a company with no revenue. The founder tweets about your 'visionary partnership.' Your LPs see the press release and smile. For now.",
+          statChanges: { reputation: +20, stress: +10, cash: -50000, score: +400, ethics: -5 },
+        },
+      },
+      {
+        text: "Demand a down round and real metrics.",
+        sarcasticGuidance: "Actually do due diligence. Revolutionary concept in venture.",
+        outcome: {
+          description: "The founder is insulted. 'You don't understand AI.' They take Softbank's money instead. Two years later they pivot to 'AI-powered NFTs.' You dodged a bullet.",
+          statChanges: { reputation: +5, analystRating: +15, score: +300 },
+        },
+      },
+      {
+        text: "Invest in their competitor instead.",
+        sarcasticGuidance: "The boring company with actual customers. How pedestrian.",
+        outcome: {
+          description: "You back the unsexy competitor with real revenue. Less press, more profit. Your LPs don't know what they own, but the returns will speak.",
+          statChanges: { reputation: +10, analystRating: +10, score: +500, cash: -25000 },
+        },
+      },
+    ],
+  },
+  {
+    id: 8,
+    title: "The Family Business Succession",
+    description: "A third-generation manufacturing company. $80M EBITDA, zero debt, loyal workforce. The patriarch just died. His three children hate each other. One wants to sell, one wants to run it, one wants to burn it down for the insurance.",
+    minReputation: 40,
+    triggerTags: ['manufacturing', 'family'],
+    choices: [
+      {
+        text: "Buy out all three siblings.",
+        sarcasticGuidance: "Nothing like family drama to create motivated sellers. Offer cash, close fast.",
+        outcome: {
+          description: "You pay a fair price and take 100% control. The siblings take the money and stop speaking to each other. The employees are nervous. Now you need to prove you're not here to strip the place.",
+          statChanges: { reputation: +15, stress: +15, cash: -20000, score: +700 },
+        },
+      },
+      {
+        text: "Back the competent sibling, buy out the others.",
+        sarcasticGuidance: "Pick a winner. Hope you picked right.",
+        outcome: {
+          description: "You partner with Sarah, the COO daughter who actually runs the place. Her siblings are furious. Family lawsuits are threatened. But she knows the business cold.",
+          statChanges: { reputation: +10, stress: +20, cash: -15000, score: +600 },
+        },
+      },
+      {
+        text: "Let them fight it out, circle back later.",
+        sarcasticGuidance: "Family disputes only get more expensive with time. Wait for desperation.",
+        outcome: {
+          description: "You wait. A year later, they've burned through half the cash on lawyers. Now they're desperate to sell at any price. Cold, but effective.",
+          statChanges: { reputation: -5, analystRating: +5, score: +200, ethics: -10 },
+        },
+      },
+    ],
+  },
+  {
+    id: 9,
+    title: "The Crypto Exchange",
+    description: "A mid-tier crypto exchange wants growth capital. They're profitable (somehow), have 2M users, and their compliance is... 'evolving.' The founder keeps his keys in a hardware wallet around his neck. Literally.",
+    minReputation: 25,
+    allowedVolatility: ['BULL_RUN', 'NORMAL'],
+    triggerTags: ['crypto', 'fintech'],
+    choices: [
+      {
+        text: "Invest with board control and compliance overhaul.",
+        sarcasticGuidance: "Try to make crypto respectable. A Sisyphean task.",
+        outcome: {
+          description: "You take a board seat and hire a real compliance team. The founder resents your 'interference.' But when the SEC comes knocking, you'll be ready. Maybe.",
+          statChanges: { reputation: +10, stress: +20, cash: -30000, score: +500, auditRisk: +15 },
+        },
+      },
+      {
+        text: "Quick flip—ride the hype, exit before regulation hits.",
+        sarcasticGuidance: "Greater fool theory. Be faster than the SEC.",
+        outcome: {
+          description: "You invest, pump the valuation with a PR blitz, and sell to a SPAC six months later. You 3x your money. The SPAC investors? Less fortunate.",
+          statChanges: { cash: +150000, reputation: -15, score: +800, ethics: -25 },
+        },
+      },
+      {
+        text: "Hard pass. This is a regulatory landmine.",
+        sarcasticGuidance: "The boring, responsible choice. Your grandchildren will thank you.",
+        outcome: {
+          description: "You pass. The exchange gets hacked three months later. The founder tweets that it's 'actually good for crypto.' You feel vindicated and slightly smug.",
+          statChanges: { reputation: +5, analystRating: +10, score: +300 },
+        },
+      },
+    ],
+  },
+  {
+    id: 10,
+    title: "The Roll-Up Play",
+    description: "Fragmented market. 500 independent HVAC contractors across the Midwest. No one has more than 2% market share. Your thesis: consolidate 50 of them, centralize back-office, squeeze margins, flip to a strategic.",
+    minReputation: 35,
+    triggerTags: ['industrials', 'rollup'],
+    choices: [
+      {
+        text: "Execute the roll-up. Acquire aggressively.",
+        sarcasticGuidance: "Buy fast, integrate later. The classic PE playbook.",
+        outcome: {
+          description: "You start buying. The first 10 integrations go smoothly. Then you discover every owner used different accounting software, some in actual paper ledgers. Integration hell awaits.",
+          statChanges: { reputation: +20, stress: +30, cash: -40000, score: +900 },
+        },
+      },
+      {
+        text: "Build a platform first, then acquire.",
+        sarcasticGuidance: "Patience. Build the machine before you feed it deals.",
+        outcome: {
+          description: "You hire a CEO, build shared services, create the playbook. It takes 18 months before you buy your first contractor. Slow and steady. Your LPs are impatient.",
+          statChanges: { reputation: +5, stress: +10, cash: -25000, score: +500, analystRating: +10 },
+        },
+      },
+      {
+        text: "Too fragmented. The integration risk is insane.",
+        sarcasticGuidance: "Death by a thousand paper cuts. Every owner thinks they're special.",
+        outcome: {
+          description: "You pass on the roll-up thesis. A competitor executes it successfully and sells for a 5x. You tell yourself their accounting must be a mess. It probably is.",
+          statChanges: { stress: -10, score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 11,
+    title: "The Sports Franchise",
+    description: "A second-tier professional soccer team is for sale. The stadium needs $200M in renovations. The team hasn't made the playoffs in a decade. But the city is growing fast, and streaming rights are exploding.",
+    minReputation: 50,
+    minCash: 50000,
+    triggerTags: ['sports', 'media'],
+    choices: [
+      {
+        text: "Buy the team. Sports is the new media.",
+        sarcasticGuidance: "Live sports are the only thing people still watch live. That has to be worth something.",
+        outcome: {
+          description: "You become a sports owner. The local paper calls you a 'savior.' The stadium renovation will bleed you dry, but the franchise value keeps climbing. You get courtside seats forever.",
+          statChanges: { reputation: +30, stress: +15, cash: -100000, score: +1200, lifestyleLevel: 'MASTER_OF_UNIVERSE' },
+        },
+      },
+      {
+        text: "Invest in the streaming rights, not the team.",
+        sarcasticGuidance: "Own the content, not the headaches. Let someone else deal with player egos.",
+        outcome: {
+          description: "You structure a deal for regional streaming rights. Lower profile, higher margins. No one knows your name, but your returns are excellent.",
+          statChanges: { cash: +50000, reputation: +10, score: +700 },
+        },
+      },
+      {
+        text: "Sports teams are ego investments. Pass.",
+        sarcasticGuidance: "Unless you want to see your face on SportsCenter during a losing streak.",
+        outcome: {
+          description: "You pass. The team is bought by a tech billionaire who immediately fires the coach and signs three overpriced players. Classic.",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 12,
+    title: "The Nursing Home Chain",
+    description: "30 nursing homes across three states. Occupancy is at 85%. Margins are thin. The demographics are undeniable—America is getting old. But the lawsuits, the regulation, the staffing... this is not for the faint of heart.",
+    minReputation: 35,
+    triggerTags: ['healthcare', 'real_estate'],
+    choices: [
+      {
+        text: "Acquire and professionalize operations.",
+        sarcasticGuidance: "Old people need care. There's money in that. Try not to think about it too hard.",
+        outcome: {
+          description: "You buy the chain and bring in experienced operators. The first year is brutal—three wrongful death lawsuits, two state investigations. But occupancy is climbing.",
+          statChanges: { reputation: +10, stress: +30, cash: -35000, score: +600, ethics: -10 },
+        },
+      },
+      {
+        text: "Sale-leaseback the real estate.",
+        sarcasticGuidance: "The land under nursing homes is valuable. The nursing homes themselves... less so.",
+        outcome: {
+          description: "You extract the real estate, lease it back at aggressive rates. The operating company struggles with the new rent burden. But that's not your problem anymore.",
+          statChanges: { cash: +80000, reputation: -15, score: +500, ethics: -25 },
+        },
+      },
+      {
+        text: "Too much headline risk. Pass.",
+        sarcasticGuidance: "One viral video of a mistreated patient and your fund is toxic.",
+        outcome: {
+          description: "You pass. Probably the right call for your mental health. Your LPs will never know about the returns you didn't chase.",
+          statChanges: { stress: -10, ethics: +5, score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 13,
+    title: "The Podcast Network",
+    description: "A network of 50 podcasts, mostly true crime and self-help. 100M downloads per month. Revenue is growing 200% YoY. The founder is a 26-year-old who thinks he's the next Spotify. Valuation: $400M.",
+    minReputation: 20,
+    triggerTags: ['media', 'growth'],
+    choices: [
+      {
+        text: "Lead the round. Audio is the future.",
+        sarcasticGuidance: "Everyone's commute needs content. And true crime addicts are loyal customers.",
+        outcome: {
+          description: "You invest at the inflated valuation. The founder immediately buys a Tesla and starts a podcast about 'the founder journey.' Downloads plateau. Monetization remains elusive.",
+          statChanges: { reputation: +15, stress: +10, cash: -40000, score: +400 },
+        },
+      },
+      {
+        text: "Invest at a lower valuation with revenue milestones.",
+        sarcasticGuidance: "Structure protects you from founder delusion.",
+        outcome: {
+          description: "You negotiate hard. Tranched investment tied to revenue targets. The founder grumbles but takes the deal. Smart money protects itself.",
+          statChanges: { reputation: +5, analystRating: +15, cash: -20000, score: +500 },
+        },
+      },
+      {
+        text: "Audio is a feature, not a company. Pass.",
+        sarcasticGuidance: "Spotify and Apple will crush all independent players eventually.",
+        outcome: {
+          description: "You pass. Spotify acquires them 18 months later for 2x what you would have paid. But Spotify then writes off the acquisition. You were right. Sort of.",
+          statChanges: { analystRating: +5, score: +200 },
+        },
+      },
+    ],
+  },
+  {
+    id: 14,
+    title: "The Defense Contractor",
+    description: "A small defense contractor with classified contracts and 90% recurring revenue. Margins are incredible. Growth is steady. The catch? You need security clearance to even see the financials, and the ethics of selling weapons are... debatable.",
+    minReputation: 45,
+    triggerTags: ['defense', 'government'],
+    factionRequirements: [{ faction: 'REGULATORS', min: 40 }],
+    choices: [
+      {
+        text: "Acquire it. Defense is recession-proof.",
+        sarcasticGuidance: "There's always a war somewhere. That's just geography.",
+        outcome: {
+          description: "You navigate the security clearance process and close the deal. The margins are spectacular. You try not to think about what the products are actually used for.",
+          statChanges: { reputation: +15, cash: -60000, score: +900, ethics: -20, factionReputation: { REGULATORS: +10, LIMITED_PARTNERS: +5 } },
+        },
+      },
+      {
+        text: "ESG concerns. Take a pass.",
+        sarcasticGuidance: "Your LPs include pension funds. They might have opinions about cluster munitions.",
+        outcome: {
+          description: "You pass on ethical grounds. Your ESG-focused LPs are pleased. Your returns-focused LPs are less so. You sleep slightly better at night.",
+          statChanges: { reputation: -5, ethics: +20, score: +200, factionReputation: { LIMITED_PARTNERS: -5 } },
+        },
+      },
+      {
+        text: "Invest in the non-classified subsidiary only.",
+        sarcasticGuidance: "Have your cake and eat it too. Own the boring commercial stuff.",
+        outcome: {
+          description: "You carve out the commercial division—satellite components for civilian use. Lower margins, cleaner conscience. A reasonable compromise.",
+          statChanges: { cash: -30000, score: +500, ethics: +5 },
+        },
+      },
+    ],
+  },
+  {
+    id: 15,
+    title: "The Cannabis Cultivator",
+    description: "A vertically integrated cannabis company in three legal states. EBITDA positive, which is rare in the industry. Federal legalization seems inevitable. But banking is a nightmare, and the industry is a regulatory minefield.",
+    minReputation: 30,
+    allowedVolatility: ['BULL_RUN', 'NORMAL'],
+    triggerTags: ['cannabis', 'growth'],
+    choices: [
+      {
+        text: "Make a big bet on federal legalization.",
+        sarcasticGuidance: "Congress will definitely act rationally and quickly on this. Definitely.",
+        outcome: {
+          description: "You invest heavily. Federal legalization doesn't happen. Again. Your investment is trapped in regulatory limbo. But hey, the product is pretty good.",
+          statChanges: { reputation: +10, stress: +20, cash: -30000, score: +300, ethics: -5 },
+        },
+      },
+      {
+        text: "Invest in ancillary services—the picks and shovels.",
+        sarcasticGuidance: "Sell equipment to the gold miners. Let them take the federal risk.",
+        outcome: {
+          description: "You back companies selling grow lights, packaging, and compliance software. No plant touching, no banking problems. Smart.",
+          statChanges: { cash: -20000, score: +600, analystRating: +10 },
+        },
+      },
+      {
+        text: "Too much regulatory risk. Pass.",
+        sarcasticGuidance: "Your fund's bank might close your account if you invest in this.",
+        outcome: {
+          description: "You pass. The industry continues to consolidate without you. Federal legalization keeps not happening. You feel vindicated but also curious about what might have been.",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 16,
+    title: "The SaaS Darling",
+    description: "Enterprise software with 95% gross margins and 130% net revenue retention. Every metric is perfect. The problem? Every other PE fund wants it too. The auction is going to be a bloodbath.",
+    minReputation: 40,
+    triggerTags: ['tech', 'saas'],
+    choices: [
+      {
+        text: "Bid aggressively. Win at any cost.",
+        sarcasticGuidance: "FOMO is a real thing. You can always grow into the valuation. Probably.",
+        outcome: {
+          description: "You win the auction at a nosebleed valuation. The bankers are thrilled. Your returns now depend on perfect execution for the next seven years. No pressure.",
+          statChanges: { reputation: +25, stress: +25, cash: -100000, score: +700 },
+        },
+      },
+      {
+        text: "Set a disciplined max bid and stick to it.",
+        sarcasticGuidance: "Have conviction in your numbers. Walk away if the price doesn't work.",
+        outcome: {
+          description: "You lose the auction to a sovereign wealth fund that paid 30% more. Your discipline is admirable. Your LPs wish you'd been less disciplined.",
+          statChanges: { reputation: +5, analystRating: +10, score: +300, stress: -5 },
+        },
+      },
+      {
+        text: "Find a proprietary angle—partner with management.",
+        sarcasticGuidance: "Convince the founder to take you to dinner before the auction starts.",
+        outcome: {
+          description: "You build a relationship with the CEO who convinces the board to negotiate exclusively with you. You pay a fair price. Sometimes relationships matter.",
+          statChanges: { reputation: +15, cash: -70000, score: +900, npcRelationshipUpdate: { npcId: 'chad', change: 15, memory: 'Sourced a deal proprietary' } },
+        },
+      },
+    ],
+  },
+  {
+    id: 17,
+    title: "The Founder in Crisis",
+    description: "A portfolio company founder is going through a brutal divorce. She's distracted, the company is drifting, and her soon-to-be-ex-husband owns 20% of the stock. He's threatening to sue the company. This is a mess.",
+    requiresPortfolio: true,
+    triggerTags: ['crisis', 'founder'],
+    choices: [
+      {
+        text: "Buy out the ex-husband to make him go away.",
+        sarcasticGuidance: "Pay the nuisance premium. Remove the drama.",
+        outcome: {
+          description: "You pay a 30% premium to buy out the hostile shareholder. The founder can focus on the business again. Your other LPs grumble about the price.",
+          statChanges: { cash: -50000, stress: -10, reputation: +10, score: +400 },
+        },
+      },
+      {
+        text: "Replace the founder as CEO.",
+        sarcasticGuidance: "She's too distracted. Bring in a professional.",
+        outcome: {
+          description: "You install a new CEO. The founder is devastated but stays on as Chief Product Officer. The company stabilizes, but the culture is never quite the same.",
+          statChanges: { reputation: -5, stress: +15, score: +500, ethics: -10 },
+        },
+      },
+      {
+        text: "Support the founder and fight the lawsuit.",
+        sarcasticGuidance: "Stand by your operator. Loyalty matters. So do lawyers.",
+        outcome: {
+          description: "You fund the legal fight. It drags on for two years. The founder appreciates the support. Eventually the ex settles. But it was expensive.",
+          statChanges: { cash: -30000, stress: +20, reputation: +15, score: +300, ethics: +10 },
+        },
+      },
+    ],
+  },
+  {
+    id: 18,
+    title: "The Luxury Brand",
+    description: "An Italian heritage luxury brand. Hand-crafted goods, celebrity clientele, but zero digital presence. The founding family wants to 'preserve the brand' while also 'unlocking shareholder value.' These goals may be incompatible.",
+    minReputation: 45,
+    triggerTags: ['consumer', 'luxury'],
+    choices: [
+      {
+        text: "Invest with a digital transformation plan.",
+        sarcasticGuidance: "Teach the old craftsmen about e-commerce. What could go wrong?",
+        outcome: {
+          description: "You invest and hire a digital team. The family hates every change. Sales grow 40% online, but the brand purists are writing angry think pieces about you.",
+          statChanges: { cash: -50000, reputation: +15, stress: +15, score: +700, ethics: -5 },
+        },
+      },
+      {
+        text: "Keep it exclusive. No digital scaling.",
+        sarcasticGuidance: "Scarcity is the point. Some things shouldn't scale.",
+        outcome: {
+          description: "You preserve the brand's exclusivity. Growth is modest but sustainable. The family treats you like an adopted son. LVMH eventually acquires you at a premium.",
+          statChanges: { cash: -40000, reputation: +20, score: +800 },
+        },
+      },
+      {
+        text: "Too many family dynamics. Pass.",
+        sarcasticGuidance: "Italian family businesses are beautiful until you're in the middle of one.",
+        outcome: {
+          description: "You pass. The brand eventually sells to a conglomerate that strips it for parts. The founding family is devastated. At least it's not your problem.",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 19,
+    title: "The Turnaround",
+    description: "A retailer that missed the e-commerce transition. 500 stores, declining traffic, mounting debt. The CEO promises a 'digital renaissance.' Your model says the equity is worthless unless something changes dramatically.",
+    minReputation: 35,
+    triggerTags: ['retail', 'distressed'],
+    choices: [
+      {
+        text: "Buy the debt at a discount, own it through restructuring.",
+        sarcasticGuidance: "Loan-to-own. The most elegant hostile takeover.",
+        outcome: {
+          description: "You buy the debt at 60 cents on the dollar. When the company restructures, you convert to equity. You now own a retail chain. Time to close some stores.",
+          statChanges: { cash: -40000, reputation: +10, stress: +25, score: +600, ethics: -10 },
+        },
+      },
+      {
+        text: "Invest in the equity with a new management team.",
+        sarcasticGuidance: "The turnaround specialist play. New CEO, new strategy, same declining foot traffic.",
+        outcome: {
+          description: "You back a rockstar retail CEO to lead the turnaround. She closes 200 stores, launches e-commerce, and... it's still not enough. The secular decline continues.",
+          statChanges: { cash: -30000, stress: +20, score: +200, reputation: -10 },
+        },
+      },
+      {
+        text: "Retail is dead. Pass.",
+        sarcasticGuidance: "Amazon wins. Accept it.",
+        outcome: {
+          description: "You pass. The company files for bankruptcy two years later. The real estate gets carved up. Some PE fund makes a killing on the liquidation. It wasn't you.",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 20,
+    title: "The Infrastructure Play",
+    description: "A portfolio of toll roads across three states. Steady cash flows, inflation protection, but zero growth. The politics are tricky—every time you raise tolls, some state senator holds a press conference.",
+    minReputation: 50,
+    triggerTags: ['infrastructure', 'real_assets'],
+    choices: [
+      {
+        text: "Acquire and optimize toll pricing.",
+        sarcasticGuidance: "People will pay to avoid traffic. That's just human nature.",
+        outcome: {
+          description: "You buy the toll roads and implement dynamic pricing. Cash flows increase 20%. Commuters hate you. Local news does a special on 'greedy Wall Street.' Standard.",
+          statChanges: { cash: -80000, reputation: -5, stress: +10, score: +800, ethics: -15 },
+        },
+      },
+      {
+        text: "Hold for yield, no price increases.",
+        sarcasticGuidance: "Be the good guy. Collect steady checks. Let inflation do the work.",
+        outcome: {
+          description: "You keep prices flat, collect dividends, and sell to a pension fund in five years. Boring, predictable, profitable. Your LPs are thrilled with the distributions.",
+          statChanges: { cash: -60000, reputation: +10, score: +600 },
+        },
+      },
+      {
+        text: "Infrastructure returns are too low. Pass.",
+        sarcasticGuidance: "Single-digit IRRs? What is this, a pension fund?",
+        outcome: {
+          description: "You pass on infrastructure and chase higher returns in growth equity. Your infrastructure-focused competitors have a good year. But you're playing a different game.",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 21,
+    title: "The Pharma Patent Cliff",
+    description: "A specialty pharma company with one blockbuster drug. Patent expires in 18 months. The pipeline is thin. Management is hyping an acquisition strategy. The stock has cratered 70%.",
+    minReputation: 40,
+    triggerTags: ['pharma', 'distressed'],
+    choices: [
+      {
+        text: "Take it private at the bottom.",
+        sarcasticGuidance: "Buy the despair, sell the hope.",
+        outcome: {
+          description: "You acquire the company at a depressed valuation. The pipeline drug fails. The generics destroy the core product. You're stuck holding an empty shell. Sometimes the market is right.",
+          statChanges: { cash: -50000, stress: +30, score: -200, reputation: -15 },
+        },
+      },
+      {
+        text: "Fund the acquisition strategy with new capital.",
+        sarcasticGuidance: "Give them the warchest to buy their way out of the hole.",
+        outcome: {
+          description: "You inject capital for M&A. They acquire three small biotechs. One of them has a Phase 3 winner. Your portfolio company survives. Sometimes you get lucky.",
+          statChanges: { cash: -40000, reputation: +15, score: +800 },
+        },
+      },
+      {
+        text: "Pharma is too binary. Pass.",
+        sarcasticGuidance: "Drug either works or it doesn't. That's not investing, that's gambling.",
+        outcome: {
+          description: "You pass. The company does eventually find a pipeline winner and the stock recovers. You missed a 5x. But you also avoided a potential zero.",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 22,
+    title: "The ESG Pivot",
+    description: "A traditional energy company wants to reinvent itself as a renewable energy player. They have cash from legacy oil assets and a CEO with green ambitions. The transition will take a decade.",
+    minReputation: 30,
+    triggerTags: ['energy', 'esg'],
+    choices: [
+      {
+        text: "Fund the green transition.",
+        sarcasticGuidance: "Stranded assets are someone else's problem. You're buying the future.",
+        outcome: {
+          description: "You invest in the renewable buildout. The legacy business subsidizes the transition. ESG investors love your portfolio. Traditional energy investors think you're virtue signaling.",
+          statChanges: { cash: -60000, reputation: +20, score: +700, ethics: +15, factionReputation: { LIMITED_PARTNERS: +10 } },
+        },
+      },
+      {
+        text: "Milk the legacy assets, ignore the transition talk.",
+        sarcasticGuidance: "Oil isn't going anywhere for decades. Follow the cash.",
+        outcome: {
+          description: "You focus on the cash-generating oil fields. Dividends flow. The ESG crowd protests at your LP meetings. Returns are excellent. Sleep is slightly harder.",
+          statChanges: { cash: +80000, reputation: -10, score: +500, ethics: -20, factionReputation: { LIMITED_PARTNERS: -5 } },
+        },
+      },
+      {
+        text: "Energy transitions are 20-year plays. Pass.",
+        sarcasticGuidance: "Your fund has a 10-year life. The math doesn't work.",
+        outcome: {
+          description: "You pass. The energy transition continues without you. Wind and solar stocks are volatile. You watch from the sidelines, neither relieved nor regretful.",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 23,
+    title: "The Cybersecurity Incident",
+    description: "A portfolio company just got hacked. Customer data is on the dark web. The CEO is panicking. The PR team wants to minimize. Legal wants to delay disclosure. The clock is ticking.",
+    requiresPortfolio: true,
+    triggerTags: ['crisis', 'cyber'],
+    choices: [
+      {
+        text: "Full disclosure immediately.",
+        sarcasticGuidance: "Transparency is the only option. Rip off the bandaid.",
+        outcome: {
+          description: "You force immediate disclosure. The stock drops 30%. Regulators appreciate the transparency. Customers are angry but stay. The long-term trust is preserved.",
+          statChanges: { reputation: +10, stress: +20, score: +400, ethics: +20, auditRisk: -15 },
+        },
+      },
+      {
+        text: "Minimize and delay disclosure.",
+        sarcasticGuidance: "Control the narrative. Investigate first, disclose later.",
+        outcome: {
+          description: "You delay disclosure for 'investigation purposes.' A reporter breaks the story anyway. Now you look like you were covering up. The SEC is interested.",
+          statChanges: { reputation: -20, stress: +30, score: -300, ethics: -30, auditRisk: +30 },
+        },
+      },
+      {
+        text: "Fire the CEO and bring in crisis management.",
+        sarcasticGuidance: "Someone has to take the fall. Might as well be the person in charge.",
+        outcome: {
+          description: "You install a crisis CEO and let the previous leader 'pursue other opportunities.' The transition is messy but the narrative shifts. The company survives.",
+          statChanges: { reputation: +5, stress: +25, score: +300, ethics: -5 },
+        },
+      },
+    ],
+  },
+  {
+    id: 24,
+    title: "The Secondary Seller",
+    description: "Another PE firm wants to sell you their portfolio company. They've held it for 8 years. They claim it's a 'growth story' but you suspect they've exhausted the easy value. Why are they selling?",
+    minReputation: 45,
+    triggerTags: ['secondary', 'lbo'],
+    choices: [
+      {
+        text: "Buy it if the price is right.",
+        sarcasticGuidance: "Everyone's garbage is someone's treasure. At the right price.",
+        outcome: {
+          description: "You negotiate hard and buy at a fair valuation. The previous PE firm was indeed out of ideas, but you have a fresh playbook. The turnaround begins.",
+          statChanges: { cash: -70000, reputation: +10, score: +600 },
+        },
+      },
+      {
+        text: "Pass—secondary deals are where returns go to die.",
+        sarcasticGuidance: "If they could create more value, they would. They can't. They're selling.",
+        outcome: {
+          description: "You pass. The selling PE firm finds another buyer. You'll never know if you missed a winner or dodged a loser. That's the game.",
+          statChanges: { score: +100 },
+        },
+      },
+      {
+        text: "Co-invest with the seller—split the remaining value.",
+        sarcasticGuidance: "Aligned incentives. They keep skin in the game.",
+        outcome: {
+          description: "You structure a creative deal where the seller rolls 30% of their equity. Their continued alignment gives you confidence. Everyone's incentives are aligned.",
+          statChanges: { cash: -50000, reputation: +10, score: +700, analystRating: +10 },
+        },
+      },
+    ],
+  },
+  {
+    id: 25,
+    title: "The Management Buyout",
+    description: "A division of a Fortune 500 company is being spun off. The division's management team wants to buy it themselves but needs capital. They know the business cold but have never run a standalone company.",
+    minReputation: 35,
+    triggerTags: ['mbo', 'carveout'],
+    choices: [
+      {
+        text: "Back the management team.",
+        sarcasticGuidance: "Operators who want to own equity are the best partners.",
+        outcome: {
+          description: "You fund the MBO. The management team is fiercely committed. They work weekends without complaint because they're building their own wealth. This is what alignment looks like.",
+          statChanges: { cash: -60000, reputation: +15, score: +800 },
+        },
+      },
+      {
+        text: "Fund it but install your own CEO.",
+        sarcasticGuidance: "Trust but verify. They know the business but do they know how to run a board?",
+        outcome: {
+          description: "You bring in a professional CEO to 'support' the management team. They resent the oversight. Tension builds. But governance is tight.",
+          statChanges: { cash: -55000, reputation: +5, stress: +15, score: +500, ethics: -5 },
+        },
+      },
+      {
+        text: "Carve-outs are too complex. Pass.",
+        sarcasticGuidance: "Transition service agreements, stranded costs, IT separation... nightmare.",
+        outcome: {
+          description: "You pass on the operational complexity. A competitor funds the MBO and it goes spectacularly well. You add 'carve-out expertise' to your hiring wishlist.",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 26,
+    title: "The Activist Attack",
+    description: "An activist hedge fund just took a 5% stake in a company you're evaluating. They're demanding a sale, board seats, and the CEO's head. The stock is up 20% on the news. Do you join the fray?",
+    minReputation: 40,
+    triggerTags: ['activist', 'public'],
+    choices: [
+      {
+        text: "Acquire alongside the activist—take private together.",
+        sarcasticGuidance: "The enemy of my target is my friend. Temporarily.",
+        outcome: {
+          description: "You partner with the activist to force a sale. They handle the public warfare, you provide the capital. The company sells. You split the spoils. An uneasy but profitable alliance.",
+          statChanges: { cash: -80000, reputation: +15, stress: +20, score: +900 },
+        },
+      },
+      {
+        text: "Wait for the activist to fail, buy the dip.",
+        sarcasticGuidance: "Activists don't always win. Sometimes the board fights back.",
+        outcome: {
+          description: "The activist campaign fails. The stock crashes. You buy on weakness. Sometimes patience is the best strategy. The company eventually recovers.",
+          statChanges: { cash: -50000, reputation: +5, score: +600 },
+        },
+      },
+      {
+        text: "This is a circus. Stay away.",
+        sarcasticGuidance: "Activists create noise, not value. Let them fight.",
+        outcome: {
+          description: "You stay on the sidelines while the proxy war rages. It's entertaining to watch from a distance. Eventually everyone settles and pretends they won.",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 27,
+    title: "The Climate Tech Bet",
+    description: "A startup claims to have cracked direct air carbon capture at scale. The science is real but the economics are unproven. Governments are starting to mandate carbon removal. This could be huge or a complete waste.",
+    minReputation: 30,
+    triggerTags: ['climate', 'deeptech'],
+    choices: [
+      {
+        text: "Make a big bet on the energy transition.",
+        sarcasticGuidance: "Save the planet and make money. Surely both are possible.",
+        outcome: {
+          description: "You lead the round. The technology works in the lab. The question is whether it works at scale. Government contracts start coming in. Maybe you're early to something real.",
+          statChanges: { cash: -40000, reputation: +20, score: +600, ethics: +15 },
+        },
+      },
+      {
+        text: "Wait for technology de-risking.",
+        sarcasticGuidance: "Let someone else fund the science experiment. Buy in later at a higher price.",
+        outcome: {
+          description: "You wait. A year later, the technology is proven and the valuation triples. You missed the best entry point, but you also avoided the technology risk.",
+          statChanges: { score: +200, analystRating: +5 },
+        },
+      },
+      {
+        text: "Climate tech is too speculative. Pass.",
+        sarcasticGuidance: "Government subsidies aren't a business model. They're a political football.",
+        outcome: {
+          description: "You pass. The company eventually gets acquired by an oil major looking for carbon offsets. The founders get rich. You feel... something. Regret? Relief? Both?",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 28,
+    title: "The Public-to-Private",
+    description: "A mid-cap public company is trading at depressed multiples. The founder still owns 30% and is tired of quarterly earnings calls. He's open to a take-private. But public-to-privates are expensive and scrutinized.",
+    minReputation: 50,
+    minCash: 75000,
+    triggerTags: ['p2p', 'lbo'],
+    choices: [
+      {
+        text: "Launch a full take-private offer.",
+        sarcasticGuidance: "Pay the control premium. Own the whole thing.",
+        outcome: {
+          description: "You make the offer. The board hires Goldman to run a process. Competing bids emerge. You win, but at a higher price than planned. Still, you own a real business now.",
+          statChanges: { cash: -150000, reputation: +25, stress: +30, score: +1000 },
+        },
+      },
+      {
+        text: "Partner with the founder for a management buyout.",
+        sarcasticGuidance: "Aligned founders make everything easier.",
+        outcome: {
+          description: "You structure a deal where the founder rolls his equity and management joins. The board approves without a fight. Everyone's aligned. This is how deals should work.",
+          statChanges: { cash: -100000, reputation: +20, score: +900 },
+        },
+      },
+      {
+        text: "Public-to-privates are too complex. Pass.",
+        sarcasticGuidance: "SEC scrutiny, minority shareholders, deal litigation... too many moving parts.",
+        outcome: {
+          description: "You pass. The company stays public, eventually gets acquired by a strategic at a premium. You watch from the sidelines.",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 29,
+    title: "The LP Co-Investment",
+    description: "Your largest LP wants a co-investment right on your next deal. They'll put up $100M alongside the fund. But they want information rights, a board observer seat, and veto over the exit. Are they a partner or a backseat driver?",
+    minReputation: 45,
+    triggerTags: ['lp', 'fundraising'],
+    factionRequirements: [{ faction: 'LIMITED_PARTNERS', min: 50 }],
+    choices: [
+      {
+        text: "Accept the co-investment with their terms.",
+        sarcasticGuidance: "Their money, their rules. That's how LP relationships work.",
+        outcome: {
+          description: "You accept. Their capital helps you win a bigger deal. But every board meeting now includes their observer asking 'clarifying questions.' The partnership is... complicated.",
+          statChanges: { reputation: +10, stress: +15, score: +600, factionReputation: { LIMITED_PARTNERS: +20, MANAGING_DIRECTORS: -5 } },
+        },
+      },
+      {
+        text: "Negotiate lighter governance rights.",
+        sarcasticGuidance: "Take their money but limit their interference.",
+        outcome: {
+          description: "After tense negotiations, they get information rights but no board seat. A fair compromise. The relationship survives. Barely.",
+          statChanges: { reputation: +5, stress: +10, score: +500, factionReputation: { LIMITED_PARTNERS: +10 } },
+        },
+      },
+      {
+        text: "Decline the co-investment. Preserve GP control.",
+        sarcasticGuidance: "Your fund, your rules. Even if it means smaller deals.",
+        outcome: {
+          description: "You politely decline. The LP is offended. They reduce their commitment to your next fund. But your governance is clean.",
+          statChanges: { reputation: -10, score: +200, factionReputation: { LIMITED_PARTNERS: -15, MANAGING_DIRECTORS: +10 } },
+        },
+      },
+    ],
+  },
+  {
+    id: 30,
+    title: "The Geographic Expansion",
+    description: "An opportunity to acquire a company in Brazil. The growth potential is enormous. But currency risk, political instability, and a legal system you don't understand add layers of complexity.",
+    minReputation: 40,
+    triggerTags: ['international', 'emerging'],
+    choices: [
+      {
+        text: "Expand internationally. Growth is worth the risk.",
+        sarcasticGuidance: "Emerging markets: where fortunes are made and lost in equal measure.",
+        outcome: {
+          description: "You close the Brazilian deal. Currency devalues 20% in year one. But the underlying business grows 50%. Net-net, you're ahead. For now. Always for now.",
+          statChanges: { cash: -60000, reputation: +15, stress: +25, score: +700 },
+        },
+      },
+      {
+        text: "Partner with a local fund.",
+        sarcasticGuidance: "They understand the terrain. You provide the capital.",
+        outcome: {
+          description: "You co-invest with a Brazilian PE firm. They navigate the politics, you bring the expertise. A true partnership. Cultural differences are challenging but manageable.",
+          statChanges: { cash: -40000, reputation: +10, score: +600, analystRating: +10 },
+        },
+      },
+      {
+        text: "Stick to markets you understand. Pass.",
+        sarcasticGuidance: "Circle of competence. Stay in your lane.",
+        outcome: {
+          description: "You pass on the international expansion. Brazil has a currency crisis six months later. You feel relieved. Then the currency recovers and the company triples. Investing is humbling.",
+          statChanges: { score: +100 },
+        },
+      },
+    ],
+  },
 ];
 
 export const PORTFOLIO_ACTIONS: PortfolioAction[] = [
