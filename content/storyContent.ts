@@ -4955,6 +4955,7 @@ He raises his glass.
 *This is the game. And you're still playing.*`,
     choices: [],
     requiresAcknowledgment: true,
+    nextSceneId: 'ch5_opening',
   },
 ];
 
