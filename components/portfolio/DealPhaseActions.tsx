@@ -13,6 +13,7 @@ interface DealPhaseActionsProps {
   onSubmitIOI: (companyId: number) => void;
   onWalkAway: (companyId: number) => void;
   onOpenLeverageModal: (company: PortfolioCompany) => void;
+  onEnterIC?: (company: PortfolioCompany) => void;
   // Owned actions
   onReviewPerformance: (companyId: number) => void;
   onOperationalImprovement: (companyId: number) => void;
@@ -38,6 +39,7 @@ export const DealPhaseActions: React.FC<DealPhaseActionsProps> = memo(({
   onSubmitIOI,
   onWalkAway,
   onOpenLeverageModal,
+  onEnterIC,
   onReviewPerformance,
   onOperationalImprovement,
   onRefinanceDebt,
@@ -173,6 +175,24 @@ export const DealPhaseActions: React.FC<DealPhaseActionsProps> = memo(({
               <span className={`text-[8px] mt-0.5 ${!company.leverageModelViewed && tutorialStep === 0 ? 'text-cyan-300 font-bold' : 'text-emerald-500'}`}>
                 {!company.leverageModelViewed && tutorialStep === 0 ? 'REQUIRED TO UNLOCK IOI' : '(Free)'}
               </span>
+            </button>
+          )}
+
+          {/* IC PITCH button - available after leverage model is viewed */}
+          {company.isAnalyzed && company.leverageModelViewed && onEnterIC && (
+            <button
+              onClick={() => onEnterIC(company)}
+              disabled={actionsRemaining < 1 || isMarketPanic}
+              className={`
+                border rounded-lg flex flex-col items-center justify-center p-4 transition-all col-span-2 md:col-span-1
+                border-amber-500/70 bg-amber-950/40 text-amber-400 hover:bg-amber-900/50 hover:border-amber-400
+                shadow-[0_0_15px_rgba(245,158,11,0.2)]
+                ${(actionsRemaining < 1 || isMarketPanic) ? 'opacity-40 cursor-not-allowed' : ''}
+              `}
+            >
+              <i className="fas fa-users text-lg mb-2"></i>
+              <span className="text-[10px] font-bold uppercase tracking-wider">Enter IC</span>
+              <span className="text-[8px] text-amber-300 mt-0.5">Pitch to Partners</span>
             </button>
           )}
         </div>

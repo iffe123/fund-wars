@@ -8,6 +8,7 @@ import BlackBoxModal from './BlackBoxModal';
 import BoardBattleModal from './BoardBattleModal';
 import ExitStrategyModal from './ExitStrategyModal';
 import LeverageModelModal from './LeverageModelModal';
+import { ICMeetingScreen } from '../features/investment-committee';
 import { calculatePortfolioAnalytics, formatMoney as formatMoneyUtil } from '../utils/scenarioGating';
 import { getCompanyStatus } from '../utils/worldEngine';
 
@@ -32,6 +33,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   const [showBoardBattle, setShowBoardBattle] = useState<PortfolioCompany | null>(null);
   const [showExitModal, setShowExitModal] = useState<PortfolioCompany | null>(null);
   const [showLeverageModal, setShowLeverageModal] = useState<PortfolioCompany | null>(null);
+  const [showICMeeting, setShowICMeeting] = useState<PortfolioCompany | null>(null);
 
   const portfolio = playerStats.portfolio;
   const selectedCompany = portfolio.find(c => c.id === selectedId);
@@ -98,6 +100,36 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
       addLogEntry(`Requested discussion about ${company.name} with ${advisorType === 'sarah' ? 'Sarah (Deal Analysis)' : 'Machiavelli (Strategy)'}`);
     }
   }, [onDiscuss, addLogEntry]);
+
+  // Helper: Handle IC meeting completion
+  const handleICComplete = useCallback((outcome: 'APPROVED' | 'CONDITIONALLY_APPROVED' | 'TABLED' | 'REJECTED' | 'CANCELLED') => {
+    if (!showICMeeting) return;
+
+    const company = showICMeeting;
+    setShowICMeeting(null);
+
+    if (outcome === 'CANCELLED') {
+      addLogEntry(`IC MEETING: Exited without presenting ${company.name}`);
+      return;
+    }
+
+    // Apply outcomes based on IC decision
+    if (outcome === 'APPROVED') {
+      addLogEntry(`IC MEETING: ${company.name} APPROVED - Proceeding to auction`);
+      updatePlayerStats({ reputation: +5 });
+      // Automatically proceed to auction
+      setShowAuction(company);
+    } else if (outcome === 'CONDITIONALLY_APPROVED') {
+      addLogEntry(`IC MEETING: ${company.name} CONDITIONALLY APPROVED - Address conditions before proceeding`);
+      updatePlayerStats({ reputation: +2 });
+    } else if (outcome === 'TABLED') {
+      addLogEntry(`IC MEETING: ${company.name} TABLED - Committee needs more information`);
+      updatePlayerStats({ reputation: -1, stress: +5 });
+    } else if (outcome === 'REJECTED') {
+      addLogEntry(`IC MEETING: ${company.name} REJECTED - Committee did not approve the investment`);
+      updatePlayerStats({ reputation: -3, stress: +10 });
+    }
+  }, [showICMeeting, addLogEntry, updatePlayerStats]);
 
   // Helper: Handle LEVERAGE model application
   const handleApplyLeverageModel = useCallback((model: LeverageModel, suggestedBid: number) => {
@@ -1058,6 +1090,24 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                       </span>
                     </button>
                   )}
+
+                  {/* IC PITCH button - available after leverage model is viewed */}
+                  {selectedCompany.isAnalyzed && selectedCompany.leverageModelViewed && tutorialStep === 0 && (
+                    <button
+                      onClick={() => setShowICMeeting(selectedCompany)}
+                      disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1 || isMarketPanic}
+                      className={`
+                        border rounded-lg flex flex-col items-center justify-center p-4 transition-all col-span-2 md:col-span-1
+                        border-amber-500/70 bg-amber-950/40 text-amber-400 hover:bg-amber-900/50 hover:border-amber-400
+                        shadow-[0_0_15px_rgba(245,158,11,0.2)]
+                        ${((playerStats.gameTime?.actionsRemaining || 0) < 1 || isMarketPanic) ? 'opacity-40 cursor-not-allowed' : ''}
+                      `}
+                    >
+                      <i className="fas fa-users text-lg mb-2"></i>
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Enter IC</span>
+                      <span className="text-[8px] text-amber-300 mt-0.5">Pitch to Partners</span>
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -1211,6 +1261,16 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
           company={showLeverageModal}
           onClose={() => setShowLeverageModal(null)}
           onApplyModel={handleApplyLeverageModel}
+        />
+      )}
+
+      {/* Investment Committee Meeting */}
+      {showICMeeting && (
+        <ICMeetingScreen
+          deal={showICMeeting}
+          playerLevel={playerStats.level}
+          onComplete={handleICComplete}
+          onClose={() => setShowICMeeting(null)}
         />
       )}
     </div>
