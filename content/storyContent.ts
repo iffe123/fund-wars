@@ -7280,6 +7280,1132 @@ Whether that was wisdom or weakness, only time will tell.
 ];
 
 // ============================================================================
+// CHAPTER 7: THE 100 DAYS - Operational Turnaround
+// ============================================================================
+
+const CHAPTER_7_SCENES: Scene[] = [
+  // Opening - Day 1 Reality
+  {
+    id: 'ch7_opening',
+    chapterId: 'chapter_7',
+    title: 'Day One',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Day 1 of ownership. The first board meeting.*
+
+The Prometheus Technologies boardroom. Floor-to-ceiling windows overlooking Silicon Valley. A view that costs about $50 million a year in real estate.
+
+Around the table: Victor Chen (Chairman), the new CEO you helped recruit, the CFO who survived the transition, and representatives from Sterling, Meridian, and Apex.
+
+You're here as Sterling's operating partner on this deal. Your job: make sure the $2.4 billion in equity turns into $6 billion in five years.
+
+The CFO begins her presentation. Slide one: **"Q1 Performance Update."**
+
+The room goes quiet.
+
+**"We have a problem."**
+
+*This is not how Day 1 is supposed to go.*`,
+    choices: [
+      {
+        id: 'ch7_opening_continue',
+        text: 'Listen to the problem',
+        nextSceneId: 'ch7_day_one_surprise',
+      },
+    ],
+  },
+
+  // Day One Surprise
+  {
+    id: 'ch7_day_one_surprise',
+    chapterId: 'chapter_7',
+    title: 'The Surprise',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `The CFO clicks through the slides. Each one is worse than the last.
+
+**Revenue:** Down 8% from the model. A major customer—15% of sales—announced they're "evaluating alternatives."
+
+**Margins:** EBITDA margin compressed from 35% to 29%. "One-time" restructuring costs that somehow recur every quarter.
+
+**Cash:** The company burned $40 million more than projected. Working capital is a mess.
+
+**Pipeline:** The sales team missed Q1 targets by 30%. The new product launch is delayed six months.
+
+The new CEO, David Park, looks shell-shocked. He's been on the job for three weeks.
+
+**"How did this happen?"** Alexandra demands. **"This wasn't in the diligence."**
+
+The CFO's voice is steady but strained.
+
+**"Some of it was. Some of it... developed. The customer situation escalated after signing. The product delays were hidden by the previous team."**
+
+Victor Chen says nothing. His expression is unreadable.
+
+*The investment thesis just took a $400 million haircut. Someone needs to fix this.*`,
+    choices: [
+      {
+        id: 'ch7_take_charge',
+        text: 'Take the lead on developing a response',
+        subtext: 'Step up as the operating partner',
+        nextSceneId: 'ch7_take_charge',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['TOOK_CHARGE_DAY_ONE'],
+        },
+      },
+      {
+        id: 'ch7_defer_ceo',
+        text: 'Let the CEO take the lead',
+        subtext: 'It\'s his job, not yours',
+        nextSceneId: 'ch7_ceo_leads',
+        effects: {
+          stats: { politics: 5 },
+        },
+      },
+    ],
+  },
+
+  // Take Charge
+  {
+    id: 'ch7_take_charge',
+    chapterId: 'chapter_7',
+    title: 'Taking Point',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'player',
+      name: 'You',
+      mood: 'neutral',
+    },
+    narrative: `**"Let's not panic,"** you say, standing. **"We have problems. We also have resources and a plan. Let me walk through what I'm proposing."**
+
+You move to the whiteboard.
+
+**"First: the customer situation. I want a war room by end of day. CEO, head of sales, head of customer success. We're not losing that account."**
+
+**"Second: cash burn. CFO, I need a zero-based budget review in two weeks. Every line item justified from scratch."**
+
+**"Third: product delays. I want an honest assessment from engineering. Not what they think we want to hear—what's actually possible."**
+
+David Park looks relieved. He's in over his head, and he knows it.
+
+**"What's the timeline?"** Alexandra asks.
+
+**"One hundred days. That's what we tell the board. One hundred days to stabilize, assess, and present a revised value creation plan."**
+
+Victor Chen finally speaks: **"And if a hundred days isn't enough?"**
+
+**"Then we'll know we have bigger problems than timeline."**
+
+*The 100-day clock starts now.*`,
+    choices: [
+      {
+        id: 'ch7_hundred_days_start',
+        text: 'Begin the 100-day plan',
+        nextSceneId: 'ch7_hundred_day_plan',
+        effects: {
+          stats: { reputation: 10 },
+          relationships: [{ npcId: 'david_park', change: 15, memory: 'Took charge when I was drowning' }],
+          setFlags: ['HUNDRED_DAY_LEADER'],
+        },
+      },
+    ],
+  },
+
+  // CEO Leads
+  {
+    id: 'ch7_ceo_leads',
+    chapterId: 'chapter_7',
+    title: 'Delegation',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `You defer to David Park. It's the right organizational move—he's the CEO, after all.
+
+He stands, uncertain.
+
+**"We'll... we'll need to assess the situation. I'll have my team put together a response plan by end of week."**
+
+Alexandra's expression says everything. End of week? In a crisis?
+
+The meeting dissolves into side conversations. No clear ownership. No urgency.
+
+Chad pulls you aside afterward.
+
+**"That was a mistake."**
+
+**"He's the CEO—"**
+
+**"He's a CEO who's been on the job three weeks and just found out his company is on fire. You're the operating partner. You're supposed to be the adult in the room."**
+
+**"So what do I do now?"**
+
+**"Fix it. Before this becomes a portfolio committee issue."**
+
+*You need to get involved. Fast.*`,
+    choices: [
+      {
+        id: 'ch7_course_correct',
+        text: 'Step in and take operational control',
+        nextSceneId: 'ch7_hundred_day_plan',
+        effects: {
+          stats: { stress: 10 },
+          relationships: [{ npcId: 'david_park', change: -5, memory: 'Had to step over me' }],
+          setFlags: ['COURSE_CORRECTED'],
+        },
+      },
+    ],
+  },
+
+  // 100-Day Plan
+  {
+    id: 'ch7_hundred_day_plan',
+    chapterId: 'chapter_7',
+    title: 'The Plan',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Day 5. The war room.*
+
+Whiteboards cover every wall. Post-its in four colors track initiatives. A countdown clock shows: **95 DAYS REMAINING.**
+
+Your 100-day plan has four pillars:
+
+**STABILIZE (Days 1-30)**
+- Retain the at-risk customer
+- Stop the cash bleed
+- Assess management team capabilities
+
+**DIAGNOSE (Days 31-60)**
+- Root cause analysis on margin compression
+- Product roadmap reality check
+- Customer satisfaction deep-dive
+
+**PLAN (Days 61-90)**
+- Revised operating model
+- Cost structure optimization
+- Growth initiatives identification
+
+**EXECUTE (Days 91-100)**
+- Board presentation
+- Resource allocation decisions
+- Go-forward commitment
+
+The team is assembled. The clock is ticking.
+
+*Which pillar do you tackle first?*`,
+    choices: [
+      {
+        id: 'ch7_customer_first',
+        text: 'Focus on saving the at-risk customer',
+        subtext: 'Revenue protection is priority one',
+        nextSceneId: 'ch7_customer_war_room',
+        effects: {
+          setFlags: ['CUSTOMER_FIRST'],
+        },
+      },
+      {
+        id: 'ch7_cash_first',
+        text: 'Focus on stopping the cash burn',
+        subtext: 'Cash is oxygen',
+        nextSceneId: 'ch7_cash_crisis',
+        effects: {
+          setFlags: ['CASH_FIRST'],
+        },
+      },
+      {
+        id: 'ch7_management_first',
+        text: 'Focus on assessing the management team',
+        subtext: 'People problems first',
+        nextSceneId: 'ch7_management_assessment',
+        effects: {
+          setFlags: ['MANAGEMENT_FIRST'],
+        },
+      },
+    ],
+  },
+
+  // Customer War Room
+  {
+    id: 'ch7_customer_war_room',
+    chapterId: 'chapter_7',
+    title: 'The Customer Crisis',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `*Day 8. Customer war room.*
+
+GlobalMfg—the customer threatening to leave—represents $180 million in annual revenue. Losing them would crater the investment thesis.
+
+The head of customer success, Maria Santos, briefs you:
+
+**"The relationship started deteriorating eighteen months ago. Product quality issues, missed SLAs, unresponsive support. They've been building a business case to switch to our competitor."**
+
+**"Why didn't this come up in diligence?"**
+
+**"Because the previous management told us not to mention it. Said they had it under control."** Her jaw tightens. **"They didn't."**
+
+**"What do we need to save the account?"**
+
+**"Honestly? A miracle. Or..."** She hesitates.
+
+**"Or?"**
+
+**"We fly to Detroit. You, me, David. We sit in their conference room and we listen. We don't pitch. We don't defend. We listen to every complaint they have. And then we fix it."**
+
+**"And if that's not enough?"**
+
+**"Then we negotiate the best exit terms we can and start replacing the revenue."**
+
+*$180 million on the line. What's your approach?*`,
+    choices: [
+      {
+        id: 'ch7_customer_humble',
+        text: 'Go to Detroit. Listen and commit to fixing issues.',
+        subtext: 'Humility over pride',
+        nextSceneId: 'ch7_customer_meeting',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 5 },
+          setFlags: ['CUSTOMER_HUMBLE_APPROACH'],
+        },
+      },
+      {
+        id: 'ch7_customer_negotiate',
+        text: 'Negotiate from strength. Offer concessions strategically.',
+        subtext: 'Business is business',
+        nextSceneId: 'ch7_customer_meeting',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['CUSTOMER_NEGOTIATE_APPROACH'],
+        },
+      },
+    ],
+  },
+
+  // Cash Crisis
+  {
+    id: 'ch7_cash_crisis',
+    chapterId: 'chapter_7',
+    title: 'Following the Money',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Day 8. CFO's office.*
+
+Jennifer Walsh, the CFO, has been with Prometheus for twelve years. She survived four CEOs and one IPO. She knows where the bodies are buried.
+
+**"Show me the real numbers,"** you say. **"Not the board deck. The real numbers."**
+
+She pulls up a spreadsheet. The picture is ugly.
+
+**"We're burning $15 million a month. Cash runway is eight months if nothing changes."**
+
+**"The model showed positive free cash flow by Q3."**
+
+**"The model was wrong."** She pauses. **"Or optimistic. Take your pick."**
+
+**"Where's the money going?"**
+
+**"Three buckets: R&D headcount that's not producing, sales & marketing that's not converting, and G&A that crept up during the go-go years."**
+
+She slides a paper across the desk. **"I've identified $60 million in annual savings. But it requires decisions. Hard ones."**
+
+**"How hard?"**
+
+**"Two hundred people hard."**
+
+*Layoffs. The word no one wants to say. But the math is the math.*`,
+    choices: [
+      {
+        id: 'ch7_layoffs_review',
+        text: 'Review the layoff proposal in detail',
+        nextSceneId: 'ch7_tough_call',
+        effects: {
+          stats: { stress: 10 },
+          setFlags: ['REVIEWED_LAYOFFS'],
+        },
+      },
+      {
+        id: 'ch7_alternatives',
+        text: 'Push for alternatives to layoffs first',
+        subtext: 'Look for other levers',
+        nextSceneId: 'ch7_alternatives_search',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 10 },
+          setFlags: ['SOUGHT_ALTERNATIVES'],
+        },
+      },
+    ],
+  },
+
+  // Management Assessment
+  {
+    id: 'ch7_management_assessment',
+    chapterId: 'chapter_7',
+    title: 'The People Problem',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Day 8. One-on-ones with the executive team.*
+
+You spend three days in back-to-back meetings. Coffee. Lunch. Dinner. Late-night drinks. Getting to know the people who will make or break this turnaround.
+
+Your assessment notes:
+
+**David Park (CEO):** Smart, strategic, but struggles with execution. Needs coaching, not replacement. Yet.
+
+**Jennifer Walsh (CFO):** Rock solid. Knows the business cold. Keep.
+
+**Marcus Thompson (CTO):** Defensive, protective of his team. Product delays are on him. Question mark.
+
+**Lisa Chen (VP Sales):** New hire, six months in. Inheriting a mess. Jury's out.
+
+**Robert Kim (VP Engineering):** Marcus's right hand. Loyal to a fault. Possible resistance to change.
+
+The management team is... mixed. Not a disaster, but not the A-team either.
+
+*What's your priority intervention?*`,
+    choices: [
+      {
+        id: 'ch7_cto_conversation',
+        text: 'Have a direct conversation with the CTO',
+        subtext: 'The product delays are existential',
+        nextSceneId: 'ch7_cto_confrontation',
+        effects: {
+          setFlags: ['CTO_FOCUS'],
+        },
+      },
+      {
+        id: 'ch7_coach_ceo',
+        text: 'Focus on coaching the CEO',
+        subtext: 'He needs to lead the turnaround',
+        nextSceneId: 'ch7_ceo_coaching',
+        effects: {
+          setFlags: ['CEO_COACHING'],
+        },
+      },
+    ],
+  },
+
+  // Customer Meeting
+  {
+    id: 'ch7_customer_meeting',
+    chapterId: 'chapter_7',
+    title: 'Detroit',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Day 15. GlobalMfg headquarters. Detroit.*
+
+The GlobalMfg team files in: the CTO, the VP of Operations, the procurement head, and a lawyer. Not a good sign.
+
+You spend three hours listening. Really listening.
+
+The complaints are legitimate:
+- Product quality declined after Prometheus cut their QA team
+- Support response times went from 4 hours to 4 days
+- Three critical bugs went unfixed for six months
+- The account team stopped showing up to quarterly reviews
+
+When they finish, the CTO leans forward:
+
+**"So. What are you going to do about it?"**
+
+You have a choice. Promise everything and risk over-committing. Or be honest about what you can deliver and risk losing them anyway.
+
+*What's your commitment?*`,
+    choices: [
+      {
+        id: 'ch7_customer_promise_big',
+        text: 'Make specific, measurable commitments',
+        subtext: 'Promise what you can deliver—and deliver it',
+        nextSceneId: 'ch7_customer_outcome',
+        effects: {
+          stats: { reputation: 10 },
+          setFlags: ['CUSTOMER_COMMITTED'],
+        },
+      },
+      {
+        id: 'ch7_customer_honest',
+        text: 'Be honest about the turnaround timeline',
+        subtext: 'Set realistic expectations',
+        nextSceneId: 'ch7_customer_outcome',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 10 },
+          setFlags: ['CUSTOMER_HONEST'],
+        },
+      },
+    ],
+  },
+
+  // Customer Outcome
+  {
+    id: 'ch7_customer_outcome',
+    chapterId: 'chapter_7',
+    title: 'The Verdict',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'globalmfg_cto',
+      name: 'GlobalMfg CTO',
+      mood: 'neutral',
+    },
+    narrative: `The GlobalMfg CTO confers with his team. Five minutes that feel like an hour.
+
+**"Here's what we're going to do,"** he says finally. **"We're going to give you six months. Six months to prove this new ownership is different."**
+
+**"And if we deliver?"**
+
+**"Then we sign a three-year extension. But if you slip—if quality drops, if support fails, if we see the same patterns—we're gone. And we're taking the three other companies in our group with us."**
+
+**"Understood."**
+
+He stands, extends his hand.
+
+**"I hope you're different. I really do. We've been partners for fifteen years. I don't want that to end."**
+
+The flight back to California is quiet. You just bought six months. Now you have to deliver.
+
+*One pillar stabilized. Two to go.*`,
+    choices: [
+      {
+        id: 'ch7_customer_success',
+        text: 'Move to the next crisis',
+        nextSceneId: 'ch7_tough_call',
+        effects: {
+          relationships: [{ npcId: 'maria_santos', change: 15, memory: 'Helped save the GlobalMfg account' }],
+        },
+      },
+    ],
+  },
+
+  // Alternatives Search
+  {
+    id: 'ch7_alternatives_search',
+    chapterId: 'chapter_7',
+    title: 'Finding Another Way',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Day 12. Searching for alternatives.*
+
+You push Jennifer to find other levers before resorting to layoffs.
+
+**Lever 1: Vendor renegotiation** — $8M in annual savings from better cloud and software contracts. Doable.
+
+**Lever 2: Real estate consolidation** — $12M by closing two satellite offices and going hybrid. Six-month timeline.
+
+**Lever 3: Hiring freeze** — $15M in avoided costs by not backfilling open positions. Immediate.
+
+**Lever 4: Compensation reset** — Executive team takes 20% salary cuts until profitability. Symbolic, but meaningful.
+
+**Total: $35 million.** Still $25 million short.
+
+Jennifer looks at you.
+
+**"I appreciate what you're trying to do. But the math doesn't lie. We can soften the blow, but we can't avoid it entirely."**
+
+**"How many if we do all of this?"**
+
+**"A hundred instead of two hundred. And we have to move fast—the longer we wait, the more cash we burn."**
+
+*Sometimes there are no good options. Only less bad ones.*`,
+    choices: [
+      {
+        id: 'ch7_proceed_reduced',
+        text: 'Proceed with the reduced layoffs',
+        nextSceneId: 'ch7_tough_call',
+        effects: {
+          stats: { ethics: 5, stress: 10 },
+          setFlags: ['REDUCED_LAYOFFS'],
+        },
+      },
+    ],
+  },
+
+  // Tough Call
+  {
+    id: 'ch7_tough_call',
+    chapterId: 'chapter_7',
+    title: 'The Hardest Day',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `*Day 30. The restructuring.*
+
+The notices go out at 9 AM Pacific. By 10 AM, the office is in chaos. People crying at their desks. Security escorting confused employees to HR. Boxes appearing in cubicles.
+
+You walk the floor. Some people avoid eye contact. Others stare with naked hostility. One woman—mid-fifties, probably been here twenty years—stops you in the hallway.
+
+**"I hope you're proud of yourself,"** she says. **"We were a family before you people showed up."**
+
+You don't have a good answer. There isn't one.
+
+David Park finds you in the stairwell, looking shell-shocked.
+
+**"I've never had to do anything like this."**
+
+**"Neither have I."** You pause. **"But it's done now. The question is what we do next."**
+
+**"What do we do next?"**
+
+**"We prove it was worth it. We turn this company around. We show everyone who's still here that their jobs are secure because we made the hard call."**
+
+**"And if we don't?"**
+
+**"Then we're the villains they think we are."**
+
+*Fifty days remaining. The stabilization phase is complete. Now comes the hard part.*`,
+    choices: [
+      {
+        id: 'ch7_aftermath',
+        text: 'Move to the diagnosis phase',
+        nextSceneId: 'ch7_diagnosis_phase',
+        effects: {
+          stats: { stress: 15, ethics: -5 },
+        },
+      },
+    ],
+  },
+
+  // CTO Confrontation
+  {
+    id: 'ch7_cto_confrontation',
+    chapterId: 'chapter_7',
+    title: 'The Product Truth',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'marcus_thompson',
+      name: 'Marcus Thompson',
+      mood: 'angry',
+    },
+    narrative: `Marcus Thompson's office is cluttered with whiteboards, sticky notes, and half-empty coffee cups. The debris of a product organization under siege.
+
+**"The product delays,"** you begin. **"I need to understand what happened."**
+
+His defensiveness is immediate.
+
+**"What happened is we got pushed to ship features before they were ready. Sales made promises we couldn't keep. Leadership changed priorities every quarter. And now everyone wants to blame engineering."**
+
+**"I'm not here to blame anyone. I'm here to fix it."**
+
+**"You want to fix it?"** He laughs bitterly. **"Give me six more months and the headcount we lost in last year's 'efficiency' round. Then we'll talk about fixing it."**
+
+**"You're not getting six months. You're getting sixty days to show me a realistic roadmap."**
+
+**"Then you're not getting a product that works."**
+
+*The CTO is burned out and defensive. But he might also be right about the resource constraints.*`,
+    choices: [
+      {
+        id: 'ch7_cto_push',
+        text: 'Push back firmly on the excuses',
+        subtext: 'Accountability matters',
+        nextSceneId: 'ch7_cto_resolution',
+        effects: {
+          stats: { dealcraft: 5 },
+          relationships: [{ npcId: 'marcus_thompson', change: -10, memory: 'Pushed back on my excuses' }],
+          setFlags: ['CTO_PUSHED'],
+        },
+      },
+      {
+        id: 'ch7_cto_listen',
+        text: 'Listen to his concerns seriously',
+        subtext: 'He might have a point',
+        nextSceneId: 'ch7_cto_resolution',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 5, politics: 5 },
+          relationships: [{ npcId: 'marcus_thompson', change: 10, memory: 'Actually listened to my side' }],
+          setFlags: ['CTO_LISTENED'],
+        },
+      },
+    ],
+  },
+
+  // CEO Coaching
+  {
+    id: 'ch7_ceo_coaching',
+    chapterId: 'chapter_7',
+    title: 'Leadership Development',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'david_park',
+      name: 'David Park',
+      mood: 'worried',
+    },
+    narrative: `*Day 10. Dinner with David Park.*
+
+Away from the office, David opens up.
+
+**"I'm not sure I'm the right person for this,"** he admits. **"I came from a growth environment. Scale mode. This is... this is survival mode."**
+
+**"What makes you say that?"**
+
+**"Every skill I developed—building teams, expanding markets, raising capital—none of it applies here. Here I need to cut, and focus, and say no. I've never been good at saying no."**
+
+**"You can learn."**
+
+**"Can I learn fast enough?"** He stares at his drink. **"The board is watching. You're watching. If I stumble again..."**
+
+**"Then we'll help you. That's what operating partners do."**
+
+**"Is that what you really do? Or is that what you say before you replace me?"**
+
+*He's scared. He's also not wrong to be scared.*`,
+    choices: [
+      {
+        id: 'ch7_ceo_support',
+        text: 'Commit to supporting his development',
+        subtext: 'Give him a real chance',
+        nextSceneId: 'ch7_cto_resolution',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 10 },
+          relationships: [{ npcId: 'david_park', change: 20, memory: 'Believed in me when no one else did' }],
+          setFlags: ['CEO_SUPPORTED'],
+        },
+      },
+      {
+        id: 'ch7_ceo_conditional',
+        text: 'Be honest about the performance bar',
+        subtext: 'Support with accountability',
+        nextSceneId: 'ch7_cto_resolution',
+        effects: {
+          stats: { politics: 5, dealcraft: 5 },
+          relationships: [{ npcId: 'david_park', change: 5, memory: 'Was honest about expectations' }],
+          setFlags: ['CEO_ACCOUNTABLE'],
+        },
+      },
+    ],
+  },
+
+  // CTO Resolution
+  {
+    id: 'ch7_cto_resolution',
+    chapterId: 'chapter_7',
+    title: 'The Engineering Question',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Day 20. Product review.*
+
+After days of deep-dives with the engineering team, the picture becomes clearer.
+
+Marcus Thompson was half-right. The team is under-resourced for the roadmap they were given. But he was also half-wrong. The architecture decisions from three years ago have created technical debt that's slowing everything down.
+
+You present your findings to the consortium partners:
+
+**"We have two options. One: rebuild the core platform. Eighteen months, $30 million in investment. Risky, but solves the root cause."**
+
+**"Two: patch and stabilize. Six months, $10 million. Keeps us competitive short-term, but we'll face the same issues in three years."**
+
+Alexandra speaks first: **"What's your recommendation?"**
+
+**"Depends on our exit timeline. If we're selling in three years, we patch. If we're building for the long term, we rebuild."**
+
+**"And the CTO?"**
+
+**"He stays. With clearer priorities and realistic resources. If he can't deliver with that support, then we revisit."**
+
+*The product strategy is set. Now for the hard part: execution.*`,
+    choices: [
+      {
+        id: 'ch7_rebuild',
+        text: 'Recommend the rebuild',
+        subtext: 'Long-term value creation',
+        nextSceneId: 'ch7_diagnosis_phase',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['CHOSE_REBUILD'],
+        },
+      },
+      {
+        id: 'ch7_patch',
+        text: 'Recommend the patch',
+        subtext: 'Preserve optionality',
+        nextSceneId: 'ch7_diagnosis_phase',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['CHOSE_PATCH'],
+        },
+      },
+    ],
+  },
+
+  // Diagnosis Phase
+  {
+    id: 'ch7_diagnosis_phase',
+    chapterId: 'chapter_7',
+    title: 'The Diagnosis',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Day 45. Diagnosis complete.*
+
+After six weeks of intensive work, the turnaround thesis comes into focus:
+
+**What Went Wrong:**
+- Previous management prioritized growth over profitability
+- Technical debt accumulated faster than investment
+- Customer success was underfunded
+- Sales incentives rewarded new logos over retention
+
+**What We're Fixing:**
+- Restructured cost base saves $45M annually
+- Customer retention program showing early results
+- Product roadmap reset with realistic timelines
+- Sales compensation aligned to profitability
+
+**What Still Worries Us:**
+- Key engineer turnover risk is high
+- Competitive pressure increasing
+- Customer concentration still dangerous
+- CEO still finding his footing
+
+The board review is in five days. You need to present a credible path to the original investment thesis—or a revised one they can live with.
+
+*How do you frame the message?*`,
+    choices: [
+      {
+        id: 'ch7_board_optimistic',
+        text: 'Present an optimistic recovery path',
+        subtext: 'The original thesis is achievable',
+        nextSceneId: 'ch7_board_pressure',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['BOARD_OPTIMISTIC'],
+        },
+      },
+      {
+        id: 'ch7_board_realistic',
+        text: 'Present a realistic, revised thesis',
+        subtext: 'Lower returns, higher confidence',
+        nextSceneId: 'ch7_board_pressure',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 10 },
+          setFlags: ['BOARD_REALISTIC'],
+        },
+      },
+    ],
+  },
+
+  // Board Pressure
+  {
+    id: 'ch7_board_pressure',
+    chapterId: 'chapter_7',
+    title: 'The Board Review',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Day 50. Consortium board meeting.*
+
+The presentation goes well—until the Q&A.
+
+Alexandra leads the charge:
+
+**"Your revised projections show 2.1x return over five years. We modeled 2.5x. That's a $400 million gap."**
+
+**"The gap reflects reality. The business we bought isn't the business we diligenced."**
+
+**"Then someone should be accountable for that."**
+
+The room goes tense. She's not wrong—but accountability is complicated when everyone shares blame.
+
+Victor Chen speaks for the first time:
+
+**"What I'm hearing is that we have a good business with fixable problems. The question is whether we have the right team to fix them."**
+
+He looks at you.
+
+**"You've been running this turnaround for fifty days. In fifty more, what will be different?"**
+
+*The founder is testing your conviction. Everyone is watching.*`,
+    choices: [
+      {
+        id: 'ch7_defend_team',
+        text: 'Defend the current team and plan',
+        subtext: 'We have what we need',
+        nextSceneId: 'ch7_thesis_pivot',
+        effects: {
+          stats: { politics: 5 },
+          relationships: [{ npcId: 'david_park', change: 10, memory: 'Defended me to the board' }],
+          setFlags: ['DEFENDED_TEAM'],
+        },
+      },
+      {
+        id: 'ch7_acknowledge_gaps',
+        text: 'Acknowledge gaps and propose changes',
+        subtext: 'Honesty about what\'s not working',
+        nextSceneId: 'ch7_thesis_pivot',
+        effects: {
+          stats: { ethics: 5, dealcraft: 5 },
+          setFlags: ['ACKNOWLEDGED_GAPS'],
+        },
+      },
+    ],
+  },
+
+  // Thesis Pivot
+  {
+    id: 'ch7_thesis_pivot',
+    chapterId: 'chapter_7',
+    title: 'The Pivot',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Day 60. The pivot decision.*
+
+The numbers don't lie. The original investment thesis—premium growth with high margins—isn't achievable in the current market.
+
+You present the consortium with a choice:
+
+**OPTION A: Stay the Course**
+- Maintain premium positioning
+- Accept slower growth (8% vs 15%)
+- Target 2.0x return over 5 years
+
+**OPTION B: Pivot to Platform**
+- Acquire two smaller competitors
+- Consolidate market share
+- Target 2.5x return over 6 years
+- Requires additional $200M equity
+
+**OPTION C: Prepare for Early Exit**
+- Stabilize operations
+- Position for strategic sale
+- Target 1.5x return over 3 years
+
+The partners debate for hours. Finally, they turn to you.
+
+**"You've been closest to this. What do you recommend?"**
+
+*The next forty days depend on this decision.*`,
+    choices: [
+      {
+        id: 'ch7_stay_course',
+        text: 'Recommend staying the course',
+        subtext: 'Execute the turnaround we started',
+        nextSceneId: 'ch7_execution_hell',
+        effects: {
+          stats: { stress: 10 },
+          setFlags: ['CHOSE_STAY_COURSE'],
+        },
+      },
+      {
+        id: 'ch7_pivot_platform',
+        text: 'Recommend the platform strategy',
+        subtext: 'Buy your way to scale',
+        nextSceneId: 'ch7_execution_hell',
+        effects: {
+          stats: { dealcraft: 10 },
+          setFlags: ['CHOSE_PLATFORM'],
+        },
+      },
+      {
+        id: 'ch7_early_exit',
+        text: 'Recommend preparing for early exit',
+        subtext: 'Cut losses and move on',
+        nextSceneId: 'ch7_early_exit_path',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['CHOSE_EARLY_EXIT'],
+        },
+      },
+    ],
+  },
+
+  // Early Exit Path
+  {
+    id: 'ch7_early_exit_path',
+    chapterId: 'chapter_7',
+    title: 'The Exit Option',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `The recommendation lands like a bomb.
+
+**"You're suggesting we give up?"** Alexandra's voice is ice.
+
+**"I'm suggesting we be realistic. The market has changed. The competitive position has weakened. We can fight for three more years and maybe get to 2x, or we can sell now to a strategic buyer who values the customer base and get 1.5x with certainty."**
+
+**"Our LPs didn't invest for 1.5x returns."**
+
+**"Our LPs also didn't invest to watch us throw good money after bad."**
+
+The debate continues. Finally, Victor Chen cuts through:
+
+**"I didn't build this company to see it sold for parts. But I also didn't build it to watch it die slowly."** He pauses. **"If the recommendation is early exit, I'll support it. But I want to know you've exhausted the alternatives."**
+
+**"We have. And an early exit isn't failure—it's recognizing reality."**
+
+*The consortium votes. The decision is made.*`,
+    choices: [
+      {
+        id: 'ch7_exit_proceed',
+        text: 'Begin the exit preparation',
+        nextSceneId: 'ch7_chapter_end_exit',
+        effects: {
+          stats: { reputation: -5 },
+        },
+      },
+    ],
+  },
+
+  // Execution Hell
+  {
+    id: 'ch7_execution_hell',
+    chapterId: 'chapter_7',
+    title: 'The Grind',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Days 61-90. Execution.*
+
+The next thirty days are a blur:
+
+**Week 9:** The GlobalMfg retention program shows results. Renewal signed.
+
+**Week 10:** Two key engineers resign. Counteroffer fails. Scramble to redistribute work.
+
+**Week 11:** Competitor announces a price cut. Sales team panics. You hold the line on value pricing.
+
+**Week 12:** First positive EBITDA month since acquisition. Small win, but a win.
+
+**Week 13:** David Park finally finds his footing. Leads an all-hands that doesn't feel scripted.
+
+The war room countdown clock shows: **10 DAYS REMAINING.**
+
+The final board presentation is drafted. The numbers are... not great, but defensible. The story is credible. The team is exhausted but intact.
+
+One more week until judgment day.
+
+*You've done everything you can. Now you find out if it was enough.*`,
+    choices: [
+      {
+        id: 'ch7_final_prep',
+        text: 'Make final preparations',
+        nextSceneId: 'ch7_day_100',
+        effects: {
+          stats: { stress: 10 },
+        },
+      },
+    ],
+  },
+
+  // Day 100
+  {
+    id: 'ch7_day_100',
+    chapterId: 'chapter_7',
+    title: 'Day 100',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Day 100. The final presentation.*
+
+The consortium board gathers. Sterling. Meridian. Apex. Victor Chen. The new management team. Everyone who matters.
+
+You present for ninety minutes. The journey. The challenges. The wins and losses. The revised plan.
+
+When you finish, the room is quiet.
+
+The Sterling managing partner speaks first:
+
+**"A hundred days ago, this company was in crisis. Customer retention failing, cash burning, management struggling."**
+
+**"Today, we have a stabilized customer base, positive cash flow trajectory, and a management team that's finding its footing."**
+
+**"Is it where we wanted to be? No. Is it enough to justify continued investment? That's the question."**
+
+Victor Chen stands.
+
+**"I've been through a lot of turnarounds in my career. Most of them fail. Not because the strategy was wrong, but because the people gave up."**
+
+He looks around the room.
+
+**"This team didn't give up. They did the hard work. They made the hard calls. That's worth something."**
+
+*The vote is called. The future of your turnaround hangs in the balance.*`,
+    choices: [
+      {
+        id: 'ch7_await_verdict',
+        text: 'Await the board\'s decision',
+        nextSceneId: 'ch7_chapter_end',
+        effects: {
+          stats: { stress: 15 },
+        },
+      },
+    ],
+  },
+
+  // Chapter End - Success
+  {
+    id: 'ch7_chapter_end',
+    chapterId: 'chapter_7',
+    title: 'The Verdict',
+    type: 'chapter_end',
+    atmosphere: 'quiet',
+    narrative: `The vote passes. The turnaround continues.
+
+**"Twelve more months,"** the managing partner says. **"Show us the trajectory holds. Then we'll talk about what comes next."**
+
+It's not a ringing endorsement. But it's not a death sentence either.
+
+After the meeting, David Park finds you.
+
+**"Thank you,"** he says simply. **"For not giving up on us."**
+
+**"Don't thank me yet. We've got twelve months of hard work ahead."**
+
+**"I know. But for the first time since I took this job, I think we might actually make it."**
+
+That night, you look at the war room one last time. The countdown clock now reads: **DAY 101.**
+
+The whiteboard still has your original four pillars. Next to each one, in red marker, someone has written: **DONE.**
+
+*The 100 days are over. The real work is just beginning.*
+
+**CHAPTER 7 COMPLETE**
+
+*You've learned that turnarounds aren't about spreadsheets—they're about people. The numbers matter, but the decisions are human. Every cost cut is someone's job. Every strategy shift is someone's career.*
+
+*The best operators don't just fix companies. They help the people inside them find a way forward.*`,
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+
+  // Chapter End - Exit Path
+  {
+    id: 'ch7_chapter_end_exit',
+    chapterId: 'chapter_7',
+    title: 'The Strategic Exit',
+    type: 'chapter_end',
+    atmosphere: 'quiet',
+    narrative: `*Six months later*
+
+The sale to TechGiant closes at 1.6x invested capital. Not the return anyone wanted, but better than the alternative.
+
+Victor Chen signs the final documents with the same fountain pen his father gave him—now used twice to sell companies he built.
+
+**"I thought I'd feel worse,"** he admits afterward. **"But seeing it go to someone who'll invest in it... that's something."**
+
+**"You built something real. That doesn't disappear because the ownership changed."**
+
+**"No. It just changes."** He pauses. **"Will you stay to help with integration?"**
+
+**"For six months. Then I'm back to Sterling."**
+
+**"Back to the next deal."**
+
+**"Back to the next deal."**
+
+He shakes your hand.
+
+**"You made a hard call. Easier to keep fighting than to know when to stop. That takes a different kind of courage."**
+
+**CHAPTER 7 COMPLETE**
+
+*Sometimes the best outcome isn't a home run—it's a base hit that keeps the game going. You learned when to fight and when to fold.*
+
+*Not every investment thesis survives contact with reality. The best investors know the difference between persistence and denial.*`,
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+];
+
+// ============================================================================
 // CHAPTER DEFINITIONS
 // ============================================================================
 
@@ -7359,6 +8485,19 @@ export const STORY_CHAPTERS: Chapter[] = [
     estimatedMinutes: 30,
     theme: 'crisis',
   },
+  {
+    id: 'chapter_7',
+    number: 7,
+    title: 'The 100 Days',
+    teaser: 'Post-acquisition reality hits hard. You have 100 days to prove the investment thesis—or watch it collapse.',
+    openingSceneId: 'ch7_opening',
+    endingSceneIds: ['ch7_chapter_end', 'ch7_chapter_end_exit'],
+    requirements: {
+      completedChapters: ['chapter_6'],
+    },
+    estimatedMinutes: 35,
+    theme: 'resolution',
+  },
 ];
 
 // ============================================================================
@@ -7372,6 +8511,7 @@ export const STORY_SCENES: Scene[] = [
   ...CHAPTER_4_SCENES,
   ...CHAPTER_5_SCENES,
   ...CHAPTER_6_SCENES,
+  ...CHAPTER_7_SCENES,
 ];
 
 // ============================================================================
