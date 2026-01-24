@@ -3529,11 +3529,11 @@ Stanley hesitates... then sits.
 - Employment guarantees shortened to 6 months
 - Real estate held separately (maximum flexibility)
 
-Monica looks sick. Tommy has left the room. Stanley signs with a trembling hand.
+Monica looks sick. Tommy has left the room. Stanley agrees with a trembling voice.
 
-**"I hope you're proud of yourselves,"** he says.
+**"I hope you're proud of yourselves,"** he says. **"We'll sign tomorrow."**
 
-Chad collects the papers without emotion.
+Chad nods without emotion.
 
 *You got the deal you wanted. But some deals leave scars.*`,
     choices: [
