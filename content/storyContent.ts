@@ -4959,6 +4959,1095 @@ He raises his glass.
 ];
 
 // ============================================================================
+// CHAPTER 5: THE HUNT - Deal Sourcing & Due Diligence
+// ============================================================================
+
+const CHAPTER_5_SCENES: Scene[] = [
+  // Opening - MD confrontation about deal sourcing
+  {
+    id: 'ch5_opening',
+    chapterId: 'chapter_5',
+    title: 'Proprietary or Perish',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Three months after your promotion to VP*
+
+The corner office. Chad's domain. You've been summoned.
+
+The walls are lined with tombstones—lucite deal mementos from two decades of buyouts. Each one represents billions in enterprise value, hundreds of jobs transformed, fortunes made and lost.
+
+Chad doesn't look up from his screen.
+
+**"Close the door."**
+
+*This isn't going to be a congratulations meeting.*`,
+    choices: [
+      {
+        id: 'ch5_opening_sit',
+        text: 'Take a seat',
+        nextSceneId: 'ch5_cold_reality',
+      },
+    ],
+  },
+
+  // Cold Reality - MD criticism
+  {
+    id: 'ch5_cold_reality',
+    chapterId: 'chapter_5',
+    title: 'The Problem',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'disappointed',
+    },
+    narrative: `**"I've been reviewing your deal sheet. PackFancy. The retail roll-up you sourced from Goldman's CIM. The industrials deal that came through Jefferies."**
+
+He finally looks at you.
+
+**"Notice a pattern?"**
+
+**"They're all banker deals."**
+
+**"Every. Single. One."** He leans back. **"You know what bankers do? They run processes. Forty bidders. Competitive tension. Margins compressed to nothing."**
+
+**"We still made money on PackFancy—"**
+
+**"Luck. And a turnaround you almost botched."** His voice is flat. **"VPs who only work auction deals don't make Principal. They become permanent associates with better titles."**
+
+*He's not wrong. Proprietary deal flow is the holy grail of PE.*`,
+    choices: [
+      {
+        id: 'ch5_accept_criticism',
+        text: 'Ask what you should do differently',
+        nextSceneId: 'ch5_the_mandate',
+        effects: {
+          stats: { politics: 5 },
+        },
+      },
+      {
+        id: 'ch5_defend_record',
+        text: 'Defend your track record',
+        subtext: 'Risky move',
+        nextSceneId: 'ch5_the_mandate_tense',
+        style: 'risky',
+        effects: {
+          stats: { stress: 10 },
+          relationships: [{ npcId: 'chad', change: -5, memory: 'Got defensive when criticized' }],
+        },
+      },
+    ],
+  },
+
+  // The Mandate - normal path
+  {
+    id: 'ch5_the_mandate',
+    chapterId: 'chapter_5',
+    title: 'The Assignment',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'neutral',
+    },
+    narrative: `Chad nods slightly. Good answer.
+
+**"I want you to source a proprietary deal. No bankers. No auctions. You find a company, you build a relationship with the owner, you bring it to IC."**
+
+**"What sector?"**
+
+**"Your choice. But make it defensible."** He slides a folder across the desk. **"There's a healthcare conference in Boston next week. The Private Equity Healthcare Forum. Owners, operators, and a lot of bad wine."**
+
+**"You want me to work the conference?"**
+
+**"I want you to come back with a target. One real opportunity. Not a stack of business cards—a relationship."**
+
+He stands, signaling the meeting is over.
+
+**"You've got three months. Source something proprietary, or start updating your resume."**
+
+*No pressure.*`,
+    choices: [
+      {
+        id: 'ch5_accept_mandate',
+        text: 'Accept the challenge',
+        nextSceneId: 'ch5_conference_prep',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['PROPRIETARY_MANDATE'],
+        },
+      },
+    ],
+  },
+
+  // The Mandate - tense path (if defended record)
+  {
+    id: 'ch5_the_mandate_tense',
+    chapterId: 'chapter_5',
+    title: 'The Assignment',
+    type: 'dialogue',
+    atmosphere: 'crisis',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'angry',
+    },
+    narrative: `Chad's eyes narrow.
+
+**"Your track record? You mean the deal where you almost torched our relationship with the Kowalski family? Where we had to restructure six months after close because you missed the customer concentration risk?"**
+
+You stay silent. He's not entirely wrong.
+
+**"Here's the reality: I went to bat for your promotion. Partners asked if you were ready. I said yes."** His voice is ice. **"Don't make me a liar."**
+
+He slides a folder across the desk.
+
+**"Healthcare conference. Boston. Next week. Come back with a proprietary opportunity or don't come back at all."**
+
+*He's giving you a chance. Barely.*`,
+    choices: [
+      {
+        id: 'ch5_accept_mandate_tense',
+        text: 'Accept the challenge',
+        nextSceneId: 'ch5_conference_prep',
+        effects: {
+          stats: { stress: 10, dealcraft: 5 },
+          setFlags: ['PROPRIETARY_MANDATE', 'CHAD_TENSE'],
+        },
+      },
+    ],
+  },
+
+  // Conference Preparation
+  {
+    id: 'ch5_conference_prep',
+    chapterId: 'chapter_5',
+    title: 'The Approach',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Boston. The Westin Copley Place. Three days of networking, panels, and opportunity.*
+
+You spend the flight reviewing the attendee list. Two hundred healthcare operators, fifty PE professionals, and a handful of investment bankers circling like sharks.
+
+Three names catch your attention:
+
+**Dr. Eleanor Vance** — Founder/CEO of MedDevice Solutions. Orthopedic implants. $80M revenue, bootstrapped. Rumored to be considering succession options.
+
+**Marcus Webb** — CEO of ClearPath Diagnostics. Lab testing chain. $120M revenue, PE-backed (looking for secondary). Platform play potential.
+
+**Patricia Okonkwo** — Founder of HomeFirst Senior Care. Home health services. $45M revenue, family-owned. Fragmented market ripe for consolidation.
+
+*Three targets. Three days. Choose your approach.*`,
+    choices: [
+      {
+        id: 'ch5_target_meddevice',
+        text: 'Focus on MedDevice Solutions',
+        subtext: 'Highest complexity, highest potential',
+        nextSceneId: 'ch5_meddevice_approach',
+        effects: {
+          setFlags: ['TARGET_MEDDEVICE'],
+        },
+      },
+      {
+        id: 'ch5_target_clearpath',
+        text: 'Focus on ClearPath Diagnostics',
+        subtext: 'Secondary deal, faster path',
+        nextSceneId: 'ch5_clearpath_approach',
+        effects: {
+          setFlags: ['TARGET_CLEARPATH'],
+        },
+      },
+      {
+        id: 'ch5_target_homefirst',
+        text: 'Focus on HomeFirst Senior Care',
+        subtext: 'Smaller but fragmented market',
+        nextSceneId: 'ch5_homefirst_approach',
+        effects: {
+          setFlags: ['TARGET_HOMEFIRST'],
+        },
+      },
+    ],
+  },
+
+  // MedDevice Approach
+  {
+    id: 'ch5_meddevice_approach',
+    chapterId: 'chapter_5',
+    title: 'The Surgeon',
+    type: 'narrative',
+    atmosphere: 'party',
+    narrative: `*Day One. Evening reception.*
+
+You spot Dr. Eleanor Vance near the bar—silver hair, sharp eyes, nursing a gin and tonic while a junior banker tries to pitch her on "strategic alternatives."
+
+She looks bored. You know the look. She's heard this pitch a hundred times.
+
+You wait for the banker to give up, then approach.
+
+**"Dr. Vance? I read your paper on minimally invasive hip replacement techniques. The outcomes data on reduced recovery time was remarkable."**
+
+She turns, surprised.
+
+**"You actually read it? Most finance people just pretend."**
+
+**"I spent three hours on PubMed before this conference. Your revision rates are half the industry average."**
+
+A genuine smile.
+
+**"Alright. You've earned five minutes. What do you want?"**
+
+*This is the moment. Don't blow it.*`,
+    choices: [
+      {
+        id: 'ch5_meddevice_honest',
+        text: 'Be direct about your interest',
+        subtext: 'Honesty approach',
+        nextSceneId: 'ch5_vance_conversation',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 5 },
+          setFlags: ['VANCE_HONEST_APPROACH'],
+        },
+      },
+      {
+        id: 'ch5_meddevice_subtle',
+        text: 'Focus on the science first',
+        subtext: 'Build rapport before business',
+        nextSceneId: 'ch5_vance_conversation',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['VANCE_SUBTLE_APPROACH'],
+        },
+      },
+    ],
+  },
+
+  // ClearPath Approach
+  {
+    id: 'ch5_clearpath_approach',
+    chapterId: 'chapter_5',
+    title: 'The Operator',
+    type: 'narrative',
+    atmosphere: 'party',
+    narrative: `*Day One. Evening reception.*
+
+Marcus Webb is easy to spot—tall, charismatic, surrounded by a cluster of PE professionals all trying to get his attention. ClearPath is a known quantity in healthcare PE circles. His current sponsor, Granite Capital, is looking to exit.
+
+The challenge: everyone here wants the same thing.
+
+You notice Webb keeps glancing at his phone. Something's bothering him. When he excuses himself to take a call near the window, you see your opening.
+
+He hangs up, looking frustrated.
+
+**"Bad news?"** you ask, offering a subtle nod of sympathy.
+
+**"Labor market."** He sighs. **"Third lab tech this month. Can't keep phlebotomists for more than six months."**
+
+*This is your opening. Workforce challenges are existential for lab businesses.*`,
+    choices: [
+      {
+        id: 'ch5_clearpath_solution',
+        text: 'Share insights on retention strategies',
+        subtext: 'Add value immediately',
+        nextSceneId: 'ch5_webb_conversation',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['WEBB_HELPFUL_APPROACH'],
+        },
+      },
+      {
+        id: 'ch5_clearpath_direct',
+        text: 'Pivot to discussing ClearPath\'s future',
+        subtext: 'More aggressive',
+        nextSceneId: 'ch5_webb_conversation',
+        style: 'risky',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['WEBB_DIRECT_APPROACH'],
+        },
+      },
+    ],
+  },
+
+  // HomeFirst Approach
+  {
+    id: 'ch5_homefirst_approach',
+    chapterId: 'chapter_5',
+    title: 'The Builder',
+    type: 'narrative',
+    atmosphere: 'party',
+    narrative: `*Day One. Evening reception.*
+
+Patricia Okonkwo sits alone at a corner table, reviewing notes on her tablet. Unlike the other executives working the room, she seems focused on preparation rather than networking.
+
+You approach with two glasses of wine.
+
+**"Mind if I join you? Everyone else seems intent on business card bingo."**
+
+She looks up, cautious but amused.
+
+**"And you're not?"**
+
+**"I'm more interested in understanding the home health market. I've been reading about the demographic tailwinds, but the reimbursement complexity seems underappreciated."**
+
+Her eyebrows rise.
+
+**"You actually want to talk about reimbursement? At a cocktail party?"**
+
+**"I find most interesting conversations happen in the margins."**
+
+*She gestures to the seat across from her.*`,
+    choices: [
+      {
+        id: 'ch5_homefirst_listen',
+        text: 'Ask about her journey building HomeFirst',
+        subtext: 'Let her tell her story',
+        nextSceneId: 'ch5_okonkwo_conversation',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 5, politics: 5 },
+          setFlags: ['OKONKWO_LISTENER_APPROACH'],
+        },
+      },
+      {
+        id: 'ch5_homefirst_market',
+        text: 'Discuss market consolidation opportunity',
+        subtext: 'More transactional',
+        nextSceneId: 'ch5_okonkwo_conversation',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['OKONKWO_MARKET_APPROACH'],
+        },
+      },
+    ],
+  },
+
+  // Vance Conversation
+  {
+    id: 'ch5_vance_conversation',
+    chapterId: 'chapter_5',
+    title: 'Building Trust',
+    type: 'dialogue',
+    atmosphere: 'party',
+    speaker: {
+      id: 'vance',
+      name: 'Dr. Eleanor Vance',
+      mood: 'neutral',
+    },
+    narrative: `The conversation flows for an hour. Dr. Vance is brilliant, guarded, and deeply skeptical of private equity.
+
+**"I've seen what you people do. Buy a company, load it with debt, cut R&D, flip it in three years. Leave the mess for someone else."**
+
+**"Some firms operate that way. We try not to."**
+
+**"They all say that."**
+
+**"Fair."** You pause. **"What would convince you otherwise?"**
+
+She studies you for a long moment.
+
+**"Come visit the facility. See what we actually do. Meet the engineers who've spent a decade perfecting these implants. Then tell me your brilliant plan to 'unlock value.'"**
+
+**"When?"**
+
+**"Next month. If you can spare time from your spreadsheets."**
+
+*An invitation. That's more than most PE professionals ever get from her.*`,
+    choices: [
+      {
+        id: 'ch5_vance_accept',
+        text: 'Accept the invitation enthusiastically',
+        nextSceneId: 'ch5_conference_wrapup',
+        effects: {
+          setFlags: ['VANCE_FACILITY_INVITE'],
+          relationships: [{ npcId: 'vance', change: 15, memory: 'Earned an invitation to see the facility' }],
+        },
+      },
+    ],
+  },
+
+  // Webb Conversation
+  {
+    id: 'ch5_webb_conversation',
+    chapterId: 'chapter_5',
+    title: 'The Secondary Play',
+    type: 'dialogue',
+    atmosphere: 'party',
+    speaker: {
+      id: 'webb',
+      name: 'Marcus Webb',
+      mood: 'neutral',
+    },
+    narrative: `Marcus Webb is a professional. He's been through this dance before—built ClearPath, took PE money, now navigating the exit.
+
+**"Look, I'll be honest with you,"** he says after twenty minutes of conversation. **"Granite wants out. They've got a good return locked in and their fund is winding down."**
+
+**"And you? What do you want?"**
+
+He pauses. Genuine question, rarely asked.
+
+**"I want to build something bigger. We've got forty labs. I see a path to two hundred. But that takes a partner with real conviction, not just someone looking to flip me in eighteen months."**
+
+**"What if we could structure something where you maintain significant equity?"**
+
+**"Now you're speaking my language."** He pulls out a business card. **"Call my office Monday. Let's have a real conversation."**
+
+*A secondary deal. Less romantic than a founder exit, but potentially faster to close.*`,
+    choices: [
+      {
+        id: 'ch5_webb_accept',
+        text: 'Accept and commit to following up',
+        nextSceneId: 'ch5_conference_wrapup',
+        effects: {
+          setFlags: ['WEBB_FOLLOWUP'],
+          relationships: [{ npcId: 'webb', change: 15, memory: 'Made a real connection at the conference' }],
+        },
+      },
+    ],
+  },
+
+  // Okonkwo Conversation
+  {
+    id: 'ch5_okonkwo_conversation',
+    chapterId: 'chapter_5',
+    title: 'The Family Business',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'okonkwo',
+      name: 'Patricia Okonkwo',
+      mood: 'neutral',
+    },
+    narrative: `Patricia's story unfolds over the next two hours. A nurse who saw her own mother struggle with inadequate home care. Started HomeFirst with three caregivers and a used minivan. Now employs two hundred people across six locations.
+
+**"My daughter thinks I'm crazy for not selling,"** she admits. **"She's an investment banker at Morgan Stanley. Keeps sending me 'comps.'"**
+
+**"What keeps you going?"**
+
+**"The mission. These aren't just patients—they're someone's mother, father. They deserve dignity."** She sighs. **"But I'm sixty-two. I can't do this forever. And my kids don't want the business."**
+
+**"What would you need to feel comfortable with a transition?"**
+
+She looks at you carefully.
+
+**"Someone who understands that the caregivers are the product. Not the platform, not the technology—the people."**
+
+**"I'd like to learn more. Could I visit one of your locations?"**
+
+**"Perhaps. Call me next week."**
+
+*A handshake seals it. Something about her reminds you of Stanley Kowalski—founders who built something real.*`,
+    choices: [
+      {
+        id: 'ch5_okonkwo_accept',
+        text: 'Promise to follow up with genuine interest',
+        nextSceneId: 'ch5_conference_wrapup',
+        effects: {
+          setFlags: ['OKONKWO_FOLLOWUP'],
+          relationships: [{ npcId: 'okonkwo', change: 20, memory: 'Listened to my story with genuine interest' }],
+        },
+      },
+    ],
+  },
+
+  // Conference Wrapup
+  {
+    id: 'ch5_conference_wrapup',
+    chapterId: 'chapter_5',
+    title: 'First Contact',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `*The flight back to New York*
+
+You review your notes. One genuine lead from three days of work. It doesn't sound like much, but in proprietary sourcing, quality beats quantity.
+
+Your phone buzzes. A text from Sarah:
+
+*"Heard you're chasing healthcare. Need any research support? I've been building a home health thesis on the side."*
+
+Interesting. Sarah's always been quietly ambitious.
+
+You also notice an email from Hunter Sterling:
+
+*"Heard about your little field trip to Boston. Cute. While you were networking, I closed a $400M recap. Some of us prefer real work."*
+
+*Hunter. Always watching. Always competing.*`,
+    choices: [
+      {
+        id: 'ch5_accept_sarah_help',
+        text: 'Accept Sarah\'s offer to help',
+        nextSceneId: 'ch5_due_diligence_begins',
+        effects: {
+          relationships: [{ npcId: 'sarah', change: 10, memory: 'Brought me onto proprietary deal sourcing' }],
+          setFlags: ['SARAH_DD_PARTNER'],
+        },
+      },
+      {
+        id: 'ch5_go_alone',
+        text: 'Keep this deal close to the chest',
+        subtext: 'Work solo for now',
+        nextSceneId: 'ch5_due_diligence_begins',
+        effects: {
+          stats: { stress: 5 },
+        },
+      },
+    ],
+  },
+
+  // Due Diligence Begins
+  {
+    id: 'ch5_due_diligence_begins',
+    chapterId: 'chapter_5',
+    title: 'The Deep Dive',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Two weeks later*
+
+The site visit exceeded expectations. The business is real. The opportunity is genuine. Now comes the hard part: due diligence.
+
+You've got a preliminary information package from the target. Revenue data, customer lists, employee census, contract summaries. But paper only tells part of the story.
+
+Your diligence checklist is extensive:
+
+**Financial DD** — Quality of Earnings analysis, working capital normalization, revenue sustainability
+**Commercial DD** — Customer concentration, competitive positioning, market dynamics
+**Operational DD** — Management assessment, systems evaluation, integration complexity
+**Legal DD** — Contract review, litigation history, regulatory compliance
+
+*You can't do everything. Time is limited. Where do you focus first?*`,
+    choices: [
+      {
+        id: 'ch5_dd_financial_first',
+        text: 'Start with Financial DD',
+        subtext: 'Follow the money',
+        nextSceneId: 'ch5_qoe_discovery',
+        effects: {
+          setFlags: ['DD_FINANCIAL_FIRST'],
+        },
+      },
+      {
+        id: 'ch5_dd_commercial_first',
+        text: 'Start with Commercial DD',
+        subtext: 'Understand the market',
+        nextSceneId: 'ch5_commercial_discovery',
+        effects: {
+          setFlags: ['DD_COMMERCIAL_FIRST'],
+        },
+      },
+      {
+        id: 'ch5_dd_management_first',
+        text: 'Start with Management Assessment',
+        subtext: 'People first',
+        nextSceneId: 'ch5_management_discovery',
+        effects: {
+          setFlags: ['DD_MANAGEMENT_FIRST'],
+        },
+      },
+    ],
+  },
+
+  // QoE Discovery
+  {
+    id: 'ch5_qoe_discovery',
+    chapterId: 'chapter_5',
+    title: 'Following the Money',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Week three of diligence*
+
+You're deep in the Quality of Earnings report when you find it.
+
+The accounting firm has flagged several adjustments:
+
+**Revenue Recognition** — $2.3M in "channel stuffing" in Q4. Product shipped to distributors who haven't actually sold through.
+
+**EBITDA Add-backs** — $1.8M in "one-time" expenses that seem to recur every year. Legal settlements, facility repairs, executive bonuses.
+
+**Working Capital** — Receivables aging has deteriorated significantly. DSO up from 45 to 67 days.
+
+The adjusted EBITDA is 22% lower than presented. Your valuation model just took a significant hit.
+
+*The numbers don't lie. But how you present them to the IC is your choice.*`,
+    choices: [
+      {
+        id: 'ch5_qoe_transparent',
+        text: 'Document everything transparently',
+        subtext: 'Full disclosure to IC',
+        nextSceneId: 'ch5_red_flag_decision',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 10, dealcraft: 5 },
+          setFlags: ['QOE_TRANSPARENT'],
+        },
+      },
+      {
+        id: 'ch5_qoe_minimize',
+        text: 'Present the issues as manageable',
+        subtext: 'Spin control',
+        nextSceneId: 'ch5_red_flag_decision',
+        style: 'risky',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['QOE_MINIMIZED'],
+        },
+      },
+    ],
+  },
+
+  // Commercial Discovery
+  {
+    id: 'ch5_commercial_discovery',
+    chapterId: 'chapter_5',
+    title: 'The Market View',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Week three of diligence*
+
+Your commercial due diligence calls paint a concerning picture.
+
+**Expert Network Call #1 — Industry Consultant:**
+*"The market's getting crowded. Three new entrants in the last eighteen months. Pricing pressure is real."*
+
+**Expert Network Call #2 — Former Customer:**
+*"We switched to a competitor last year. Quality was fine, but their service model couldn't scale with us."*
+
+**Expert Network Call #3 — Current Customer:**
+*"We're happy, but our contract is up for renewal. We're evaluating options."*
+
+The competitive moat isn't as deep as the management presentation suggested. Customer loyalty is real but fragile.
+
+*Red flags or yellow flags? The interpretation matters.*`,
+    choices: [
+      {
+        id: 'ch5_commercial_transparent',
+        text: 'Document competitive concerns clearly',
+        subtext: 'Full picture for IC',
+        nextSceneId: 'ch5_red_flag_decision',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 10, dealcraft: 5 },
+          setFlags: ['COMMERCIAL_TRANSPARENT'],
+        },
+      },
+      {
+        id: 'ch5_commercial_optimize',
+        text: 'Focus on the positive customer relationships',
+        subtext: 'Emphasize the upside',
+        nextSceneId: 'ch5_red_flag_decision',
+        style: 'risky',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['COMMERCIAL_OPTIMIZED'],
+        },
+      },
+    ],
+  },
+
+  // Management Discovery
+  {
+    id: 'ch5_management_discovery',
+    chapterId: 'chapter_5',
+    title: 'The People Question',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Week three of diligence*
+
+Your management assessment reveals complexity.
+
+**The Founder** — Brilliant, passionate, but showing signs of burnout. Talks about "stepping back" but hasn't built a succession plan.
+
+**The CFO** — Competent but defensive. Pushes back on every data request. Either protective of something or just exhausted.
+
+**The COO** — Strong operationally, but openly critical of the founder's recent decisions. Potential flight risk if transition is handled poorly.
+
+**The Sales VP** — Left three months ago for a competitor. No one wants to talk about why.
+
+The org chart looks solid. The reality underneath is messier.
+
+*Management is the deal. Everything else is just paper.*`,
+    choices: [
+      {
+        id: 'ch5_management_transparent',
+        text: 'Flag management risks in your memo',
+        subtext: 'Honest assessment',
+        nextSceneId: 'ch5_red_flag_decision',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 10, politics: 5 },
+          setFlags: ['MANAGEMENT_TRANSPARENT'],
+        },
+      },
+      {
+        id: 'ch5_management_optimistic',
+        text: 'Present management as "coachable"',
+        subtext: 'PE-speak for "we\'ll deal with it later"',
+        nextSceneId: 'ch5_red_flag_decision',
+        style: 'risky',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['MANAGEMENT_OPTIMISTIC'],
+        },
+      },
+    ],
+  },
+
+  // Red Flag Decision Point
+  {
+    id: 'ch5_red_flag_decision',
+    chapterId: 'chapter_5',
+    title: 'The Crossroads',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Week five. IC presentation in three days.*
+
+You stare at your investment memo draft. The diligence has revealed what diligence always reveals: reality is messier than the pitch.
+
+There's a real business here. Real value. But also real risks that weren't apparent from the CIM.
+
+Chad stops by your desk.
+
+**"IC is Tuesday. Where are you landing?"**
+
+**"The business is real. The risks are manageable. But we need to adjust our entry valuation."**
+
+**"By how much?"**
+
+You pause. This is the moment. The valuation you propose will determine whether this deal happens—and whether your reputation survives if it goes wrong.
+
+*Fortune favors the bold. But boldness without wisdom is just recklessness.*`,
+    choices: [
+      {
+        id: 'ch5_conservative_valuation',
+        text: 'Propose a conservative valuation',
+        subtext: '15% below asking price',
+        nextSceneId: 'ch5_ic_prep',
+        style: 'safe',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['CONSERVATIVE_VALUATION'],
+        },
+      },
+      {
+        id: 'ch5_aggressive_valuation',
+        text: 'Propose an aggressive valuation',
+        subtext: 'Match asking price, rely on upside',
+        nextSceneId: 'ch5_ic_prep',
+        style: 'risky',
+        effects: {
+          stats: { stress: 10 },
+          setFlags: ['AGGRESSIVE_VALUATION'],
+        },
+      },
+      {
+        id: 'ch5_walk_away',
+        text: 'Recommend passing on the deal',
+        subtext: 'Risks outweigh opportunity',
+        nextSceneId: 'ch5_walk_away_scene',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 15, stress: 15 },
+          setFlags: ['DEAL_PASSED'],
+        },
+      },
+    ],
+  },
+
+  // Walk Away Scene
+  {
+    id: 'ch5_walk_away_scene',
+    chapterId: 'chapter_5',
+    title: 'The Hard No',
+    type: 'dialogue',
+    atmosphere: 'office',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'neutral',
+    },
+    narrative: `Chad reads your memo in silence.
+
+**"You're recommending we pass."**
+
+**"The risks are too concentrated. Customer concentration, management gaps, competitive threats. Even at a discounted valuation, the risk-reward doesn't work."**
+
+He sets down the paper.
+
+**"You know how many deals get killed by diligence? Maybe ten percent. The rest just find ways to explain away the problems."**
+
+**"I can't explain these away. Not honestly."**
+
+A long pause.
+
+**"Alright."** He nods slowly. **"You made a call. I respect that. Most people can't walk away from a deal they sourced."**
+
+**"What happens now?"**
+
+**"You find another one. That's the job."**
+
+*A pass isn't a failure. But it doesn't feel like a win either.*`,
+    choices: [
+      {
+        id: 'ch5_pass_accept',
+        text: 'Accept the outcome and move forward',
+        nextSceneId: 'ch5_chapter_end_pass',
+        effects: {
+          stats: { reputation: 5 },
+          relationships: [{ npcId: 'chad', change: 10, memory: 'Had the courage to kill a bad deal' }],
+        },
+      },
+    ],
+  },
+
+  // IC Prep
+  {
+    id: 'ch5_ic_prep',
+    chapterId: 'chapter_5',
+    title: 'The Dry Run',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Monday evening. IC prep meeting.*
+
+You've rehearsed the presentation six times. Sarah helped polish the slides (if she's involved) or you did it alone through three sleepless nights.
+
+Chad runs you through the expected questions:
+
+**"What's the bear case?"**
+**"How does management feel about the valuation?"**
+**"What's the exit path?"**
+**"Why isn't this an auction?"**
+
+Each answer needs to be crisp, confident, and honest enough to survive scrutiny.
+
+**"Remember,"** Chad says as you pack up, **"IC doesn't want to be sold. They want to be convinced. Show them you've thought about everything that could go wrong."**
+
+*Tomorrow, you present your first proprietary deal to the Investment Committee.*`,
+    choices: [
+      {
+        id: 'ch5_ic_ready',
+        text: 'Get some sleep before the big day',
+        nextSceneId: 'ch5_ic_presentation',
+        effects: {
+          stats: { stress: -5 },
+        },
+      },
+      {
+        id: 'ch5_ic_more_prep',
+        text: 'Stay late and keep preparing',
+        subtext: 'Perfectionism or paranoia?',
+        nextSceneId: 'ch5_ic_presentation',
+        effects: {
+          stats: { stress: 10, dealcraft: 5 },
+        },
+      },
+    ],
+  },
+
+  // IC Presentation
+  {
+    id: 'ch5_ic_presentation',
+    chapterId: 'chapter_5',
+    title: 'The Investment Committee',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Tuesday. 10 AM. The Sterling Partners Investment Committee.*
+
+Seven partners around the mahogany table. Hunter Sterling sits in the corner, observer status, watching for any sign of weakness.
+
+You present for forty-five minutes. The thesis, the opportunity, the risks, the mitigation strategies.
+
+Then the questions begin.
+
+**"Your Quality of Earnings adjustment is aggressive. What if the revenue recognition issues are structural, not one-time?"**
+
+**"The founder wants to stay on. What's your conviction level on that working?"**
+
+**"There's no banker. If we lose exclusivity, what's our fallback?"**
+
+Each question is a test. Not just of the deal—of you.
+
+Finally, the managing partner speaks.
+
+**"You've done serious work here. The question is: are you betting your reputation on this company?"**
+
+*Everyone is watching. This is your moment.*`,
+    choices: [
+      {
+        id: 'ch5_ic_full_conviction',
+        text: '"Yes. I believe in this deal."',
+        subtext: 'Full conviction',
+        nextSceneId: 'ch5_ic_outcome',
+        style: 'risky',
+        effects: {
+          stats: { reputation: 10 },
+          setFlags: ['IC_FULL_CONVICTION'],
+        },
+      },
+      {
+        id: 'ch5_ic_measured',
+        text: '"I believe the risk-adjusted return is compelling."',
+        subtext: 'Measured confidence',
+        nextSceneId: 'ch5_ic_outcome',
+        style: 'safe',
+        effects: {
+          stats: { dealcraft: 5, politics: 5 },
+          setFlags: ['IC_MEASURED'],
+        },
+      },
+    ],
+  },
+
+  // IC Outcome
+  {
+    id: 'ch5_ic_outcome',
+    chapterId: 'chapter_5',
+    title: 'The Verdict',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `The managing partner polls the room.
+
+Hands go up. One by one.
+
+**"The motion carries. You're approved to proceed with an LOI at the proposed valuation."**
+
+You try not to show too much relief. In the corner, Hunter's jaw tightens slightly. He voted no.
+
+Chad catches your eye and gives an almost imperceptible nod.
+
+**"One condition,"** the managing partner adds. **"Confirmatory diligence has a hard stop at sixty days. If you can't close by then, we walk."**
+
+**"Understood."**
+
+**"Good luck. You're going to need it."**
+
+*You just got your first proprietary deal through IC. Now you have to close it.*`,
+    choices: [
+      {
+        id: 'ch5_ic_celebrate',
+        text: 'Celebrate briefly with the team',
+        nextSceneId: 'ch5_loi_negotiation',
+        effects: {
+          stats: { stress: -10 },
+          achievement: 'IC_APPROVED',
+        },
+      },
+      {
+        id: 'ch5_ic_focus',
+        text: 'Skip the celebration—focus on the LOI',
+        nextSceneId: 'ch5_loi_negotiation',
+        effects: {
+          stats: { dealcraft: 5 },
+        },
+      },
+    ],
+  },
+
+  // LOI Negotiation
+  {
+    id: 'ch5_loi_negotiation',
+    chapterId: 'chapter_5',
+    title: 'Term Sheet',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*The Letter of Intent negotiation*
+
+Three days of back-and-forth with the seller's counsel. Every term is contested.
+
+**Exclusivity period** — You want 90 days, they offer 45. You settle on 60.
+
+**Working capital adjustment** — Complex formulas, trailing averages, peg amounts. Their CFO fights every line.
+
+**Management rollover** — The founder wants 25% of the equity. Standard is 15-20%. This will require a conversation.
+
+**Non-compete provisions** — Three years or five? Geographic scope? Definitions that will matter if things go wrong.
+
+Finally, at 2 AM on a Thursday, the LOI is signed.
+
+You're now in exclusivity. Sixty days to close—or lose everything.
+
+*The hunt was just the beginning. Now comes the kill.*`,
+    choices: [
+      {
+        id: 'ch5_loi_complete',
+        text: 'Move into confirmatory diligence',
+        nextSceneId: 'ch5_chapter_end',
+        effects: {
+          stats: { dealcraft: 10, reputation: 5 },
+          setFlags: ['LOI_SIGNED'],
+        },
+      },
+    ],
+  },
+
+  // Chapter End - Success
+  {
+    id: 'ch5_chapter_end',
+    chapterId: 'chapter_5',
+    title: 'The Hunter Becomes...',
+    type: 'chapter_end',
+    atmosphere: 'quiet',
+    narrative: `*Late evening. Your office.*
+
+The LOI sits on your desk, fully executed. Your first proprietary deal, sourced from a cold conference approach to signed term sheet in eight weeks.
+
+Chad stops by on his way out.
+
+**"Not bad. Not bad at all."**
+
+**"Thanks."**
+
+**"Don't thank me yet. You've got sixty days and about forty things that can still kill this deal."** He pauses at the door. **"But you did something most VPs never do. You created value instead of just processing it."**
+
+He leaves. You look at the tombstones on your wall—still empty.
+
+*Maybe soon you'll add one.*
+
+**CHAPTER 5 COMPLETE**
+
+*You've learned the hardest lesson in private equity: the best deals aren't bought—they're built. Relationship by relationship. Insight by insight. Trust by trust.*
+
+*The LOI is signed. But the hunt never really ends.*`,
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+
+  // Chapter End - Pass path
+  {
+    id: 'ch5_chapter_end_pass',
+    chapterId: 'chapter_5',
+    title: 'The One That Got Away',
+    type: 'chapter_end',
+    atmosphere: 'quiet',
+    narrative: `*Two weeks later*
+
+You hear through the grapevine that another PE firm bought the company. At the valuation you walked away from.
+
+Part of you wonders if you made a mistake. The other part remembers the diligence findings—the risks you couldn't unsee.
+
+Chad finds you in the coffee room.
+
+**"Heard about the deal. Having regrets?"**
+
+**"Some."**
+
+**"Don't."** He pours himself a cup. **"In this business, the deals that kill you are the ones you should have passed on but didn't. You'll find another opportunity. And when you do, you'll know what real conviction feels like."**
+
+**"And if I don't find one?"**
+
+**"Then you'll learn that too. That's how this works."**
+
+**CHAPTER 5 COMPLETE**
+
+*Sometimes the best deal is the one you don't do. You learned to trust your diligence over your desire to close.*
+
+*Not every hunt ends with a kill. But every hunter gets better with practice.*`,
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+];
+
+// ============================================================================
 // CHAPTER DEFINITIONS
 // ============================================================================
 
@@ -5012,6 +6101,19 @@ export const STORY_CHAPTERS: Chapter[] = [
     estimatedMinutes: 30,
     theme: 'resolution',
   },
+  {
+    id: 'chapter_5',
+    number: 5,
+    title: 'The Hunt',
+    teaser: 'No more banker deals. Source your first proprietary opportunity—or watch your career stall.',
+    openingSceneId: 'ch5_opening',
+    endingSceneIds: ['ch5_chapter_end', 'ch5_chapter_end_pass'],
+    requirements: {
+      completedChapters: ['chapter_4'],
+    },
+    estimatedMinutes: 25,
+    theme: 'rising_action',
+  },
 ];
 
 // ============================================================================
@@ -5023,6 +6125,7 @@ export const STORY_SCENES: Scene[] = [
   ...CHAPTER_2_SCENES,
   ...CHAPTER_3_SCENES,
   ...CHAPTER_4_SCENES,
+  ...CHAPTER_5_SCENES,
 ];
 
 // ============================================================================
