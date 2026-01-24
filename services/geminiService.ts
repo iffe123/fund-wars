@@ -756,3 +756,567 @@ export const getPortfolioAdvice = async (
         return "I can't talk right now.";
     }
 }
+
+// ==================== SOCRATIC MENTOR SYSTEM ====================
+// Never gives answers directly. Only asks probing questions.
+
+const socraticSystemInstruction = `
+You are a Socratic mentor in a private equity simulation game. Your role is to NEVER give direct answers.
+Instead, you guide the player to discover insights themselves through careful questioning.
+
+THE SOCRATIC METHOD (Four Stages):
+
+1. ELENCHUS (Refutation): Reveal inconsistencies in the player's beliefs
+   - "You said X, but you also mentioned Y. How do you reconcile these?"
+   - "If that's true, then what does that imply about...?"
+
+2. MAIEUTICS (Midwifery): Help players draw knowledge from within
+   - "What would need to be true for that to work?"
+   - "If you were the seller, what would you be hiding?"
+
+3. INDUCTION: Guide players to generalize from specific examples
+   - "You've seen deals like this before. What pattern do you notice?"
+   - "When have you seen this situation go wrong?"
+
+4. DEFINITION: Work toward formulating clear principles
+   - "So what's the general rule here?"
+   - "How would you define the key risk in one sentence?"
+
+CRITICAL RULES:
+- NEVER give direct answers like "You should do X" or "The answer is Y"
+- ALWAYS respond with 1-3 thoughtful questions
+- If the player is on the right track, acknowledge with phrases like "You're getting warmer..." before the next question
+- If they're way off, use gentle redirection: "Interesting... but have you considered...?"
+- Use PE terminology naturally but explain nothing unless asked directly
+
+CONTEXT INTEGRATION:
+- Reference specific numbers from the deal they're discussing
+- Point out inconsistencies between their stated thesis and the data
+- Challenge assumptions about growth, margins, multiples
+- Ask about risks they haven't mentioned
+
+TONE:
+- Wise but not condescending
+- Patient but challenging
+- Encouraging discovery, not providing answers
+- Think: A seasoned partner who wants you to learn, not just get the right answer
+`;
+
+export interface SocraticResponse {
+  stage: 'elenchus' | 'maieutics' | 'induction' | 'definition';
+  questions: string[];
+  hintsIfStuck: string[];
+  celebrateInsight: boolean;
+  relatedConcepts: string[];
+}
+
+export const getSocraticResponse = async (
+  playerQuestion: string,
+  context: {
+    companyName?: string;
+    dealType?: string;
+    financials?: {
+      revenue?: number;
+      ebitda?: number;
+      debt?: number;
+      valuation?: number;
+    };
+    playerThesis?: string;
+    previousExchange?: string[];
+  }
+): Promise<string> => {
+  const ai = getAiClient();
+  if (!ai) {
+    // Offline Socratic fallback
+    const fallbackQuestions = [
+      "What assumptions are you making that you haven't questioned yet?",
+      "If you were betting your own money, what would make you hesitate?",
+      "What would need to be true for this deal to fail spectacularly?",
+      "Have you stress-tested your base case against a 20% revenue decline?",
+    ];
+    const randomQ = fallbackQuestions[Math.floor(Math.random() * fallbackQuestions.length)];
+    return `[OFFLINE MENTOR]\n\nBefore I answer, let me ask you something:\n\n"${randomQ}"\n\nThink on that. The answer often reveals itself.`;
+  }
+
+  try {
+    const contextBlock = context.companyName ? `
+CURRENT DEAL CONTEXT:
+- Company: ${context.companyName}
+- Deal Type: ${context.dealType || 'Unknown'}
+- Revenue: $${context.financials?.revenue ? (context.financials.revenue / 1000000).toFixed(1) + 'M' : 'Unknown'}
+- EBITDA: $${context.financials?.ebitda ? (context.financials.ebitda / 1000000).toFixed(1) + 'M' : 'Unknown'}
+- Debt: $${context.financials?.debt ? (context.financials.debt / 1000000).toFixed(1) + 'M' : 'Unknown'}
+- Valuation: $${context.financials?.valuation ? (context.financials.valuation / 1000000).toFixed(1) + 'M' : 'Unknown'}
+${context.playerThesis ? `- Player's Stated Thesis: "${context.playerThesis}"` : ''}
+    ` : '';
+
+    const previousContext = context.previousExchange?.length
+      ? `\nPREVIOUS EXCHANGE:\n${context.previousExchange.slice(-4).join('\n')}\n`
+      : '';
+
+    const fullPrompt = `${contextBlock}${previousContext}\nPLAYER ASKS: "${playerQuestion}"\n\nRespond with 1-3 Socratic questions. Never give direct answers.`;
+
+    const chat = ai.chats.create({
+      model: 'gemini-2.5-flash',
+      config: {
+        systemInstruction: socraticSystemInstruction,
+      },
+    });
+
+    const response = await withRetry(
+      () => chat.sendMessage({ message: fullPrompt }),
+      'Socratic mentor API call'
+    );
+
+    return response.text || "What makes you think that's the right question to ask?";
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('Socratic mentor error:', err.message);
+    return "Interesting question. But before I respond—what's your gut telling you? Trust it, then verify.";
+  }
+};
+
+// ==================== IC PARTNER EVALUATION ====================
+
+interface ICPartnerConfig {
+  id: string;
+  name: string;
+  archetype: string;
+  focusAreas: string[];
+  questionStyle: string;
+  famousQuote: string;
+}
+
+const icPartnerSystemInstruction = (partner: ICPartnerConfig) => `
+You are ${partner.name}, a partner at a private equity firm serving on the Investment Committee.
+Your archetype is: ${partner.archetype}
+Your focus areas are: ${partner.focusAreas.join(', ')}
+Your questioning style: ${partner.questionStyle}
+Your famous quote: "${partner.famousQuote}"
+
+ROLE IN IC MEETINGS:
+You are evaluating a deal pitch from a junior associate. Your job is to:
+1. Ask tough, probing questions about your focus areas
+2. Evaluate their responses critically but fairly
+3. Provide a satisfaction score and brief feedback
+
+PERSONALITY:
+${partner.archetype === 'RISK_HAWK' ? 'Cold, precise, uses deadly silences. You focus on what can go wrong.' :
+  partner.archetype === 'OPERATOR' ? 'Warm but probing, uses stories from experience. You care about execution.' :
+  partner.archetype === 'RETURNS_MAX' ? 'Fast, impatient, interrupts. You only care about the math.' :
+  'Slow, philosophical, asks questions that reveal blind spots. You think long-term.'}
+
+OUTPUT FORMAT (JSON):
+{
+  "question": "Your probing question based on the context",
+  "evaluationOfPreviousResponse": {
+    "score": <-20 to +20>,
+    "reaction": "satisfied|probing|skeptical|dismissive|impressed",
+    "feedback": "Brief in-character feedback"
+  },
+  "followUpIf": {
+    "weak": "Follow-up if they gave a weak answer",
+    "strong": "Follow-up if they gave a strong answer"
+  }
+}
+`;
+
+export interface ICPartnerQuestion {
+  question: string;
+  evaluationOfPreviousResponse?: {
+    score: number;
+    reaction: 'satisfied' | 'probing' | 'skeptical' | 'dismissive' | 'impressed';
+    feedback: string;
+  };
+  followUpIf?: {
+    weak: string;
+    strong: string;
+  };
+}
+
+export const getICPartnerQuestion = async (
+  partner: ICPartnerConfig,
+  dealContext: {
+    companyName: string;
+    dealType: string;
+    valuation: number;
+    ebitda: number;
+    debt: number;
+    revenue: number;
+    revenueGrowth: number;
+  },
+  previousQuestion?: string,
+  playerResponse?: string
+): Promise<ICPartnerQuestion> => {
+  const ai = getAiClient();
+
+  // Offline fallback
+  if (!ai) {
+    const fallbackQuestions: Record<string, string[]> = {
+      RISK_HAWK: [
+        "What's the downside case here? Walk me through a 30% EBITDA decline.",
+        "The leverage ratio concerns me. What's your covenant cushion?",
+        "What keeps you up at night about this deal?",
+      ],
+      OPERATOR: [
+        "Walk me through Day 1. What's the first call you make?",
+        "Tell me about the management team. Who stays and who goes?",
+        "What's your 100-day value creation plan?",
+      ],
+      RETURNS_MAX: [
+        "Give me the IRR sensitivity to exit multiple. Now.",
+        "Who else is bidding and what's our edge?",
+        "Where does the return come from? Be specific.",
+      ],
+      SAGE: [
+        "In ten years, what story do we tell about this investment?",
+        "How does this fit our firm's thesis?",
+        "What would make you kill this deal right now?",
+      ],
+    };
+
+    const questions = fallbackQuestions[partner.archetype] || fallbackQuestions.RISK_HAWK;
+    return {
+      question: questions[Math.floor(Math.random() * questions.length)],
+    };
+  }
+
+  try {
+    const context = `
+DEAL BEING PITCHED:
+- Company: ${dealContext.companyName}
+- Deal Type: ${dealContext.dealType}
+- Valuation: $${(dealContext.valuation / 1000000).toFixed(1)}M
+- EBITDA: $${(dealContext.ebitda / 1000000).toFixed(1)}M
+- Debt: $${(dealContext.debt / 1000000).toFixed(1)}M
+- Revenue: $${(dealContext.revenue / 1000000).toFixed(1)}M
+- Revenue Growth: ${(dealContext.revenueGrowth * 100).toFixed(1)}%
+- Entry Multiple: ${(dealContext.valuation / dealContext.ebitda).toFixed(1)}x
+
+${previousQuestion ? `YOUR PREVIOUS QUESTION: "${previousQuestion}"` : 'This is your first question.'}
+${playerResponse ? `THEIR RESPONSE: "${playerResponse}"` : ''}
+
+Generate your next question and evaluate their previous response if applicable.
+Output valid JSON only.
+`;
+
+    const chat = ai.chats.create({
+      model: 'gemini-2.5-flash',
+      config: {
+        systemInstruction: icPartnerSystemInstruction(partner),
+      },
+    });
+
+    const response = await withRetry(
+      () => chat.sendMessage({ message: context }),
+      'IC partner question API call'
+    );
+
+    try {
+      const parsed = JSON.parse(response.text || '{}');
+      return {
+        question: parsed.question || "Tell me more about your thesis.",
+        evaluationOfPreviousResponse: parsed.evaluationOfPreviousResponse,
+        followUpIf: parsed.followUpIf,
+      };
+    } catch {
+      return {
+        question: response.text || "Elaborate on your value creation plan.",
+      };
+    }
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('IC partner question error:', err.message);
+    return {
+      question: "Walk me through your assumptions again.",
+    };
+  }
+};
+
+// ==================== NEGOTIATION COUNTERPARTY ====================
+
+interface CounterpartyConfig {
+  name: string;
+  type: 'FOUNDER_CEO' | 'BANKER' | 'LENDER' | 'RIVAL_PE' | 'LP';
+  visiblePosition: string;
+  hiddenConstraints: {
+    mustHave: string[];
+    niceToHave: string[];
+    secretMotivation: string;
+    dealBreakers: string[];
+  };
+  personality: {
+    aggression: number;
+    trustBuilding: number;
+    patience: number;
+    bluffTendency: number;
+  };
+}
+
+const negotiationSystemInstruction = (counterparty: CounterpartyConfig) => `
+You are ${counterparty.name}, a ${counterparty.type.replace('_', ' ')} in a negotiation with a private equity professional.
+
+VISIBLE POSITION (What you tell them):
+"${counterparty.visiblePosition}"
+
+HIDDEN CONSTRAINTS (Never reveal directly, but guide behavior):
+- Must-haves: ${counterparty.hiddenConstraints.mustHave.join(', ')}
+- Nice-to-haves: ${counterparty.hiddenConstraints.niceToHave.join(', ')}
+- Secret motivation: ${counterparty.hiddenConstraints.secretMotivation}
+- Deal breakers: ${counterparty.hiddenConstraints.dealBreakers.join(', ')}
+
+PERSONALITY:
+- Aggression: ${counterparty.personality.aggression * 100}%
+- Trust matters: ${counterparty.personality.trustBuilding * 100}%
+- Patience: ${counterparty.personality.patience * 100}%
+- Bluff tendency: ${counterparty.personality.bluffTendency * 100}%
+
+NEGOTIATION TACTICS:
+${counterparty.type === 'FOUNDER_CEO' ?
+  '- Get emotional about legacy and employees\n- Anchor high on price\n- Drop subtle hints about your COO being critical' :
+counterparty.type === 'BANKER' ?
+  '- Create urgency around timeline\n- Imply other bidders exist (may be bluffing)\n- Push for certainty of close' :
+counterparty.type === 'LENDER' ?
+  '- Focus on downside protection\n- Negotiate covenants hard\n- Imply other sponsors are more flexible' :
+counterparty.type === 'RIVAL_PE' ?
+  '- Be competitive but professional\n- Signal your interest level strategically\n- Consider consortium if it makes sense' :
+  '- Ask tough questions about returns\n- Push back on fees\n- Demand transparency'}
+
+OUTPUT FORMAT:
+Respond in character. Keep responses to 2-4 sentences. Occasionally drop hints about your hidden constraints without revealing them directly.
+If the player makes an offer, react based on whether it meets your must-haves.
+If they probe for information, give subtle clues based on your bluff tendency.
+`;
+
+export interface NegotiationResponse {
+  text: string;
+  rapportChange: number;
+  tensionChange: number;
+  hintsDropped: string[];
+  willAccept?: boolean;
+}
+
+export const getNegotiationResponse = async (
+  counterparty: CounterpartyConfig,
+  playerMessage: string,
+  conversationHistory: string[],
+  currentRapport: number,
+  currentTension: number
+): Promise<NegotiationResponse> => {
+  const ai = getAiClient();
+
+  // Offline fallback
+  if (!ai) {
+    const offlineResponses: Record<string, string[]> = {
+      FOUNDER_CEO: [
+        "This isn't just about the number. It's about what I've built.",
+        "My team has been with me from the start. They need to be protected.",
+        "The banker says there's another offer. I don't know if I believe them.",
+      ],
+      BANKER: [
+        "Look, we need to move on timeline here.",
+        "I've got other processes kicking off. This can't drag.",
+        "Certainty of close is... very important to my client.",
+      ],
+      LENDER: [
+        "We can get there on leverage, but the covenants need to be tight.",
+        "Other sponsors have been more flexible on terms.",
+        "Let me take this to credit committee.",
+      ],
+      RIVAL_PE: [
+        "We're in this process too. May the best bid win.",
+        "Have you considered a consortium approach?",
+        "The seller seems to prefer certainty over price.",
+      ],
+      LP: [
+        "Walk me through the fee structure again.",
+        "What's the expected hold period?",
+        "How does this fit your fund's overall strategy?",
+      ],
+    };
+
+    const responses = offlineResponses[counterparty.type] || offlineResponses.BANKER;
+    return {
+      text: responses[Math.floor(Math.random() * responses.length)],
+      rapportChange: 0,
+      tensionChange: 5,
+      hintsDropped: [],
+    };
+  }
+
+  try {
+    const context = `
+NEGOTIATION STATE:
+- Rapport: ${currentRapport}/100
+- Tension: ${currentTension}/100
+
+CONVERSATION SO FAR:
+${conversationHistory.slice(-6).join('\n')}
+
+PLAYER SAYS: "${playerMessage}"
+
+Respond in character. Also output JSON at the end:
+{"rapportChange": <-10 to +10>, "tensionChange": <-10 to +10>, "hint": "<subtle hint about hidden constraint or empty string>"}
+`;
+
+    const chat = ai.chats.create({
+      model: 'gemini-2.5-flash',
+      config: {
+        systemInstruction: negotiationSystemInstruction(counterparty),
+      },
+    });
+
+    const response = await withRetry(
+      () => chat.sendMessage({ message: context }),
+      'Negotiation response API call'
+    );
+
+    const text = response.text || "Let me think about that.";
+
+    // Try to extract JSON from end of response
+    let rapportChange = 0;
+    let tensionChange = 0;
+    const hintsDropped: string[] = [];
+
+    const jsonMatch = text.match(/\{[^{}]*"rapportChange"[^{}]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        rapportChange = parsed.rapportChange || 0;
+        tensionChange = parsed.tensionChange || 0;
+        if (parsed.hint) hintsDropped.push(parsed.hint);
+      } catch {
+        // Ignore parse errors
+      }
+    }
+
+    // Clean the response text (remove JSON)
+    const cleanText = text.replace(/\{[^{}]*"rapportChange"[^{}]*\}/, '').trim();
+
+    return {
+      text: cleanText || text,
+      rapportChange,
+      tensionChange,
+      hintsDropped,
+    };
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('Negotiation response error:', err.message);
+    return {
+      text: "Let me consider that proposal.",
+      rapportChange: 0,
+      tensionChange: 0,
+      hintsDropped: [],
+    };
+  }
+};
+
+// ==================== DEAL AUTOPSY GENERATION ====================
+
+export interface DealAutopsyAnalysis {
+  whatWentRight: Array<{ category: string; description: string; impact: string }>;
+  whatWentWrong: Array<{ category: string; description: string; impact: string; wasPreventable: boolean }>;
+  historicalParallel?: { dealName: string; description: string; lesson: string };
+  skillsDemonstrated: string[];
+  skillsToDevelop: string[];
+  overallNarrative: string;
+}
+
+export const generateDealAutopsy = async (
+  dealData: {
+    companyName: string;
+    entryValuation: number;
+    exitValuation: number;
+    holdPeriodWeeks: number;
+    moic: number;
+    irr: number;
+    exitType: string;
+    redFlagsFound: number;
+    redFlagsMissed: number;
+    keyDecisions: string[];
+    marketConditions: string;
+  }
+): Promise<DealAutopsyAnalysis> => {
+  const ai = getAiClient();
+
+  // Offline fallback
+  if (!ai) {
+    const success = dealData.moic >= 2.0;
+    return {
+      whatWentRight: success
+        ? [{ category: 'Execution', description: 'Deal closed successfully', impact: 'Generated positive returns' }]
+        : [],
+      whatWentWrong: success
+        ? []
+        : [{ category: 'Valuation', description: 'Entry price too high', impact: 'Compressed returns', wasPreventable: true }],
+      skillsDemonstrated: success ? ['Deal Execution'] : [],
+      skillsToDevelop: success ? [] : ['Entry Multiple Discipline'],
+      overallNarrative: success
+        ? 'A solid execution that delivered returns.'
+        : 'A learning experience that highlights the importance of entry price.',
+    };
+  }
+
+  try {
+    const prompt = `
+Analyze this private equity deal outcome and generate a detailed autopsy.
+
+DEAL DATA:
+- Company: ${dealData.companyName}
+- Entry Valuation: $${(dealData.entryValuation / 1000000).toFixed(1)}M
+- Exit Valuation: $${(dealData.exitValuation / 1000000).toFixed(1)}M
+- Hold Period: ${Math.round(dealData.holdPeriodWeeks / 4)} months
+- MOIC: ${dealData.moic.toFixed(2)}x
+- IRR: ${(dealData.irr * 100).toFixed(1)}%
+- Exit Type: ${dealData.exitType}
+- Red Flags Found: ${dealData.redFlagsFound}
+- Red Flags Missed: ${dealData.redFlagsMissed}
+- Market Conditions: ${dealData.marketConditions}
+- Key Decisions: ${dealData.keyDecisions.join('; ')}
+
+Output valid JSON with this structure:
+{
+  "whatWentRight": [{"category": "...", "description": "...", "impact": "..."}],
+  "whatWentWrong": [{"category": "...", "description": "...", "impact": "...", "wasPreventable": true/false}],
+  "historicalParallel": {"dealName": "Famous PE deal", "description": "Brief comparison", "lesson": "Key takeaway"},
+  "skillsDemonstrated": ["skill1", "skill2"],
+  "skillsToDevelop": ["skill1", "skill2"],
+  "overallNarrative": "2-3 sentence summary of the deal story"
+}
+`;
+
+    const chat = ai.chats.create({
+      model: 'gemini-2.5-flash',
+      config: {
+        systemInstruction: 'You are an expert PE investment analyst providing post-mortem analysis of deals. Be specific, insightful, and educational. Reference real PE concepts and historical deal parallels.',
+      },
+    });
+
+    const response = await withRetry(
+      () => chat.sendMessage({ message: prompt }),
+      'Deal autopsy API call'
+    );
+
+    try {
+      return JSON.parse(response.text || '{}');
+    } catch {
+      return {
+        whatWentRight: [],
+        whatWentWrong: [],
+        skillsDemonstrated: [],
+        skillsToDevelop: ['Deal Analysis'],
+        overallNarrative: response.text || 'Analysis unavailable.',
+      };
+    }
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('Deal autopsy error:', err.message);
+    return {
+      whatWentRight: [],
+      whatWentWrong: [],
+      skillsDemonstrated: [],
+      skillsToDevelop: [],
+      overallNarrative: 'Unable to generate analysis.',
+    };
+  }
+};
