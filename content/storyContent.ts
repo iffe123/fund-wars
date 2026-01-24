@@ -8406,6 +8406,961 @@ He shakes your hand.
 ];
 
 // ============================================================================
+// CHAPTER 8: THE EXIT - Liquidity Event
+// ============================================================================
+
+const CHAPTER_8_SCENES: Scene[] = [
+  // Opening - Exit Readiness
+  {
+    id: 'ch8_opening',
+    chapterId: 'chapter_8',
+    title: 'The Beginning of the End',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Four years into the Prometheus investment*
+
+The portfolio review deck sits on your desk. You've read it a dozen times, but the numbers still feel surreal:
+
+**Prometheus Technologies — Investment Summary**
+- Entry: $8.2B EV / $2.4B equity (Year 0)
+- Current: $14.5B implied EV / $5.8B equity value (Year 4)
+- MOIC: 2.4x gross
+- IRR: 28%
+
+The turnaround worked. The platform strategy worked. Three add-on acquisitions, margin expansion, accelerating growth.
+
+Now comes the question every PE investment eventually faces: *How do we get out?*
+
+Your phone buzzes. Chad's assistant: **"Exit committee meeting. Conference room A. Now."**
+
+*The exit process is about to begin.*`,
+    choices: [
+      {
+        id: 'ch8_opening_continue',
+        text: 'Head to the meeting',
+        nextSceneId: 'ch8_exit_committee',
+      },
+    ],
+  },
+
+  // Exit Committee
+  {
+    id: 'ch8_exit_committee',
+    chapterId: 'chapter_8',
+    title: 'The Exit Committee',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `The exit committee includes the Sterling partners, Meridian's Alexandra Reyes (now a managing director), and Victor Chen, still Chairman after all these years.
+
+The managing partner opens:
+
+**"Prometheus has exceeded our base case. We're looking at a 2.4x return in a four-year hold. The question is: do we exit now, or hold for more upside?"**
+
+Alexandra speaks first: **"Our fund is in Year 7. Our LPs are expecting distributions. We need liquidity in the next twelve months."**
+
+Chad counters: **"The business is still accelerating. Another two years could take us to 3x or higher."**
+
+Victor Chen interjects quietly: **"I'm seventy-two years old. I'd like to see this chapter close while I can still appreciate it."**
+
+The room considers the competing interests. Fund timelines. Founder legacy. Return optimization.
+
+**"What are our options?"** the managing partner asks, looking at you. You've been preparing for this question.
+
+*Three paths to exit. Each with different risk-reward profiles.*`,
+    choices: [
+      {
+        id: 'ch8_present_options',
+        text: 'Present the exit options',
+        nextSceneId: 'ch8_exit_options',
+      },
+    ],
+  },
+
+  // Exit Options
+  {
+    id: 'ch8_exit_options',
+    chapterId: 'chapter_8',
+    title: 'Three Paths',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `You move to the whiteboard.
+
+**OPTION 1: IPO**
+- Timeline: 12-18 months
+- Implied valuation: $16-18B (premium for public market access)
+- Pros: Highest valuation, partial liquidity, ongoing upside
+- Cons: Market risk, lock-up period, public company costs
+- Key risk: Market conditions
+
+**OPTION 2: STRATEGIC SALE**
+- Timeline: 6-9 months
+- Implied valuation: $14-16B (control premium)
+- Pros: Full liquidity, certainty of close, potential synergies
+- Cons: Regulatory risk, cultural integration, founder concerns
+- Key risk: Buyer universe depth
+
+**OPTION 3: SECONDARY / SPONSOR-TO-SPONSOR**
+- Timeline: 4-6 months
+- Implied valuation: $13-14B (liquidity discount)
+- Pros: Speed, certainty, continuation of strategy
+- Cons: Lower valuation, LP scrutiny, GP conflict questions
+- Key risk: Rollover negotiation
+
+The room absorbs the options. Each partner has different preferences.
+
+**"What's your recommendation?"** the managing partner asks.
+
+*The choice you make will define how this investment ends.*`,
+    choices: [
+      {
+        id: 'ch8_recommend_ipo',
+        text: 'Recommend the IPO path',
+        subtext: 'Maximize valuation, accept market risk',
+        nextSceneId: 'ch8_ipo_path',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['CHOSE_IPO'],
+        },
+      },
+      {
+        id: 'ch8_recommend_strategic',
+        text: 'Recommend strategic sale',
+        subtext: 'Certainty over optimization',
+        nextSceneId: 'ch8_strategic_path',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['CHOSE_STRATEGIC'],
+        },
+      },
+      {
+        id: 'ch8_recommend_secondary',
+        text: 'Recommend secondary sale',
+        subtext: 'Speed and simplicity',
+        nextSceneId: 'ch8_secondary_path',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['CHOSE_SECONDARY'],
+        },
+      },
+      {
+        id: 'ch8_dual_track',
+        text: 'Recommend a dual-track process',
+        subtext: 'Run IPO and strategic in parallel',
+        nextSceneId: 'ch8_dual_track_path',
+        effects: {
+          stats: { dealcraft: 10, stress: 5 },
+          setFlags: ['CHOSE_DUAL_TRACK'],
+        },
+      },
+    ],
+  },
+
+  // IPO Path
+  {
+    id: 'ch8_ipo_path',
+    chapterId: 'chapter_8',
+    title: 'Going Public',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `The committee approves the IPO path. The next step: selecting underwriters.
+
+*The beauty contest begins.*
+
+Three banks pitch for the lead role:
+
+**Goldman Sachs:** The prestige choice. Best distribution, highest fees. Their tech banker has taken fifteen companies public this year.
+
+**Morgan Stanley:** Strong institutional relationships. More aggressive on valuation. Hungry for the deal.
+
+**Evercore:** Boutique credibility. Lower fees, more senior attention. Less distribution firepower.
+
+Each bank presents for two hours. Slides. Comps. Market positioning. Promises of "flawless execution."
+
+After they leave, the committee debates.
+
+**"Goldman has the track record,"** Chad argues. **"When markets get choppy, you want the best team."**
+
+**"Morgan is promising a higher range,"** Alexandra counters. **"That's $500 million in incremental value."**
+
+Victor Chen is quiet, then speaks: **"I care less about the fees than about who will represent my company to the market. This is my legacy."**
+
+*Your recommendation will tip the balance.*`,
+    choices: [
+      {
+        id: 'ch8_choose_goldman',
+        text: 'Recommend Goldman Sachs',
+        subtext: 'Safety and prestige',
+        nextSceneId: 'ch8_banker_selected',
+        effects: {
+          setFlags: ['BANKER_GOLDMAN'],
+        },
+      },
+      {
+        id: 'ch8_choose_morgan',
+        text: 'Recommend Morgan Stanley',
+        subtext: 'Aggressive on valuation',
+        nextSceneId: 'ch8_banker_selected',
+        effects: {
+          setFlags: ['BANKER_MORGAN'],
+        },
+      },
+      {
+        id: 'ch8_choose_evercore',
+        text: 'Recommend Evercore',
+        subtext: 'Senior attention, lower fees',
+        nextSceneId: 'ch8_banker_selected',
+        effects: {
+          setFlags: ['BANKER_EVERCORE'],
+          relationships: [{ npcId: 'victor', change: 10, memory: 'Chose the banker who would treat my company right' }],
+        },
+      },
+    ],
+  },
+
+  // Strategic Path
+  {
+    id: 'ch8_strategic_path',
+    chapterId: 'chapter_8',
+    title: 'Finding a Buyer',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `The committee approves the strategic sale path. Now: build the buyer universe.
+
+*Who would pay a premium for Prometheus?*
+
+**TIER 1 — Strategic Buyers (Control Premium):**
+- **TechGiant Corp** — $400B market cap, aggressive M&A, cultural concerns
+- **IndustrialSoft AG** — German conglomerate, PE-backed history, slower process
+- **CloudFirst Inc** — High-growth acquirer, stock deal likely, integration risk
+
+**TIER 2 — Financial Sponsors (Continuation):**
+- **Blackstone** — Massive fund, continuation vehicle possible
+- **KKR** — Tech sector focus, existing relationship
+- **Advent** — European angle, cross-border complexity
+
+The banker—you've hired Lazard for the sell-side—presents their outreach strategy:
+
+**"We recommend a targeted process. Five to seven buyers, compressed timeline, create competitive tension without running a broad auction."**
+
+**"Why not a broader process?"** Alexandra asks.
+
+**"Leak risk. The moment this hits the market, your competitors know, your customers worry, your employees panic. Controlled is better than comprehensive."**
+
+*How aggressive should the outreach be?*`,
+    choices: [
+      {
+        id: 'ch8_targeted_process',
+        text: 'Approve the targeted process',
+        subtext: 'Quality over quantity',
+        nextSceneId: 'ch8_buyer_meetings',
+        effects: {
+          setFlags: ['TARGETED_PROCESS'],
+        },
+      },
+      {
+        id: 'ch8_broader_process',
+        text: 'Push for a broader auction',
+        subtext: 'Maximize competitive tension',
+        nextSceneId: 'ch8_buyer_meetings',
+        effects: {
+          stats: { stress: 5 },
+          setFlags: ['BROAD_PROCESS'],
+        },
+      },
+    ],
+  },
+
+  // Secondary Path
+  {
+    id: 'ch8_secondary_path',
+    chapterId: 'chapter_8',
+    title: 'Sponsor to Sponsor',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `The secondary path has unique complexities. You're selling to another PE firm—people who do this for a living.
+
+**"The key question,"** you explain to the committee, **"is rollover. Do we take liquidity completely, or do we roll equity into the new structure?"**
+
+Alexandra's response is immediate: **"Meridian needs full liquidity. Our fund timeline doesn't allow rollover."**
+
+Chad hesitates: **"Sterling could consider rolling 20-25% if the valuation is right. Shows conviction to the buyer."**
+
+Victor Chen adds: **"If there's a new sponsor, I want to understand their plans. I'm not handing my company to someone who'll strip it for parts."**
+
+The secondary buyers are already circling:
+
+**Vista Equity** — Software specialist, operational playbook, reputation for efficiency (and layoffs)
+**Thoma Bravo** — Sector leader, premium valuations, aggressive integration
+**Silver Lake** — Tech focus, founder-friendly reputation, longer hold periods
+
+*Each buyer represents a different future for Prometheus.*`,
+    choices: [
+      {
+        id: 'ch8_vista_focus',
+        text: 'Prioritize Vista Equity',
+        subtext: 'Highest likely price',
+        nextSceneId: 'ch8_secondary_negotiation',
+        effects: {
+          setFlags: ['SECONDARY_VISTA'],
+        },
+      },
+      {
+        id: 'ch8_silver_lake_focus',
+        text: 'Prioritize Silver Lake',
+        subtext: 'Founder-friendly, longer horizon',
+        nextSceneId: 'ch8_secondary_negotiation',
+        effects: {
+          relationships: [{ npcId: 'victor', change: 10, memory: 'Chose a buyer who would respect my legacy' }],
+          setFlags: ['SECONDARY_SILVERLAKE'],
+        },
+      },
+    ],
+  },
+
+  // Dual Track Path
+  {
+    id: 'ch8_dual_track_path',
+    chapterId: 'chapter_8',
+    title: 'The Dual Track',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `The dual-track approach is ambitious: run an IPO process and a strategic sale simultaneously, choosing the better outcome at the end.
+
+**"It's expensive,"** the CFO warns. **"We're talking $15 million in banking fees, legal costs, management distraction. And if either process leaks that we're running both, we lose credibility."**
+
+**"But the optionality is valuable,"** Chad argues. **"If markets tank, we have a strategic fallback. If strategics lowball us, we have the IPO."**
+
+Victor Chen looks uncomfortable: **"This feels like we're playing games with my company's future."**
+
+**"We're maximizing outcomes for all stakeholders,"** you respond. **"Including your equity."**
+
+The committee votes. The dual-track is approved—narrowly.
+
+*Now you have to execute two processes at once without either one discovering the other.*`,
+    choices: [
+      {
+        id: 'ch8_dual_begin',
+        text: 'Begin the dual-track process',
+        nextSceneId: 'ch8_banker_selected',
+        effects: {
+          stats: { stress: 15, dealcraft: 10 },
+        },
+      },
+    ],
+  },
+
+  // Banker Selected
+  {
+    id: 'ch8_banker_selected',
+    chapterId: 'chapter_8',
+    title: 'The Process Begins',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Three months into the exit process*
+
+The machine is in motion. Bankers. Lawyers. Accountants. Consultants. An army of advisors billing thousands per hour.
+
+The S-1 draft is on its fifth revision. The management presentation has been rehearsed twelve times. The data room contains 2,000 documents.
+
+David Park—still CEO, now a seasoned executive—handles the pressure well. He's come a long way from that shell-shocked leader on Day 1.
+
+**"How do you feel?"** you ask him during a break.
+
+**"Terrified. Excited. Exhausted."** He laughs. **"Is this what it's always like?"**
+
+**"Every exit is different. This one is going well."**
+
+**"So far."** He pauses. **"What happens if it doesn't work? If the market crashes, or the buyer walks, or..."**
+
+**"Then we adapt. That's what we do."**
+
+Your phone buzzes. The lead banker: **"We have a situation. Call me now."**
+
+*In M&A, 'situations' are never good news.*`,
+    choices: [
+      {
+        id: 'ch8_take_call',
+        text: 'Take the call',
+        nextSceneId: 'ch8_market_shock',
+      },
+    ],
+  },
+
+  // Buyer Meetings
+  {
+    id: 'ch8_buyer_meetings',
+    chapterId: 'chapter_8',
+    title: 'The Buyer Parade',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Six weeks of management presentations*
+
+Every buyer meeting follows the same pattern: the pitch, the questions, the poker faces.
+
+**TechGiant Corp** sends a team of twenty. They ask about integration synergies and "cultural alignment." Victor Chen is visibly uncomfortable.
+
+**IndustrialSoft AG** is methodical, German, thorough. They spend three hours on revenue recognition policies.
+
+**CloudFirst Inc** is fast-moving and aggressive. Their CEO joins the call personally—always a good sign.
+
+After the last presentation, you debrief with David Park:
+
+**"CloudFirst is the most excited. TechGiant has the deepest pockets. IndustrialSoft is the most thorough."**
+
+**"Which one do you want?"**
+
+He hesitates. **"Honestly? None of them feel like the right home for what we've built."**
+
+**"That's not how this works. Someone is going to own this company. Our job is to pick the best option."**
+
+**"And if the best option isn't good enough?"**
+
+*The CEO is having second thoughts. Manage carefully.*`,
+    choices: [
+      {
+        id: 'ch8_reassure_ceo',
+        text: 'Reassure him about the process',
+        nextSceneId: 'ch8_bid_deadline',
+        effects: {
+          relationships: [{ npcId: 'david_park', change: 10, memory: 'Helped me through the exit anxiety' }],
+        },
+      },
+      {
+        id: 'ch8_reality_check',
+        text: 'Give him a reality check',
+        subtext: 'This is happening whether he likes it or not',
+        nextSceneId: 'ch8_bid_deadline',
+        effects: {
+          stats: { politics: 5 },
+          relationships: [{ npcId: 'david_park', change: -5, memory: 'Was cold about the exit' }],
+        },
+      },
+    ],
+  },
+
+  // Secondary Negotiation
+  {
+    id: 'ch8_secondary_negotiation',
+    chapterId: 'chapter_8',
+    title: 'The Sponsor Dance',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Negotiating with PE buyers is different. They know every trick because they use them.*
+
+The term sheet from your chosen sponsor arrives:
+
+**Headline:** $14.2B enterprise value
+**Structure:** $10B debt / $4.2B equity
+**Rollover:** Sterling invited to roll 25% at flat valuation
+**Management:** New MIP with 8% pool
+**Governance:** Standard sponsor controls
+**Timeline:** 60 days to close
+
+Alexandra reviews it first: **"The valuation is light. Our IRR target needs $15B."**
+
+Chad disagrees: **"The certainty value is real. No market risk, no regulatory approval, close in sixty days."**
+
+The sponsor's deal lead calls you directly:
+
+**"Look, we both know the game. You want a higher number, we want a lower one. But here's the thing: we actually like this business. We're not looking to flip it. We want to build."**
+
+**"That's what everyone says."**
+
+**"We're offering Victor a five-year consulting agreement and board observer rights. Does that sound like someone planning to gut the company?"**
+
+*The sponsor is trying to build trust. Real or performative?*`,
+    choices: [
+      {
+        id: 'ch8_push_valuation',
+        text: 'Push back hard on valuation',
+        subtext: 'We need $15B or we walk',
+        nextSceneId: 'ch8_bid_deadline',
+        effects: {
+          stats: { dealcraft: 10 },
+          setFlags: ['PUSHED_VALUATION'],
+        },
+      },
+      {
+        id: 'ch8_accept_terms',
+        text: 'Accept the terms with minor modifications',
+        subtext: 'Good enough is good enough',
+        nextSceneId: 'ch8_bid_deadline',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['ACCEPTED_TERMS'],
+        },
+      },
+    ],
+  },
+
+  // Market Shock
+  {
+    id: 'ch8_market_shock',
+    chapterId: 'chapter_8',
+    title: 'The Black Swan',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `The banker's voice is tense:
+
+**"The Fed just announced an emergency rate hike. Tech stocks are down 8% in pre-market. The IPO window may be closing."**
+
+You check your Bloomberg terminal. It's worse than he's describing. The NASDAQ is in freefall. The IPO pipeline is freezing.
+
+**"What are our options?"**
+
+**"Three paths: One, we accelerate—price this week at a discount and get out before it gets worse. Two, we pause—wait six months for markets to stabilize. Three, we pivot—switch to a strategic sale and hope buyers don't reprice."**
+
+Your phone is exploding. The consortium partners, the management team, Victor Chen—everyone wants answers.
+
+Chad finds you in the hallway: **"This is why we have insurance. We always knew markets could turn."**
+
+**"Insurance doesn't help if we're mid-process."**
+
+**"No. But we still have options. The question is which bad option is least bad."**
+
+*Market crisis. Mid-exit. Every decision matters.*`,
+    choices: [
+      {
+        id: 'ch8_accelerate',
+        text: 'Recommend accelerating the IPO',
+        subtext: 'Price at a discount, get out now',
+        nextSceneId: 'ch8_ipo_decision',
+        style: 'risky',
+        effects: {
+          stats: { stress: 15 },
+          setFlags: ['ACCELERATED_IPO'],
+        },
+      },
+      {
+        id: 'ch8_pause',
+        text: 'Recommend pausing the process',
+        subtext: 'Wait for markets to stabilize',
+        nextSceneId: 'ch8_pause_decision',
+        effects: {
+          stats: { politics: 10 },
+          setFlags: ['PAUSED_PROCESS'],
+        },
+      },
+      {
+        id: 'ch8_pivot_strategic',
+        text: 'Recommend pivoting to strategic sale',
+        subtext: 'Find a buyer who ignores markets',
+        nextSceneId: 'ch8_strategic_pivot',
+        effects: {
+          stats: { dealcraft: 10 },
+          setFlags: ['PIVOTED_STRATEGIC'],
+        },
+      },
+    ],
+  },
+
+  // Bid Deadline
+  {
+    id: 'ch8_bid_deadline',
+    chapterId: 'chapter_8',
+    title: 'Final Bids',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Bid deadline day*
+
+The final bids arrive by 5 PM. Three envelopes. Three potential futures.
+
+**CloudFirst Inc:** $15.8B, all stock, minimal conditions
+**TechGiant Corp:** $16.2B, 70% cash / 30% stock, regulatory approval required
+**IndustrialSoft AG:** $14.5B, all cash, fastest close
+
+The committee convenes.
+
+**"CloudFirst has the headline,"** the banker explains, **"but it's all stock. If their shares drop 20%, we're at $12.6B."**
+
+**"TechGiant is cash-heavy,"** Chad observes, **"but DOJ might block this on antitrust grounds. That's six months of uncertainty."**
+
+**"IndustrialSoft is certain,"** Alexandra says, **"but it's below our target. Our LPs will ask questions."**
+
+Victor Chen looks at each bid.
+
+**"Which buyer will take care of my people?"**
+
+The room goes quiet. That's not usually the deciding factor.
+
+*Final decision time. Value versus certainty versus legacy.*`,
+    choices: [
+      {
+        id: 'ch8_choose_cloudFirst',
+        text: 'Recommend CloudFirst',
+        subtext: 'Highest upside, stock risk',
+        nextSceneId: 'ch8_final_negotiation',
+        effects: {
+          setFlags: ['BUYER_CLOUDFIRST'],
+        },
+      },
+      {
+        id: 'ch8_choose_techgiant',
+        text: 'Recommend TechGiant',
+        subtext: 'Best economics, regulatory risk',
+        nextSceneId: 'ch8_final_negotiation',
+        effects: {
+          setFlags: ['BUYER_TECHGIANT'],
+        },
+      },
+      {
+        id: 'ch8_choose_industrialsoft',
+        text: 'Recommend IndustrialSoft',
+        subtext: 'Certainty of close, lower price',
+        nextSceneId: 'ch8_final_negotiation',
+        effects: {
+          relationships: [{ npcId: 'victor', change: 5, memory: 'Chose the buyer who would preserve my company' }],
+          setFlags: ['BUYER_INDUSTRIALSOFT'],
+        },
+      },
+    ],
+  },
+
+  // IPO Decision
+  {
+    id: 'ch8_ipo_decision',
+    chapterId: 'chapter_8',
+    title: 'The Pricing Call',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `*The night before pricing*
+
+The IPO roadshow is complete. Institutional investors have placed orders. The book is covered—but at what price?
+
+The banker presents the range:
+
+**"We can price at $42 per share—the low end of the range. That gives us 3x oversubscription and a smooth opening."**
+
+**"Or we can push to $48—the top of the range. More aggressive, but the book is thinner there. If the market drops tomorrow, we could break issue."**
+
+**"What's your gut?"** you ask.
+
+**"My gut says take the certainty. $42 still gets you to a $15B valuation. That's a win."**
+
+The managing partner weighs in: **"We didn't run this process to leave money on the table. Push for $46."**
+
+Alexandra disagrees: **"A broken IPO is worse than a conservative price. Our reputation matters."**
+
+*Pricing is an art, not a science. What's your call?*`,
+    choices: [
+      {
+        id: 'ch8_price_conservative',
+        text: 'Price conservatively at $42',
+        subtext: 'Certainty over optimization',
+        nextSceneId: 'ch8_ipo_outcome',
+        style: 'safe',
+        effects: {
+          setFlags: ['IPO_CONSERVATIVE'],
+        },
+      },
+      {
+        id: 'ch8_price_aggressive',
+        text: 'Push for $46',
+        subtext: 'Maximize value, accept risk',
+        nextSceneId: 'ch8_ipo_outcome',
+        style: 'risky',
+        effects: {
+          setFlags: ['IPO_AGGRESSIVE'],
+        },
+      },
+    ],
+  },
+
+  // Pause Decision
+  {
+    id: 'ch8_pause_decision',
+    chapterId: 'chapter_8',
+    title: 'The Wait',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `*The hardest part of pausing is the uncertainty*
+
+You recommend shelving the IPO until markets stabilize. The committee agrees—reluctantly.
+
+The announcement goes out: "Due to market conditions, Prometheus Technologies has postponed its planned initial public offering."
+
+The next six months are limbo. The company keeps performing, but the exit uncertainty weighs on everyone.
+
+David Park struggles with morale: **"The employees saw the S-1. They know we were going public. Now they're wondering if something's wrong."**
+
+**"Nothing's wrong. Markets turned. It happens."**
+
+**"Easy for you to say. You can wait. Some of my people have been here ten years waiting for a liquidity event."**
+
+He's not wrong. Delayed gratification only works if gratification eventually arrives.
+
+*Six months later, markets recover. The process restarts.*`,
+    choices: [
+      {
+        id: 'ch8_restart_process',
+        text: 'Restart the exit process',
+        nextSceneId: 'ch8_final_negotiation',
+        effects: {
+          stats: { stress: -10 },
+          setFlags: ['PROCESS_RESTARTED'],
+        },
+      },
+    ],
+  },
+
+  // Strategic Pivot
+  {
+    id: 'ch8_strategic_pivot',
+    chapterId: 'chapter_8',
+    title: 'The Pivot',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `You pivot from IPO to strategic sale. The bankers reach out to three potential acquirers:
+
+**"We've been approached about a potential combination opportunity..."**
+
+The story works. Strategic buyers often see market downturns as buying opportunities—fewer competitors, less frothy pricing.
+
+Within two weeks, you have serious interest from two parties:
+
+**GlobalTech Partners** — A strategic consolidator, offering $14.5B in cash
+**NexGen Software** — A larger PE-backed platform, offering $15.2B in stock and cash
+
+The pivot worked. You're back in a competitive process.
+
+**"This is actually better positioning,"** the banker admits. **"Strategic buyers know the IPO market is closed. They have to pay up or lose the asset."**
+
+*Sometimes the best path isn't the one you started on.*`,
+    choices: [
+      {
+        id: 'ch8_continue_strategic',
+        text: 'Continue with strategic process',
+        nextSceneId: 'ch8_final_negotiation',
+        effects: {
+          stats: { dealcraft: 10 },
+        },
+      },
+    ],
+  },
+
+  // IPO Outcome
+  {
+    id: 'ch8_ipo_outcome',
+    chapterId: 'chapter_8',
+    title: 'Opening Bell',
+    type: 'narrative',
+    atmosphere: 'celebration',
+    narrative: `*Pricing night. Then the morning of.*
+
+The stock is priced. The press release goes out. CNBC runs the ticker: **PRMS**.
+
+9:30 AM. The opening bell. Victor Chen and David Park stand on the NYSE floor, surrounded by Prometheus employees flown in for the occasion.
+
+The first trade prints.
+
+**$48.50.**
+
+Above the IPO price. The deal is a success.
+
+You watch from the gallery. The floor erupts in cheers. Four years of work—turnarounds, crises, negotiations—culminating in this moment.
+
+Chad finds you in the crowd.
+
+**"Not bad. 2.8x MOIC on the first trade. By the time the lock-up expires, could be 3.5x."**
+
+**"If the stock holds."**
+
+**"If the stock holds."** He pauses. **"But today, we celebrate. Tomorrow, we start the next one."**
+
+*The exit is complete. The returns are locked. But the lock-up period still has six months to go.*`,
+    choices: [
+      {
+        id: 'ch8_ipo_celebrate',
+        text: 'Celebrate with the team',
+        nextSceneId: 'ch8_closing_bell',
+        effects: {
+          stats: { reputation: 15, money: 100000 },
+          achievement: 'IPO_SUCCESS',
+        },
+      },
+    ],
+  },
+
+  // Final Negotiation
+  {
+    id: 'ch8_final_negotiation',
+    chapterId: 'chapter_8',
+    title: 'The Home Stretch',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Final negotiations with the winning bidder*
+
+The term sheet is almost done. But "almost" in M&A means nothing is finished.
+
+**Remaining issues:**
+
+**Price adjustment:** The buyer wants a working capital collar. You want a fixed price.
+
+**Indemnification:** They want 18 months of rep coverage. You're offering 12.
+
+**Break-up fee:** They want 3% if the deal falls through. Standard is 2%.
+
+**Management retention:** They want David Park to commit to three years. He's offering two.
+
+Every point is a negotiation. Every concession has a cost.
+
+At 2 AM, the lawyers are still arguing over a MAC clause definition. You step out for coffee and find Victor Chen in the hallway.
+
+**"Is it always like this?"** he asks.
+
+**"The last 10% takes 90% of the time. That's M&A."**
+
+**"I'm too old for this."** He sighs. **"But I'm glad you're here. I trust you to get this right."**
+
+*Final push. Everything comes down to the next few hours.*`,
+    choices: [
+      {
+        id: 'ch8_hold_line',
+        text: 'Hold the line on key terms',
+        subtext: 'Don\'t give away value at the finish',
+        nextSceneId: 'ch8_signing',
+        effects: {
+          stats: { dealcraft: 10 },
+          setFlags: ['HELD_LINE'],
+        },
+      },
+      {
+        id: 'ch8_compromise',
+        text: 'Compromise to get the deal done',
+        subtext: 'A closed deal beats a perfect deal',
+        nextSceneId: 'ch8_signing',
+        effects: {
+          stats: { politics: 10 },
+          setFlags: ['COMPROMISED'],
+        },
+      },
+    ],
+  },
+
+  // Signing
+  {
+    id: 'ch8_signing',
+    chapterId: 'chapter_8',
+    title: 'Signing',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `*4:47 AM. The signing.*
+
+The conference room is littered with coffee cups and takeout containers. Forty people in various states of exhaustion.
+
+The final documents are printed. Signature pages are circulated.
+
+Victor Chen signs first. His hand is steady, but his eyes are wet.
+
+**"Thirty-four years,"** he says quietly. **"Started in a garage. Ended in a law firm conference room."**
+
+**"It's not ending,"** you say. **"It's transitioning."**
+
+**"You said that before. After the LBO."** He smiles. **"Maybe this time I'll believe it."**
+
+The consortium partners sign. The buyer signs. The documents are collected, compiled, and sent to escrow.
+
+**"Ladies and gentlemen,"** the lead lawyer announces, **"we have a deal."**
+
+Applause. Handshakes. A few tears.
+
+*$15.8 billion. 3.2x MOIC. 32% IRR. The deal of a career.*`,
+    choices: [
+      {
+        id: 'ch8_signing_complete',
+        text: 'Acknowledge the moment',
+        nextSceneId: 'ch8_closing_bell',
+        effects: {
+          stats: { reputation: 15, money: 150000 },
+          achievement: 'STRATEGIC_EXIT_SUCCESS',
+        },
+      },
+    ],
+  },
+
+  // Closing Bell
+  {
+    id: 'ch8_closing_bell',
+    chapterId: 'chapter_8',
+    title: 'The Closing',
+    type: 'narrative',
+    atmosphere: 'celebration',
+    narrative: `*Closing day. The wire transfers clear.*
+
+The money flows: $15.8 billion from buyer to seller. Debt repaid. Equity distributed. Carried interest calculated.
+
+Sterling Partners' share: $2.1 billion in proceeds.
+Your personal carry (after years of accumulation): $4.2 million.
+
+It's more money than you ever imagined having. And somehow, it feels beside the point.
+
+The real achievement isn't the money. It's what you built—and what survives.
+
+Prometheus Technologies will continue. Three thousand employees will keep their jobs. Victor Chen's legacy will endure.
+
+David Park sends you a text: **"Thank you. For everything. I wouldn't be here without you."**
+
+You look out the window at Manhattan. Somewhere out there, another company is struggling. Another founder is wondering if they should sell. Another PE firm is circling.
+
+*The cycle continues. The only question is: what role will you play in the next one?*`,
+    choices: [
+      {
+        id: 'ch8_reflect',
+        text: 'Reflect on the journey',
+        nextSceneId: 'ch8_chapter_end',
+        effects: {
+          stats: { stress: -20 },
+        },
+      },
+    ],
+  },
+
+  // Chapter End
+  {
+    id: 'ch8_chapter_end',
+    chapterId: 'chapter_8',
+    title: 'Full Circle',
+    type: 'chapter_end',
+    atmosphere: 'quiet',
+    narrative: `*One month later. Sterling Partners annual meeting.*
+
+The managing partner stands at the podium. The room is full of LPs—pension funds, endowments, family offices—the people whose capital you've been managing.
+
+**"Fund IV delivered a 2.8x net MOIC and 24% net IRR. Prometheus Technologies was our largest and most successful investment."**
+
+He pauses.
+
+**"But the numbers don't tell the full story. Behind every return is a team. Analysts who built the models. Associates who ran the diligence. VPs who managed the process. Principals who led the execution."**
+
+**"And sometimes, there's someone who does all of those things across an entire investment lifecycle. Who learns to source deals, negotiate terms, execute turnarounds, and manage exits."**
+
+He looks at you.
+
+**"It is my pleasure to announce the promotion of our newest Partner."**
+
+The room applauds. You stand, not quite believing it.
+
+From first day to Partner. From spreadsheets to strategy. From observer to owner.
+
+*This is what you worked for. This is what it means.*
+
+**CHAPTER 8 COMPLETE**
+
+*The journey ends where it began: in a room full of people deciding what's next. But now you're not the one asking questions. You're the one providing answers.*
+
+*Private equity is a game of cycles—buying, building, selling, repeating. You've completed your first full cycle. The next one starts tomorrow.*
+
+*What will you build?*
+
+**THE END**
+
+*Thank you for playing Fund Wars.*`,
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+];
+
+// ============================================================================
 // CHAPTER DEFINITIONS
 // ============================================================================
 
@@ -8498,6 +9453,19 @@ export const STORY_CHAPTERS: Chapter[] = [
     estimatedMinutes: 35,
     theme: 'resolution',
   },
+  {
+    id: 'chapter_8',
+    number: 8,
+    title: 'The Exit',
+    teaser: 'Four years in. Time to return capital. Choose your exit path and close the deal of your career.',
+    openingSceneId: 'ch8_opening',
+    endingSceneIds: ['ch8_chapter_end'],
+    requirements: {
+      completedChapters: ['chapter_7'],
+    },
+    estimatedMinutes: 30,
+    theme: 'epilogue',
+  },
 ];
 
 // ============================================================================
@@ -8512,6 +9480,7 @@ export const STORY_SCENES: Scene[] = [
   ...CHAPTER_5_SCENES,
   ...CHAPTER_6_SCENES,
   ...CHAPTER_7_SCENES,
+  ...CHAPTER_8_SCENES,
 ];
 
 // ============================================================================
