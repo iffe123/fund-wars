@@ -6048,6 +6048,1238 @@ Chad finds you in the coffee room.
 ];
 
 // ============================================================================
+// CHAPTER 6: THE SYNDICATE - Club Deal / Multi-Sponsor LBO
+// ============================================================================
+
+const CHAPTER_6_SCENES: Scene[] = [
+  // Opening - The Whale surfaces
+  {
+    id: 'ch6_opening',
+    chapterId: 'chapter_6',
+    title: 'The Whale',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Six months after your first proprietary deal closed*
+
+The Monday morning partners' meeting. Usually routine—portfolio updates, market commentary, the occasional argument about valuation multiples.
+
+Today is different.
+
+The managing partner stands at the head of the table, a single slide on the screen behind him:
+
+**PROJECT ATLAS**
+**Enterprise Value: $8.2 Billion**
+**Equity Required: $2.4 Billion**
+
+The room goes quiet. This isn't a deal. This is a *whale*.
+
+**"Prometheus Technologies,"** he says. **"Global industrial software. Market leader in manufacturing execution systems. The founder wants to take it private."**
+
+*$2.4 billion in equity. Sterling's entire fund is $3.5 billion. This would be the largest deal in firm history.*`,
+    choices: [
+      {
+        id: 'ch6_opening_continue',
+        text: 'Listen to the opportunity',
+        nextSceneId: 'ch6_whale_details',
+      },
+    ],
+  },
+
+  // Whale Details
+  {
+    id: 'ch6_whale_details',
+    chapterId: 'chapter_6',
+    title: 'The Opportunity',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `The managing partner continues:
+
+**"Prometheus has 40% market share in MES software. $1.2 billion revenue, growing 15% annually. EBITDA margins north of 35%. Sticky customer base—average contract length is seven years."**
+
+Numbers scroll across the screen. It's a beautiful business.
+
+**"The founder, Victor Chen, built this over thirty years. He's sixty-eight, no succession plan, and tired of quarterly earnings calls. He wants a partner who'll let him finish his legacy without Wall Street breathing down his neck."**
+
+Chad leans forward. **"What's the catch?"**
+
+**"Two catches. First: the equity check. We can't do this alone—not without putting 70% of our fund in one deal. We need co-investors."**
+
+**"And second?"**
+
+**"We're not the only ones who got the call. Blackrock Capital and Titan Partners are both circling. If we want this, we need to move fast—and we need a consortium."**
+
+*A club deal. Multiple PE sponsors sharing economics, governance, and risk. Also sharing credit... and blame.*`,
+    choices: [
+      {
+        id: 'ch6_interested',
+        text: 'Express strong interest',
+        nextSceneId: 'ch6_assignment',
+        effects: {
+          stats: { dealcraft: 5 },
+        },
+      },
+      {
+        id: 'ch6_cautious',
+        text: 'Ask about consortium dynamics',
+        subtext: 'Show you understand the complexity',
+        nextSceneId: 'ch6_assignment',
+        effects: {
+          stats: { politics: 5 },
+        },
+      },
+    ],
+  },
+
+  // Assignment
+  {
+    id: 'ch6_assignment',
+    chapterId: 'chapter_6',
+    title: 'Your Role',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'neutral',
+    },
+    narrative: `After the meeting, Chad catches you in the hallway.
+
+**"You're on the deal team. Congratulations."**
+
+**"Seriously?"**
+
+**"Don't look so surprised. You closed your proprietary deal. You've proven you can source and execute."** He pauses. **"But this is different. This is a club deal. Politics matter as much as numbers."**
+
+**"What do you need from me?"**
+
+**"Two things. First: build the model. I want a full LBO with sensitivities by end of week. Second..."** He looks at you seriously. **"I need you to help manage our co-investor relationships. We're bringing in Meridian Capital as a partner."**
+
+**"Meridian? Aren't they our competitors?"**
+
+**"Today's competitor is tomorrow's co-investor. That's how mega-deals work."** He hands you a folder. **"Their deal lead is someone named Alexandra Reyes. Apparently she's... intense."**
+
+*Club deals: where you share a bed with people who'd happily steal your sheets.*`,
+    choices: [
+      {
+        id: 'ch6_accept_assignment',
+        text: 'Accept the assignment',
+        nextSceneId: 'ch6_model_building',
+        effects: {
+          setFlags: ['ATLAS_DEAL_TEAM'],
+        },
+      },
+    ],
+  },
+
+  // Model Building
+  {
+    id: 'ch6_model_building',
+    chapterId: 'chapter_6',
+    title: 'The Numbers',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Three days of modeling. Minimal sleep. Maximum caffeine.*
+
+The LBO model comes together piece by piece:
+
+**Sources & Uses:**
+- Senior Debt: $4.2B (5.1x EBITDA)
+- Mezzanine: $800M
+- Equity: $2.4B (Sterling: $800M, Meridian: $800M, Management: $800M)
+- Total: $8.2B
+
+**Returns Analysis:**
+- Base Case: 2.3x / 18% IRR over 5 years
+- Upside Case: 3.1x / 25% IRR (assumes margin expansion)
+- Downside Case: 1.4x / 8% IRR (assumes growth slowdown)
+
+The math works. Barely. Everything depends on maintaining those 35% margins while growing revenue.
+
+Your phone buzzes. A text from an unknown number:
+
+*"This is Alexandra Reyes, Meridian. Heard you're running point on the model. We should sync before the consortium call tomorrow. Coffee? — AR"*
+
+*The co-investor wants to meet. This could be collaborative... or competitive intelligence gathering.*`,
+    choices: [
+      {
+        id: 'ch6_meet_alexandra',
+        text: 'Agree to meet Alexandra',
+        nextSceneId: 'ch6_alexandra_meeting',
+        effects: {
+          setFlags: ['MET_ALEXANDRA_EARLY'],
+        },
+      },
+      {
+        id: 'ch6_decline_meeting',
+        text: 'Suggest meeting after the consortium call',
+        subtext: 'Keep your cards close',
+        nextSceneId: 'ch6_consortium_call',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['DECLINED_ALEXANDRA'],
+        },
+      },
+    ],
+  },
+
+  // Alexandra Meeting
+  {
+    id: 'ch6_alexandra_meeting',
+    chapterId: 'chapter_6',
+    title: 'The Competition',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'alexandra',
+      name: 'Alexandra Reyes',
+      mood: 'neutral',
+    },
+    narrative: `*A coffee shop near Grand Central. Neutral territory.*
+
+Alexandra Reyes is already there when you arrive—sharp suit, sharper eyes, a laptop open with what looks suspiciously like the same model you've been building.
+
+**"Thanks for meeting,"** she says without preamble. **"Let's skip the pleasantries. We both know why we're here."**
+
+**"The deal."**
+
+**"The deal. And more specifically: who leads it."** She leans forward. **"Sterling wants to be lead sponsor. So does Meridian. We can't both be captain."**
+
+**"What are you proposing?"**
+
+**"Information sharing. Real information. You show me your model assumptions, I show you ours. We find common ground before tomorrow's call, we present a united front."**
+
+**"And if we disagree?"**
+
+**"Then we have that fight in private, not in front of the seller."** She smiles, thin and professional. **"I've seen club deals blow up because sponsors couldn't align. I don't intend to let that happen here."**
+
+*She's smart. The question is whether she's trustworthy.*`,
+    choices: [
+      {
+        id: 'ch6_share_model',
+        text: 'Share your model assumptions',
+        subtext: 'Build trust through transparency',
+        nextSceneId: 'ch6_alexandra_alignment',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 5 },
+          relationships: [{ npcId: 'alexandra', change: 15, memory: 'Was transparent from the start' }],
+          setFlags: ['SHARED_WITH_ALEXANDRA'],
+        },
+      },
+      {
+        id: 'ch6_partial_share',
+        text: 'Share high-level assumptions only',
+        subtext: 'Cautious collaboration',
+        nextSceneId: 'ch6_alexandra_alignment',
+        effects: {
+          stats: { politics: 5 },
+          relationships: [{ npcId: 'alexandra', change: 5, memory: 'Was cautious but professional' }],
+        },
+      },
+      {
+        id: 'ch6_deflect',
+        text: 'Deflect and gather her assumptions first',
+        subtext: 'Information asymmetry',
+        nextSceneId: 'ch6_alexandra_tense',
+        style: 'risky',
+        effects: {
+          stats: { dealcraft: 5 },
+          relationships: [{ npcId: 'alexandra', change: -10, memory: 'Tried to play games with me' }],
+          setFlags: ['ALEXANDRA_SUSPICIOUS'],
+        },
+      },
+    ],
+  },
+
+  // Alexandra Alignment
+  {
+    id: 'ch6_alexandra_alignment',
+    chapterId: 'chapter_6',
+    title: 'Finding Common Ground',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'alexandra',
+      name: 'Alexandra Reyes',
+      mood: 'happy',
+    },
+    narrative: `An hour later, you've compared models. The good news: your assumptions are within 5% on most metrics.
+
+**"Your revenue growth is more aggressive than ours,"** Alexandra notes. **"We're at 12%, you're at 15%."**
+
+**"Management guidance was 15%. You're haircutting it?"**
+
+**"Always."** She shrugs. **"Founders are optimists. That's how they build companies. It's also how they get PE firms to overpay."**
+
+**"Fair point."**
+
+**"Here's what I propose: we align on 13% growth, split the difference. Present a unified view to the consortium."**
+
+**"And the lead sponsor question?"**
+
+She pauses.
+
+**"Let's table that for now. Get through the consortium call, prove we can work together. Then we figure out governance."**
+
+*A reasonable proposal. Or a delay tactic. Hard to tell.*`,
+    choices: [
+      {
+        id: 'ch6_agree_alignment',
+        text: 'Agree to the unified approach',
+        nextSceneId: 'ch6_consortium_call',
+        effects: {
+          relationships: [{ npcId: 'alexandra', change: 10, memory: 'We found common ground early' }],
+          setFlags: ['ALEXANDRA_ALIGNED'],
+        },
+      },
+    ],
+  },
+
+  // Alexandra Tense
+  {
+    id: 'ch6_alexandra_tense',
+    chapterId: 'chapter_6',
+    title: 'Trust Issues',
+    type: 'dialogue',
+    atmosphere: 'crisis',
+    speaker: {
+      id: 'alexandra',
+      name: 'Alexandra Reyes',
+      mood: 'angry',
+    },
+    narrative: `Alexandra's expression hardens.
+
+**"I see. You want to play games."**
+
+**"I'm just being careful—"**
+
+**"You're being a typical Sterling VP."** She closes her laptop. **"I came here in good faith. I offered collaboration. And you're treating me like a competitor instead of a partner."**
+
+**"We are competitors."**
+
+**"Not on this deal. On this deal, we're married whether we like it or not."** She stands. **"Remember that when things get difficult. And they will get difficult."**
+
+She leaves without another word.
+
+*You may have just made the next three months significantly harder.*`,
+    choices: [
+      {
+        id: 'ch6_tense_continue',
+        text: 'Head to the consortium call',
+        nextSceneId: 'ch6_consortium_call',
+        effects: {
+          stats: { stress: 10 },
+        },
+      },
+    ],
+  },
+
+  // Consortium Call
+  {
+    id: 'ch6_consortium_call',
+    chapterId: 'chapter_6',
+    title: 'The Consortium',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*The consortium call. Three PE firms, one target, and $8.2 billion on the line.*
+
+On the line:
+- **Sterling Partners** (you, Chad, the managing partner)
+- **Meridian Capital** (Alexandra, their senior partner Marcus Webb—wait, you know that name)
+- **Apex Equity** (a smaller growth-oriented fund looking for co-invest allocation)
+
+The managing partner leads:
+
+**"Gentlemen, ladies—we have a unique opportunity here. Prometheus is a generational asset. The question is whether we can align quickly enough to present a unified bid."**
+
+Marcus Webb's voice comes through the speaker—deep, confident:
+
+**"Meridian agrees. We propose a 40/40/20 split. Sterling and Meridian as co-leads, Apex as a minority co-investor."**
+
+The Apex partner pushes back: **"We want 25% minimum. We have sector expertise that—"**
+
+**"Your fund is $800 million. You can't write a $600 million check."**
+
+The call descends into negotiation. Economics. Governance. Board seats. Veto rights.
+
+*Someone needs to mediate. Or this consortium falls apart before it starts.*`,
+    choices: [
+      {
+        id: 'ch6_mediate',
+        text: 'Propose a compromise structure',
+        subtext: 'Step up as the dealmaker',
+        nextSceneId: 'ch6_mediation',
+        effects: {
+          stats: { politics: 10, dealcraft: 5 },
+          setFlags: ['CONSORTIUM_MEDIATOR'],
+        },
+      },
+      {
+        id: 'ch6_stay_quiet',
+        text: 'Let the senior partners negotiate',
+        subtext: 'Stay in your lane',
+        nextSceneId: 'ch6_mediation',
+        effects: {
+          stats: { politics: -5 },
+        },
+      },
+      {
+        id: 'ch6_push_sterling',
+        text: 'Advocate strongly for Sterling\'s position',
+        subtext: 'Loyalty over diplomacy',
+        nextSceneId: 'ch6_mediation_tense',
+        effects: {
+          stats: { stress: 5 },
+          relationships: [{ npcId: 'chad', change: 10, memory: 'Fought for our position' }],
+          setFlags: ['STERLING_ADVOCATE'],
+        },
+      },
+    ],
+  },
+
+  // Mediation
+  {
+    id: 'ch6_mediation',
+    chapterId: 'chapter_6',
+    title: 'The Compromise',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `You take a breath and speak up:
+
+**"What if we structure this differently? 35/35/15 equity split, with the remaining 15% reserved for management rollover. That gives everyone meaningful economics while ensuring management alignment."**
+
+Silence on the line. Then Marcus Webb:
+
+**"Interesting. But who leads? Two co-leads never works."**
+
+**"What if lead sponsor rotates by function? Sterling leads deal execution and financing. Meridian leads operational improvement and value creation. Joint governance committee with tie-breaker provisions."**
+
+More silence. Then Alexandra's voice:
+
+**"That... could work. We'd need to define the committee structure carefully."**
+
+The Apex partner: **"And our board seat?"**
+
+**"Observer seat with upgrade to full seat if you exercise your pro-rata in future add-ons."**
+
+The managing partner mutes the line. **"Where did that come from?"**
+
+**"I've been thinking about it."**
+
+He unmutes. **"Gentlemen, we have a framework. Let's draft a consortium agreement."**
+
+*You just shaped an $8 billion deal structure. Not bad for a VP.*`,
+    choices: [
+      {
+        id: 'ch6_mediation_success',
+        text: 'Help draft the consortium agreement',
+        nextSceneId: 'ch6_founder_meeting',
+        effects: {
+          stats: { reputation: 10 },
+          achievement: 'CONSORTIUM_ARCHITECT',
+        },
+      },
+    ],
+  },
+
+  // Mediation Tense
+  {
+    id: 'ch6_mediation_tense',
+    chapterId: 'chapter_6',
+    title: 'The Standoff',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `Your advocacy for Sterling's position doesn't go unnoticed—or appreciated.
+
+**"Sterling seems to want lead economics without lead responsibilities,"** Marcus Webb observes coldly.
+
+**"We sourced this relationship—"** Chad begins.
+
+**"You got the same call we did. From the same banker. Let's not rewrite history."**
+
+The call deteriorates. Positions harden. After ninety minutes, no agreement.
+
+The managing partner mutes the line.
+
+**"This is falling apart. We need a compromise or we lose the deal entirely."**
+
+He looks at you.
+
+**"You got us into this position. Any ideas for getting us out?"**
+
+*The consortium is fracturing. Without alignment, Prometheus goes to someone else.*`,
+    choices: [
+      {
+        id: 'ch6_propose_compromise',
+        text: 'Propose a face-saving compromise',
+        nextSceneId: 'ch6_founder_meeting',
+        effects: {
+          stats: { politics: 10, stress: 10 },
+          setFlags: ['RECOVERED_CONSORTIUM'],
+        },
+      },
+      {
+        id: 'ch6_hold_firm',
+        text: 'Recommend holding firm',
+        subtext: 'They need us as much as we need them',
+        nextSceneId: 'ch6_founder_meeting_tense',
+        style: 'risky',
+        effects: {
+          stats: { stress: 15 },
+          setFlags: ['CONSORTIUM_TENSE'],
+        },
+      },
+    ],
+  },
+
+  // Founder Meeting
+  {
+    id: 'ch6_founder_meeting',
+    chapterId: 'chapter_6',
+    title: 'Meeting the Founder',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Two weeks later. Prometheus Technologies headquarters. Palo Alto.*
+
+Victor Chen's office is surprisingly modest for a billionaire—books everywhere, family photos, a whiteboard covered in product diagrams.
+
+The consortium presents united: Sterling, Meridian, Apex. Three firms, one voice.
+
+Chen listens to the pitch—the vision, the resources, the commitment to his legacy—with the patience of a man who's heard many pitches.
+
+Finally, he speaks:
+
+**"You're not the only group interested. Blackrock came in yesterday with a higher headline number."**
+
+The managing partner doesn't flinch. **"What matters more to you: the highest price or the right partner?"**
+
+**"Both, ideally."** A thin smile. **"But you're right. I didn't build this company to sell it to the highest bidder. I want to know it'll be in good hands."**
+
+He looks around the room, his gaze settling on you.
+
+**"You. The young one. Why should I trust your consortium with my life's work?"**
+
+*The founder is testing you. Everyone is watching.*`,
+    choices: [
+      {
+        id: 'ch6_honest_answer',
+        text: 'Give an honest, personal answer',
+        subtext: 'Speak from experience',
+        nextSceneId: 'ch6_founder_response',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 10 },
+          relationships: [{ npcId: 'victor', change: 20, memory: 'Spoke honestly about stewardship' }],
+          setFlags: ['VICTOR_TRUST_HONEST'],
+        },
+      },
+      {
+        id: 'ch6_strategic_answer',
+        text: 'Focus on strategic value-add',
+        subtext: 'Professional and polished',
+        nextSceneId: 'ch6_founder_response',
+        effects: {
+          stats: { dealcraft: 10 },
+          relationships: [{ npcId: 'victor', change: 10, memory: 'Gave a competent presentation' }],
+          setFlags: ['VICTOR_TRUST_STRATEGIC'],
+        },
+      },
+    ],
+  },
+
+  // Founder Meeting Tense
+  {
+    id: 'ch6_founder_meeting_tense',
+    chapterId: 'chapter_6',
+    title: 'Meeting the Founder',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `*Two weeks later. Prometheus Technologies headquarters. The consortium barely held together.*
+
+The tension in the room is palpable. Sterling and Meridian agreed to terms, but the relationship is strained. Victor Chen notices immediately.
+
+**"Interesting dynamic in this room,"** he observes. **"You don't seem like a unified team."**
+
+The managing partner smooths over: **"Every partnership has creative tension—"**
+
+**"I've been married forty years. I know the difference between creative tension and a relationship on the rocks."**
+
+He stands, walks to the window.
+
+**"I'll be honest. Blackrock is offering more. Their consortium seems more... aligned. Why should I choose you?"**
+
+*The deal is slipping away. Someone needs to salvage this.*`,
+    choices: [
+      {
+        id: 'ch6_salvage_honest',
+        text: 'Acknowledge the tension honestly',
+        subtext: 'Transparency might be your only play',
+        nextSceneId: 'ch6_founder_response',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 15, stress: 10 },
+          relationships: [{ npcId: 'victor', change: 15, memory: 'Was honest about the challenges' }],
+          setFlags: ['VICTOR_TRUST_HONEST'],
+        },
+      },
+      {
+        id: 'ch6_salvage_pivot',
+        text: 'Pivot to your unique value proposition',
+        nextSceneId: 'ch6_founder_response',
+        effects: {
+          stats: { dealcraft: 10 },
+          relationships: [{ npcId: 'victor', change: 5, memory: 'Tried to deflect from the obvious' }],
+        },
+      },
+    ],
+  },
+
+  // Founder Response
+  {
+    id: 'ch6_founder_response',
+    chapterId: 'chapter_6',
+    title: 'The Test',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'victor',
+      name: 'Victor Chen',
+      mood: 'neutral',
+    },
+    narrative: `Victor Chen listens. Really listens—not the performative listening of someone waiting to talk.
+
+When you finish, he's quiet for a long moment.
+
+**"You know what I've learned in thirty years of building this company? The technical problems are never the hard part. It's the people problems. The trust problems."**
+
+He looks at the consortium members.
+
+**"I'm not selling to a spreadsheet. I'm trusting people with the careers of three thousand employees. With technology that took decades to perfect."**
+
+He turns back to you.
+
+**"You gave me a real answer. Not a polished pitch. I appreciate that."**
+
+The managing partner speaks: **"Does that mean—"**
+
+**"It means you're still in the running. But I have conditions. And they're not about price."**
+
+*Victor Chen is going to make this deal on his terms. The question is whether you can live with them.*`,
+    choices: [
+      {
+        id: 'ch6_hear_conditions',
+        text: 'Ask about his conditions',
+        nextSceneId: 'ch6_founder_conditions',
+      },
+    ],
+  },
+
+  // Founder Conditions
+  {
+    id: 'ch6_founder_conditions',
+    chapterId: 'chapter_6',
+    title: 'The Conditions',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'victor',
+      name: 'Victor Chen',
+      mood: 'neutral',
+    },
+    narrative: `Victor outlines his requirements:
+
+**"First: no layoffs in the first year. My people stayed loyal through four recessions. I won't reward that with pink slips."**
+
+**"Second: R&D budget stays at 18% of revenue. This company wins on innovation, not cost-cutting."**
+
+**"Third: I stay as Chairman for three years. Advisory role, not operational—but I want a voice on major strategic decisions."**
+
+**"Fourth..."** He pauses. **"My daughter, Michelle, runs our Asia Pacific business. She's not ready to be CEO—not yet—but I want a path for her. Mentorship. Development. Real consideration when the time comes."**
+
+The managing partner shifts uncomfortably. These aren't typical LBO terms.
+
+**"Victor, some of these conditions will impact our returns—"**
+
+**"I know exactly how they'll impact your returns. I also know what this company is worth to the right buyer. Take it or leave it."**
+
+*The founder has leverage, and he knows it. The consortium needs to decide how badly they want this deal.*`,
+    choices: [
+      {
+        id: 'ch6_accept_conditions',
+        text: 'Advocate for accepting the conditions',
+        subtext: 'The deal is worth the constraints',
+        nextSceneId: 'ch6_consortium_debate',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 10 },
+          relationships: [{ npcId: 'victor', change: 15, memory: 'Supported my conditions' }],
+          setFlags: ['ACCEPTED_VICTOR_TERMS'],
+        },
+      },
+      {
+        id: 'ch6_negotiate_conditions',
+        text: 'Suggest negotiating the terms',
+        subtext: 'Find middle ground',
+        nextSceneId: 'ch6_consortium_debate',
+        effects: {
+          stats: { dealcraft: 10 },
+          setFlags: ['NEGOTIATED_VICTOR_TERMS'],
+        },
+      },
+      {
+        id: 'ch6_push_back',
+        text: 'Push back firmly on the constraints',
+        subtext: 'Protect fund economics',
+        nextSceneId: 'ch6_consortium_debate_tense',
+        style: 'risky',
+        effects: {
+          stats: { stress: 10 },
+          relationships: [{ npcId: 'victor', change: -15, memory: 'Pushed back on my life\'s work' }],
+          setFlags: ['REJECTED_VICTOR_TERMS'],
+        },
+      },
+    ],
+  },
+
+  // Consortium Debate
+  {
+    id: 'ch6_consortium_debate',
+    chapterId: 'chapter_6',
+    title: 'The Partners\' Debate',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Back in New York. Emergency consortium call.*
+
+**Sterling's Position:**
+Chad argues the conditions are manageable. *"The no-layoffs provision has a one-year sunset. R&D commitment is already in our model. Victor as Chairman is actually helpful—keeps customer relationships warm."*
+
+**Meridian's Position:**
+Alexandra pushes back. *"The daughter clause is a governance nightmare. We can't commit to CEO succession three years out. What if she's not ready? What if she's terrible?"*
+
+**Apex's Position:**
+*"We're a minority investor. We'll support whatever the leads decide."*
+
+The debate goes in circles. Economics versus relationships. Returns versus reputation.
+
+Finally, the managing partner turns to you.
+
+**"You've spent the most time with Victor. What's your read? Can we live with these terms—and will he budge if we push?"**
+
+*Your opinion will shape the consortium's approach.*`,
+    choices: [
+      {
+        id: 'ch6_recommend_accept',
+        text: 'Recommend accepting with minor clarifications',
+        subtext: 'He won\'t budge on the fundamentals',
+        nextSceneId: 'ch6_term_sheet',
+        effects: {
+          stats: { reputation: 10 },
+          setFlags: ['RECOMMENDED_ACCEPT'],
+        },
+      },
+      {
+        id: 'ch6_recommend_negotiate',
+        text: 'Recommend targeted negotiation',
+        subtext: 'Push on the daughter clause specifically',
+        nextSceneId: 'ch6_term_sheet_negotiation',
+        effects: {
+          stats: { dealcraft: 10 },
+          setFlags: ['RECOMMENDED_NEGOTIATE'],
+        },
+      },
+    ],
+  },
+
+  // Consortium Debate Tense
+  {
+    id: 'ch6_consortium_debate_tense',
+    chapterId: 'chapter_6',
+    title: 'The Breaking Point',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `Your pushback in the room created a rift. Victor's expression hardened. The meeting ended without agreement.
+
+*Back in New York. Emergency consortium call.*
+
+**"You may have just cost us this deal,"** Alexandra says flatly.
+
+**"The terms were unreasonable—"**
+
+**"The terms were his prerogative. It's his company. His legacy. You treated it like a negotiation over office supplies."**
+
+The managing partner intervenes: **"What's done is done. Question is: can we recover?"**
+
+Chad speaks up: **"Victor's banker called. He's still willing to talk, but he wants an apology. From us. For 'not respecting his vision.'"**
+
+*Swallowing pride might save the deal. Or it might just delay the inevitable.*`,
+    choices: [
+      {
+        id: 'ch6_apologize',
+        text: 'Recommend apologizing and re-engaging',
+        nextSceneId: 'ch6_term_sheet_recovery',
+        effects: {
+          stats: { stress: 15, politics: 10 },
+          setFlags: ['APOLOGIZED_TO_VICTOR'],
+        },
+      },
+      {
+        id: 'ch6_walk',
+        text: 'Recommend walking away',
+        subtext: 'Some deals aren\'t worth the compromise',
+        nextSceneId: 'ch6_walk_away',
+        effects: {
+          stats: { ethics: 10 },
+          setFlags: ['WALKED_FROM_ATLAS'],
+        },
+      },
+    ],
+  },
+
+  // Term Sheet
+  {
+    id: 'ch6_term_sheet',
+    chapterId: 'chapter_6',
+    title: 'The Term Sheet',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Two weeks of document negotiation. Lawyers billing by the minute.*
+
+The consortium term sheet comes together:
+
+**Economics:**
+- Purchase price: $8.2B (7.8x LTM EBITDA)
+- Equity split: Sterling 35%, Meridian 35%, Apex 15%, Management 15%
+- Debt: $4.2B senior + $800M mezzanine
+
+**Victor's Conditions (Accepted):**
+- No workforce reductions in Year 1
+- R&D minimum at 18% of revenue
+- Victor as Chairman for 3 years
+- Career development path for Michelle Chen (no CEO commitment)
+
+**Governance:**
+- Joint Sterling-Meridian board control
+- Unanimous consent required for: CEO changes, acquisitions >$500M, dividends
+- Quarterly operating committee reviews
+
+The signing happens at 2 AM on a Thursday. Handshakes. Photographs. Champagne nobody really wants.
+
+**"Congratulations,"** Victor says quietly as the crowd disperses. **"Now the real work begins."**
+
+*The term sheet is signed. But this consortium will be tested.*`,
+    choices: [
+      {
+        id: 'ch6_term_sheet_complete',
+        text: 'Celebrate briefly with the team',
+        nextSceneId: 'ch6_consortium_crisis',
+        effects: {
+          stats: { stress: -10 },
+          achievement: 'MEGA_DEAL_SIGNED',
+        },
+      },
+    ],
+  },
+
+  // Term Sheet Negotiation
+  {
+    id: 'ch6_term_sheet_negotiation',
+    chapterId: 'chapter_6',
+    title: 'The Compromise',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `Your recommendation to negotiate the daughter clause proves prescient. Victor, it turns out, was testing you.
+
+**"I wanted to see if you'd push back,"** he admits in a follow-up call. **"Anyone who accepts everything isn't thinking critically. Michelle knows she's not ready for CEO. She told me that herself."**
+
+The revised terms:
+- Michelle gets a seat on the operating committee (not the board)
+- Executive coaching and development program funded by the consortium
+- "Consideration" for senior leadership roles as they open—no promises
+
+Victor signs.
+
+**"You handled that well,"** Alexandra admits after the call. **"I misjudged you."**
+
+**"We're partners now. Let's make it work."**
+
+*The term sheet is signed. But the real test is still coming.*`,
+    choices: [
+      {
+        id: 'ch6_negotiation_complete',
+        text: 'Move forward with the deal',
+        nextSceneId: 'ch6_consortium_crisis',
+        effects: {
+          stats: { dealcraft: 10, reputation: 5 },
+          relationships: [{ npcId: 'alexandra', change: 15, memory: 'Earned my respect through smart negotiation' }],
+          achievement: 'MEGA_DEAL_SIGNED',
+        },
+      },
+    ],
+  },
+
+  // Term Sheet Recovery
+  {
+    id: 'ch6_term_sheet_recovery',
+    chapterId: 'chapter_6',
+    title: 'The Apology',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `The apology call is uncomfortable. You take point—it was your pushback that caused the rift.
+
+**"Mr. Chen, I want to apologize. I approached our discussion as a negotiation when I should have approached it as a partnership conversation. I disrespected your vision for the company, and that was wrong."**
+
+Silence on the line. Then:
+
+**"I've had a lot of people try to buy my company over the years. Most of them saw numbers on a page. You..."** He pauses. **"You made a mistake. You're owning it. That tells me something."**
+
+**"Does it tell you enough to continue the conversation?"**
+
+**"Send me revised terms. We'll see."**
+
+*The door reopened. Barely. The final terms are less favorable—but the deal survives.*`,
+    choices: [
+      {
+        id: 'ch6_recovery_complete',
+        text: 'Push forward with revised terms',
+        nextSceneId: 'ch6_consortium_crisis',
+        effects: {
+          stats: { stress: 10, politics: 10 },
+          relationships: [{ npcId: 'victor', change: 10, memory: 'Had the courage to apologize' }],
+          setFlags: ['DEAL_RECOVERED'],
+        },
+      },
+    ],
+  },
+
+  // Walk Away
+  {
+    id: 'ch6_walk_away',
+    chapterId: 'chapter_6',
+    title: 'The Walk',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `The consortium disbands. Meridian and Apex are furious. Chad is disappointed. The managing partner says nothing, which is worse.
+
+Two months later, you hear Blackrock closed the Prometheus deal. $8.5 billion. They accepted all of Victor's conditions without pushback.
+
+The industry press calls it "transformational." You try not to read the articles.
+
+Hunter Sterling finds you in the break room.
+
+**"Heard you walked from Atlas. Bold move."** His smile is sharp. **"Some people might say stupid. But bold."**
+
+**"Did you have a point?"**
+
+**"Just that the Partners' meeting next week is going to be interesting. Walking from an $8 billion deal tends to come up in performance reviews."**
+
+*Some lessons cost more than others. This one might cost your career.*`,
+    choices: [
+      {
+        id: 'ch6_walk_accept',
+        text: 'Face the consequences',
+        nextSceneId: 'ch6_chapter_end_walk',
+        effects: {
+          stats: { stress: 20, reputation: -15 },
+          relationships: [{ npcId: 'chad', change: -10, memory: 'Walked from a career-defining deal' }],
+        },
+      },
+    ],
+  },
+
+  // Consortium Crisis
+  {
+    id: 'ch6_consortium_crisis',
+    chapterId: 'chapter_6',
+    title: 'The Crisis',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `*Three weeks before closing. Everything is falling apart.*
+
+A consortium call. Emergency status.
+
+**"We have a problem,"** the Meridian senior partner announces. **"Our credit committee is balking at the debt terms. They want to reduce our equity commitment by $200 million."**
+
+Chad responds: **"That blows up the capital structure. We'd need to find replacement equity in three weeks."**
+
+**"Or reduce the purchase price."**
+
+**"Victor won't accept a price cut. He has competing bids."**
+
+**"Then Sterling needs to step up and fill the gap."**
+
+The managing partner mutes the line.
+
+**"If we fill Meridian's gap, we're at 45% of the deal. That's concentration risk the LPs will scream about."**
+
+**"And if we don't?"**
+
+**"The deal dies. Three months of work, down the drain."**
+
+*The consortium is fracturing at the worst possible moment. Someone needs to find a solution.*`,
+    choices: [
+      {
+        id: 'ch6_fill_gap',
+        text: 'Recommend Sterling fills the gap',
+        subtext: 'Concentration risk, but saves the deal',
+        nextSceneId: 'ch6_crisis_resolution',
+        effects: {
+          stats: { dealcraft: 10, stress: 10 },
+          setFlags: ['STERLING_FILLED_GAP'],
+        },
+      },
+      {
+        id: 'ch6_find_replacement',
+        text: 'Propose finding replacement capital',
+        subtext: 'Risky timeline',
+        nextSceneId: 'ch6_find_capital',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['SOUGHT_REPLACEMENT'],
+        },
+      },
+      {
+        id: 'ch6_call_victor',
+        text: 'Suggest calling Victor directly',
+        subtext: 'Unconventional approach',
+        nextSceneId: 'ch6_victor_call',
+        effects: {
+          stats: { politics: 10 },
+          setFlags: ['CALLED_VICTOR_CRISIS'],
+        },
+      },
+    ],
+  },
+
+  // Crisis Resolution - Fill Gap
+  {
+    id: 'ch6_crisis_resolution',
+    chapterId: 'chapter_6',
+    title: 'Stepping Up',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `Sterling fills the gap. The LP calls are difficult—explaining why you're now 45% of a single deal—but the managing partner makes it work.
+
+**"This is a generational asset,"** he tells the advisory committee. **"Sometimes you have to lean in."**
+
+Meridian is grateful. Alexandra sends a private message:
+
+*"I won't forget this. You could have let us twist. You didn't. — AR"*
+
+The deal stays on track. Closing in two weeks.
+
+*Sometimes the best deals require taking on more risk than you'd like.*`,
+    choices: [
+      {
+        id: 'ch6_resolution_continue',
+        text: 'Push toward closing',
+        nextSceneId: 'ch6_closing',
+        effects: {
+          relationships: [{ npcId: 'alexandra', change: 20, memory: 'Sterling stepped up when we couldn\'t' }],
+        },
+      },
+    ],
+  },
+
+  // Find Capital
+  {
+    id: 'ch6_find_capital',
+    chapterId: 'chapter_6',
+    title: 'The Hunt for Capital',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `*Seventy-two hours. Fifty phone calls. Zero sleep.*
+
+You work your network, calling everyone who might write a $200 million check on short notice. Sovereign wealth funds. Family offices. Insurance companies.
+
+Finally, on day three, a breakthrough:
+
+**"Pacific Rim Partners,"** Sarah reports, looking as exhausted as you feel. **"Hong Kong-based family office. They want in. $200 million, passive co-invest, no board seat required."**
+
+**"What's the catch?"**
+
+**"They want a 15% discount on the equity."**
+
+**"That's—"**
+
+**"Better than the deal dying. And they can close in ten days."**
+
+*Not perfect. But sometimes good enough is good enough.*`,
+    choices: [
+      {
+        id: 'ch6_accept_pacific',
+        text: 'Recommend accepting Pacific Rim\'s terms',
+        nextSceneId: 'ch6_closing',
+        effects: {
+          stats: { dealcraft: 15 },
+          relationships: [{ npcId: 'sarah', change: 15, memory: 'We saved the deal together' }],
+        },
+      },
+    ],
+  },
+
+  // Victor Call
+  {
+    id: 'ch6_victor_call',
+    chapterId: 'chapter_6',
+    title: 'The Founder\'s Wisdom',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'victor',
+      name: 'Victor Chen',
+      mood: 'neutral',
+    },
+    narrative: `You call Victor directly. It's unconventional—founders aren't supposed to know about consortium drama—but you've built enough trust.
+
+**"The consortium is having capital issues,"** you explain. **"I wanted you to hear it from me, not from a banker."**
+
+**"I appreciate that."** A pause. **"How bad?"**
+
+**"$200 million gap. We're working on solutions, but the timeline is tight."**
+
+**"And if you can't fill it?"**
+
+**"The deal might not close."**
+
+Another long pause.
+
+**"I have an idea. What if I roll over more equity? Instead of 15%, I take 20%. That's $160 million you don't need to find."**
+
+**"Victor, that's... significant."**
+
+**"I believe in this partnership. Show me I'm right to believe."**
+
+*The founder just saved his own acquisition. That's conviction.*`,
+    choices: [
+      {
+        id: 'ch6_accept_victor_help',
+        text: 'Accept Victor\'s offer gratefully',
+        nextSceneId: 'ch6_closing',
+        effects: {
+          relationships: [{ npcId: 'victor', change: 25, memory: 'Called me when things got hard' }],
+          setFlags: ['VICTOR_INCREASED_ROLLOVER'],
+        },
+      },
+    ],
+  },
+
+  // Closing
+  {
+    id: 'ch6_closing',
+    chapterId: 'chapter_6',
+    title: 'The Closing',
+    type: 'narrative',
+    atmosphere: 'celebration',
+    narrative: `*Closing day. Davis Polk conference room. Forty lawyers, twenty bankers, and $8.2 billion changing hands.*
+
+The wire transfers clear at 4:47 PM. Prometheus Technologies is now owned by the Sterling-Meridian consortium.
+
+Victor Chen signs the final documents with a fountain pen his father gave him.
+
+**"Thirty-two years,"** he says quietly. **"Started in a garage in San Jose. Ended in a conference room on Park Avenue."**
+
+**"It's not ending,"** you say. **"It's transitioning."**
+
+He smiles. **"You might actually believe that."**
+
+The champagne flows. The deal toys will arrive in a few weeks—lucite tombstones commemorating the transaction.
+
+Chad pulls you aside.
+
+**"Not bad. You kept the consortium together when it was falling apart. That's not a technical skill. That's leadership."**
+
+**"Thanks."**
+
+**"Don't thank me. Thank yourself by making sure this investment works. The hard part starts now."**
+
+*$8.2 billion. The largest deal in Sterling Partners history. And you helped make it happen.*`,
+    choices: [
+      {
+        id: 'ch6_closing_complete',
+        text: 'Take a moment to appreciate the achievement',
+        nextSceneId: 'ch6_chapter_end',
+        effects: {
+          stats: { reputation: 15, money: 50000 },
+          achievement: 'WHALE_HUNTER',
+        },
+      },
+    ],
+  },
+
+  // Chapter End - Success
+  {
+    id: 'ch6_chapter_end',
+    chapterId: 'chapter_6',
+    title: 'The Syndicate',
+    type: 'chapter_end',
+    atmosphere: 'quiet',
+    narrative: `*One month after closing*
+
+The deal tombstone arrives. Lucite, heavy, engraved:
+
+**PROJECT ATLAS**
+**$8.2 Billion**
+**Sterling Partners • Meridian Capital • Apex Equity**
+
+You place it on your shelf—the first of what you hope will be many.
+
+Alexandra calls that evening.
+
+**"Heard you're being considered for Principal,"** she says. **"Congratulations."**
+
+**"News travels fast."**
+
+**"In this industry? Always."** A pause. **"We should do another deal together sometime. You're not as bad as I expected."**
+
+**"High praise."**
+
+**"The highest I give."**
+
+You hang up, looking at the Manhattan skyline. Somewhere out there, Prometheus Technologies is running—three thousand employees, thirty years of technology, now backed by the consortium you helped build.
+
+**CHAPTER 6 COMPLETE**
+
+*You've learned the art of the club deal: balancing economics with relationships, competition with collaboration, ego with execution.*
+
+*In private equity, the biggest deals require the biggest partnerships. And partnerships require trust—earned slowly, lost quickly.*`,
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+
+  // Chapter End - Walk Away
+  {
+    id: 'ch6_chapter_end_walk',
+    chapterId: 'chapter_6',
+    title: 'The Road Not Taken',
+    type: 'chapter_end',
+    atmosphere: 'quiet',
+    narrative: `*Three months later*
+
+The Prometheus deal closed without you. Blackrock's consortium. $8.5 billion. Victor Chen got his terms.
+
+You read about it in the Wall Street Journal, sitting in a coffee shop near the office. The article mentions Sterling Partners as "a firm that was in discussions but ultimately chose not to proceed."
+
+Your phone buzzes. A text from Chad:
+
+*"Partners meeting tomorrow. Be prepared for questions."*
+
+The performance review is brutal. Not because anyone yells—worse, they're disappointed. The walk from Atlas will follow you for years. Maybe forever.
+
+But you made a choice. You refused to compromise on terms you couldn't live with.
+
+Whether that was wisdom or weakness, only time will tell.
+
+**CHAPTER 6 COMPLETE**
+
+*Some deals are worth walking away from. Some aren't. You won't know which this was until the dust settles—and by then, it'll be too late to change your mind.*
+
+*That's the weight of every decision in this business. You carry it forward.*`,
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+];
+
+// ============================================================================
 // CHAPTER DEFINITIONS
 // ============================================================================
 
@@ -6114,6 +7346,19 @@ export const STORY_CHAPTERS: Chapter[] = [
     estimatedMinutes: 25,
     theme: 'rising_action',
   },
+  {
+    id: 'chapter_6',
+    number: 6,
+    title: 'The Syndicate',
+    teaser: 'A deal too big for one fund. Navigate co-investor politics in the largest LBO of your career.',
+    openingSceneId: 'ch6_opening',
+    endingSceneIds: ['ch6_chapter_end', 'ch6_chapter_end_walk'],
+    requirements: {
+      completedChapters: ['chapter_5'],
+    },
+    estimatedMinutes: 30,
+    theme: 'crisis',
+  },
 ];
 
 // ============================================================================
@@ -6126,6 +7371,7 @@ export const STORY_SCENES: Scene[] = [
   ...CHAPTER_3_SCENES,
   ...CHAPTER_4_SCENES,
   ...CHAPTER_5_SCENES,
+  ...CHAPTER_6_SCENES,
 ];
 
 // ============================================================================
