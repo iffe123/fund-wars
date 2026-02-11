@@ -581,7 +581,7 @@ Your phone buzzes. A text from an unknown number:
         id: 'ch1_cim_thank_sarah',
         text: 'Text back: "Thanks. Coffee on me."',
         subtext: 'Build the relationship',
-        nextSceneId: 'ch1_discovery',
+        nextSceneId: 'ch1_discovery_sarah',
         effects: {
           stats: { dealcraft: 5 },
           setFlags: ['FOUND_REAL_ESTATE', 'THANKED_SARAH'],
@@ -641,6 +641,75 @@ The bankers either don't know what they have, or they're hoping nobody notices.
       },
       {
         id: 'ch1_discovery_tell_sarah',
+        text: 'Tell Sarah what you found',
+        subtext: 'She helped you find it',
+        nextSceneId: 'ch1_sarah_team',
+        effects: {
+          relationships: [{ npcId: 'sarah', change: 15, memory: 'Shared the discovery with me' }],
+          setFlags: ['TOLD_SARAH'],
+        },
+      },
+    ],
+  },
+
+  // Discovery via Sarah's help
+  {
+    id: 'ch1_discovery_sarah',
+    chapterId: 'chapter_1',
+    title: 'Hidden Value',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `Your phone buzzes. A reply from Sarah:
+
+*"Smart move, new kid. Page 347. Property schedule. You'll want to sit down. ☕ accepted."*
+
+Page 347. Buried in the appendix. Past the customer contracts and employee lists.
+
+**Property Schedule.**
+
+And there it is.
+
+The Newark facility isn't just 40 acres. It's 40 acres *directly adjacent to the airport expansion zone*. The city has been buying up industrial land for years to extend the runway.
+
+You pull up recent comparable sales. Similar parcels went for **$15-20M per acre**.
+
+You do the math three times. Then a fourth.
+
+*40 acres × $17M average = $680 million*
+
+The entire company is being offered for **$120 million**.
+
+The bankers either don't know what they have, or they're hoping nobody notices.
+
+You text Sarah: *"You just made my career. Or ended it. Either way—you were right."*
+
+Her reply: *"I usually am. You owe me a really good coffee."*
+
+*A tip from a friend. The beginning of an alliance.*`,
+    choices: [
+      {
+        id: 'ch1_discovery_sarah_tell_chad',
+        text: 'Take this to Chad immediately',
+        subtext: 'Show what you found',
+        nextSceneId: 'ch1_chad_impressed',
+        effects: {
+          stats: { reputation: 10 },
+          relationships: [{ npcId: 'chad', change: 15, memory: 'Found the hidden value in PackFancy' }],
+          setFlags: ['TOLD_CHAD_FIRST'],
+        },
+      },
+      {
+        id: 'ch1_discovery_sarah_verify',
+        text: 'Verify the numbers first',
+        subtext: 'Make sure you\'re right',
+        nextSceneId: 'ch1_verify',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['VERIFIED_NUMBERS'],
+        },
+      },
+      {
+        id: 'ch1_discovery_sarah_team',
         text: 'Tell Sarah what you found',
         subtext: 'She helped you find it',
         nextSceneId: 'ch1_sarah_team',
@@ -2327,7 +2396,7 @@ The rest of the drive is silent.
       {
         id: 'ch2_pass_continue',
         text: 'Continue to Chapter 3',
-        nextSceneId: 'ch2_complete',
+        nextSceneId: 'ch2_complete_pass',
         effects: {
           stats: { money: 1000 },
           achievement: 'CAUTIOUS_PLAYER',
@@ -2355,6 +2424,27 @@ The Kowalski family is just the beginning. In Private Equity, every deal creates
     choices: [],
     nextSceneId: 'ch3_opening',
   },
+
+  // Chapter complete transition - Pass path
+  {
+    id: 'ch2_complete_pass',
+    chapterId: 'chapter_2',
+    title: 'Chapter Complete',
+    type: 'chapter_end',
+    atmosphere: 'quiet',
+    requiresAcknowledgment: true,
+    narrative: `**CHAPTER 2 COMPLETE**
+
+*The First Deal*
+
+You recommended walking away. In this business, that takes a different kind of courage.
+
+But deals have momentum. And the partners are already excited.
+
+*What happens when you say stop and the machine keeps going?*`,
+    choices: [],
+    nextSceneId: 'ch3_opening_pass',
+  },
 ];
 
 // ============================================================================
@@ -2362,6 +2452,54 @@ The Kowalski family is just the beginning. In Private Equity, every deal creates
 // ============================================================================
 
 const CHAPTER_3_SCENES: Scene[] = [
+  // Opening Scene - Pass path (player recommended passing in Ch2)
+  {
+    id: 'ch3_opening_pass',
+    chapterId: 'chapter_3',
+    title: 'Overruled',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `**CHAPTER 3: THE NEGOTIATION**
+
+*Three Weeks Later*
+
+You recommended passing. Chad listened. The partners didn't.
+
+**"The real estate angle is too compelling,"** the managing partner told Chad. **"We're moving forward. With or without your analyst's blessing."**
+
+So here you are. In the PackFancy conference room. At a negotiation table for a deal you tried to kill.
+
+Chad catches your eye from across the table.
+
+**"You flagged the risks. That's on record. Now help me make sure we don't overpay."**
+
+On one side: Sterling Partners. On the other: the Kowalski family—Stanley with his weathered hands folded, Monica shuffling papers nervously, and Tommy Jr. glaring at everyone.
+
+*You didn't want this deal. But you're in it now. Make it count.*`,
+    choices: [
+      {
+        id: 'ch3_pass_engage',
+        text: 'Focus on protecting Sterling from downside',
+        subtext: 'If the deal is happening, minimize the damage',
+        nextSceneId: 'ch3_rapport_open',
+        effects: {
+          stats: { dealcraft: 5, ethics: 5 },
+          setFlags: ['RELUCTANT_NEGOTIATOR'],
+        },
+      },
+      {
+        id: 'ch3_pass_prove_point',
+        text: 'Use the negotiation to prove the risks are real',
+        subtext: 'You warned them—now show them why',
+        nextSceneId: 'ch3_observe_open',
+        effects: {
+          stats: { politics: 5 },
+          setFlags: ['PROVING_POINT'],
+        },
+      },
+    ],
+  },
+
   // Opening Scene - The Table
   {
     id: 'ch3_opening',
@@ -2932,7 +3070,7 @@ He looks at you.
         id: 'ch3_read_optimistic',
         text: '"They\'ll accept. Stanley wants this done."',
         subtext: 'Confidence',
-        nextSceneId: 'ch3_night_before',
+        nextSceneId: 'ch3_recess_chad_optimistic',
         effects: {
           stats: { dealcraft: 3 },
           setFlags: ['PREDICTED_SUCCESS'],
@@ -2942,7 +3080,7 @@ He looks at you.
         id: 'ch3_read_cautious',
         text: '"We might need to sweeten the deal."',
         subtext: 'Pragmatism',
-        nextSceneId: 'ch3_night_before',
+        nextSceneId: 'ch3_recess_chad_cautious',
         effects: {
           stats: { politics: 3 },
           setFlags: ['SUGGESTED_CONCESSIONS'],
@@ -2952,10 +3090,124 @@ He looks at you.
         id: 'ch3_read_uncertain',
         text: '"Honestly? I\'m not sure. Tommy\'s a wild card."',
         subtext: 'Honesty',
-        nextSceneId: 'ch3_night_before',
+        nextSceneId: 'ch3_recess_chad_uncertain',
         effects: {
           stats: { ethics: 3 },
           setFlags: ['ADMITTED_UNCERTAINTY'],
+        },
+      },
+    ],
+  },
+
+  // Recess - Chad reacts to optimistic read
+  {
+    id: 'ch3_recess_chad_optimistic',
+    chapterId: 'chapter_3',
+    title: 'Confidence Check',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'neutral',
+    },
+    narrative: `Chad takes a long drag on his cigarette.
+
+**"You think Stanley wants this done."** He studies you. **"Based on what?"**
+
+**"His body language. He's tired. He's been fighting with Tommy for months. He wants to close this chapter."**
+
+**"Maybe."** Chad exhales smoke. **"Or maybe that's what he wants you to think. Stanley built a company from nothing. Men like that don't fold easy."**
+
+He crushes the cigarette.
+
+**"I like your confidence. Just make sure it's based on reading the room, not wishful thinking."**
+
+*Confidence is an asset. Overconfidence is a liability.*`,
+    choices: [
+      {
+        id: 'ch3_recess_optimistic_continue',
+        text: 'Head back inside',
+        nextSceneId: 'ch3_night_before',
+      },
+    ],
+  },
+
+  // Recess - Chad reacts to cautious read
+  {
+    id: 'ch3_recess_chad_cautious',
+    chapterId: 'chapter_3',
+    title: 'The Pragmatist',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'happy',
+    },
+    narrative: `Chad's eyebrow rises. A rare sign of approval.
+
+**"Sweeten the deal. Interesting."** He takes another drag. **"What did you have in mind?"**
+
+**"The earnout structure. We're asking them to take 30% at risk. If we moved it to 20% with a lower threshold, it costs us maybe $2 million but removes their biggest objection."**
+
+**"You've been running the numbers."**
+
+**"I ran them during the last bathroom break."**
+
+He almost smiles. Almost.
+
+**"Good instinct. Knowing when to give is as important as knowing when to take."**
+
+He pulls out his phone and starts texting the legal team.
+
+*Pragmatism doesn't make headlines. But it closes deals.*`,
+    choices: [
+      {
+        id: 'ch3_recess_cautious_continue',
+        text: 'Head back inside',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          relationships: [{ npcId: 'chad', change: 5, memory: 'Good read on the negotiation dynamics' }],
+        },
+      },
+    ],
+  },
+
+  // Recess - Chad reacts to uncertain read
+  {
+    id: 'ch3_recess_chad_uncertain',
+    chapterId: 'chapter_3',
+    title: 'The Honest Answer',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'worried',
+    },
+    narrative: `Chad stops mid-drag. Looks at you hard.
+
+**"You're not sure."**
+
+**"Tommy's been texting someone all day. He keeps whispering to Monica. And Stanley—he's not negotiating like a man who's decided to sell. He's negotiating like a man looking for a reason not to."**
+
+**"That's... perceptive."** Chad's tone shifts. Less mentor, more equal. **"Most analysts your age would have given me a confident answer. Even a wrong one."**
+
+He stubs out the cigarette thoughtfully.
+
+**"Uncertainty is useful—if you do something with it. Tommy IS a wild card. So let's figure out his angle before we go back in."**
+
+He pulls out his phone. **"I'm going to have Sarah dig into Tommy's recent business filings. You watch him carefully when we reconvene."**
+
+*Admitting what you don't know is the beginning of figuring it out.*`,
+    choices: [
+      {
+        id: 'ch3_recess_uncertain_continue',
+        text: 'Head back inside',
+        nextSceneId: 'ch3_night_before',
+        effects: {
+          relationships: [{ npcId: 'chad', change: 8, memory: 'Honest about what we didn\'t know' }],
         },
       },
     ],
@@ -5205,7 +5457,7 @@ A genuine smile.
         id: 'ch5_meddevice_honest',
         text: 'Be direct about your interest',
         subtext: 'Honesty approach',
-        nextSceneId: 'ch5_vance_conversation',
+        nextSceneId: 'ch5_vance_conversation_direct',
         style: 'ethical',
         effects: {
           stats: { ethics: 5 },
@@ -5216,7 +5468,7 @@ A genuine smile.
         id: 'ch5_meddevice_subtle',
         text: 'Focus on the science first',
         subtext: 'Build rapport before business',
-        nextSceneId: 'ch5_vance_conversation',
+        nextSceneId: 'ch5_vance_conversation_rapport',
         effects: {
           stats: { politics: 5 },
           setFlags: ['VANCE_SUBTLE_APPROACH'],
@@ -5252,7 +5504,7 @@ He hangs up, looking frustrated.
         id: 'ch5_clearpath_solution',
         text: 'Share insights on retention strategies',
         subtext: 'Add value immediately',
-        nextSceneId: 'ch5_webb_conversation',
+        nextSceneId: 'ch5_webb_conversation_helpful',
         effects: {
           stats: { dealcraft: 5 },
           setFlags: ['WEBB_HELPFUL_APPROACH'],
@@ -5262,7 +5514,7 @@ He hangs up, looking frustrated.
         id: 'ch5_clearpath_direct',
         text: 'Pivot to discussing ClearPath\'s future',
         subtext: 'More aggressive',
-        nextSceneId: 'ch5_webb_conversation',
+        nextSceneId: 'ch5_webb_conversation_direct',
         style: 'risky',
         effects: {
           stats: { politics: 5 },
@@ -5305,7 +5557,7 @@ Her eyebrows rise.
         id: 'ch5_homefirst_listen',
         text: 'Ask about her journey building HomeFirst',
         subtext: 'Let her tell her story',
-        nextSceneId: 'ch5_okonkwo_conversation',
+        nextSceneId: 'ch5_okonkwo_conversation_personal',
         style: 'ethical',
         effects: {
           stats: { ethics: 5, politics: 5 },
@@ -5316,7 +5568,7 @@ Her eyebrows rise.
         id: 'ch5_homefirst_market',
         text: 'Discuss market consolidation opportunity',
         subtext: 'More transactional',
-        nextSceneId: 'ch5_okonkwo_conversation',
+        nextSceneId: 'ch5_okonkwo_conversation_market',
         effects: {
           stats: { dealcraft: 5 },
           setFlags: ['OKONKWO_MARKET_APPROACH'],
@@ -5325,9 +5577,53 @@ Her eyebrows rise.
     ],
   },
 
-  // Vance Conversation
+  // Vance Conversation - Direct approach
   {
-    id: 'ch5_vance_conversation',
+    id: 'ch5_vance_conversation_direct',
+    chapterId: 'chapter_5',
+    title: 'Cards on the Table',
+    type: 'dialogue',
+    atmosphere: 'party',
+    speaker: {
+      id: 'vance',
+      name: 'Dr. Eleanor Vance',
+      mood: 'neutral',
+    },
+    narrative: `**"Dr. Vance, I'll be straight with you. I'm in private equity. I think your company has extraordinary technology that's undervalued by the market. And I'd like to understand whether a partnership could help you scale faster."**
+
+She blinks. Then laughs.
+
+**"Well. That's refreshing. Most of your kind spend thirty minutes pretending they're not here to buy something."**
+
+**"I've seen what you people do,"** she continues, more seriously. **"Buy a company, load it with debt, cut R&D, flip it in three years."**
+
+**"Some firms do. I'm not going to pretend otherwise. But if I were going to cut R&D, why would I fly here to understand the science?"**
+
+She studies you for a long moment.
+
+**"You're either genuine or very good at pretending. Either way..."** She pulls out a business card. **"Come visit the facility. See what we actually do. Then tell me your brilliant plan to 'unlock value.'"**
+
+**"When?"**
+
+**"Next month. And bring your real questions, not your pitch deck."**
+
+*Your honesty caught her off guard. That's worth more than any smooth pitch.*`,
+    choices: [
+      {
+        id: 'ch5_vance_accept_direct',
+        text: 'Accept the invitation enthusiastically',
+        nextSceneId: 'ch5_conference_wrapup',
+        effects: {
+          setFlags: ['VANCE_FACILITY_INVITE'],
+          relationships: [{ npcId: 'vance', change: 20, memory: 'Was refreshingly direct about intentions' }],
+        },
+      },
+    ],
+  },
+
+  // Vance Conversation - Rapport approach
+  {
+    id: 'ch5_vance_conversation_rapport',
     chapterId: 'chapter_5',
     title: 'Building Trust',
     type: 'dialogue',
@@ -5337,28 +5633,30 @@ Her eyebrows rise.
       name: 'Dr. Eleanor Vance',
       mood: 'neutral',
     },
-    narrative: `The conversation flows for an hour. Dr. Vance is brilliant, guarded, and deeply skeptical of private equity.
+    narrative: `You spend the next thirty minutes talking about biomechanics, polymer science, and the future of orthopedic surgery. Not a word about deals, valuations, or returns.
 
-**"I've seen what you people do. Buy a company, load it with debt, cut R&D, flip it in three years. Leave the mess for someone else."**
+Dr. Vance transforms. The guarded executive gives way to a passionate scientist, gesturing with her gin and tonic as she explains cartilage regeneration breakthroughs.
 
-**"Some firms operate that way. We try not to."**
+**"Most finance people's eyes glaze over when I talk about this,"** she admits.
 
-**"They all say that."**
+**"Most finance people don't understand that the science IS the value."**
 
-**"Fair."** You pause. **"What would convince you otherwise?"**
+She pauses. Something shifts.
 
-She studies you for a long moment.
+**"You're in private equity, aren't you."**
 
-**"Come visit the facility. See what we actually do. Meet the engineers who've spent a decade perfecting these implants. Then tell me your brilliant plan to 'unlock value.'"**
+It's not a question.
 
-**"When?"**
+**"I am."**
 
-**"Next month. If you can spare time from your spreadsheets."**
+**"I thought so. But you actually listened for thirty minutes before getting to the point."** She sighs. **"I've seen what your industry does. But you're... different. Maybe."**
 
-*An invitation. That's more than most PE professionals ever get from her.*`,
+**"Come visit the facility,"** she says. **"See what we actually do. Then we'll talk business."**
+
+*Patient rapport-building earned you something no pitch could: genuine curiosity.*`,
     choices: [
       {
-        id: 'ch5_vance_accept',
+        id: 'ch5_vance_accept_rapport',
         text: 'Accept the invitation enthusiastically',
         nextSceneId: 'ch5_conference_wrapup',
         effects: {
@@ -5369,9 +5667,49 @@ She studies you for a long moment.
     ],
   },
 
-  // Webb Conversation
+  // Webb Conversation - Helpful (shared retention insights)
   {
-    id: 'ch5_webb_conversation',
+    id: 'ch5_webb_conversation_helpful',
+    chapterId: 'chapter_5',
+    title: 'The Secondary Play',
+    type: 'dialogue',
+    atmosphere: 'party',
+    speaker: {
+      id: 'webb',
+      name: 'Marcus Webb',
+      mood: 'happy',
+    },
+    narrative: `You share what you learned from a portfolio company that solved a similar retention crisis—signing bonuses tied to twelve-month commitments, tuition reimbursement for certifications, and flexible scheduling.
+
+Webb pulls out his phone and starts taking notes.
+
+**"This is actually useful."** He looks at you differently. **"Most PE people just want to talk about EBITDA. You're the first one who's offered me something practical."**
+
+The conversation shifts naturally. He opens up.
+
+**"Granite wants out. Their fund is winding down. I want to build something bigger—forty labs to two hundred. But I need a partner who understands the operations, not just the spreadsheet."**
+
+**"Sounds like you need someone who leads with solutions, not term sheets."**
+
+He smiles. **"Call my office Monday. I have a feeling we speak the same language."**
+
+*You gave before you asked. In a room full of takers, that stood out.*`,
+    choices: [
+      {
+        id: 'ch5_webb_accept_helpful',
+        text: 'Accept and commit to following up',
+        nextSceneId: 'ch5_conference_wrapup',
+        effects: {
+          setFlags: ['WEBB_FOLLOWUP'],
+          relationships: [{ npcId: 'webb', change: 20, memory: 'Gave me actionable advice before asking for anything' }],
+        },
+      },
+    ],
+  },
+
+  // Webb Conversation - Direct (pivoted to ClearPath's future)
+  {
+    id: 'ch5_webb_conversation_direct',
     chapterId: 'chapter_5',
     title: 'The Secondary Play',
     type: 'dialogue',
@@ -5381,37 +5719,37 @@ She studies you for a long moment.
       name: 'Marcus Webb',
       mood: 'neutral',
     },
-    narrative: `Marcus Webb is a professional. He's been through this dance before—built ClearPath, took PE money, now navigating the exit.
+    narrative: `**"Labor challenges are tough,"** you say. **"But let's talk about the bigger picture. Granite's fund is winding down. ClearPath is going to need a new partner."**
 
-**"Look, I'll be honest with you,"** he says after twenty minutes of conversation. **"Granite wants out. They've got a good return locked in and their fund is winding down."**
+Webb's expression cools slightly. He's used to this—PE professionals circling.
 
-**"And you? What do you want?"**
+**"You're direct. I'll give you that."** He crosses his arms. **"Everyone at this conference wants to talk about our 'next chapter.' What makes Sterling different?"**
 
-He pauses. Genuine question, rarely asked.
+**"We've done four healthcare platform deals. We understand lab services. And we'd structure significant management rollover so you're not just an employee."**
 
-**"I want to build something bigger. We've got forty labs. I see a path to two hundred. But that takes a partner with real conviction, not just someone looking to flip me in eighteen months."**
+**"Look, I'll be honest,"** he says. **"Granite wants out. I want to build from forty labs to two hundred. That takes real conviction."**
 
 **"What if we could structure something where you maintain significant equity?"**
 
-**"Now you're speaking my language."** He pulls out a business card. **"Call my office Monday. Let's have a real conversation."**
+**"Now you're speaking my language."** He pulls out a business card. **"Call my office Monday. But come with a real thesis, not just a check."**
 
-*A secondary deal. Less romantic than a founder exit, but potentially faster to close.*`,
+*Direct approach, mixed results. He'll take the meeting, but you haven't differentiated from the pack yet.*`,
     choices: [
       {
-        id: 'ch5_webb_accept',
+        id: 'ch5_webb_accept_direct',
         text: 'Accept and commit to following up',
         nextSceneId: 'ch5_conference_wrapup',
         effects: {
           setFlags: ['WEBB_FOLLOWUP'],
-          relationships: [{ npcId: 'webb', change: 15, memory: 'Made a real connection at the conference' }],
+          relationships: [{ npcId: 'webb', change: 10, memory: 'Direct but generic approach at conference' }],
         },
       },
     ],
   },
 
-  // Okonkwo Conversation
+  // Okonkwo Conversation - Personal (asked about her journey)
   {
-    id: 'ch5_okonkwo_conversation',
+    id: 'ch5_okonkwo_conversation_personal',
     chapterId: 'chapter_5',
     title: 'The Family Business',
     type: 'dialogue',
@@ -5419,35 +5757,75 @@ He pauses. Genuine question, rarely asked.
     speaker: {
       id: 'okonkwo',
       name: 'Patricia Okonkwo',
-      mood: 'neutral',
+      mood: 'happy',
     },
     narrative: `Patricia's story unfolds over the next two hours. A nurse who saw her own mother struggle with inadequate home care. Started HomeFirst with three caregivers and a used minivan. Now employs two hundred people across six locations.
+
+You listen. Really listen. And she notices.
 
 **"My daughter thinks I'm crazy for not selling,"** she admits. **"She's an investment banker at Morgan Stanley. Keeps sending me 'comps.'"**
 
 **"What keeps you going?"**
 
-**"The mission. These aren't just patients—they're someone's mother, father. They deserve dignity."** She sighs. **"But I'm sixty-two. I can't do this forever. And my kids don't want the business."**
+**"The mission. These aren't just patients—they're someone's mother, father. They deserve dignity."** Her eyes soften. **"You remind me of my daughter, actually. Smart. Ambitious. But you also asked about the journey, not just the numbers. She never does that."**
+
+She sighs. **"I'm sixty-two. I can't do this forever. And my kids don't want the business."**
 
 **"What would you need to feel comfortable with a transition?"**
 
-She looks at you carefully.
+**"Someone who understands that the caregivers are the product. Not the platform, not the technology—the people."** She smiles. **"Come visit. See the work firsthand. Then we'll talk."**
 
-**"Someone who understands that the caregivers are the product. Not the platform, not the technology—the people."**
-
-**"I'd like to learn more. Could I visit one of your locations?"**
-
-**"Perhaps. Call me next week."**
-
-*A handshake seals it. Something about her reminds you of Stanley Kowalski—founders who built something real.*`,
+*A handshake seals it. You earned her trust by letting her tell her story.*`,
     choices: [
       {
-        id: 'ch5_okonkwo_accept',
+        id: 'ch5_okonkwo_accept_personal',
         text: 'Promise to follow up with genuine interest',
         nextSceneId: 'ch5_conference_wrapup',
         effects: {
           setFlags: ['OKONKWO_FOLLOWUP'],
-          relationships: [{ npcId: 'okonkwo', change: 20, memory: 'Listened to my story with genuine interest' }],
+          relationships: [{ npcId: 'okonkwo', change: 25, memory: 'Listened to my whole story—really listened' }],
+        },
+      },
+    ],
+  },
+
+  // Okonkwo Conversation - Market (discussed consolidation)
+  {
+    id: 'ch5_okonkwo_conversation_market',
+    chapterId: 'chapter_5',
+    title: 'The Market Opportunity',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'okonkwo',
+      name: 'Patricia Okonkwo',
+      mood: 'neutral',
+    },
+    narrative: `You lay out the consolidation thesis: fragmented market, demographic tailwinds, reimbursement complexity creating barriers to entry. HomeFirst as a natural platform for a roll-up strategy.
+
+Patricia listens with the practiced patience of someone who's heard this pitch before.
+
+**"You've done your homework,"** she says. **"But you're talking about my company like it's a chess piece."**
+
+**"I didn't mean—"**
+
+**"It's fine. You're in private equity. I know what that means."** She studies her wine. **"My daughter thinks I'm crazy for not selling. She's an investment banker. Keeps sending me 'comps.'"**
+
+**"What would make you consider a partner?"**
+
+**"Someone who understands that the caregivers are the product."** Her voice hardens slightly. **"Not the platform. Not the 'synergies.' The people who show up at 6 AM to help someone's grandmother take a bath."**
+
+She stands. **"Call me next week. If you want to understand the business, come see it. Don't just model it."**
+
+*She'll take the meeting. But you've been categorized as another finance person with a spreadsheet.*`,
+    choices: [
+      {
+        id: 'ch5_okonkwo_accept_market',
+        text: 'Promise to follow up with genuine interest',
+        nextSceneId: 'ch5_conference_wrapup',
+        effects: {
+          setFlags: ['OKONKWO_FOLLOWUP'],
+          relationships: [{ npcId: 'okonkwo', change: 10, memory: 'Talked consolidation before getting to know me' }],
         },
       },
     ],
@@ -5576,7 +5954,7 @@ The adjusted EBITDA is 22% lower than presented. Your valuation model just took 
         id: 'ch5_qoe_transparent',
         text: 'Document everything transparently',
         subtext: 'Full disclosure to IC',
-        nextSceneId: 'ch5_red_flag_decision',
+        nextSceneId: 'ch5_red_flag_decision_honest',
         style: 'ethical',
         effects: {
           stats: { ethics: 10, dealcraft: 5 },
@@ -5587,7 +5965,7 @@ The adjusted EBITDA is 22% lower than presented. Your valuation model just took 
         id: 'ch5_qoe_minimize',
         text: 'Present the issues as manageable',
         subtext: 'Spin control',
-        nextSceneId: 'ch5_red_flag_decision',
+        nextSceneId: 'ch5_red_flag_decision_spin',
         style: 'risky',
         effects: {
           stats: { politics: 5 },
@@ -5625,7 +6003,7 @@ The competitive moat isn't as deep as the management presentation suggested. Cus
         id: 'ch5_commercial_transparent',
         text: 'Document competitive concerns clearly',
         subtext: 'Full picture for IC',
-        nextSceneId: 'ch5_red_flag_decision',
+        nextSceneId: 'ch5_red_flag_decision_honest',
         style: 'ethical',
         effects: {
           stats: { ethics: 10, dealcraft: 5 },
@@ -5636,7 +6014,7 @@ The competitive moat isn't as deep as the management presentation suggested. Cus
         id: 'ch5_commercial_optimize',
         text: 'Focus on the positive customer relationships',
         subtext: 'Emphasize the upside',
-        nextSceneId: 'ch5_red_flag_decision',
+        nextSceneId: 'ch5_red_flag_decision_spin',
         style: 'risky',
         effects: {
           stats: { politics: 5 },
@@ -5673,7 +6051,7 @@ The org chart looks solid. The reality underneath is messier.
         id: 'ch5_management_transparent',
         text: 'Flag management risks in your memo',
         subtext: 'Honest assessment',
-        nextSceneId: 'ch5_red_flag_decision',
+        nextSceneId: 'ch5_red_flag_decision_honest',
         style: 'ethical',
         effects: {
           stats: { ethics: 10, politics: 5 },
@@ -5684,7 +6062,7 @@ The org chart looks solid. The reality underneath is messier.
         id: 'ch5_management_optimistic',
         text: 'Present management as "coachable"',
         subtext: 'PE-speak for "we\'ll deal with it later"',
-        nextSceneId: 'ch5_red_flag_decision',
+        nextSceneId: 'ch5_red_flag_decision_spin',
         style: 'risky',
         effects: {
           stats: { dealcraft: 5 },
@@ -5694,35 +6072,35 @@ The org chart looks solid. The reality underneath is messier.
     ],
   },
 
-  // Red Flag Decision Point
+  // Red Flag Decision Point - Honest framing
   {
-    id: 'ch5_red_flag_decision',
+    id: 'ch5_red_flag_decision_honest',
     chapterId: 'chapter_5',
     title: 'The Crossroads',
     type: 'narrative',
     atmosphere: 'office',
     narrative: `*Week five. IC presentation in three days.*
 
-You stare at your investment memo draft. The diligence has revealed what diligence always reveals: reality is messier than the pitch.
+You stare at your investment memo draft. Every risk is documented. Every red flag flagged. Your diligence section reads like a warning label.
 
-There's a real business here. Real value. But also real risks that weren't apparent from the CIM.
+Chad stops by your desk and reads over your shoulder.
 
-Chad stops by your desk.
-
-**"IC is Tuesday. Where are you landing?"**
+**"This is thorough."** He taps the risk section. **"Probably the most honest diligence memo I've seen from someone who actually wants to do the deal."**
 
 **"The business is real. The risks are manageable. But we need to adjust our entry valuation."**
 
 **"By how much?"**
 
-You pause. This is the moment. The valuation you propose will determine whether this deal happens—and whether your reputation survives if it goes wrong.
+**"I can defend it either way. The question is what level of honesty I bring to IC."**
 
-*Fortune favors the bold. But boldness without wisdom is just recklessness.*`,
+Chad nods. **"The partners will respect you for this. Or they'll think you're trying to kill your own deal. Let's hope it's the former."**
+
+*Your transparency has built credibility. Now use it wisely.*`,
     choices: [
       {
-        id: 'ch5_conservative_valuation',
+        id: 'ch5_conservative_valuation_honest',
         text: 'Propose a conservative valuation',
-        subtext: '15% below asking price',
+        subtext: '15% below asking price — your honest assessment supports this',
         nextSceneId: 'ch5_ic_prep',
         style: 'safe',
         effects: {
@@ -5731,9 +6109,9 @@ You pause. This is the moment. The valuation you propose will determine whether 
         },
       },
       {
-        id: 'ch5_aggressive_valuation',
+        id: 'ch5_aggressive_valuation_honest',
         text: 'Propose an aggressive valuation',
-        subtext: 'Match asking price, rely on upside',
+        subtext: 'Match asking price despite the documented risks',
         nextSceneId: 'ch5_ic_prep',
         style: 'risky',
         effects: {
@@ -5742,9 +6120,70 @@ You pause. This is the moment. The valuation you propose will determine whether 
         },
       },
       {
-        id: 'ch5_walk_away',
+        id: 'ch5_walk_away_honest',
         text: 'Recommend passing on the deal',
-        subtext: 'Risks outweigh opportunity',
+        subtext: 'Your honest diligence makes a strong case for walking',
+        nextSceneId: 'ch5_walk_away_scene',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 15, stress: 15 },
+          setFlags: ['DEAL_PASSED'],
+        },
+      },
+    ],
+  },
+
+  // Red Flag Decision Point - Spin framing
+  {
+    id: 'ch5_red_flag_decision_spin',
+    chapterId: 'chapter_5',
+    title: 'The Crossroads',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*Week five. IC presentation in three days.*
+
+You stare at your investment memo draft. The risks are real, but your framing makes them sound manageable—"one-time adjustments," "transitional challenges," "addressable with operational improvements."
+
+It's not dishonest, exactly. But it's not the whole story either.
+
+Chad stops by your desk. Scans the memo.
+
+**"Clean presentation."** He pauses on the risk section. **"Maybe too clean. IC isn't stupid—if they smell a deal team that's too bullish, they'll push back harder."**
+
+**"The risks are there. I just contextualized them."**
+
+**"Contextualized."** He almost smiles. **"That's a nice word for it."** He taps the desk. **"IC is Tuesday. Where are you landing on valuation?"**
+
+**"The business is real. Even with the adjustments, there's value here."**
+
+*You've painted a rosier picture. Now you need to live in it.*`,
+    choices: [
+      {
+        id: 'ch5_conservative_valuation_spin',
+        text: 'Propose a conservative valuation',
+        subtext: '15% below asking — hedging against your own optimism',
+        nextSceneId: 'ch5_ic_prep',
+        style: 'safe',
+        effects: {
+          stats: { dealcraft: 5 },
+          setFlags: ['CONSERVATIVE_VALUATION'],
+        },
+      },
+      {
+        id: 'ch5_aggressive_valuation_spin',
+        text: 'Propose an aggressive valuation',
+        subtext: 'Match asking price — your framing supports this',
+        nextSceneId: 'ch5_ic_prep',
+        style: 'risky',
+        effects: {
+          stats: { stress: 10 },
+          setFlags: ['AGGRESSIVE_VALUATION'],
+        },
+      },
+      {
+        id: 'ch5_walk_away_spin',
+        text: 'Recommend passing on the deal',
+        subtext: 'Hard to justify walking after minimizing the risks',
         nextSceneId: 'ch5_walk_away_scene',
         style: 'ethical',
         effects: {
@@ -5828,7 +6267,7 @@ Each answer needs to be crisp, confident, and honest enough to survive scrutiny.
       {
         id: 'ch5_ic_ready',
         text: 'Get some sleep before the big day',
-        nextSceneId: 'ch5_ic_presentation',
+        nextSceneId: 'ch5_ic_presentation_rested',
         effects: {
           stats: { stress: -5 },
         },
@@ -5837,7 +6276,7 @@ Each answer needs to be crisp, confident, and honest enough to survive scrutiny.
         id: 'ch5_ic_more_prep',
         text: 'Stay late and keep preparing',
         subtext: 'Perfectionism or paranoia?',
-        nextSceneId: 'ch5_ic_presentation',
+        nextSceneId: 'ch5_ic_presentation_tired',
         effects: {
           stats: { stress: 10, dealcraft: 5 },
         },
@@ -5845,9 +6284,9 @@ Each answer needs to be crisp, confident, and honest enough to survive scrutiny.
     ],
   },
 
-  // IC Presentation
+  // IC Presentation - Rested (got sleep)
   {
-    id: 'ch5_ic_presentation',
+    id: 'ch5_ic_presentation_rested',
     chapterId: 'chapter_5',
     title: 'The Investment Committee',
     type: 'narrative',
@@ -5856,17 +6295,19 @@ Each answer needs to be crisp, confident, and honest enough to survive scrutiny.
 
 Seven partners around the mahogany table. Hunter Sterling sits in the corner, observer status, watching for any sign of weakness.
 
-You present for forty-five minutes. The thesis, the opportunity, the risks, the mitigation strategies.
+You slept seven hours. Your mind is sharp, your answers crisp.
+
+You present for forty-five minutes. The thesis, the opportunity, the risks, the mitigation strategies. Your voice is steady. Your confidence is natural, not forced.
 
 Then the questions begin.
 
 **"Your Quality of Earnings adjustment is aggressive. What if the revenue recognition issues are structural, not one-time?"**
 
-**"The founder wants to stay on. What's your conviction level on that working?"**
+You handle it cleanly. The follow-ups come faster—**"The founder wants to stay on. What's your conviction level on that working?"**—and you field each one without hesitating.
 
 **"There's no banker. If we lose exclusivity, what's our fallback?"**
 
-Each question is a test. Not just of the deal—of you.
+Each question is a test. Not just of the deal—of you. And today, you're ready.
 
 Finally, the managing partner speaks.
 
@@ -5875,10 +6316,10 @@ Finally, the managing partner speaks.
 *Everyone is watching. This is your moment.*`,
     choices: [
       {
-        id: 'ch5_ic_full_conviction',
+        id: 'ch5_ic_full_conviction_rested',
         text: '"Yes. I believe in this deal."',
         subtext: 'Full conviction',
-        nextSceneId: 'ch5_ic_outcome',
+        nextSceneId: 'ch5_ic_outcome_conviction',
         style: 'risky',
         effects: {
           stats: { reputation: 10 },
@@ -5886,10 +6327,10 @@ Finally, the managing partner speaks.
         },
       },
       {
-        id: 'ch5_ic_measured',
+        id: 'ch5_ic_measured_rested',
         text: '"I believe the risk-adjusted return is compelling."',
         subtext: 'Measured confidence',
-        nextSceneId: 'ch5_ic_outcome',
+        nextSceneId: 'ch5_ic_outcome_measured',
         style: 'safe',
         effects: {
           stats: { dealcraft: 5, politics: 5 },
@@ -5899,44 +6340,104 @@ Finally, the managing partner speaks.
     ],
   },
 
-  // IC Outcome
+  // IC Presentation - Tired (stayed late)
   {
-    id: 'ch5_ic_outcome',
+    id: 'ch5_ic_presentation_tired',
+    chapterId: 'chapter_5',
+    title: 'The Investment Committee',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Tuesday. 10 AM. The Sterling Partners Investment Committee.*
+
+Seven partners around the mahogany table. Hunter Sterling sits in the corner, observer status, watching for any sign of weakness.
+
+Three hours of sleep. Your eyes burn. But you know every page of this deal cold—you've memorized data points most analysts wouldn't even think to check.
+
+You present for forty-five minutes. The thesis, the opportunity, the risks, the mitigation strategies. You stumble once on the revenue bridge—fatigue—but recover with a level of detail that surprises even Chad.
+
+Then the questions begin.
+
+**"Your Quality of Earnings adjustment is aggressive. What if the revenue recognition issues are structural, not one-time?"**
+
+You pull up a backup slide you prepared at 3 AM. It shows the exact analysis. A partner nods approvingly.
+
+**"The founder wants to stay on. What's your conviction level on that working?"**
+
+**"There's no banker. If we lose exclusivity, what's our fallback?"**
+
+Each question is a test. You're running on caffeine and adrenaline, but your answers are bulletproof. Over-preparation has its advantages.
+
+Finally, the managing partner speaks.
+
+**"You've done serious work here. The question is: are you betting your reputation on this company?"**
+
+*Everyone is watching. This is your moment.*`,
+    choices: [
+      {
+        id: 'ch5_ic_full_conviction_tired',
+        text: '"Yes. I believe in this deal."',
+        subtext: 'Full conviction',
+        nextSceneId: 'ch5_ic_outcome_conviction',
+        style: 'risky',
+        effects: {
+          stats: { reputation: 10 },
+          setFlags: ['IC_FULL_CONVICTION'],
+        },
+      },
+      {
+        id: 'ch5_ic_measured_tired',
+        text: '"I believe the risk-adjusted return is compelling."',
+        subtext: 'Measured confidence',
+        nextSceneId: 'ch5_ic_outcome_measured',
+        style: 'safe',
+        effects: {
+          stats: { dealcraft: 5, politics: 5 },
+          setFlags: ['IC_MEASURED'],
+        },
+      },
+    ],
+  },
+
+  // IC Outcome - Full Conviction
+  {
+    id: 'ch5_ic_outcome_conviction',
     chapterId: 'chapter_5',
     title: 'The Verdict',
     type: 'narrative',
     atmosphere: 'meeting',
-    narrative: `The managing partner polls the room.
+    narrative: `Silence. Your declaration hangs in the air.
 
-Hands go up. One by one.
+The managing partner polls the room.
 
-**"The motion carries. You're approved to proceed with an LOI at the proposed valuation."**
+Hands go up. One by one. Your conviction moved them—some partners who were on the fence raise their hands with visible confidence.
 
-You try not to show too much relief. In the corner, Hunter's jaw tightens slightly. He voted no.
+**"The motion carries. Six to one. You're approved to proceed with an LOI at the proposed valuation."**
 
-Chad catches your eye and gives an almost imperceptible nod.
+Hunter voted no. But he's alone. Your passion carried the room.
 
-**"One condition,"** the managing partner adds. **"Confirmatory diligence has a hard stop at sixty days. If you can't close by then, we walk."**
+Chad catches your eye and gives an almost imperceptible nod. The managing partner leans forward:
+
+**"You stuck your neck out. I respect that. One condition: confirmatory diligence has a hard stop at sixty days. If you can't close by then, we walk."**
 
 **"Understood."**
 
-**"Good luck. You're going to need it."**
+**"And remember—you just told a room of partners you believe in this deal. That's a promise. Don't make us regret it."**
 
-*You just got your first proprietary deal through IC. Now you have to close it.*`,
+*You just got your first proprietary deal through IC with a strong mandate. But you've also staked your personal reputation on the outcome.*`,
     choices: [
       {
-        id: 'ch5_ic_celebrate',
+        id: 'ch5_ic_celebrate_conviction',
         text: 'Celebrate briefly with the team',
-        nextSceneId: 'ch5_loi_negotiation',
+        nextSceneId: 'ch5_loi_negotiation_energized',
         effects: {
           stats: { stress: -10 },
           achievement: 'IC_APPROVED',
         },
       },
       {
-        id: 'ch5_ic_focus',
+        id: 'ch5_ic_focus_conviction',
         text: 'Skip the celebration—focus on the LOI',
-        nextSceneId: 'ch5_loi_negotiation',
+        nextSceneId: 'ch5_loi_negotiation_focused',
         effects: {
           stats: { dealcraft: 5 },
         },
@@ -5944,20 +6445,71 @@ Chad catches your eye and gives an almost imperceptible nod.
     ],
   },
 
-  // LOI Negotiation
+  // IC Outcome - Measured
   {
-    id: 'ch5_loi_negotiation',
+    id: 'ch5_ic_outcome_measured',
+    chapterId: 'chapter_5',
+    title: 'The Verdict',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `The managing partner nods slowly. Your analytical framing resonated with the room.
+
+He polls the partners.
+
+Hands go up. Measured, deliberate. Five yes, one no, one abstain.
+
+**"The motion carries. You're approved to proceed with an LOI at the proposed valuation."**
+
+Hunter voted no—predictably. But one partner abstained, wanting more data. Your measured approach was convincing, though it left room for doubt.
+
+Chad catches your eye and gives an almost imperceptible nod.
+
+**"One condition,"** the managing partner adds. **"Confirmatory diligence has a hard stop at sixty days. And I want weekly updates. Your risk framework was good—keep that discipline through closing."**
+
+**"Understood."**
+
+**"Good work. Analytical rigor is what keeps us out of trouble."**
+
+*You just got your first proprietary deal through IC. The analytical approach kept expectations realistic—now you have to deliver.*`,
+    choices: [
+      {
+        id: 'ch5_ic_celebrate_measured',
+        text: 'Celebrate briefly with the team',
+        nextSceneId: 'ch5_loi_negotiation_energized',
+        effects: {
+          stats: { stress: -10 },
+          achievement: 'IC_APPROVED',
+        },
+      },
+      {
+        id: 'ch5_ic_focus_measured',
+        text: 'Skip the celebration—focus on the LOI',
+        nextSceneId: 'ch5_loi_negotiation_focused',
+        effects: {
+          stats: { dealcraft: 5 },
+        },
+      },
+    ],
+  },
+
+  // LOI Negotiation - Energized (celebrated with team)
+  {
+    id: 'ch5_loi_negotiation_energized',
     chapterId: 'chapter_5',
     title: 'Term Sheet',
     type: 'narrative',
     atmosphere: 'office',
     narrative: `*The Letter of Intent negotiation*
 
-Three days of back-and-forth with the seller's counsel. Every term is contested.
+The team celebration was brief but meaningful. Sarah gave you a quiet fist bump. Even the admin staff seemed to know something good had happened.
+
+But celebration costs time. The seller's counsel called at 7 AM, and you scrambled to catch up on the markup.
+
+Three days of back-and-forth. Every term is contested.
 
 **Exclusivity period** — You want 90 days, they offer 45. You settle on 60.
 
-**Working capital adjustment** — Complex formulas, trailing averages, peg amounts. Their CFO fights every line.
+**Working capital adjustment** — Complex formulas, trailing averages, peg amounts. Their CFO fights every line. You lost a small point on the peg amount you might have caught if you'd started prep earlier.
 
 **Management rollover** — The founder wants 25% of the equity. Standard is 15-20%. This will require a conversation.
 
@@ -5970,11 +6522,50 @@ You're now in exclusivity. Sixty days to close—or lose everything.
 *The hunt was just the beginning. Now comes the kill.*`,
     choices: [
       {
-        id: 'ch5_loi_complete',
+        id: 'ch5_loi_complete_energized',
         text: 'Move into confirmatory diligence',
         nextSceneId: 'ch5_chapter_end',
         effects: {
           stats: { dealcraft: 10, reputation: 5 },
+          setFlags: ['LOI_SIGNED'],
+        },
+      },
+    ],
+  },
+
+  // LOI Negotiation - Focused (skipped celebration)
+  {
+    id: 'ch5_loi_negotiation_focused',
+    chapterId: 'chapter_5',
+    title: 'Term Sheet',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `*The Letter of Intent negotiation*
+
+While the rest of the team celebrated, you were already redlining the LOI draft. By the time the seller's counsel called, you had a complete markup ready with eighteen specific points.
+
+Three days of back-and-forth. Every term is contested—but you're a step ahead.
+
+**Exclusivity period** — You want 90 days, they offer 45. Your pre-prepared comp analysis of recent exclusivity periods forces them to 75 days.
+
+**Working capital adjustment** — Complex formulas, trailing averages, peg amounts. Their CFO fights every line, but your early prep gives you the edge. You lock in a favorable peg amount.
+
+**Management rollover** — The founder wants 25% of the equity. Standard is 15-20%. This will require a conversation.
+
+**Non-compete provisions** — Three years or five? Geographic scope? Definitions that will matter if things go wrong.
+
+Finally, at midnight on a Wednesday—a day ahead of schedule—the LOI is signed.
+
+You're now in exclusivity. Seventy-five days to close. More runway than most deals get.
+
+*The hunt was just the beginning. Now comes the kill.*`,
+    choices: [
+      {
+        id: 'ch5_loi_complete_focused',
+        text: 'Move into confirmatory diligence',
+        nextSceneId: 'ch5_chapter_end',
+        effects: {
+          stats: { dealcraft: 15, reputation: 5 },
           setFlags: ['LOI_SIGNED'],
         },
       },
@@ -6114,7 +6705,7 @@ Chad leans forward. **"What's the catch?"**
       {
         id: 'ch6_interested',
         text: 'Express strong interest',
-        nextSceneId: 'ch6_assignment',
+        nextSceneId: 'ch6_assignment_eager',
         effects: {
           stats: { dealcraft: 5 },
         },
@@ -6123,7 +6714,7 @@ Chad leans forward. **"What's the catch?"**
         id: 'ch6_cautious',
         text: 'Ask about consortium dynamics',
         subtext: 'Show you understand the complexity',
-        nextSceneId: 'ch6_assignment',
+        nextSceneId: 'ch6_assignment_analytical',
         effects: {
           stats: { politics: 5 },
         },
@@ -6131,9 +6722,50 @@ Chad leans forward. **"What's the catch?"**
     ],
   },
 
-  // Assignment
+  // Assignment - Eager (expressed strong interest)
   {
-    id: 'ch6_assignment',
+    id: 'ch6_assignment_eager',
+    chapterId: 'chapter_6',
+    title: 'Your Role',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'chad',
+      name: 'Chad Morrison',
+      mood: 'happy',
+    },
+    narrative: `After the meeting, Chad catches you in the hallway.
+
+**"You're on the deal team. Congratulations."**
+
+**"Seriously?"**
+
+**"The managing partner liked your energy in there. 'That one wants it,' he said."** Chad pauses. **"Enthusiasm is good. Just make sure it doesn't cloud your judgment."**
+
+**"It won't."**
+
+**"We'll see."** He hands you a folder. **"Two things. First: build the model. Full LBO with sensitivities by end of week. Second: I need you to help manage our co-investor relationships. We're bringing in Meridian Capital as a partner."**
+
+**"Meridian? Aren't they our competitors?"**
+
+**"Today's competitor is tomorrow's co-investor. That's how mega-deals work."** He taps the folder. **"Their deal lead is Alexandra Reyes. She's intense. Don't let your enthusiasm make you a pushover."**
+
+*Club deals: where you share a bed with people who'd happily steal your sheets.*`,
+    choices: [
+      {
+        id: 'ch6_accept_assignment_eager',
+        text: 'Accept the assignment',
+        nextSceneId: 'ch6_model_building',
+        effects: {
+          setFlags: ['ATLAS_DEAL_TEAM'],
+        },
+      },
+    ],
+  },
+
+  // Assignment - Analytical (asked about dynamics)
+  {
+    id: 'ch6_assignment_analytical',
     chapterId: 'chapter_6',
     title: 'Your Role',
     type: 'dialogue',
@@ -6145,24 +6777,24 @@ Chad leans forward. **"What's the catch?"**
     },
     narrative: `After the meeting, Chad catches you in the hallway.
 
-**"You're on the deal team. Congratulations."**
+**"You're on the deal team. And specifically, I want you on consortium management."**
 
-**"Seriously?"**
+**"Because of my question about dynamics?"**
 
-**"Don't look so surprised. You closed your proprietary deal. You've proven you can source and execute."** He pauses. **"But this is different. This is a club deal. Politics matter as much as numbers."**
+**"Because you asked the right question when everyone else was drooling over the EBITDA."** He nods approvingly. **"Club deals fall apart over politics, not numbers. You seem to understand that."**
 
 **"What do you need from me?"**
 
-**"Two things. First: build the model. I want a full LBO with sensitivities by end of week. Second..."** He looks at you seriously. **"I need you to help manage our co-investor relationships. We're bringing in Meridian Capital as a partner."**
+**"Two things. First: build the model. Full LBO with sensitivities by end of week. Second—and this is why you're here—I need you to be our eyes and ears with the co-investors. We're bringing in Meridian Capital as a partner."**
 
 **"Meridian? Aren't they our competitors?"**
 
-**"Today's competitor is tomorrow's co-investor. That's how mega-deals work."** He hands you a folder. **"Their deal lead is someone named Alexandra Reyes. Apparently she's... intense."**
+**"Exactly why I need someone who thinks about dynamics, not just deal terms."** He hands you a folder. **"Their deal lead is Alexandra Reyes. She's brilliant and ruthless. Figure out her angle before she figures out ours."**
 
 *Club deals: where you share a bed with people who'd happily steal your sheets.*`,
     choices: [
       {
-        id: 'ch6_accept_assignment',
+        id: 'ch6_accept_assignment_analytical',
         text: 'Accept the assignment',
         nextSceneId: 'ch6_model_building',
         effects: {
@@ -7073,7 +7705,7 @@ The deal stays on track. Closing in two weeks.
       {
         id: 'ch6_resolution_continue',
         text: 'Push toward closing',
-        nextSceneId: 'ch6_closing',
+        nextSceneId: 'ch6_closing_sterling',
         effects: {
           relationships: [{ npcId: 'alexandra', change: 20, memory: 'Sterling stepped up when we couldn\'t' }],
         },
@@ -7109,7 +7741,7 @@ Finally, on day three, a breakthrough:
       {
         id: 'ch6_accept_pacific',
         text: 'Recommend accepting Pacific Rim\'s terms',
-        nextSceneId: 'ch6_closing',
+        nextSceneId: 'ch6_closing_pacific',
         effects: {
           stats: { dealcraft: 15 },
           relationships: [{ npcId: 'sarah', change: 15, memory: 'We saved the deal together' }],
@@ -7155,7 +7787,7 @@ Another long pause.
       {
         id: 'ch6_accept_victor_help',
         text: 'Accept Victor\'s offer gratefully',
-        nextSceneId: 'ch6_closing',
+        nextSceneId: 'ch6_closing_victor',
         effects: {
           relationships: [{ npcId: 'victor', change: 25, memory: 'Called me when things got hard' }],
           setFlags: ['VICTOR_INCREASED_ROLLOVER'],
@@ -7164,39 +7796,119 @@ Another long pause.
     ],
   },
 
-  // Closing
+  // Closing - Sterling filled the gap
   {
-    id: 'ch6_closing',
+    id: 'ch6_closing_sterling',
     chapterId: 'chapter_6',
     title: 'The Closing',
     type: 'narrative',
     atmosphere: 'celebration',
     narrative: `*Closing day. Davis Polk conference room. Forty lawyers, twenty bankers, and $8.2 billion changing hands.*
 
-The wire transfers clear at 4:47 PM. Prometheus Technologies is now owned by the Sterling-Meridian consortium.
+The wire transfers clear at 4:47 PM. Prometheus Technologies is now owned by the Sterling-Meridian consortium—with Sterling holding 45% of the equity.
+
+The concentration risk hangs in the air. The managing partner's jaw is tight even as the champagne corks pop. This is more exposure than Sterling has ever taken on a single deal.
 
 Victor Chen signs the final documents with a fountain pen his father gave him.
 
 **"Thirty-two years,"** he says quietly. **"Started in a garage in San Jose. Ended in a conference room on Park Avenue."**
 
-**"It's not ending,"** you say. **"It's transitioning."**
-
-He smiles. **"You might actually believe that."**
-
-The champagne flows. The deal toys will arrive in a few weeks—lucite tombstones commemorating the transaction.
+Alexandra catches you in the hallway afterward. **"Sterling stepped up when it mattered. I won't forget that."** She pauses. **"But your LPs won't forget it either. That concentration risk better pay off."**
 
 Chad pulls you aside.
 
-**"Not bad. You kept the consortium together when it was falling apart. That's not a technical skill. That's leadership."**
+**"We took on more risk than anyone wanted. If this investment doesn't perform, the LP conversations will be brutal."**
 
-**"Thanks."**
+**"And if it does?"**
 
-**"Don't thank me. Thank yourself by making sure this investment works. The hard part starts now."**
+**"Then we're heroes. That's the bet."**
 
-*$8.2 billion. The largest deal in Sterling Partners history. And you helped make it happen.*`,
+*$8.2 billion. Sterling Partners' biggest bet ever. The math works—if nothing goes wrong.*`,
     choices: [
       {
-        id: 'ch6_closing_complete',
+        id: 'ch6_closing_complete_sterling',
+        text: 'Take a moment to appreciate the achievement',
+        nextSceneId: 'ch6_chapter_end',
+        effects: {
+          stats: { reputation: 15, money: 50000 },
+          achievement: 'WHALE_HUNTER',
+        },
+      },
+    ],
+  },
+
+  // Closing - Pacific Rim co-investor
+  {
+    id: 'ch6_closing_pacific',
+    chapterId: 'chapter_6',
+    title: 'The Closing',
+    type: 'narrative',
+    atmosphere: 'celebration',
+    narrative: `*Closing day. Davis Polk conference room. Forty lawyers, twenty bankers, and $8.2 billion changing hands.*
+
+Pacific Rim Partners' representative sits quietly in the corner—a Hong Kong-based family office that barely anyone in the room has heard of, now holding $200 million of equity at a 15% discount.
+
+The wire transfers clear at 4:47 PM. Prometheus Technologies is now owned by the Sterling-Meridian consortium, with a new silent partner.
+
+Victor Chen signs the final documents with a fountain pen his father gave him.
+
+**"Thirty-two years,"** he says quietly. **"Started in a garage in San Jose. Ended in a conference room on Park Avenue."**
+
+Sarah catches your eye across the room and raises her glass. You found the capital. She found Pacific Rim. The deal lives because of that seventy-two-hour sprint.
+
+Chad pulls you aside.
+
+**"You pulled a rabbit out of a hat. Finding co-invest capital in three days—that's not in any textbook."**
+
+**"Sarah did the heavy lifting."**
+
+**"I know. I also know you called fifty people before she found the one. That's how deals get done."** He pauses. **"The 15% discount will cost us on the IRR. But a slightly diluted win beats a spectacular loss."**
+
+*$8.2 billion. Held together by duct tape, caffeine, and a family office in Hong Kong nobody saw coming.*`,
+    choices: [
+      {
+        id: 'ch6_closing_complete_pacific',
+        text: 'Take a moment to appreciate the achievement',
+        nextSceneId: 'ch6_chapter_end',
+        effects: {
+          stats: { reputation: 15, money: 50000 },
+          achievement: 'WHALE_HUNTER',
+        },
+      },
+    ],
+  },
+
+  // Closing - Victor increased rollover
+  {
+    id: 'ch6_closing_victor',
+    chapterId: 'chapter_6',
+    title: 'The Closing',
+    type: 'narrative',
+    atmosphere: 'celebration',
+    narrative: `*Closing day. Davis Polk conference room. Forty lawyers, twenty bankers, and $8.2 billion changing hands.*
+
+The wire transfers clear at 4:47 PM. Prometheus Technologies is now owned by the Sterling-Meridian consortium—with Victor Chen personally rolling over 20% of his equity. Far above the standard 15%.
+
+Every banker in the room knows what that means. The founder has more skin in the game than anyone expected. It sends a message.
+
+Victor signs the final documents with a fountain pen his father gave him.
+
+**"Thirty-two years,"** he says quietly. **"Started in a garage in San Jose."** He looks up at you. **"You called me when most people would have hidden behind lawyers. That's why I'm rolling over more."**
+
+The other consortium members exchange glances. Your unconventional move—going directly to the founder during a crisis—has created something rare in PE: genuine founder-sponsor alignment.
+
+Chad pulls you aside.
+
+**"What you did was risky. Going directly to the founder during consortium drama could have backfired spectacularly."**
+
+**"But it didn't."**
+
+**"No. It didn't. Victor trusts you personally now. That's worth more than any term sheet."** He pauses. **"Remember that when things get hard post-closing. And they will."**
+
+*$8.2 billion. Saved by a phone call and a founder who believed in the partnership.*`,
+    choices: [
+      {
+        id: 'ch6_closing_complete_victor',
         text: 'Take a moment to appreciate the achievement',
         nextSceneId: 'ch6_chapter_end',
         effects: {
@@ -7562,7 +8274,7 @@ The head of customer success, Maria Santos, briefs you:
         id: 'ch7_customer_humble',
         text: 'Go to Detroit. Listen and commit to fixing issues.',
         subtext: 'Humility over pride',
-        nextSceneId: 'ch7_customer_meeting',
+        nextSceneId: 'ch7_customer_meeting_humble',
         style: 'ethical',
         effects: {
           stats: { ethics: 5 },
@@ -7573,7 +8285,7 @@ The head of customer success, Maria Santos, briefs you:
         id: 'ch7_customer_negotiate',
         text: 'Negotiate from strength. Offer concessions strategically.',
         subtext: 'Business is business',
-        nextSceneId: 'ch7_customer_meeting',
+        nextSceneId: 'ch7_customer_meeting_negotiate',
         effects: {
           stats: { dealcraft: 5 },
           setFlags: ['CUSTOMER_NEGOTIATE_APPROACH'],
@@ -7686,9 +8398,9 @@ The management team is... mixed. Not a disaster, but not the A-team either.
     ],
   },
 
-  // Customer Meeting
+  // Customer Meeting - Humble approach
   {
-    id: 'ch7_customer_meeting',
+    id: 'ch7_customer_meeting_humble',
     chapterId: 'chapter_7',
     title: 'Detroit',
     type: 'narrative',
@@ -7697,37 +8409,40 @@ The management team is... mixed. Not a disaster, but not the A-team either.
 
 The GlobalMfg team files in: the CTO, the VP of Operations, the procurement head, and a lawyer. Not a good sign.
 
-You spend three hours listening. Really listening.
+You start by doing something no one expects: apologizing.
 
-The complaints are legitimate:
+**"Before we start—I want to acknowledge that Prometheus failed you. Not the previous team. Prometheus. We own that now, and we own fixing it."**
+
+The lawyer puts down his pen. The CTO uncrosses his arms.
+
+Three hours of listening follow. The complaints are legitimate:
 - Product quality declined after Prometheus cut their QA team
 - Support response times went from 4 hours to 4 days
 - Three critical bugs went unfixed for six months
-- The account team stopped showing up to quarterly reviews
 
-When they finish, the CTO leans forward:
+Maria takes detailed notes. You don't interrupt. You don't defend.
 
-**"So. What are you going to do about it?"**
+When they finish, the CTO leans forward, his tone noticeably softer than when the meeting started:
 
-You have a choice. Promise everything and risk over-committing. Or be honest about what you can deliver and risk losing them anyway.
+**"That's the first time anyone from Prometheus has actually listened. So. What are you going to do about it?"**
 
-*What's your commitment?*`,
+*Your humility opened the door. Now what do you promise?*`,
     choices: [
       {
-        id: 'ch7_customer_promise_big',
+        id: 'ch7_customer_promise_big_humble',
         text: 'Make specific, measurable commitments',
         subtext: 'Promise what you can deliver—and deliver it',
-        nextSceneId: 'ch7_customer_outcome',
+        nextSceneId: 'ch7_customer_outcome_strong',
         effects: {
           stats: { reputation: 10 },
           setFlags: ['CUSTOMER_COMMITTED'],
         },
       },
       {
-        id: 'ch7_customer_honest',
+        id: 'ch7_customer_honest_humble',
         text: 'Be honest about the turnaround timeline',
         subtext: 'Set realistic expectations',
-        nextSceneId: 'ch7_customer_outcome',
+        nextSceneId: 'ch7_customer_outcome_honest',
         style: 'ethical',
         effects: {
           stats: { ethics: 10 },
@@ -7737,9 +8452,97 @@ You have a choice. Promise everything and risk over-committing. Or be honest abo
     ],
   },
 
-  // Customer Outcome
+  // Customer Meeting - Negotiate approach
   {
-    id: 'ch7_customer_outcome',
+    id: 'ch7_customer_meeting_negotiate',
+    chapterId: 'chapter_7',
+    title: 'Detroit',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `*Day 15. GlobalMfg headquarters. Detroit.*
+
+The GlobalMfg team files in: the CTO, the VP of Operations, the procurement head, and a lawyer. Exactly the lineup you expected.
+
+You've prepared a counter-strategy: concessions packaged as "partnership investments"—price locks, dedicated support tiers, priority SLAs. Each one calculated to retain the account while protecting margins.
+
+The complaints come fast. Product quality. Support times. Unfixed bugs. Real problems, but also leverage for their negotiation.
+
+You nod at each point, making notes. When they finish, you open your laptop.
+
+**"I appreciate the candor. I've prepared a partnership enhancement package that addresses each of these concerns."**
+
+The CTO glances at the lawyer. This isn't what they expected—they came to vent, and you came with a structured proposal.
+
+**"This is... comprehensive,"** the CTO admits, scanning the document. **"But it's also a contract negotiation dressed up as an apology."**
+
+**"It's both,"** you say. **"Real fixes backed by real commitments. In writing."**
+
+*You've shifted the dynamic from emotional to transactional. The question is whether they want a partner or a vendor.*`,
+    choices: [
+      {
+        id: 'ch7_customer_promise_big_negotiate',
+        text: 'Sweeten the package with measurable guarantees',
+        subtext: 'Put your metrics where your mouth is',
+        nextSceneId: 'ch7_customer_outcome_negotiate',
+        effects: {
+          stats: { reputation: 10 },
+          setFlags: ['CUSTOMER_COMMITTED'],
+        },
+      },
+      {
+        id: 'ch7_customer_honest_negotiate',
+        text: 'Be honest about what you can realistically deliver',
+        subtext: 'Some concessions need time to implement',
+        nextSceneId: 'ch7_customer_outcome_honest',
+        style: 'ethical',
+        effects: {
+          stats: { ethics: 10 },
+          setFlags: ['CUSTOMER_HONEST'],
+        },
+      },
+    ],
+  },
+
+  // Customer Outcome - Strong (humble + committed)
+  {
+    id: 'ch7_customer_outcome_strong',
+    chapterId: 'chapter_7',
+    title: 'The Verdict',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'globalmfg_cto',
+      name: 'GlobalMfg CTO',
+      mood: 'happy',
+    },
+    narrative: `The CTO confers with his team. Five minutes that feel like an hour.
+
+**"Here's what we're going to do,"** he says finally. His tone is warmer than when the meeting started. **"We're going to give you nine months. Not six—nine. Because you showed up, you listened, and you made specific promises."**
+
+**"And if we deliver?"**
+
+**"Then we sign a five-year extension. Not three—five."** He stands, extends his hand with a genuine smile. **"You apologized first and committed second. That matters."**
+
+Maria catches your eye—she's barely containing her relief.
+
+The flight back to California feels different. You didn't just buy time—you rebuilt trust.
+
+*One pillar stabilized. And stronger than before. Two to go.*`,
+    choices: [
+      {
+        id: 'ch7_customer_success_strong',
+        text: 'Move to the next crisis',
+        nextSceneId: 'ch7_tough_call',
+        effects: {
+          relationships: [{ npcId: 'maria_santos', change: 20, memory: 'Saved the GlobalMfg account with humility and commitment' }],
+        },
+      },
+    ],
+  },
+
+  // Customer Outcome - Negotiate approach
+  {
+    id: 'ch7_customer_outcome_negotiate',
     chapterId: 'chapter_7',
     title: 'The Verdict',
     type: 'dialogue',
@@ -7749,30 +8552,69 @@ You have a choice. Promise everything and risk over-committing. Or be honest abo
       name: 'GlobalMfg CTO',
       mood: 'neutral',
     },
-    narrative: `The GlobalMfg CTO confers with his team. Five minutes that feel like an hour.
+    narrative: `The CTO confers with his team. Five minutes that feel like an hour.
 
-**"Here's what we're going to do,"** he says finally. **"We're going to give you six months. Six months to prove this new ownership is different."**
+**"Here's what we're going to do,"** he says finally. His tone is businesslike. **"We're going to give you six months. Your concession package is good. But it reads like a contract, not a commitment."**
+
+**"Six months is tight—"**
+
+**"Six months. And we want monthly performance reviews with documented metrics. If you miss two in a row, we trigger our exit clause."**
+
+He stands, extends his hand. The handshake is firm but without warmth.
+
+**"You're clearly smart. You came prepared. But my team needs to know you're fixing problems because you care, not because your spreadsheet says it's optimal."**
+
+The flight back is quiet. Maria looks at you.
+
+**"We kept them. But barely."**
+
+*One pillar stabilized. But the foundation is still shaky. Two to go.*`,
+    choices: [
+      {
+        id: 'ch7_customer_success_negotiate',
+        text: 'Move to the next crisis',
+        nextSceneId: 'ch7_tough_call',
+        effects: {
+          relationships: [{ npcId: 'maria_santos', change: 10, memory: 'Kept GlobalMfg with a business approach' }],
+        },
+      },
+    ],
+  },
+
+  // Customer Outcome - Honest timeline
+  {
+    id: 'ch7_customer_outcome_honest',
+    chapterId: 'chapter_7',
+    title: 'The Verdict',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: {
+      id: 'globalmfg_cto',
+      name: 'GlobalMfg CTO',
+      mood: 'neutral',
+    },
+    narrative: `The CTO confers with his team. Five minutes that feel like an hour.
+
+**"Here's what we're going to do,"** he says finally. **"We're going to give you six months. You were honest about the timeline. I respect that more than a pile of promises you can't keep."**
 
 **"And if we deliver?"**
 
 **"Then we sign a three-year extension. But if you slip—if quality drops, if support fails, if we see the same patterns—we're gone. And we're taking the three other companies in our group with us."**
 
-**"Understood."**
-
 He stands, extends his hand.
 
-**"I hope you're different. I really do. We've been partners for fifteen years. I don't want that to end."**
+**"I appreciate the honesty. Most people in your position would have promised the moon. You told us what you could actually do. That's rare."**
 
-The flight back to California is quiet. You just bought six months. Now you have to deliver.
+The flight back to California is quiet. You set realistic expectations—now you have to meet them.
 
 *One pillar stabilized. Two to go.*`,
     choices: [
       {
-        id: 'ch7_customer_success',
+        id: 'ch7_customer_success_honest',
         text: 'Move to the next crisis',
         nextSceneId: 'ch7_tough_call',
         effects: {
-          relationships: [{ npcId: 'maria_santos', change: 15, memory: 'Helped save the GlobalMfg account' }],
+          relationships: [{ npcId: 'maria_santos', change: 15, memory: 'Helped save the GlobalMfg account with honest expectations' }],
         },
       },
     ],
