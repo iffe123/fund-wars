@@ -158,6 +158,8 @@ export interface Chapter {
   estimatedMinutes?: number;
   /** Theme/mood of the chapter */
   theme?: 'introduction' | 'rising_action' | 'crisis' | 'resolution' | 'epilogue';
+  /** Which story path this chapter belongs to (null = shared/main path) */
+  pathId?: string;
 }
 
 /**
@@ -170,6 +172,38 @@ export interface ChapterRequirements {
   requiredFlags?: string[];
   /** Minimum stats */
   minStats?: Partial<PlayerStats>;
+  /** Required story path */
+  requiredPath?: string;
+}
+
+/**
+ * A story path - a major career trajectory that determines which chapters you play
+ */
+export interface StoryPath {
+  id: string;
+  /** Display name */
+  title: string;
+  /** Short description */
+  description: string;
+  /** Detailed flavor text shown on path reveal */
+  flavor: string;
+  /** Icon (FontAwesome class) */
+  icon: string;
+  /** Color theme for UI */
+  color: 'green' | 'red' | 'blue' | 'purple' | 'yellow';
+  /** Chapters in this path (in order) */
+  chapterIds: string[];
+  /** Requirements to unlock this path */
+  requirements: {
+    /** Minimum stats to qualify */
+    minStats?: Partial<PlayerStats>;
+    /** Flags that qualify for this path */
+    requiredFlags?: string[];
+    /** At least one of these flags must be set */
+    anyFlags?: string[];
+  };
+  /** Stat that most influences this path */
+  primaryStat: keyof PlayerStats;
 }
 
 /**
@@ -185,6 +219,39 @@ export interface StoryArc {
   state: 'locked' | 'available' | 'in_progress' | 'completed';
   /** Requirements to start this arc */
   requirements?: ChapterRequirements;
+}
+
+// ============================================================================
+// DYNAMIC AI TYPES
+// ============================================================================
+
+/**
+ * Dynamic AI-generated content that enhances static scenes
+ */
+export interface DynamicContent {
+  /** AI-generated addition to the scene narrative */
+  narrativeAddition?: string;
+  /** AI-generated narrator commentary on the player's situation */
+  narratorCommentary?: string;
+  /** AI-generated bonus choice that appears alongside static choices */
+  bonusChoice?: Choice;
+  /** AI-generated NPC reaction based on relationship history */
+  npcReaction?: string;
+  /** Whether this content has been generated */
+  isGenerated: boolean;
+  /** Whether generation is in progress */
+  isLoading: boolean;
+}
+
+/**
+ * Context passed to the AI for generating dynamic content
+ */
+export interface DynamicAIContext {
+  scene: Scene;
+  gameState: GameState;
+  currentChapter?: Chapter;
+  recentChoices: string[];
+  currentPath?: string;
 }
 
 // ============================================================================
@@ -249,6 +316,10 @@ export interface GameState {
   playTimeMinutes: number;
   /** When the game started */
   startedAt: Date;
+  /** Selected story path (null until branch point) */
+  currentPath: string | null;
+  /** History of choice descriptions for AI context */
+  choiceHistory: string[];
 }
 
 // ============================================================================
@@ -282,6 +353,7 @@ export type GamePhase =
   | 'PLAYING'
   | 'PAUSED'
   | 'CHAPTER_COMPLETE'
+  | 'PATH_REVEAL'
   | 'GAME_OVER'
   | 'VICTORY';
 
@@ -306,7 +378,9 @@ export type StoryEngineAction =
   | { type: 'SET_PHASE'; payload: GamePhase }
   | { type: 'SET_TRANSITIONING'; payload: boolean }
   | { type: 'RESET_GAME' }
-  | { type: 'SET_ERROR'; payload: string | null };
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SELECT_PATH'; payload: { pathId: string } }
+  | { type: 'ADD_CHOICE_HISTORY'; payload: string };
 
 // ============================================================================
 // CONTENT REGISTRY
@@ -319,6 +393,7 @@ export interface ContentRegistry {
   scenes: Map<string, Scene>;
   chapters: Map<string, Chapter>;
   arcs: Map<string, StoryArc>;
+  paths: Map<string, StoryPath>;
   /** Quick lookup of scene by chapter */
   scenesByChapter: Map<string, Scene[]>;
 }
@@ -355,6 +430,8 @@ export function createInitialGameState(playerName: string): GameState {
     achievements: [],
     playTimeMinutes: 0,
     startedAt: new Date(),
+    currentPath: null,
+    choiceHistory: [],
   };
 }
 

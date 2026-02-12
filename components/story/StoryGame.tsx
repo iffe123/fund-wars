@@ -12,6 +12,7 @@ import { ChallengeProvider, useChallenges, useActiveChallenge } from '../../cont
 import TitleScreen from './TitleScreen';
 import ChapterSelect from './ChapterSelect';
 import StoryScene from './StoryScene';
+import PathReveal from './PathReveal';
 import CharacterCreate from './CharacterCreate';
 import LoginScreen from '../LoginScreen';
 import PuzzleModal from '../PuzzleModal';
@@ -20,7 +21,7 @@ import DevChapterSelector from '../DevChapterSelector';
 import type { PuzzleResult } from '../../types/puzzles';
 import type { DialogueResult } from '../../types/npcDialogue';
 
-type GameScreen = 'title' | 'character_create' | 'chapter_select' | 'playing' | 'chapter_complete' | 'game_over';
+type GameScreen = 'title' | 'character_create' | 'chapter_select' | 'playing' | 'chapter_complete' | 'path_reveal' | 'game_over';
 
 const StoryGameInner: React.FC = () => {
   const {
@@ -102,6 +103,8 @@ const StoryGameInner: React.FC = () => {
       }
     } else if (phase === 'CHAPTER_COMPLETE') {
       setScreen('chapter_complete');
+    } else if (phase === 'PATH_REVEAL') {
+      setScreen('path_reveal');
     }
   }, [phase, currentScene]);
 
@@ -152,6 +155,11 @@ const StoryGameInner: React.FC = () => {
 
   // Handle chapter complete - continue to chapter select
   const handleChapterCompleteAcknowledge = useCallback(() => {
+    setScreen('chapter_select');
+  }, []);
+
+  // Handle path selection complete - continue to chapter select
+  const handlePathSelected = useCallback(() => {
     setScreen('chapter_select');
   }, []);
 
@@ -237,6 +245,14 @@ const StoryGameInner: React.FC = () => {
               onComplete={handleDialogueComplete}
             />
           )}
+        </>
+      );
+
+    case 'path_reveal':
+      return (
+        <>
+          {devOverlay}
+          <PathReveal onPathSelected={handlePathSelected} />
         </>
       );
 
