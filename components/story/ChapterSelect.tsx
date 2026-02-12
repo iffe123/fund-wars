@@ -2,6 +2,7 @@
  * ChapterSelect Component
  *
  * Allows the player to select which chapter to play.
+ * Shows story path information when a path is selected.
  */
 
 import React from 'react';
@@ -13,8 +14,14 @@ interface ChapterSelectProps {
   onBack: () => void;
 }
 
+const PATH_COLORS: Record<string, { border: string; bg: string; text: string; badge: string }> = {
+  dealmaker: { border: 'border-red-500', bg: 'bg-red-900/20', text: 'text-red-400', badge: 'bg-red-900/50 text-red-400' },
+  operator: { border: 'border-green-500', bg: 'bg-green-900/20', text: 'text-green-400', badge: 'bg-green-900/50 text-green-400' },
+  power_broker: { border: 'border-purple-500', bg: 'bg-purple-900/20', text: 'text-purple-400', badge: 'bg-purple-900/50 text-purple-400' },
+};
+
 const ChapterSelect: React.FC<ChapterSelectProps> = ({ onChapterSelect, onBack }) => {
-  const { getAvailableChapters, game } = useStoryEngine();
+  const { getAvailableChapters, game, currentPath } = useStoryEngine();
 
   const availableChapters = getAvailableChapters();
 
@@ -23,7 +30,7 @@ const ChapterSelect: React.FC<ChapterSelectProps> = ({ onChapterSelect, onBack }
     if (!chapter.requirements) return true;
     if (!game) return chapter.number === 1;
 
-    const { completedChapters, requiredFlags } = chapter.requirements;
+    const { completedChapters, requiredFlags, requiredPath } = chapter.requirements;
 
     if (completedChapters) {
       for (const req of completedChapters) {
@@ -37,12 +44,22 @@ const ChapterSelect: React.FC<ChapterSelectProps> = ({ onChapterSelect, onBack }
       }
     }
 
+    if (requiredPath && game.currentPath !== requiredPath) return false;
+
     return true;
   };
 
   // Check if chapter is completed
   const isChapterCompleted = (chapterId: string): boolean => {
     return game?.completedChapters.includes(chapterId) || false;
+  };
+
+  // Get path-based color scheme for a chapter
+  const getChapterColors = (chapter: Chapter) => {
+    if (chapter.pathId && PATH_COLORS[chapter.pathId]) {
+      return PATH_COLORS[chapter.pathId];
+    }
+    return null;
   };
 
   return (
@@ -59,13 +76,30 @@ const ChapterSelect: React.FC<ChapterSelectProps> = ({ onChapterSelect, onBack }
         <h1 className="text-4xl font-bold mb-2">
           <span className="text-green-400">SELECT</span> CHAPTER
         </h1>
-        <p className="text-gray-500 mb-8">Choose your path through Sterling Partners.</p>
+        <p className="text-gray-500 mb-4">Choose your path through Sterling Partners.</p>
+
+        {/* Current Path Badge */}
+        {currentPath && (
+          <div className={`mb-8 p-4 border rounded-sm ${PATH_COLORS[currentPath.id]?.border || 'border-gray-700'} ${PATH_COLORS[currentPath.id]?.bg || 'bg-gray-900'}`}>
+            <div className="flex items-center gap-3">
+              <i className={`fas ${currentPath.icon} ${PATH_COLORS[currentPath.id]?.text || 'text-green-400'} text-xl`} />
+              <div>
+                <div className={`font-mono text-sm ${PATH_COLORS[currentPath.id]?.text || 'text-green-400'}`}>
+                  YOUR PATH
+                </div>
+                <div className="text-gray-100 font-bold text-lg">{currentPath.title}</div>
+                <div className="text-gray-400 text-sm">{currentPath.description}</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Chapter Grid */}
         <div className="space-y-4">
           {availableChapters.map(chapter => {
             const unlocked = isChapterUnlocked(chapter);
             const completed = isChapterCompleted(chapter.id);
+            const pathColors = getChapterColors(chapter);
 
             return (
               <button
@@ -78,7 +112,7 @@ const ChapterSelect: React.FC<ChapterSelectProps> = ({ onChapterSelect, onBack }
                   transition-all duration-200
                   ${
                     unlocked
-                      ? 'border-gray-700 hover:border-green-500 bg-gray-900 hover:bg-gray-800 cursor-pointer'
+                      ? `${pathColors ? `${pathColors.border} hover:${pathColors.border}` : 'border-gray-700 hover:border-green-500'} bg-gray-900 hover:bg-gray-800 cursor-pointer`
                       : 'border-gray-800 bg-gray-900/50 cursor-not-allowed'
                   }
                 `}
@@ -88,6 +122,12 @@ const ChapterSelect: React.FC<ChapterSelectProps> = ({ onChapterSelect, onBack }
                     {/* Chapter Number */}
                     <div className="text-gray-500 text-sm font-mono mb-1">
                       CHAPTER {chapter.number}
+                      {chapter.pathId && (
+                        <span className={`ml-2 ${pathColors?.text || 'text-green-400'}`}>
+                          <i className={`fas ${currentPath?.icon || 'fa-route'} mr-1`} />
+                          {currentPath?.title || chapter.pathId.toUpperCase()}
+                        </span>
+                      )}
                       {completed && <span className="text-green-500 ml-2">✓ COMPLETED</span>}
                       {!unlocked && <span className="text-red-500 ml-2">🔒 LOCKED</span>}
                     </div>
@@ -128,6 +168,13 @@ const ChapterSelect: React.FC<ChapterSelectProps> = ({ onChapterSelect, onBack }
                     >
                       {chapter.theme.toUpperCase().replace('_', ' ')}
                     </span>
+
+                    {chapter.pathId && (
+                      <span className={`text-xs font-mono px-2 py-1 rounded-sm ${pathColors?.badge || ''}`}>
+                        <i className={`fas ${currentPath?.icon || 'fa-route'} mr-1`} />
+                        PATH EXCLUSIVE
+                      </span>
+                    )}
                   </div>
                 )}
               </button>

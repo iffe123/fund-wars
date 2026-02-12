@@ -11,6 +11,7 @@ import type {
   Scene,
   Chapter,
   StoryArc,
+  StoryPath,
   ContentRegistry,
 } from '../types/storyEngine';
 
@@ -10204,6 +10205,1124 @@ From first day to Partner. From spreadsheets to strategy. From observer to owner
 ];
 
 // ============================================================================
+// DEALMAKER PATH: CHAPTER 5A - THE HOSTILE BID
+// ============================================================================
+
+const CHAPTER_5A_SCENES: Scene[] = [
+  {
+    id: 'ch5a_opening',
+    chapterId: 'chapter_5a',
+    title: 'Blood in the Water',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `Your reputation as a closer has reached the ears of Victor Crane, Sterling's most feared Senior Partner.
+
+He's identified a target: **MedTech Dynamics**, a mid-market medical device company with a lazy management team, suppressed margins, and a real estate portfolio worth more than the enterprise.
+
+The catch? The founder's family still controls 40% of the shares. They don't want to sell.
+
+Victor leans across his mahogany desk, a predatory smile crossing his face.
+
+*"This is what we call a hostile situation. The board is weak, the family is divided, and the stock is undervalued by at least 30%. We're going to make them an offer they can't refuse."*
+
+He slides a folder across the desk. Inside: the family tree, board member profiles, and a preliminary financing structure.
+
+*"You've got two weeks to build the case. Don't disappoint me."*`,
+    choices: [
+      {
+        id: 'ch5a_c1_aggressive',
+        text: 'Study the family dynamics—find the weak link',
+        subtext: 'Divide and conquer. Classic hostile playbook.',
+        narratorComment: 'Sun Tzu would be proud. Or appalled.',
+        nextSceneId: 'ch5a_family_research',
+        effects: {
+          stats: { dealcraft: 5, politics: 3, ethics: -3 },
+          setFlags: ['HOSTILE_APPROACH_FAMILY'],
+        },
+        style: 'risky',
+      },
+      {
+        id: 'ch5a_c1_financial',
+        text: 'Focus on the financial case—make the numbers irresistible',
+        subtext: 'Let the economics do the talking.',
+        narratorComment: 'Numbers don\'t lie. But they can be arranged creatively.',
+        nextSceneId: 'ch5a_financial_analysis',
+        effects: {
+          stats: { dealcraft: 5, reputation: 2 },
+          setFlags: ['HOSTILE_APPROACH_FINANCIAL'],
+        },
+        style: 'normal',
+      },
+      {
+        id: 'ch5a_c1_board',
+        text: 'Map the board—find directors who want a premium exit',
+        subtext: 'The board might welcome a change in control.',
+        narratorComment: 'Every board has its price. Usually it\'s the director\'s RSUs.',
+        nextSceneId: 'ch5a_board_mapping',
+        effects: {
+          stats: { politics: 5, dealcraft: 2 },
+          setFlags: ['HOSTILE_APPROACH_BOARD'],
+        },
+        style: 'hidden',
+      },
+    ],
+  },
+  {
+    id: 'ch5a_family_research',
+    chapterId: 'chapter_5a',
+    title: 'The Family Tree',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `You spend three days mapping the Kowalski family dynamics. The founder, **Edward Kowalski Sr.**, built MedTech from nothing. But he's 78 now, and his children have very different visions.
+
+**Edward Jr.** wants to sell—he's got a $2M lifestyle and the company's dividends don't cover it.
+
+**Margaret** is the idealist. She runs the foundation and wants the company to "stay true to its mission."
+
+**David** is the wildcard. He has a gambling problem and owes some uncomfortable people uncomfortable amounts.
+
+You now have leverage on at least two of the three. The question is how you use it.`,
+    choices: [
+      {
+        id: 'ch5a_c2_leverage_david',
+        text: 'Approach David privately—offer to solve his "problem" in exchange for his shares',
+        subtext: 'Dark, but effective.',
+        narratorComment: 'You\'re learning the real lessons they don\'t teach at Wharton.',
+        nextSceneId: 'ch5a_david_deal',
+        effects: {
+          stats: { ethics: -10, dealcraft: 5, politics: 3 },
+          setFlags: ['EXPLOITED_DAVID'],
+        },
+        style: 'unethical',
+      },
+      {
+        id: 'ch5a_c2_court_edward',
+        text: 'Court Edward Jr.—show him the premium and the lifestyle upgrade',
+        subtext: 'Appeal to greed. It works more often than you\'d think.',
+        nextSceneId: 'ch5a_edward_pitch',
+        effects: {
+          stats: { dealcraft: 3, reputation: 2 },
+          setFlags: ['COURTED_EDWARD_JR'],
+        },
+        style: 'normal',
+      },
+      {
+        id: 'ch5a_c2_margaret',
+        text: 'Win over Margaret—promise to preserve the company\'s mission',
+        subtext: 'If she flips, the family follows.',
+        narratorComment: 'Promises made in boardrooms have an expiration date.',
+        nextSceneId: 'ch5a_margaret_approach',
+        effects: {
+          stats: { ethics: 3, politics: 5, reputation: 2 },
+          setFlags: ['PROMISED_MARGARET'],
+        },
+        style: 'ethical',
+      },
+    ],
+  },
+  {
+    id: 'ch5a_financial_analysis',
+    chapterId: 'chapter_5a',
+    title: 'The Numbers Game',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You lock yourself in the war room for 72 hours straight. Coffee cups pile up like a monument to your dedication. Or your addiction.
+
+The picture becomes clear: MedTech is running at **22% EBITDA margins** when comps run at 35%. The gap? A bloated SG&A, underpriced contracts from the early days, and a factory that should have been moved to Mexico five years ago.
+
+Your model shows a clear path from $180M EV to $320M in 3 years. The IRR screams.
+
+But there's a buried footnote in the 10-K: an **environmental liability** on the real estate. Could be $5M. Could be $50M. Nobody knows because nobody tested.
+
+Victor wants the bid by Friday.`,
+    choices: [
+      {
+        id: 'ch5a_c3_ignore_env',
+        text: 'Ignore the environmental risk—the upside overwhelms it',
+        subtext: 'Bold. Reckless. Potentially brilliant.',
+        narratorComment: 'Famous last words of many a deal team.',
+        nextSceneId: 'ch5a_bid_prep',
+        effects: {
+          stats: { stress: 5, ethics: -5, dealcraft: 3 },
+          setFlags: ['IGNORED_ENVIRONMENTAL'],
+        },
+        style: 'risky',
+      },
+      {
+        id: 'ch5a_c3_flag_it',
+        text: 'Flag the environmental risk to Victor with a discount adjustment',
+        subtext: 'Responsible, but Victor hates speed bumps.',
+        nextSceneId: 'ch5a_victor_meeting',
+        effects: {
+          stats: { ethics: 5, reputation: 2, stress: 3 },
+          setFlags: ['FLAGGED_ENVIRONMENTAL'],
+        },
+        style: 'safe',
+      },
+      {
+        id: 'ch5a_c3_phase2',
+        text: 'Commission a Phase II environmental study before bidding',
+        subtext: 'The right thing to do. Might kill the timeline.',
+        narratorComment: 'Due diligence? In this economy?',
+        nextSceneId: 'ch5a_phase2_study',
+        effects: {
+          stats: { ethics: 8, stress: 5, dealcraft: 2, reputation: -2 },
+          setFlags: ['ORDERED_PHASE2'],
+          money: -25000,
+        },
+        style: 'ethical',
+      },
+    ],
+  },
+  {
+    id: 'ch5a_board_mapping',
+    chapterId: 'chapter_5a',
+    title: 'Board Room Politics',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `You pull the proxy statements and start mapping the board. Seven directors. Three are family. Four are "independent"—a term that does a lot of heavy lifting.
+
+**Director #1: Helen Frost** — Former CEO of a competitor. Brought in 2 years ago. Her shares vest on a change of control. She's your best friend and she doesn't know it yet.
+
+**Director #2: Marcus Webb** — Old-school industrialist. Been on the board 15 years. Loyal to Edward Sr. He'll be the last to flip.
+
+**Director #3: James Park** — Venture background, youngest on the board. He's bored and thinks the company is underinvesting in R&D.
+
+**Director #4: Susan Chen** — The audit committee chair. She's been quietly flagging governance issues in her committee reports.
+
+Four approaches. Four different leverage points.`,
+    choices: [
+      {
+        id: 'ch5a_c4_helen',
+        text: 'Reach out to Helen Frost—align her financial incentives with yours',
+        subtext: 'Her unvested shares make her a natural ally.',
+        nextSceneId: 'ch5a_helen_meeting',
+        effects: {
+          stats: { politics: 5, dealcraft: 3 },
+          setFlags: ['RECRUITED_HELEN'],
+        },
+        style: 'normal',
+      },
+      {
+        id: 'ch5a_c4_susan',
+        text: 'Meet Susan Chen—leverage the governance issues she\'s documented',
+        subtext: 'Governance problems are opportunities for change.',
+        narratorComment: 'Using compliance as a weapon. How very corporate raider of you.',
+        nextSceneId: 'ch5a_susan_meeting',
+        effects: {
+          stats: { politics: 5, reputation: 2, ethics: -2 },
+          setFlags: ['LEVERAGED_GOVERNANCE'],
+        },
+        style: 'hidden',
+      },
+      {
+        id: 'ch5a_c4_coalition',
+        text: 'Build a coalition—quietly approach all four independents simultaneously',
+        subtext: 'Risky. If one talks, you lose the element of surprise.',
+        narratorComment: 'Herding cats, but the cats have law degrees.',
+        nextSceneId: 'ch5a_coalition_building',
+        effects: {
+          stats: { politics: 8, stress: 5, reputation: 3 },
+          setFlags: ['BUILT_BOARD_COALITION'],
+        },
+        style: 'risky',
+      },
+    ],
+  },
+  // Convergence scenes
+  {
+    id: 'ch5a_david_deal',
+    chapterId: 'chapter_5a',
+    title: 'The Devil\'s Bargain',
+    type: 'outcome',
+    atmosphere: 'quiet',
+    narrative: `You meet David at a bar in Tribeca. He looks like a man being chased by something. You slide an envelope across the table: a check for $500K, drawn from a "consulting agreement." In return, his irrevocable proxy. He signs without reading.
+
+*You just bought a man's birthright for the price of a studio apartment.*
+
+The hostile bid now has family support—at least on paper.`,
+    nextSceneId: 'ch5a_bid_prep',
+    choices: [],
+  },
+  {
+    id: 'ch5a_edward_pitch',
+    chapterId: 'chapter_5a',
+    title: 'The Pitch to Junior',
+    type: 'dialogue',
+    atmosphere: 'party',
+    speaker: { id: 'edward_jr', name: 'Edward Kowalski Jr.', mood: 'smug' },
+    narrative: `Edward Jr. meets you at his club. Between bites of $80 steak, you lay out the premium: 40% above current trading. His eyes light up as he calculates what that means for his block.
+
+*"I've been telling Dad to sell for years. He just won't listen. But if you can get the price above $45 a share... I'll talk to Margaret."*
+
+He shakes your hand with the confidence of someone who just realized he doesn't need to work anymore.`,
+    nextSceneId: 'ch5a_bid_prep',
+    choices: [],
+  },
+  {
+    id: 'ch5a_margaret_approach',
+    chapterId: 'chapter_5a',
+    title: 'The Mission Keeper',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: { id: 'margaret', name: 'Margaret Kowalski', mood: 'worried' },
+    narrative: `Margaret invites you to the company's community health clinic—the one MedTech funds. Kids in the waiting room. Nurses who know every family by name.
+
+*"This is what Dad built. Not the stock price. This."*
+
+You promise—with practiced sincerity—that Sterling Partners will maintain the clinic, the foundation, and the company's mission. You put it in writing.
+
+Whether that document survives post-close restructuring is another matter entirely.`,
+    nextSceneId: 'ch5a_bid_prep',
+    choices: [],
+  },
+  {
+    id: 'ch5a_victor_meeting',
+    chapterId: 'chapter_5a',
+    title: 'The Killjoy',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: { id: 'victor', name: 'Victor Crane', mood: 'angry' },
+    narrative: `Victor stares at your environmental risk slide for exactly three seconds.
+
+*"You're telling me that a piece of dirt might cost us $50 million, and you want me to lower our bid?"*
+
+His voice is measured. Deadly.
+
+*"Here's what I want you to do: remove that slide. Bid at our original price. If there's an issue post-close, we'll indemnify it out of the seller's escrow. That's what lawyers are for."*
+
+He leans forward. *"Am I clear?"*`,
+    nextSceneId: 'ch5a_bid_prep',
+    choices: [],
+  },
+  {
+    id: 'ch5a_phase2_study',
+    chapterId: 'chapter_5a',
+    title: 'Waiting for Answers',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `The Phase II study comes back in ten days. Victor's patience wears thinner by the hour.
+
+The result: **$18 million in remediation costs**. Significant, but not a deal-killer. More importantly, the seller doesn't know about it. You now have information asymmetry—the most valuable asset in any negotiation.
+
+You adjust the model, discount the bid by $15M, and prepare a surgical presentation. Victor grudgingly admits it was the right call.
+
+*"Fine. You just bought us negotiating leverage we didn't have before. But if you ever slow down my process again without telling me first, I'll find someone who moves faster."*`,
+    nextSceneId: 'ch5a_bid_prep',
+    choices: [],
+  },
+  {
+    id: 'ch5a_helen_meeting',
+    chapterId: 'chapter_5a',
+    title: 'The Aligned Incentive',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: { id: 'helen', name: 'Helen Frost', mood: 'neutral' },
+    narrative: `Helen is careful. She listens to your pitch over coffee, then asks three questions that show she's already run the numbers herself.
+
+*"I won't pretend I don't have a financial interest in a change of control. My equity vests. But I need to see a credible plan for the business, not just a financial engineering play."*
+
+She agrees to vote in favor—if your plan includes a genuine operational improvement thesis. Not just leverage and cost cuts.`,
+    nextSceneId: 'ch5a_bid_prep',
+    choices: [],
+  },
+  {
+    id: 'ch5a_susan_meeting',
+    chapterId: 'chapter_5a',
+    title: 'The Governance Card',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: { id: 'susan', name: 'Susan Chen', mood: 'worried' },
+    narrative: `Susan is surprised you know about the governance issues. She's been raising concerns for two years—related party transactions, below-market leases to family members, a compensation structure that enriches the Kowalskis far beyond market rates.
+
+*"If this becomes public, the stock drops 15% before you even make your bid. But I don't want to be the leak. I have a fiduciary duty."*
+
+She'll support a bid that addresses governance reform. She wants a clean board post-close. You agree—it costs you nothing to promise.`,
+    nextSceneId: 'ch5a_bid_prep',
+    choices: [],
+  },
+  {
+    id: 'ch5a_coalition_building',
+    chapterId: 'chapter_5a',
+    title: 'The Conspiracy',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `Over five days and seven dinners, you quietly build a coalition of all four independent directors. Each one has different motivations:
+
+Helen wants her equity to vest. Susan wants governance reform. James wants R&D investment. Marcus... Marcus is the holdout. He's loyal to Edward Sr.
+
+But three out of four is enough. If you add one family member, you have a majority.
+
+The coalition is fragile—held together by self-interest and your promises. But that's what all coalitions are made of.`,
+    nextSceneId: 'ch5a_bid_prep',
+    choices: [],
+  },
+  {
+    id: 'ch5a_bid_prep',
+    chapterId: 'chapter_5a',
+    title: 'The Offer',
+    type: 'decision',
+    atmosphere: 'meeting',
+    narrative: `Everything converges. The financing is committed. The analysis is bulletproof. The board support is lined up. Victor reviews your work with the closest thing to approval you've ever seen on his face.
+
+*"Not bad, kid. Not bad at all."*
+
+It's time to set the bid price. The current trading price is $32. Your model says fair value is $38-42. The question is: how much premium do you put on top?`,
+    choices: [
+      {
+        id: 'ch5a_c_bid_aggressive',
+        text: 'Bid at $38—minimal premium, maximum returns if we win',
+        subtext: 'Tight bid. Risk getting outbid or rejected.',
+        narratorComment: 'Greed is good. Until it isn\'t.',
+        nextSceneId: 'ch5a_chapter_end',
+        effects: {
+          stats: { dealcraft: 5, stress: 5 },
+          setFlags: ['AGGRESSIVE_BID'],
+        },
+        style: 'risky',
+      },
+      {
+        id: 'ch5a_c_bid_fair',
+        text: 'Bid at $42—fair value, shows you\'re serious',
+        subtext: 'Balanced. Wins the deal without overpaying.',
+        nextSceneId: 'ch5a_chapter_end',
+        effects: {
+          stats: { dealcraft: 3, reputation: 3 },
+          setFlags: ['FAIR_BID'],
+        },
+        style: 'normal',
+      },
+      {
+        id: 'ch5a_c_bid_generous',
+        text: 'Bid at $48—the nuclear option, guaranteed to win',
+        subtext: 'Overpaying. But certainty has value.',
+        narratorComment: 'Winner\'s curse, meet your newest victim.',
+        nextSceneId: 'ch5a_chapter_end',
+        effects: {
+          stats: { reputation: 5, stress: -3, dealcraft: -2 },
+          money: -5000,
+          setFlags: ['GENEROUS_BID'],
+        },
+        style: 'safe',
+      },
+    ],
+  },
+  {
+    id: 'ch5a_chapter_end',
+    chapterId: 'chapter_5a',
+    title: 'The Hostile Has Landed',
+    type: 'chapter_end',
+    atmosphere: 'celebration',
+    narrative: `The bid letter hits the board like a thunderbolt. Phones light up across Manhattan. The press catches wind.
+
+**STERLING PARTNERS LAUNCHES UNSOLICITED BID FOR MEDTECH DYNAMICS**
+
+The next 48 hours are a blur of conference calls, legal volleys, and family drama. The Kowalski family is divided. The board is in emergency session.
+
+But the number is out there now. And in private equity, once a number is out there, the clock starts ticking.
+
+You've just launched your first hostile bid. Whether it ends in triumph or disaster depends on what comes next.
+
+*Victor claps you on the shoulder as you leave the office at 2 AM.*
+
+*"Welcome to the big leagues, kid."*`,
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+];
+
+// ============================================================================
+// OPERATOR PATH: CHAPTER 5B - THE TURNAROUND
+// ============================================================================
+
+const CHAPTER_5B_SCENES: Scene[] = [
+  {
+    id: 'ch5b_opening',
+    chapterId: 'chapter_5b',
+    title: 'Into the Fire',
+    type: 'narrative',
+    atmosphere: 'crisis',
+    narrative: `Sarah Chen pulls you aside after the Monday partners meeting. She's been tracking a distressed situation—**Cascade Manufacturing**, a 200-employee industrial company in Ohio that's hemorrhaging cash.
+
+*"The existing PE sponsor is underwater. They're going to hand back the keys to the lender. But the business is fixable—I've seen the unit economics. The factory is inefficient, not broken."*
+
+She slides a binder across the table. Inside: three years of financials, an org chart with too many VPs, and photos of a factory floor that screams deferred maintenance.
+
+*"The lender will sell us the debt at 40 cents on the dollar. We convert to equity, restructure, and run this thing properly. But someone needs to go to Ohio and actually do the work."*
+
+She looks at you meaningfully. *"You're the only one who would actually go."*`,
+    choices: [
+      {
+        id: 'ch5b_c1_all_in',
+        text: 'I\'ll go. This is what real value creation looks like.',
+        subtext: 'Roll up your sleeves and fix it from the inside.',
+        narratorComment: 'A PE associate willingly going to Ohio. Mark the calendar.',
+        nextSceneId: 'ch5b_arrive_ohio',
+        effects: {
+          stats: { ethics: 5, reputation: 3, stress: 5 },
+          setFlags: ['EAGER_OPERATOR'],
+          relationships: [{ npcId: 'sarah', change: 10, memory: 'Volunteered for the turnaround without hesitation' }],
+        },
+        style: 'ethical',
+      },
+      {
+        id: 'ch5b_c1_cautious',
+        text: 'I\'ll go, but I want to hire a turnaround consultant first',
+        subtext: 'Smart operators know what they don\'t know.',
+        nextSceneId: 'ch5b_consultant_hire',
+        effects: {
+          stats: { dealcraft: 3, stress: 3 },
+          setFlags: ['HIRED_CONSULTANT'],
+          money: -15000,
+        },
+        style: 'safe',
+      },
+      {
+        id: 'ch5b_c1_remote',
+        text: 'I\'ll manage it remotely—install a new CEO and run it from New York',
+        subtext: 'Efficient. But you\'ll miss the ground truth.',
+        narratorComment: 'Managing a factory from a corner office. What could go wrong?',
+        nextSceneId: 'ch5b_remote_management',
+        effects: {
+          stats: { politics: 3, stress: -2, reputation: -2 },
+          setFlags: ['REMOTE_OPERATOR'],
+        },
+        style: 'normal',
+      },
+    ],
+  },
+  {
+    id: 'ch5b_arrive_ohio',
+    chapterId: 'chapter_5b',
+    title: 'The Factory Floor',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `The drive from the airport takes you through two miles of empty storefronts before you reach Cascade's gate. The parking lot is half empty. A sign says "SAFETY FIRST"—the S has fallen off, leaving "AFETY FIRST."
+
+Inside, the reality is worse than the financials suggested. Half the CNC machines are from the 1990s. The production floor is organized around a layout that made sense when they had half the product lines.
+
+But then you see something the spreadsheets missed: the workers. They know every machine by name. They've been jury-rigging solutions for years. The institutional knowledge on this floor is worth more than the building.
+
+**The plant manager, Frank Dombrowski**, approaches you with visible skepticism.
+
+*"So you're the money from New York. Last money guy lasted six weeks before he went back to Manhattan."*`,
+    choices: [
+      {
+        id: 'ch5b_c2_listen',
+        text: 'Tell me about the real problems—not what\'s in the report',
+        subtext: 'The best operators listen first.',
+        nextSceneId: 'ch5b_frank_walkthrough',
+        effects: {
+          stats: { reputation: 3, ethics: 2 },
+          relationships: [{ npcId: 'frank', change: 15, memory: 'Actually listened instead of lecturing' }],
+          setFlags: ['LISTENED_TO_WORKERS'],
+        },
+        style: 'ethical',
+      },
+      {
+        id: 'ch5b_c2_present',
+        text: 'I have a 100-day plan. Let me walk you through it.',
+        subtext: 'Show them you came prepared.',
+        narratorComment: 'Nothing says "I understand your factory" like a PowerPoint.',
+        nextSceneId: 'ch5b_present_plan',
+        effects: {
+          stats: { dealcraft: 3, stress: 2 },
+          relationships: [{ npcId: 'frank', change: -5, memory: 'Came in with a plan before understanding the operation' }],
+          setFlags: ['PRESENTED_PLAN_EARLY'],
+        },
+        style: 'normal',
+      },
+      {
+        id: 'ch5b_c2_work',
+        text: 'Forget the tour—hand me some coveralls. I want to work a shift.',
+        subtext: 'Bold. Unusual. Potentially dangerous.',
+        narratorComment: 'A PE associate on a factory floor. Instagram would die.',
+        nextSceneId: 'ch5b_work_shift',
+        effects: {
+          stats: { reputation: 5, stress: 8, ethics: 3 },
+          relationships: [{ npcId: 'frank', change: 25, memory: 'Actually worked a shift on the floor. Nobody expected that.' }],
+          setFlags: ['WORKED_THE_FLOOR'],
+        },
+        style: 'risky',
+      },
+    ],
+  },
+  {
+    id: 'ch5b_consultant_hire',
+    chapterId: 'chapter_5b',
+    title: 'Bringing in the Pros',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You hire **AlixPartners**. Their turnaround team arrives in Ohio before you do—three consultants with hard eyes and harder spreadsheets.
+
+By the time you get there, they've already identified $8M in annual cost savings. Most of it comes from headcount reduction. They want to cut 60 of the 200 employees.
+
+The numbers work. The human cost is significant.
+
+The lead consultant, **Diana Roth**, presents her findings with clinical precision.
+
+*"The business is viable at 140 employees. At 200, it bleeds. The math is simple. The conversations won't be."*`,
+    choices: [
+      {
+        id: 'ch5b_c_accept_cuts',
+        text: 'Implement the cuts. It\'s the only way to save the other 140 jobs.',
+        subtext: 'Ruthless pragmatism.',
+        nextSceneId: 'ch5b_restructure',
+        effects: {
+          stats: { dealcraft: 5, ethics: -8, stress: 5 },
+          setFlags: ['IMPLEMENTED_MASS_CUTS'],
+        },
+        style: 'unethical',
+      },
+      {
+        id: 'ch5b_c_modified_plan',
+        text: 'Find a middle ground—cut 30, retrain the other 30 for new product lines',
+        subtext: 'More expensive, but preserves capability.',
+        nextSceneId: 'ch5b_restructure',
+        effects: {
+          stats: { ethics: 5, dealcraft: 3, reputation: 3 },
+          money: -20000,
+          setFlags: ['MODIFIED_RESTRUCTURE'],
+        },
+        style: 'ethical',
+      },
+      {
+        id: 'ch5b_c_revenue_focus',
+        text: 'The problem isn\'t headcount—it\'s revenue. Let me find new customers first.',
+        subtext: 'Grow out of the problem instead of cutting.',
+        narratorComment: 'Ambitious. Also, bills are due now, not "eventually."',
+        nextSceneId: 'ch5b_revenue_hunt',
+        effects: {
+          stats: { dealcraft: 5, stress: 8, reputation: 2 },
+          setFlags: ['CHOSE_GROWTH_OVER_CUTS'],
+        },
+        style: 'risky',
+      },
+    ],
+  },
+  {
+    id: 'ch5b_remote_management',
+    chapterId: 'chapter_5b',
+    title: 'The Remote Control',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You hire a turnaround CEO—**Rick Ballard**, a veteran who's done six of these. He flies to Ohio on Monday, reports to you by Friday.
+
+The reports are crisp, professional, and increasingly concerning. Morale is cratering. The workers see Rick as a hatchet man. Two key supervisors quit in the first month.
+
+Rick's assessment: *"I can run the operations, but I can't fix the culture from the outside. These people need to see that the ownership cares. Right now, they think you're just going to strip the place and sell it."*
+
+You have a decision to make about how involved you want to get.`,
+    choices: [
+      {
+        id: 'ch5b_c_go_onsite',
+        text: 'You\'re right—I need to go there myself',
+        subtext: 'Better late than never.',
+        nextSceneId: 'ch5b_arrive_ohio',
+        effects: {
+          stats: { reputation: 2, stress: 5 },
+          setFlags: ['WENT_ONSITE_LATE'],
+        },
+        style: 'safe',
+      },
+      {
+        id: 'ch5b_c_double_down',
+        text: 'Give Rick more authority and budget. He\'s the professional.',
+        subtext: 'Delegate and focus on the next deal.',
+        nextSceneId: 'ch5b_restructure',
+        effects: {
+          stats: { stress: -3, reputation: -3, dealcraft: 2 },
+          money: -30000,
+          setFlags: ['FULLY_DELEGATED'],
+        },
+        style: 'normal',
+      },
+    ],
+  },
+  // Convergence scenes
+  {
+    id: 'ch5b_frank_walkthrough',
+    chapterId: 'chapter_5b',
+    title: 'The Real Story',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: { id: 'frank', name: 'Frank Dombrowski', mood: 'neutral' },
+    narrative: `Frank walks you through three hours of problems the consultants never found. The real waste isn't headcount—it's setup time. Every product changeover takes 4 hours when industry standard is 45 minutes.
+
+*"The machines can do it. The operators know how to do it. But the last owners cut our tooling budget to zero. We're using fixtures from 2008."*
+
+He shows you a $200K quote for new quick-change tooling that would save $3M per year. Nobody ever approved it because the previous PE firm only looked at headcount.
+
+*"You want to fix this place? Spend the money where the workers tell you to spend it."*`,
+    nextSceneId: 'ch5b_restructure',
+    choices: [],
+  },
+  {
+    id: 'ch5b_present_plan',
+    chapterId: 'chapter_5b',
+    title: 'The PowerPoint Problem',
+    type: 'narrative',
+    atmosphere: 'meeting',
+    narrative: `You present your 100-day plan to the management team. It's a solid deck: operational KPIs, headcount optimization, pricing strategy overhaul.
+
+Frank crosses his arms and says nothing for the entire presentation. Afterward, he pulls you aside.
+
+*"Your plan has nice charts. But you've got the production throughput assumptions wrong by 40% because you used nameplate capacity, not actual capacity. Those machines are from 1997. They don't hit nameplate on their best day."*
+
+He's right. Back to the drawing board.`,
+    nextSceneId: 'ch5b_restructure',
+    choices: [],
+  },
+  {
+    id: 'ch5b_work_shift',
+    chapterId: 'chapter_5b',
+    title: 'Eight Hours',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `Eight hours on the factory floor teaches you more than eight weeks of financials.
+
+You learn that three machines are responsible for 70% of the downtime. You learn that the night shift supervisor, Maria, has a system for reducing scrap rates that nobody ever documented. You learn that the quality issues in Line 3 come from a single supplier who's been cutting corners since 2019.
+
+By the end of the shift, your back hurts, your hands are greasy, and Frank is looking at you differently.
+
+*"You're the first money guy who ever got his hands dirty. I'll give you a chance. But don't waste it."*`,
+    nextSceneId: 'ch5b_restructure',
+    choices: [],
+  },
+  {
+    id: 'ch5b_revenue_hunt',
+    chapterId: 'chapter_5b',
+    title: 'Finding Revenue',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You spend two weeks visiting Cascade's top 20 customers. Most of them say the same thing: *"Great quality. Terrible lead times. If you can deliver in 4 weeks instead of 8, we'll double our orders."*
+
+The bottleneck is the factory layout and the ancient scheduling system. A $500K investment in MES software and a factory re-layout could cut lead times in half.
+
+It's a bet: spend now, grow later. The lenders won't love the additional investment. But the revenue upside is real.`,
+    nextSceneId: 'ch5b_restructure',
+    choices: [],
+  },
+  {
+    id: 'ch5b_restructure',
+    chapterId: 'chapter_5b',
+    title: 'The Hundred Days',
+    type: 'decision',
+    atmosphere: 'meeting',
+    narrative: `It's been 100 days since you took over Cascade. The board wants a status report.
+
+The numbers are stabilizing. Cash burn is slowing. But the real question is the next phase: what kind of company do you want to build?
+
+Your approach over the last 100 days has defined the options available to you now.`,
+    choices: [
+      {
+        id: 'ch5b_c_lean',
+        text: 'Go lean—strip to core competencies, maximize margins, prepare for exit in 2 years',
+        subtext: 'The PE textbook play.',
+        nextSceneId: 'ch5b_chapter_end',
+        effects: {
+          stats: { dealcraft: 5, ethics: -3 },
+          setFlags: ['LEAN_TURNAROUND'],
+        },
+        style: 'normal',
+      },
+      {
+        id: 'ch5b_c_invest',
+        text: 'Invest in growth—new equipment, new products, new markets. Hold for 5+ years.',
+        subtext: 'Patient capital. Higher risk, higher ceiling.',
+        narratorComment: 'A PE firm thinking long-term? Somebody call the press.',
+        nextSceneId: 'ch5b_chapter_end',
+        effects: {
+          stats: { reputation: 5, ethics: 5, dealcraft: 3 },
+          money: -30000,
+          setFlags: ['GROWTH_TURNAROUND'],
+        },
+        style: 'ethical',
+      },
+      {
+        id: 'ch5b_c_flip',
+        text: 'Stabilize and flip—sell to a strategic buyer who\'ll pay for the platform value',
+        subtext: 'Quick return. Not glamorous, but profitable.',
+        nextSceneId: 'ch5b_chapter_end',
+        effects: {
+          stats: { dealcraft: 5, stress: -5, reputation: 2 },
+          money: 50000,
+          setFlags: ['QUICK_FLIP_TURNAROUND'],
+        },
+        style: 'risky',
+      },
+    ],
+  },
+  {
+    id: 'ch5b_chapter_end',
+    chapterId: 'chapter_5b',
+    title: 'The Builder',
+    type: 'chapter_end',
+    atmosphere: 'quiet',
+    narrative: `You drive away from Cascade as the sun sets over the Ohio fields. In your rearview mirror, the factory lights are on—all of them, for the first time in months.
+
+You've learned something they don't teach in PE training programs: **the difference between financial engineering and actual value creation.** One happens in spreadsheets. The other happens on factory floors, in communities, in the lives of people who build things with their hands.
+
+The partners back in New York will see numbers. You'll see faces.
+
+Frank sends you a text as you board your flight: *"Not bad for a money guy."*
+
+It's the highest compliment you've ever received.`,
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+];
+
+// ============================================================================
+// POWER BROKER PATH: CHAPTER 5C - THE FUNDRAISE
+// ============================================================================
+
+const CHAPTER_5C_SCENES: Scene[] = [
+  {
+    id: 'ch5c_opening',
+    chapterId: 'chapter_5c',
+    title: 'The Ascent',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `Something has shifted. Where before you were invisible, now partners seek your opinion. Where before you fetched coffee, now you're invited to LP dinners.
+
+**Miles Worthington**, the firm's head of Investor Relations, approaches you with an unusual proposition.
+
+*"We're raising Fund VII. $2.5 billion target. And the Managing Partners have decided they want a junior person on the road with me. Someone the LPs can see as 'the next generation.' Someone with... political instincts."*
+
+He pauses, studying you like a poker player reading a tell.
+
+*"I've watched you navigate this place. You know when to push, when to pull, and when to disappear. That's rare for someone your age."*
+
+He hands you a schedule: **six weeks, fourteen cities, forty-two LP meetings.**
+
+*"Welcome to the road show. Your career just changed trajectory."*`,
+    choices: [
+      {
+        id: 'ch5c_c1_eager',
+        text: 'I\'m ready. Let me study the pitch book tonight.',
+        subtext: 'Total commitment. Miles will appreciate the dedication.',
+        nextSceneId: 'ch5c_preparation',
+        effects: {
+          stats: { reputation: 3, politics: 3, stress: 5 },
+          setFlags: ['EAGER_FUNDRAISER'],
+          relationships: [{ npcId: 'miles', change: 10, memory: 'Jumped at the fundraising opportunity without hesitation' }],
+        },
+        style: 'normal',
+      },
+      {
+        id: 'ch5c_c1_strategic',
+        text: 'Before I commit—what\'s the political landscape? Who\'s competing for this spot?',
+        subtext: 'Know the game before you play it.',
+        narratorComment: 'Already thinking three moves ahead. Miles would approve.',
+        nextSceneId: 'ch5c_politics_briefing',
+        effects: {
+          stats: { politics: 5, dealcraft: 2 },
+          setFlags: ['STRATEGIC_FUNDRAISER'],
+          relationships: [{ npcId: 'miles', change: 5, memory: 'Asked the right political questions before committing' }],
+        },
+        style: 'hidden',
+      },
+      {
+        id: 'ch5c_c1_negotiate',
+        text: 'I want to negotiate my terms. This should accelerate my path to VP.',
+        subtext: 'Know your worth. But don\'t overplay your hand.',
+        narratorComment: 'Negotiating from a position of... moderate leverage. Bold.',
+        nextSceneId: 'ch5c_negotiation',
+        effects: {
+          stats: { dealcraft: 5, politics: 2, reputation: -2 },
+          setFlags: ['NEGOTIATED_TERMS'],
+        },
+        style: 'risky',
+      },
+    ],
+  },
+  {
+    id: 'ch5c_preparation',
+    chapterId: 'chapter_5c',
+    title: 'The War Book',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You spend a week studying the pitch book, the track record, the competitive positioning. But the real preparation comes from Miles's private coaching sessions.
+
+*"LPs don't invest in track records. They invest in people. Your job is to make them believe that we are the inevitably successful option."*
+
+He teaches you the art of institutional sales: the handshake that's firm but not aggressive, the eye contact that says confidence without arrogance, the anecdote that humanizes the numbers.
+
+*"When they ask about our worst deal, don't defend it. Own it. Tell them what we learned. Vulnerability, properly deployed, is a weapon."*
+
+The first meeting is in Boston. **Massachusetts PRIM**, one of the largest state pension funds. $80 billion in assets. They've been in your Fund V and Fund VI. This is a re-up meeting.
+
+It should be easy. Should be.`,
+    nextSceneId: 'ch5c_first_meeting',
+    choices: [],
+  },
+  {
+    id: 'ch5c_politics_briefing',
+    chapterId: 'chapter_5c',
+    title: 'The Map of Power',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: { id: 'miles', name: 'Miles Worthington', mood: 'smug' },
+    narrative: `Miles lowers his voice and closes his office door.
+
+*"Here's the landscape. Three people wanted this spot. Chad lobbied hard—the partners shot him down because LPs find him... abrasive. Sarah was considered but she's too valuable on deal teams. And a VP named Marcus Blackwell thinks it should be him by seniority."*
+
+He leans forward.
+
+*"Marcus is dangerous. He has allies among the Managing Partners. If you succeed on this roadshow, you leapfrog him for the next VP promotion. If you fail, he'll use it to bury you."*
+
+*"So don't fail."*`,
+    nextSceneId: 'ch5c_first_meeting',
+    choices: [],
+  },
+  {
+    id: 'ch5c_negotiation',
+    chapterId: 'chapter_5c',
+    title: 'The Terms',
+    type: 'dialogue',
+    atmosphere: 'meeting',
+    speaker: { id: 'miles', name: 'Miles Worthington', mood: 'neutral' },
+    narrative: `Miles raises an eyebrow at your request.
+
+*"VP track. Carry points on Fund VII. And credit for any LP relationships you develop."*
+
+He considers for a long moment.
+
+*"I can promise you credit for new LP relationships—that's fair. Carry points are above my pay grade, but I'll advocate for it. VP track... that depends entirely on how this goes."*
+
+He extends his hand.
+
+*"Deal?"*
+
+You shake on it. In private equity, a handshake deal is either sacred or worthless, depending on who's doing the shaking.`,
+    nextSceneId: 'ch5c_first_meeting',
+    choices: [],
+  },
+  {
+    id: 'ch5c_first_meeting',
+    chapterId: 'chapter_5c',
+    title: 'The Pension Fund',
+    type: 'decision',
+    atmosphere: 'meeting',
+    narrative: `Boston. A conference room overlooking the harbor. Across the table: **Patricia Huang**, CIO of Massachusetts PRIM, and her team of three analysts.
+
+Patricia has been allocating to PE for 20 years. She's seen a hundred fund pitches. She's polite but razor-sharp.
+
+Fifteen minutes into the presentation, she interrupts.
+
+*"Your Fund V had a 1.4x MOIC. Solid, not spectacular. Fund VI is still early but the pacing is behind. Why should we increase our commitment to Fund VII?"*
+
+The room goes quiet. Miles looks at you. This is your moment.`,
+    choices: [
+      {
+        id: 'ch5c_c_honest',
+        text: 'Fund V was a learning fund. Here\'s specifically what we changed—and the early Fund VI results prove it.',
+        subtext: 'Vulnerability + evidence. Miles\'s playbook.',
+        nextSceneId: 'ch5c_boston_result',
+        effects: {
+          stats: { reputation: 5, politics: 3, ethics: 3 },
+          setFlags: ['HONEST_PITCH'],
+          relationships: [{ npcId: 'patricia', change: 15, memory: 'Was refreshingly honest about Fund V underperformance' }],
+        },
+        style: 'ethical',
+      },
+      {
+        id: 'ch5c_c_reframe',
+        text: 'Fund V generated 18% net IRR in a tough vintage. Let me reframe the benchmarking...',
+        subtext: 'Technically accurate. Somewhat misleading.',
+        narratorComment: 'The truth, the whole truth, and nothing but the truth... selectively arranged.',
+        nextSceneId: 'ch5c_boston_result',
+        effects: {
+          stats: { dealcraft: 5, politics: 3, ethics: -5 },
+          setFlags: ['REFRAMED_PERFORMANCE'],
+        },
+        style: 'risky',
+      },
+      {
+        id: 'ch5c_c_pipeline',
+        text: 'Let me show you our proprietary deal pipeline for Fund VII—we have three signed LOIs already.',
+        subtext: 'Redirect to the future. Classic sales technique.',
+        nextSceneId: 'ch5c_boston_result',
+        effects: {
+          stats: { dealcraft: 3, politics: 5, reputation: 2 },
+          setFlags: ['REDIRECTED_TO_PIPELINE'],
+        },
+        style: 'normal',
+      },
+    ],
+  },
+  {
+    id: 'ch5c_boston_result',
+    chapterId: 'chapter_5c',
+    title: 'The Verdict',
+    type: 'narrative',
+    atmosphere: 'quiet',
+    narrative: `Patricia nods slowly. She asks three follow-up questions—each one sharper than the last. You answer them all.
+
+As you leave, Miles checks his phone. Patricia's deputy has already emailed: *"Good meeting. We'll take it to the investment committee next month."*
+
+In LP language, that's practically a bear hug.
+
+Miles looks at you with something approaching respect.
+
+*"Not bad for your first LP meeting. Thirteen more cities to go."*
+
+The car takes you to the airport. San Francisco tomorrow. Then Houston. Then London. Then Singapore. The world's largest pools of capital, and you're going to pitch every single one.`,
+    nextSceneId: 'ch5c_global_tour',
+    choices: [],
+  },
+  {
+    id: 'ch5c_global_tour',
+    chapterId: 'chapter_5c',
+    title: 'The World Tour',
+    type: 'decision',
+    atmosphere: 'office',
+    narrative: `Four weeks in. Nine cities down. Five to go. You've pitched sovereign wealth funds in the Middle East, endowments in New England, family offices in Hong Kong, and pension funds in Scandinavia.
+
+You're running on fumes. Hotel rooms blur together. You've had 23 consecutive meals in airports or conference rooms.
+
+But the numbers are tracking: **$1.8 billion in soft commitments** against a $2.5 billion target. You need $700 million more.
+
+Miles presents three potential anchor investors who could close the gap:
+
+**Option A: Sovereign Fund of Abu Dhabi** — $500M check. But they want a co-investment side letter and a board seat on every deal. Victor Crane would hate it.
+
+**Option B: A consortium of family offices** — $400M across six families. Clean terms, but you'd need to do six individual meetings in three days.
+
+**Option C: Chinese Insurance Company** — $800M. More than enough. But it comes with political risk—regulators are scrutinizing Chinese capital in US PE.`,
+    choices: [
+      {
+        id: 'ch5c_c_abu_dhabi',
+        text: 'Abu Dhabi. The size justifies the concessions.',
+        subtext: 'One meeting, one check. But the terms are steep.',
+        nextSceneId: 'ch5c_final_stretch',
+        effects: {
+          stats: { politics: 5, dealcraft: 3, reputation: 2 },
+          setFlags: ['CHOSE_SOVEREIGN_FUND'],
+        },
+        style: 'risky',
+      },
+      {
+        id: 'ch5c_c_family_offices',
+        text: 'The family offices. Clean capital, clean terms.',
+        subtext: 'More work, but better long-term relationships.',
+        nextSceneId: 'ch5c_final_stretch',
+        effects: {
+          stats: { reputation: 5, stress: 8, ethics: 3 },
+          setFlags: ['CHOSE_FAMILY_OFFICES'],
+        },
+        style: 'ethical',
+      },
+      {
+        id: 'ch5c_c_china',
+        text: 'The Chinese insurer. $800M solves all our problems.',
+        subtext: 'Massive check. Massive complications.',
+        narratorComment: 'What could possibly go wrong with Chinese insurance money in US PE?',
+        nextSceneId: 'ch5c_final_stretch',
+        effects: {
+          stats: { dealcraft: 5, politics: -3, stress: 5 },
+          money: 20000,
+          setFlags: ['CHOSE_CHINESE_CAPITAL'],
+        },
+        style: 'unethical',
+      },
+    ],
+  },
+  {
+    id: 'ch5c_final_stretch',
+    chapterId: 'chapter_5c',
+    title: 'The Close',
+    type: 'narrative',
+    atmosphere: 'celebration',
+    narrative: `Six weeks. Fourteen cities. Forty-two meetings. Three time zones in one day, twice.
+
+The final tally: **$2.7 billion in commitments**. Oversubscribed by $200 million.
+
+Miles uncorks a bottle of champagne on the flight home—actual champagne, not the stuff they serve in first class.
+
+*"In twenty years of fundraising, I've never seen a junior person perform like that. You have a gift for this—the LPs trust you."*
+
+He clinks his glass against yours.
+
+*"You just helped raise $2.7 billion. The carry on that fund will be... significant. And the partners know exactly who helped close it."*
+
+Your phone buzzes. It's from the Managing Partner: *"Well done. Let's discuss your future at the firm."*`,
+    nextSceneId: 'ch5c_chapter_end',
+    choices: [],
+  },
+  {
+    id: 'ch5c_chapter_end',
+    chapterId: 'chapter_5c',
+    title: 'The Power Broker',
+    type: 'chapter_end',
+    atmosphere: 'celebration',
+    narrative: `You've discovered a truth about private equity that most deal jockeys never learn: **the real power isn't in making deals—it's in controlling the capital.**
+
+The partners do the deals. The LPs provide the money. And the person who connects the two? They're the one nobody can afford to lose.
+
+Your name is now on forty-two Rolodexes across four continents. Pension fund CIOs know your face. Sovereign wealth fund directors take your calls. Family office patriarchs remember your handshake.
+
+In a world where capital is the currency of power, you've just become the central bank.
+
+*Miles raises his glass one last time.*
+
+*"To the new generation. May they be smarter than us. And just as ruthless."*`,
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+];
+
+// ============================================================================
+// STORY PATH DEFINITIONS
+// ============================================================================
+
+export const STORY_PATHS: StoryPath[] = [
+  {
+    id: 'dealmaker',
+    title: 'The Dealmaker',
+    description: 'Pursue aggressive deal-making. Hostile bids, competitive auctions, and high-stakes negotiations.',
+    flavor: 'You\'ve shown a talent for the sharp end of the business—where fortunes are made in conference rooms and destroyed by a single misplaced comma in a purchase agreement. Victor Crane has noticed. The path ahead is paved with term sheets and lined with enemies.',
+    icon: 'fa-gavel',
+    color: 'red',
+    chapterIds: ['chapter_5a', 'chapter_6', 'chapter_7', 'chapter_8'],
+    requirements: {
+      minStats: { dealcraft: 25 },
+      anyFlags: ['AGGRESSIVE_RECOMMENDATION', 'TOLD_CHAD_FIRST'],
+    },
+    primaryStat: 'dealcraft',
+  },
+  {
+    id: 'operator',
+    title: 'The Operator',
+    description: 'Build real value. Turnarounds, operational improvements, and hands-on company building.',
+    flavor: 'You\'ve demonstrated something rare in private equity—the willingness to actually fix things, not just financially engineer them. Sarah Chen sees potential in you that goes beyond spreadsheets. The path ahead leads through factory floors and boardrooms where the real work happens.',
+    icon: 'fa-wrench',
+    color: 'green',
+    chapterIds: ['chapter_5b', 'chapter_6', 'chapter_7', 'chapter_8'],
+    requirements: {
+      minStats: { ethics: 35 },
+      anyFlags: ['ETHICAL_RECOMMENDATION', 'SARAH_ALLY'],
+    },
+    primaryStat: 'ethics',
+  },
+  {
+    id: 'power_broker',
+    title: 'The Power Broker',
+    description: 'Master the politics. Fundraising, LP relationships, and firm strategy.',
+    flavor: 'You\'ve navigated Sterling Partners like a chess grandmaster—knowing exactly when to push, when to retreat, and when to let others destroy themselves. Miles Worthington has noticed your political instincts. The path ahead is one of influence, relationships, and the quiet accumulation of power.',
+    icon: 'fa-chess-king',
+    color: 'purple',
+    chapterIds: ['chapter_5c', 'chapter_6', 'chapter_7', 'chapter_8'],
+    requirements: {
+      minStats: { politics: 25 },
+      anyFlags: ['BALANCED_RECOMMENDATION', 'OBSERVANT'],
+    },
+    primaryStat: 'politics',
+  },
+];
+
+// ============================================================================
 // CHAPTER DEFINITIONS
 // ============================================================================
 
@@ -10270,6 +11389,52 @@ export const STORY_CHAPTERS: Chapter[] = [
     estimatedMinutes: 25,
     theme: 'rising_action',
   },
+  // PATH-SPECIFIC CHAPTER 5 VARIANTS
+  {
+    id: 'chapter_5a',
+    number: 5,
+    title: 'The Hostile Bid',
+    teaser: 'Victor Crane has a target. The family doesn\'t want to sell. Time to show them why resistance is expensive.',
+    openingSceneId: 'ch5a_opening',
+    endingSceneIds: ['ch5a_chapter_end'],
+    requirements: {
+      completedChapters: ['chapter_4'],
+      requiredPath: 'dealmaker',
+    },
+    estimatedMinutes: 25,
+    theme: 'rising_action',
+    pathId: 'dealmaker',
+  },
+  {
+    id: 'chapter_5b',
+    number: 5,
+    title: 'The Turnaround',
+    teaser: 'A distressed company in Ohio. 200 jobs on the line. Can you build real value, or just rearrange the deck chairs?',
+    openingSceneId: 'ch5b_opening',
+    endingSceneIds: ['ch5b_chapter_end'],
+    requirements: {
+      completedChapters: ['chapter_4'],
+      requiredPath: 'operator',
+    },
+    estimatedMinutes: 30,
+    theme: 'rising_action',
+    pathId: 'operator',
+  },
+  {
+    id: 'chapter_5c',
+    number: 5,
+    title: 'The Fundraise',
+    teaser: 'Six weeks. Fourteen cities. $2.5 billion to raise. Your political instincts are about to be tested globally.',
+    openingSceneId: 'ch5c_opening',
+    endingSceneIds: ['ch5c_chapter_end'],
+    requirements: {
+      completedChapters: ['chapter_4'],
+      requiredPath: 'power_broker',
+    },
+    estimatedMinutes: 25,
+    theme: 'rising_action',
+    pathId: 'power_broker',
+  },
   {
     id: 'chapter_6',
     number: 6,
@@ -10321,6 +11486,9 @@ export const STORY_SCENES: Scene[] = [
   ...CHAPTER_3_SCENES,
   ...CHAPTER_4_SCENES,
   ...CHAPTER_5_SCENES,
+  ...CHAPTER_5A_SCENES,
+  ...CHAPTER_5B_SCENES,
+  ...CHAPTER_5C_SCENES,
   ...CHAPTER_6_SCENES,
   ...CHAPTER_7_SCENES,
   ...CHAPTER_8_SCENES,
@@ -10338,6 +11506,7 @@ export function createContentRegistry(): ContentRegistry {
   const scenes = new Map<string, Scene>();
   const chapters = new Map<string, Chapter>();
   const arcs = new Map<string, StoryArc>();
+  const paths = new Map<string, StoryPath>();
   const scenesByChapter = new Map<string, Scene[]>();
 
   // Build scene map
@@ -10356,10 +11525,16 @@ export function createContentRegistry(): ContentRegistry {
     chapters.set(chapter.id, chapter);
   }
 
+  // Build path map
+  for (const path of STORY_PATHS) {
+    paths.set(path.id, path);
+  }
+
   contentRegistry = {
     scenes,
     chapters,
     arcs,
+    paths,
     scenesByChapter,
   };
 
@@ -10373,5 +11548,6 @@ export function createContentRegistry(): ContentRegistry {
 export default {
   STORY_CHAPTERS,
   STORY_SCENES,
+  STORY_PATHS,
   createContentRegistry,
 };

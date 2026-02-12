@@ -19,3 +19,6 @@ export { default as TypewriterText } from './TypewriterText';
 export { default as ConsequenceAnimator } from './ConsequenceAnimator';
 export { default as StatusBar } from './StatusBar';
 export { default as ContextDrawer } from './ContextDrawer';
+
+// Path system
+export { default as PathReveal } from './PathReveal';

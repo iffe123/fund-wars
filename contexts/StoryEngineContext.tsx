@@ -12,6 +12,7 @@ import React, {
   useCallback,
   useMemo,
   useEffect,
+  useState,
   ReactNode,
 } from 'react';
 import type {
@@ -26,6 +27,8 @@ import type {
   ContentRegistry,
   PlayerStats,
   NPCRelationship,
+  StoryPath,
+  DynamicContent,
 } from '../types/storyEngine';
 import {
   createInitialGameState,
@@ -33,7 +36,13 @@ import {
   isSceneAccessible,
   DEFAULT_STATS,
 } from '../types/storyEngine';
-import { STORY_CHAPTERS, STORY_SCENES, createContentRegistry } from '../content/storyContent';
+import { STORY_CHAPTERS, STORY_SCENES, STORY_PATHS, createContentRegistry } from '../content/storyContent';
+import {
+  generateDynamicNarrative,
+  generateNarratorCommentary,
+  generateBonusChoice,
+  isDynamicAIAvailable,
+} from '../services/dynamicAIService';
 
 // ============================================================================
 // INITIAL STATE
@@ -261,6 +270,28 @@ const storyEngineReducer = (
       return { ...state, error: action.payload };
     }
 
+    case 'SELECT_PATH': {
+      if (!state.game) return state;
+      return {
+        ...state,
+        game: {
+          ...state.game,
+          currentPath: action.payload.pathId,
+        },
+      };
+    }
+
+    case 'ADD_CHOICE_HISTORY': {
+      if (!state.game) return state;
+      return {
+        ...state,
+        game: {
+          ...state.game,
+          choiceHistory: [...(state.game.choiceHistory || []).slice(-20), action.payload],
+        },
+      };
+    }
+
     default:
       return state;
   }
@@ -380,11 +411,22 @@ interface StoryEngineContextType {
   loadGame: (saveData: GameState) => void;
   startChapter: (chapterId: string) => void;
   makeChoice: (choice: Choice) => void;
-  applyChoiceEffects: (choice: Choice) => void; // Apply effects immediately without navigation
-  navigateToScene: (sceneId: string) => void; // Navigate to a specific scene
-  advanceScene: () => void; // For auto-advance scenes
+  applyChoiceEffects: (choice: Choice) => void;
+  navigateToScene: (sceneId: string) => void;
+  advanceScene: () => void;
   completeChapter: () => void;
   resetGame: () => void;
+
+  // Path System
+  selectPath: (pathId: string) => void;
+  getAvailablePaths: () => StoryPath[];
+  currentPath: StoryPath | null;
+  isPathBranchPoint: () => boolean;
+
+  // Dynamic AI
+  dynamicContent: DynamicContent;
+  refreshDynamicContent: () => void;
+  hasDynamicAI: boolean;
 
   // Utilities
   getAvailableChapters: () => Chapter[];
@@ -406,6 +448,10 @@ interface StoryEngineProviderProps {
 
 export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(storyEngineReducer, undefined, createInitialState);
+  const [dynamicContent, setDynamicContent] = useState<DynamicContent>({
+    isGenerated: false,
+    isLoading: false,
+  });
 
   // Content registry (memoized)
   const registry = useMemo(() => createContentRegistry(), []);
@@ -415,6 +461,12 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
     if (!state.game?.currentChapterId) return null;
     return registry.chapters.get(state.game.currentChapterId) || null;
   }, [state.game?.currentChapterId, registry]);
+
+  // Current path
+  const currentPath = useMemo(() => {
+    if (!state.game?.currentPath) return null;
+    return registry.paths.get(state.game.currentPath) || null;
+  }, [state.game?.currentPath, registry]);
 
   // Available choices with availability info
   const availableChoices = useMemo(() => {
@@ -440,6 +492,62 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
   // Is actively playing
   const isPlaying = state.phase === 'PLAYING' && !!state.game;
 
+  // Dynamic AI availability
+  const hasDynamicAI = isDynamicAIAvailable();
+
+  // Generate dynamic content when scene changes
+  const refreshDynamicContent = useCallback(async () => {
+    if (!state.currentScene || !state.game) return;
+
+    setDynamicContent(prev => ({ ...prev, isLoading: true }));
+
+    try {
+      const [narrative, bonusChoice] = await Promise.all([
+        generateDynamicNarrative(state.currentScene, state.game, state.game.currentPath),
+        state.currentScene.choices.length > 0
+          ? generateBonusChoice(
+              state.currentScene,
+              state.game,
+              state.currentScene.choices.map(c => c.text),
+            )
+          : Promise.resolve(null),
+      ]);
+
+      setDynamicContent({
+        narrativeAddition: narrative || undefined,
+        bonusChoice: bonusChoice
+          ? {
+              id: `dynamic_${Date.now()}`,
+              text: bonusChoice.text,
+              subtext: bonusChoice.subtext,
+              narratorComment: bonusChoice.narratorComment,
+              nextSceneId: state.currentScene!.choices[0]?.nextSceneId || state.currentScene!.nextSceneId || '',
+              effects: {
+                stats: bonusChoice.effects.stats,
+                money: bonusChoice.effects.money,
+                setFlags: ['USED_DYNAMIC_CHOICE'],
+              },
+              style: bonusChoice.style,
+            }
+          : undefined,
+        isGenerated: true,
+        isLoading: false,
+      });
+    } catch {
+      setDynamicContent({ isGenerated: true, isLoading: false });
+    }
+  }, [state.currentScene?.id, state.game]);
+
+  // Auto-refresh dynamic content on scene change
+  useEffect(() => {
+    if (state.currentScene && state.game && isPlaying) {
+      setDynamicContent({ isGenerated: false, isLoading: false });
+      // Small delay to not block scene rendering
+      const timer = setTimeout(() => refreshDynamicContent(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [state.currentScene?.id]);
+
   // Actions
   const startNewGame = useCallback((playerName: string) => {
     dispatch({ type: 'INITIALIZE_GAME', payload: { playerName } });
@@ -455,6 +563,7 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
 
   const makeChoice = useCallback((choice: Choice) => {
     dispatch({ type: 'MAKE_CHOICE', payload: { choice } });
+    dispatch({ type: 'ADD_CHOICE_HISTORY', payload: choice.text });
 
     // Navigate to next scene after a brief transition
     setTimeout(() => {
@@ -463,11 +572,11 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
   }, []);
 
   // Apply choice effects immediately without triggering scene navigation
-  // Use this when you want to update stats but control navigation separately
   const applyChoiceEffects = useCallback((choice: Choice) => {
     if (choice.effects) {
       dispatch({ type: 'APPLY_EFFECTS', payload: choice.effects });
     }
+    dispatch({ type: 'ADD_CHOICE_HISTORY', payload: choice.text });
     // Deduct money cost if applicable
     if (choice.requirements?.moneyCost && state.game) {
       dispatch({
@@ -499,12 +608,54 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
 
   const completeChapter = useCallback(() => {
     if (!state.game?.currentChapterId) return;
-    dispatch({ type: 'COMPLETE_CHAPTER', payload: { chapterId: state.game.currentChapterId } });
-  }, [state.game?.currentChapterId]);
+    const chapterId = state.game.currentChapterId;
+    dispatch({ type: 'COMPLETE_CHAPTER', payload: { chapterId } });
+
+    // Check if this is the path branch point (after chapter 4)
+    if (chapterId === 'chapter_4' && !state.game.currentPath) {
+      setTimeout(() => {
+        dispatch({ type: 'SET_PHASE', payload: 'PATH_REVEAL' });
+      }, 100);
+    }
+  }, [state.game?.currentChapterId, state.game?.currentPath]);
 
   const resetGame = useCallback(() => {
     dispatch({ type: 'RESET_GAME' });
+    setDynamicContent({ isGenerated: false, isLoading: false });
   }, []);
+
+  // Path System
+  const selectPath = useCallback((pathId: string) => {
+    dispatch({ type: 'SELECT_PATH', payload: { pathId } });
+    dispatch({ type: 'SET_PHASE', payload: 'CHAPTER_COMPLETE' });
+  }, []);
+
+  const getAvailablePaths = useCallback((): StoryPath[] => {
+    if (!state.game) return [];
+
+    return STORY_PATHS.filter(path => {
+      const { requirements } = path;
+
+      // Check min stats
+      if (requirements.minStats) {
+        for (const [stat, value] of Object.entries(requirements.minStats)) {
+          if ((state.game!.stats[stat as keyof PlayerStats] || 0) < (value || 0)) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [state.game]);
+
+  const isPathBranchPoint = useCallback((): boolean => {
+    if (!state.game) return false;
+    return (
+      state.game.completedChapters.includes('chapter_4') &&
+      !state.game.currentPath
+    );
+  }, [state.game]);
 
   // Utilities
   const getAvailableChapters = useCallback((): Chapter[] => {
@@ -513,6 +664,21 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
     return Array.from(registry.chapters.values()).filter(chapter => {
       // Check if already completed
       if (state.game!.completedChapters.includes(chapter.id)) return false;
+
+      // Check path requirements
+      if (chapter.requirements?.requiredPath) {
+        if (state.game!.currentPath !== chapter.requirements.requiredPath) return false;
+      }
+
+      // If chapter belongs to a path, only show if player is on that path (or no path selected yet)
+      if (chapter.pathId && state.game!.currentPath && chapter.pathId !== state.game!.currentPath) {
+        return false;
+      }
+
+      // If player has a path and this is the generic chapter 5, hide it
+      if (chapter.id === 'chapter_5' && state.game!.currentPath) {
+        return false;
+      }
 
       // Check requirements
       if (!chapter.requirements) return true;
@@ -573,10 +739,9 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
     [state.game]
   );
 
-  // Auto-save effect (could be enhanced)
+  // Auto-save effect
   useEffect(() => {
     if (state.game && state.isInitialized) {
-      // Could implement auto-save to localStorage here
       const saveData = {
         ...state.game,
         flags: Array.from(state.game.flags), // Convert Set to Array for serialization
@@ -603,6 +768,16 @@ export const StoryEngineProvider: React.FC<StoryEngineProviderProps> = ({ childr
     advanceScene,
     completeChapter,
     resetGame,
+    // Path System
+    selectPath,
+    getAvailablePaths,
+    currentPath,
+    isPathBranchPoint,
+    // Dynamic AI
+    dynamicContent,
+    refreshDynamicContent,
+    hasDynamicAI,
+    // Utilities
     getAvailableChapters,
     getRelationship,
     hasFlag,

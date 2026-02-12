@@ -36,6 +36,8 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
     completeChapter,
     game,
     state,
+    dynamicContent,
+    hasDynamicAI,
   } = useStoryEngine();
 
   const {
@@ -262,6 +264,27 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
             />
           </div>
 
+          {/* Dynamic AI Narrative Addition */}
+          {textComplete && dynamicContent.narrativeAddition && (
+            <div className="mt-4 pl-6 border-l-4 border-yellow-500/30 animate-fade-in">
+              <div className="flex items-center gap-2 mb-1">
+                <i className="fas fa-brain text-yellow-500/40 text-xs" />
+                <span className="text-yellow-500/40 text-xs font-mono">DYNAMIC</span>
+              </div>
+              <p className="text-gray-400 text-sm italic">
+                {dynamicContent.narrativeAddition}
+              </p>
+            </div>
+          )}
+          {textComplete && dynamicContent.isLoading && (
+            <div className="mt-4 pl-6 border-l-4 border-yellow-500/20">
+              <div className="flex items-center gap-2">
+                <i className="fas fa-brain text-yellow-500/30 text-xs animate-pulse" />
+                <span className="text-gray-600 text-xs font-mono">...</span>
+              </div>
+            </div>
+          )}
+
           {/* Consequence Animation */}
           {showEffects && pendingEffects && (
             <div className={`mt-6 p-4 bg-slate-900/80 border border-amber-500/50 rounded-lg ${isFadingOut ? 'animate-fade-out' : 'animate-fade-in'}`}>
@@ -316,6 +339,25 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
                   disabled={!choice.available || state.isTransitioning || showEffects}
                 />
               ))}
+
+              {/* Dynamic AI Bonus Choice */}
+              {dynamicContent.bonusChoice && dynamicContent.isGenerated && (
+                <div className="relative">
+                  <div className="absolute -top-2 left-4 flex items-center gap-1 z-10">
+                    <i className="fas fa-brain text-yellow-500/60 text-xs" />
+                    <span className="text-yellow-500/60 text-xs font-mono bg-black px-1">DYNAMIC</span>
+                  </div>
+                  <StoryChoice
+                    choice={{
+                      ...dynamicContent.bonusChoice,
+                      available: true,
+                    }}
+                    index={availableChoices.length}
+                    onClick={() => handleChoiceClick(dynamicContent.bonusChoice!)}
+                    disabled={state.isTransitioning || showEffects}
+                  />
+                </div>
+              )}
             </div>
           )}
 
