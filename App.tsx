@@ -942,8 +942,8 @@ const App: React.FC = () => {
 
         {/* Legacy TutorialTooltip/TutorialHighlight removed - using RPG event-driven onboarding */}
 
-        {/* TOAST LAYER */}
-        <TerminalToast toasts={toasts} removeToast={removeToast} />
+        {/* TOAST LAYER - uses oldToasts from useToast (populated by addToast calls) */}
+        <TerminalToast toasts={oldToasts} removeToast={removeToast} />
 
         {/* WEEK TRANSITION */}
         {playerStats?.gameTime && (
