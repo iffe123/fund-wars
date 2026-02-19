@@ -556,7 +556,30 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 }
             }
 
-            // Sync legacy fields
+            // Sync personalFinances with any direct cash/loan changes before final sync
+            // changes.cash updates updatedStats.cash but NOT personalFinances.bankBalance,
+            // so we need to propagate the delta to personalFinances first.
+            if (changes.cash !== undefined && changes.cash !== 0) {
+                updatedStats.personalFinances = {
+                    ...updatedStats.personalFinances,
+                    bankBalance: updatedStats.personalFinances.bankBalance + (changes.cash || 0),
+                };
+            }
+            if (changes.loanBalanceChange) {
+                updatedStats.personalFinances = {
+                    ...updatedStats.personalFinances,
+                    outstandingLoans: Math.max(0, (updatedStats.personalFinances.outstandingLoans || 0) + changes.loanBalanceChange),
+                };
+            }
+            if (changes.loanRate !== undefined) {
+                const validatedSyncRate = changes.loanRate === 0 ? 0 : Math.max(0.05, Math.min(0.50, changes.loanRate));
+                updatedStats.personalFinances = {
+                    ...updatedStats.personalFinances,
+                    loanInterestRate: validatedSyncRate,
+                };
+            }
+
+            // Sync legacy fields from personalFinances (source of truth)
             updatedStats.cash = updatedStats.personalFinances.bankBalance;
             updatedStats.loanBalance = updatedStats.personalFinances.outstandingLoans;
             updatedStats.loanRate = updatedStats.personalFinances.loanInterestRate;

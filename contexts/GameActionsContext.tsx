@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useCallback, ReactNode } from 'react';
 import { useGameDispatch, useGameState } from './GameStateContext';
-import { 
-  StatChanges, RivalFund, CompetitiveDeal, Warning, 
-  NPCDrama, CompanyActiveEvent, ActionType, ACTION_COSTS 
+import {
+  StatChanges, RivalFund, CompetitiveDeal, Warning,
+  NPCDrama, CompanyActiveEvent, ActionType, ACTION_COSTS
 } from '../types';
+import { COMPETITIVE_DEALS } from '../constants';
+import { hydrateCompetitiveDeal } from '../utils/gameUtils';
 import type { ActivityItem } from '../components/ActivityFeed';
 
 interface GameActions {
@@ -157,12 +159,25 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
   }, [dispatch]);
 
   const generateNewDeals = useCallback(() => {
-    // Logic for generating deals should be here or in a thunk
-    // For now, just a placeholder or move logic to reducer/thunk?
-    // The original logic accesses rivalFunds and activeDeals.
-    // We can implement this in a useEffect or here if we have state access.
-    // Skipping complex logic for brevity, assuming it can be refactored to a helper.
-  }, []);
+    const activeIds = new Set(state.activeDeals.map(d => d.id));
+    // Pick up to 2 deals that are not already active
+    const available = COMPETITIVE_DEALS.filter(d => !activeIds.has(d.id));
+    if (available.length === 0 || state.activeDeals.length >= 4) return;
+
+    const slotsToFill = Math.min(2, 4 - state.activeDeals.length, available.length);
+    // Shuffle available deals and pick
+    const shuffled = [...available].sort(() => Math.random() - 0.5);
+    for (let i = 0; i < slotsToFill; i++) {
+      const hydrated = hydrateCompetitiveDeal({
+        ...shuffled[i],
+        // Assign a unique runtime ID so re-generated deals don't collide
+        id: shuffled[i].id + Date.now() + i,
+      });
+      if (hydrated) {
+        dispatch({ type: 'ADD_DEAL', payload: hydrated });
+      }
+    }
+  }, [dispatch, state.activeDeals]);
 
   const resetGame = useCallback(() => {
     dispatch({ type: 'RESET_GAME' });
@@ -194,9 +209,16 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
   }, [state.playerStats, dispatch, addLogEntry]);
 
   const endWeek = useCallback(() => {
+    // Compute the next week number before dispatching so we don't rely on stale state
+    const currentWeek = state.playerStats?.gameTime?.week ?? 0;
+    const nextWeek = currentWeek + 1;
+    const weekInYear = ((nextWeek - 1) % 52) + 1;
+    const nextQuarter = Math.ceil(weekInYear / 13);
+    const nextYear = 1 + Math.floor((nextWeek - 1) / 52);
+
     // Add activity for week transition
-    dispatch({ 
-      type: 'ADD_ACTIVITY', 
+    dispatch({
+      type: 'ADD_ACTIVITY',
       payload: {
         id: `week-end-${Date.now()}`,
         timestamp: new Date(),
@@ -207,28 +229,26 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
         sentiment: 'neutral'
       }
     });
-    
+
     dispatch({ type: 'END_WEEK' });
     dispatch({ type: 'ADVANCE_TIME' });
-    
-    // Add activity for new week
+
+    // Add activity for new week using pre-computed values (avoids stale closure)
     setTimeout(() => {
-      if (state.playerStats?.gameTime) {
-        dispatch({ 
-          type: 'ADD_ACTIVITY', 
-          payload: {
-            id: `week-start-${Date.now()}`,
-            timestamp: new Date(),
-            type: 'time',
-            icon: 'fas fa-play-circle',
-            title: `Week ${state.playerStats.gameTime.week} begins`,
-            detail: `Q${state.playerStats.gameTime.quarter} • Year ${state.playerStats.gameTime.year}`,
-            sentiment: 'positive'
-          }
-        });
-      }
+      dispatch({
+        type: 'ADD_ACTIVITY',
+        payload: {
+          id: `week-start-${Date.now()}`,
+          timestamp: new Date(),
+          type: 'time',
+          icon: 'fas fa-play-circle',
+          title: `Week ${nextWeek} begins`,
+          detail: `Q${nextQuarter} • Year ${nextYear}`,
+          sentiment: 'positive'
+        }
+      });
     }, 100);
-  }, [dispatch, state.playerStats]);
+  }, [dispatch, state.playerStats?.gameTime?.week, state.playerStats?.gameTime?.quarter, state.playerStats?.gameTime?.year]);
 
   const toggleNightGrinder = useCallback(() => {
     dispatch({ type: 'TOGGLE_NIGHT_GRINDER' });

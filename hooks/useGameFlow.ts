@@ -233,23 +233,16 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
   const handleAdvanceTime = useCallback(() => {
     if (!playerStats) return;
 
+    // Loan interest is handled inside the ADVANCE_TIME reducer (weekly: APR/52).
+    // Only add stress feedback here so the player knows interest was charged.
     if (playerStats.loanBalance > 0) {
-      // Clamp loan rate to reasonable bounds (5% to 50% APR)
       const activeRate = Math.max(0.05, Math.min(0.5, playerStats.loanRate || 0.28));
-      const rawMonthlyInterest = Math.ceil((playerStats.loanBalance * activeRate) / 12);
-      // Cap monthly interest at 10% of loan balance to prevent runaway compounding
-      const maxMonthlyInterest = Math.ceil(playerStats.loanBalance * 0.1);
-      const monthlyInterest = Math.min(rawMonthlyInterest, maxMonthlyInterest);
-      // Only charge interest if player has enough cash, otherwise add to loan balance only
-      const cashToDeduct = Math.min(monthlyInterest, Math.max(0, playerStats.cash));
-      const interestToCapitalize = monthlyInterest - cashToDeduct;
-      updatePlayerStats({
-        loanBalanceChange: interestToCapitalize > 0 ? interestToCapitalize : undefined,
-        cash: cashToDeduct > 0 ? -cashToDeduct : undefined,
-        stress: +3,
-      });
-      addToast(`Interest Accrued: $${monthlyInterest.toLocaleString()}`, 'error');
-      addLogEntry(`Loan interest compounded at ${(activeRate * 100).toFixed(1)}% APR`);
+      const weeklyInterest = Math.round((playerStats.loanBalance * activeRate) / 52);
+      if (weeklyInterest > 0) {
+        updatePlayerStats({ stress: +3 });
+        addToast(`Interest Accrued: $${weeklyInterest.toLocaleString()}`, 'error');
+        addLogEntry(`Loan interest compounded at ${(activeRate * 100).toFixed(1)}% APR`);
+      }
     }
     advanceTime();
     generateNewDeals(); // Generate new competitive deals
