@@ -239,6 +239,30 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
       return Array.from(new Set(base)).slice(0, 5);
   }, [playerStats, activeScenario, activeNPC]);
 
+  const advisorQuickPrompts = useMemo(() => {
+      if (!playerStats) return predefinedQuestions;
+
+      const prompts = [...predefinedQuestions];
+      const focalCompany = playerStats.portfolio?.[0];
+
+      if (activeScenario?.title) {
+          prompts.push(`Interrogate me on this scenario: ${activeScenario.title}`);
+      }
+
+      if (focalCompany) {
+          prompts.push(`Give me a sarcastic 90-second memo on ${focalCompany.name}`);
+      }
+
+      if (playerStats.loanBalance > 0) {
+          prompts.push('Roast my debt stack and give me a refinance plan');
+      }
+
+      prompts.push('Run a hostile IC interview: ask me 3 rapid-fire questions');
+      prompts.push('Teach me one PE concept with a joke I will never forget');
+
+      return Array.from(new Set(prompts)).slice(0, 8);
+  }, [playerStats, activeScenario, predefinedQuestions]);
+
   // If in desktop mode and closed, show the launcher button
   if (!isOpen && mode === 'DESKTOP_OVERLAY') {
     return (
@@ -487,7 +511,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                     {/* Quick Responses */}
                     <div className="flex overflow-x-auto gap-3 mb-3 pb-1 no-scrollbar">
                          {activeTab === 'ADVISOR' ? (
-                            predefinedQuestions.map((q) => (
+                            advisorQuickPrompts.map((q) => (
                                 <button
                                     key={q}
                                     onClick={() => handleQuickResponse(q)}
