@@ -1778,6 +1778,8 @@ export const PREDEFINED_QUESTIONS: string[] = [
   "What's the exit path here?",
   "How do I lever up?",
   "What's the angle here?",
+  "Roast my strategy and fix it",
+  "Ask me one investment-committee trap question",
   "Test my financial knowledge"
 ];
 
