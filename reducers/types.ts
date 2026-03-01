@@ -1,9 +1,10 @@
-import { 
-  PlayerStats, NPC, Scenario, GamePhase, Difficulty, MarketVolatility, 
-  Warning, NPCDrama, CompanyActiveEvent, RivalFund, CompetitiveDeal, 
-  AIState, StatChanges, ActionType 
+import {
+  PlayerStats, NPC, Scenario, GamePhase, Difficulty, MarketVolatility,
+  Warning, NPCDrama, CompanyActiveEvent, RivalFund, CompetitiveDeal,
+  AIState, StatChanges, ActionType
 } from '../types';
 import type { ActivityItem } from '../components/ActivityFeed';
+import type { BlueprintAIState } from '../types/aiBlueprint';
 
 export interface GameState {
   playerStats: PlayerStats | null;
@@ -15,18 +16,21 @@ export interface GameState {
   tutorialStep: number;
   actionLog: string[];
   activities: ActivityItem[]; // RPG flow: activity feed
-  
+
   // Living World
   activeWarnings: Warning[];
   activeDrama: NPCDrama | null;
   activeCompanyEvent: CompanyActiveEvent | null;
   eventQueue: CompanyActiveEvent[];
   pendingDecision: { event: CompanyActiveEvent | NPCDrama; awaitingAdvisorResponse: boolean } | null;
-  
+
   // Rivals & Deals
   rivalFunds: RivalFund[];
   activeDeals: CompetitiveDeal[];
   aiState: AIState;
+
+  // AI Blueprint Systems
+  blueprintAI: BlueprintAIState;
 }
 
 export type GameAction =
@@ -59,4 +63,20 @@ export type GameAction =
   // Action System
   | { type: 'CONSUME_ACTION'; payload: { cost: number; actionType?: ActionType; targetId?: string } }
   | { type: 'END_WEEK'; payload: void }
-  | { type: 'TOGGLE_NIGHT_GRINDER'; payload: void };
+  | { type: 'TOGGLE_NIGHT_GRINDER'; payload: void }
+  // AI Blueprint Systems
+  | { type: 'SET_BLUEPRINT_AI'; payload: BlueprintAIState }
+  | { type: 'UPDATE_BLUEPRINT_AI'; payload: Partial<BlueprintAIState> }
+  | { type: 'ADD_VOICE_INTERJECTION'; payload: import('../types/aiBlueprint').VoiceInterjection }
+  | { type: 'DISMISS_INTERJECTION'; payload: import('../types/aiBlueprint').InnerVoiceId }
+  | { type: 'SUPPRESS_VOICE'; payload: import('../types/aiBlueprint').InnerVoiceId }
+  | { type: 'UNSUPPRESS_VOICE'; payload: import('../types/aiBlueprint').InnerVoiceId }
+  | { type: 'SET_NEWSPAPER'; payload: import('../types/aiBlueprint').WeeklyNewspaper }
+  | { type: 'MARK_NEWSPAPER_READ'; payload: void }
+  | { type: 'ADD_CRISIS'; payload: import('../types/aiBlueprint').CrisisEvent }
+  | { type: 'RESOLVE_CRISIS'; payload: { crisisId: string; responseId: string } }
+  | { type: 'ADD_GOSSIP'; payload: import('../types/aiBlueprint').GossipEvent }
+  | { type: 'PROCESS_GOSSIP_TICK'; payload: void }
+  | { type: 'SET_FORENSIC_AUTOPSY'; payload: import('../types/aiBlueprint').ForensicAutopsy | null }
+  | { type: 'PIN_EVIDENCE'; payload: string }
+  | { type: 'UNPIN_EVIDENCE'; payload: string };

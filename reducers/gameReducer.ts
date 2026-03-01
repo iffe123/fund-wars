@@ -1,27 +1,30 @@
 import { GameState, GameAction } from './types';
-import { 
-    clampStat, generateUniquePortfolioId, TIME_SLOTS, getNextTimeState, 
-    hydrateFactionReputation, normalizeMemory, clampMemories, 
+import {
+    clampStat, generateUniquePortfolioId, TIME_SLOTS, getNextTimeState,
+    hydrateFactionReputation, normalizeMemory, clampMemories,
     normalizeKnowledgeEntry, clampKnowledge, MAX_PORTFOLIO_SIZE,
-    initializePortfolioCompanyFields 
+    initializePortfolioCompanyFields
 } from '../utils/gameUtils';
-import { 
-    DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, LIFESTYLE_TIERS, 
-    SKILL_INVESTMENTS, COMPENSATION_BY_LEVEL, BONUS_FACTORS, 
-    INITIAL_NPCS, RIVAL_FUND_NPCS, FAMILY_NPCS, SCENARIOS, 
+import {
+    DEFAULT_FACTION_REPUTATION, DIFFICULTY_SETTINGS, LIFESTYLE_TIERS,
+    SKILL_INVESTMENTS, COMPENSATION_BY_LEVEL, BONUS_FACTORS,
+    INITIAL_NPCS, RIVAL_FUND_NPCS, FAMILY_NPCS, SCENARIOS,
     RIVAL_FUNDS, COMPETITIVE_DEALS
 } from '../constants';
 import { processWorldTick } from '../utils/worldEngine';
-import { 
-    PlayerStats, StatChanges, PortfolioCompany, SkillInvestment, 
-    DayType, TimeSlot, KnowledgeEntry, NPC, RivalFund, CompetitiveDeal, 
+import {
+    PlayerStats, StatChanges, PortfolioCompany, SkillInvestment,
+    DayType, TimeSlot, KnowledgeEntry, NPC, RivalFund, CompetitiveDeal,
     AIState, Warning, CompanyActiveEvent, NPCDrama, ActionType,
     DealType, ACTION_COSTS
 } from '../types';
 import { generateCompanyEvent } from '../constants/companyEvents';
-import { 
-    hydrateNpc, hydrateRivalFund, hydrateCompetitiveDeal 
+import {
+    hydrateNpc, hydrateRivalFund, hydrateCompetitiveDeal
 } from '../utils/gameUtils';
+import { createDefaultBlueprintAIState } from '../services/blueprintAIService';
+import { suppressVoice, unsuppressVoice } from '../services/innerMonologueService';
+import { processGossipTick } from '../services/blueprintAIService';
 
 // Helper: Calculate Annual Bonus
 const calculateAnnualBonus = (stats: PlayerStats): number => {
@@ -92,6 +95,7 @@ export const initialState: GameState = {
         dealsLostByPlayer: [],
         playerBidHistory: [],
     },
+    blueprintAI: createDefaultBlueprintAIState(),
 };
 
 // ... inside initialState ... (Actually I need to find where gameTime default is)
@@ -1004,6 +1008,217 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     `${timestamp} // ${newIsNightGrinder ? 'Night Grinder mode activated. You will pay for this tomorrow.' : 'Night Grinder mode deactivated.'}`,
                     ...state.actionLog
                 ].slice(0, 50)
+            };
+        }
+
+        // ==================== AI BLUEPRINT ACTIONS ====================
+
+        case 'SET_BLUEPRINT_AI':
+            return { ...state, blueprintAI: action.payload };
+
+        case 'UPDATE_BLUEPRINT_AI':
+            return { ...state, blueprintAI: { ...state.blueprintAI, ...action.payload } };
+
+        case 'ADD_VOICE_INTERJECTION':
+            return {
+                ...state,
+                blueprintAI: {
+                    ...state.blueprintAI,
+                    innerMonologue: {
+                        ...state.blueprintAI.innerMonologue,
+                        activeInterjections: [
+                            ...state.blueprintAI.innerMonologue.activeInterjections,
+                            action.payload,
+                        ],
+                        voices: state.blueprintAI.innerMonologue.voices.map(v =>
+                            v.id === action.payload.voiceId
+                                ? { ...v, lastSpokeTick: action.payload.tick }
+                                : v
+                        ),
+                    },
+                },
+            };
+
+        case 'DISMISS_INTERJECTION':
+            return {
+                ...state,
+                blueprintAI: {
+                    ...state.blueprintAI,
+                    innerMonologue: {
+                        ...state.blueprintAI.innerMonologue,
+                        activeInterjections: state.blueprintAI.innerMonologue.activeInterjections.map(i =>
+                            i.voiceId === action.payload ? { ...i, dismissed: true } : i
+                        ),
+                    },
+                },
+            };
+
+        case 'SUPPRESS_VOICE': {
+            const result = suppressVoice(state.blueprintAI.innerMonologue, action.payload);
+            const newStats = state.playerStats ? {
+                ...state.playerStats,
+                stress: clampStat(state.playerStats.stress + result.stressCost, 0, 100),
+                ethics: clampStat(state.playerStats.ethics + result.ethicsCost, 0, 100),
+            } : state.playerStats;
+            return {
+                ...state,
+                playerStats: newStats,
+                blueprintAI: { ...state.blueprintAI, innerMonologue: result.state },
+            };
+        }
+
+        case 'UNSUPPRESS_VOICE': {
+            const newMonologue = unsuppressVoice(state.blueprintAI.innerMonologue, action.payload);
+            return {
+                ...state,
+                blueprintAI: { ...state.blueprintAI, innerMonologue: newMonologue },
+            };
+        }
+
+        case 'SET_NEWSPAPER':
+            return {
+                ...state,
+                blueprintAI: {
+                    ...state.blueprintAI,
+                    newspaper: action.payload,
+                    newspaperArchive: state.blueprintAI.newspaper
+                        ? [...state.blueprintAI.newspaperArchive, state.blueprintAI.newspaper].slice(-10)
+                        : state.blueprintAI.newspaperArchive,
+                },
+            };
+
+        case 'MARK_NEWSPAPER_READ':
+            return {
+                ...state,
+                blueprintAI: {
+                    ...state.blueprintAI,
+                    newspaper: state.blueprintAI.newspaper
+                        ? { ...state.blueprintAI.newspaper, isRead: true }
+                        : null,
+                },
+            };
+
+        case 'ADD_CRISIS':
+            return {
+                ...state,
+                blueprintAI: {
+                    ...state.blueprintAI,
+                    chaosEngine: {
+                        ...state.blueprintAI.chaosEngine,
+                        activeCrises: [...state.blueprintAI.chaosEngine.activeCrises, action.payload],
+                    },
+                },
+            };
+
+        case 'RESOLVE_CRISIS': {
+            const { crisisId, responseId } = action.payload;
+            const crisis = state.blueprintAI.chaosEngine.activeCrises.find(c => c.id === crisisId);
+            if (!crisis) return state;
+
+            const response = crisis.possibleResponses.find(r => r.id === responseId);
+            const resolvedCrisis = {
+                ...crisis,
+                isActive: false,
+                playerResponse: responseId,
+                resolvedAt: state.playerStats?.gameTime?.week ?? 0,
+            };
+
+            // Apply crisis response effects to player stats
+            let updatedStats = state.playerStats;
+            if (updatedStats && response) {
+                response.effects.forEach(effect => {
+                    if (!updatedStats) return;
+                    switch (effect.type) {
+                        case 'stress_change':
+                            updatedStats = { ...updatedStats!, stress: clampStat(updatedStats!.stress + effect.magnitude, 0, 100) };
+                            break;
+                        case 'reputation_change':
+                            updatedStats = { ...updatedStats!, reputation: clampStat(updatedStats!.reputation + effect.magnitude, 0, 100) };
+                            break;
+                    }
+                });
+            }
+
+            return {
+                ...state,
+                playerStats: updatedStats,
+                blueprintAI: {
+                    ...state.blueprintAI,
+                    chaosEngine: {
+                        ...state.blueprintAI.chaosEngine,
+                        activeCrises: state.blueprintAI.chaosEngine.activeCrises.filter(c => c.id !== crisisId),
+                        crisisHistory: [...state.blueprintAI.chaosEngine.crisisHistory, resolvedCrisis],
+                    },
+                },
+            };
+        }
+
+        case 'ADD_GOSSIP':
+            return {
+                ...state,
+                blueprintAI: {
+                    ...state.blueprintAI,
+                    reputationWeb: {
+                        ...state.blueprintAI.reputationWeb,
+                        activeGossip: [...state.blueprintAI.reputationWeb.activeGossip, action.payload],
+                    },
+                },
+            };
+
+        case 'PROCESS_GOSSIP_TICK': {
+            const updatedGossip = processGossipTick(
+                state.blueprintAI.reputationWeb.activeGossip,
+                state.playerStats?.gameTime?.week ?? 0,
+            );
+            const resolved = updatedGossip.filter(g => !g.isActive);
+            const active = updatedGossip.filter(g => g.isActive);
+            return {
+                ...state,
+                blueprintAI: {
+                    ...state.blueprintAI,
+                    reputationWeb: {
+                        ...state.blueprintAI.reputationWeb,
+                        activeGossip: active,
+                        gossipHistory: [...state.blueprintAI.reputationWeb.gossipHistory, ...resolved].slice(-20),
+                    },
+                },
+            };
+        }
+
+        case 'SET_FORENSIC_AUTOPSY':
+            return {
+                ...state,
+                blueprintAI: { ...state.blueprintAI, forensicAutopsy: action.payload },
+            };
+
+        case 'PIN_EVIDENCE': {
+            const autopsy = state.blueprintAI.forensicAutopsy;
+            if (!autopsy || autopsy.pinnedEvidence.length >= 3) return state;
+            if (autopsy.pinnedEvidence.includes(action.payload)) return state;
+            return {
+                ...state,
+                blueprintAI: {
+                    ...state.blueprintAI,
+                    forensicAutopsy: {
+                        ...autopsy,
+                        pinnedEvidence: [...autopsy.pinnedEvidence, action.payload],
+                    },
+                },
+            };
+        }
+
+        case 'UNPIN_EVIDENCE': {
+            const currentAutopsy = state.blueprintAI.forensicAutopsy;
+            if (!currentAutopsy) return state;
+            return {
+                ...state,
+                blueprintAI: {
+                    ...state.blueprintAI,
+                    forensicAutopsy: {
+                        ...currentAutopsy,
+                        pinnedEvidence: currentAutopsy.pinnedEvidence.filter(id => id !== action.payload),
+                    },
+                },
             };
         }
 
