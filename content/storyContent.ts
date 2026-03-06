@@ -44,7 +44,7 @@ She gestures toward a corner office where a man in a Patagonia vest is gesturing
         text: 'Walk in confidently',
         subtext: 'Fake it till you make it',
         narratorComment: 'Ah, the classic "act like you belong" strategy. It works until it doesn\'t.',
-        nextSceneId: 'ch1_meet_chad_confident',
+        nextSceneId: 'ch1_lobby_dilemma',
         effects: {
           stats: { reputation: 2, stress: 5 },
           setFlags: ['CONFIDENT_ENTRANCE'],
@@ -55,7 +55,7 @@ She gestures toward a corner office where a man in a Patagonia vest is gesturing
         text: 'Take a deep breath first',
         subtext: 'Collect yourself',
         narratorComment: 'Self-awareness. A rare trait in this building.',
-        nextSceneId: 'ch1_meet_chad_nervous',
+        nextSceneId: 'ch1_lobby_dilemma',
         effects: {
           stats: { stress: -5 },
           setFlags: ['HUMBLE_START'],
@@ -112,7 +112,7 @@ She's already walking away.`,
         id: 'ch1_observe_ignore_sarah',
         text: 'Head straight to Chad\'s office',
         subtext: 'You have a boss to impress',
-        nextSceneId: 'ch1_meet_chad_confident',
+        nextSceneId: 'ch1_lobby_dilemma',
         effects: {
           relationships: [{ npcId: 'sarah', change: -5, memory: 'Blew off my advice' }],
         },
@@ -147,6 +147,169 @@ Her phone buzzes. She checks it, winces.
 She's gone before you can respond.
 
 *A potential ally. In Private Equity, those are rarer than good deals.*`,
+    nextSceneId: 'ch1_lobby_dilemma',
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+
+  // Decision Scene: The Lobby Dilemma
+  {
+    id: 'ch1_lobby_dilemma',
+    chapterId: 'chapter_1',
+    title: 'The Crossroads',
+    type: 'decision',
+    atmosphere: 'office',
+    narrative: `You're halfway across the floor when your phone buzzes. Unknown number.
+
+**"Hey, new kid. Whatever deal Chad hands you, don't take the numbers at face value. Stairwell, Floor 46. I have 5 minutes. - A friend"**
+
+You glance up from your phone. The Partner Meeting room door is slightly ajar, and through the gap you can hear voices — one of them just said your name.
+
+**"...the new associate. If they're anything like the last one..."**
+
+The voice trails off as someone laughs. Chad's office is straight ahead. The stairwell is to your left. The partner meeting room is three steps to your right.
+
+*Sixty seconds. Three doors. Welcome to Private Equity decision-making.*`,
+    choices: [
+      {
+        id: 'ch1_dilemma_stairwell',
+        text: 'Slip into the stairwell',
+        subtext: 'Meet the mysterious contact',
+        style: 'risky',
+        narratorComment: 'Following anonymous tips on your first day. Bold strategy. What could possibly go wrong?',
+        nextSceneId: 'ch1_stairwell_meeting',
+        effects: {
+          stats: { stress: 10, politics: 5 },
+          setFlags: ['MYSTERIOUS_CONTACT', 'LATE_TO_CHAD'],
+          relationships: [{ npcId: 'chad', change: -5, memory: 'Was late on the first day' }],
+        },
+      },
+      {
+        id: 'ch1_dilemma_eavesdrop',
+        text: 'Linger by the partner meeting room',
+        subtext: 'They were talking about you...',
+        style: 'risky',
+        narratorComment: 'Eavesdropping on partners. Career suicide or career intelligence? The line is thin.',
+        nextSceneId: 'ch1_eavesdrop_partners',
+        effects: {
+          stats: { stress: 15, politics: 8 },
+          setFlags: ['OVERHEARD_PARTNERS'],
+        },
+      },
+      {
+        id: 'ch1_dilemma_ignore',
+        text: 'Head straight to Chad\'s office',
+        subtext: 'Stay focused. Don\'t get distracted.',
+        narratorComment: 'The safe play. You\'ll never know what you missed. In PE, information you don\'t have can\'t hurt you... right?',
+        nextSceneId: 'ch1_meet_chad_confident',
+        effects: {
+          stats: { stress: -5 },
+          setFlags: ['STAYED_FOCUSED'],
+        },
+      },
+      {
+        id: 'ch1_dilemma_text_back',
+        text: 'Text back "Who is this?"',
+        subtext: 'Gather intel without committing',
+        narratorComment: 'Trying to have it both ways. The PE approach to everything.',
+        nextSceneId: 'ch1_text_stranger',
+        effects: {
+          stats: { politics: 3, stress: 5 },
+          setFlags: ['TEXTED_STRANGER'],
+        },
+      },
+    ],
+  },
+
+  // Branch: Stairwell meeting
+  {
+    id: 'ch1_stairwell_meeting',
+    chapterId: 'chapter_1',
+    title: 'The Whistleblower',
+    type: 'dialogue',
+    atmosphere: 'quiet',
+    speaker: {
+      id: 'unknown',
+      name: '???',
+      mood: 'worried',
+    },
+    narrative: `The stairwell is cold and smells like concrete. A figure leans against the railing one flight down — mid-thirties, rumpled suit, the look of someone who hasn't slept in weeks.
+
+**"You came. Good. Or stupid. Jury's out."**
+
+They glance up the stairs nervously.
+
+**"I used to sit at your desk. Desk 7. I lasted eight months."**
+
+They lean in closer.
+
+**"Chad's going to give you a deal — something boring, probably packaging or logistics. The CIM will look clean. Too clean. Don't trust the adjusted EBITDA. The add-backs are fiction."**
+
+A door opens somewhere above. They freeze.
+
+**"That's all I can give you. Watch your back."**
+
+They're gone before you can ask their name.
+
+*Was that a lifeline or a trap? In Private Equity, sometimes they're the same thing.*`,
+    nextSceneId: 'ch1_meet_chad_confident',
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+
+  // Branch: Eavesdrop on partners
+  {
+    id: 'ch1_eavesdrop_partners',
+    chapterId: 'chapter_1',
+    title: 'Walls Have Ears',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You slow your pace, pretending to check your phone near the partner meeting room.
+
+Through the gap, you catch fragments:
+
+**"...third associate this year. Turnover's a problem..."**
+
+**"It's not turnover, it's Chad. He burns through people like deal flow."**
+
+A deeper voice cuts in: **"That's Chad's style. He delivers returns, so we tolerate the casualties."**
+
+Then, quieter: **"The real question is PackFancy. The seller's numbers are aggressive. If this new kid actually digs into the quality of earnings..."**
+
+**"They won't. Chad will have them so buried in busywork they'll just rubber-stamp the model."**
+
+Silence. Then a chair scrapes. Someone is walking toward the door.
+
+You pivot and walk briskly toward Chad's office, heart hammering.
+
+*You now know three things: Chad burns through associates, PackFancy's numbers are suspect, and the partners know it. The question is — what do you do with that knowledge?*`,
+    nextSceneId: 'ch1_meet_chad_confident',
+    choices: [],
+    requiresAcknowledgment: true,
+  },
+
+  // Branch: Text the stranger
+  {
+    id: 'ch1_text_stranger',
+    chapterId: 'chapter_1',
+    title: 'Digital Breadcrumbs',
+    type: 'narrative',
+    atmosphere: 'office',
+    narrative: `You type quickly: **"Who is this?"**
+
+Three dots appear. Disappear. Appear again.
+
+**"Someone who sat where you're about to sit. Ask Chad about the last associate who worked on a packaging deal. Watch his face when you do."**
+
+You type: **"Why should I trust you?"**
+
+**"You shouldn't. Trust is a luxury in PE. But I'm telling you this for free, and in this business, nothing is free unless someone's trying to clear their conscience."**
+
+The typing indicator appears one more time:
+
+**"Good luck. Delete this thread."**
+
+*A stranger with a guilty conscience and insider knowledge. You've been at Sterling Partners for ten minutes and you already have a conspiracy on your hands.*`,
     nextSceneId: 'ch1_meet_chad_confident',
     choices: [],
     requiresAcknowledgment: true,
