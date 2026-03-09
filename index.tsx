@@ -1,3 +1,5 @@
+// MIGRATION IN PROGRESS: Switching default from StoryApp to App.tsx (sandbox PE-simulator)
+// See docs/MIGRATION_PLAN.md for details
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
