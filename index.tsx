@@ -5,7 +5,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles/tailwind.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import StoryApp from './StoryApp';
+import HybridApp from './HybridApp';
 import ErrorBoundary from './components/ErrorBoundary';
 import { injectSpeedInsights } from '@vercel/speed-insights';
 import { inject } from '@vercel/analytics';
@@ -23,11 +23,11 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 
-// New Story-Driven RPG Mode
+// HybridApp: defaults to SIMULATION mode, with STORY_CLASSIC as optional
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <StoryApp />
+      <HybridApp />
     </ErrorBoundary>
   </React.StrictMode>
 );

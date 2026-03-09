@@ -3,6 +3,7 @@ import IntroSlide, { SlideContent } from './IntroSlide';
 
 interface IntroSequenceProps {
   onComplete: (stressLevel: number) => void;
+  quickStart?: boolean;
 }
 
 const INTRO_SLIDES: SlideContent[] = [
@@ -52,9 +53,18 @@ const INTRO_SLIDES: SlideContent[] = [
   },
 ];
 
-const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
+const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = false }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Quick start: skip all animations and go straight to game
+  React.useEffect(() => {
+    if (quickStart) {
+      onComplete(5);
+    }
+  }, [quickStart, onComplete]);
+
+  if (quickStart) return null;
 
   const handleContinue = useCallback(() => {
     if (isTransitioning) return;

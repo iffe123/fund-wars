@@ -475,7 +475,7 @@ const App: React.FC = () => {
   if (!legalAccepted) return <LegalDisclaimer onAccept={handleLegalAccept} />;
 
   if (!bootComplete) {
-      if (gamePhase === 'INTRO') return <IntroSequence onComplete={handleIntroComplete} />;
+      if (gamePhase === 'INTRO') return <IntroSequence quickStart onComplete={handleIntroComplete} />;
       // If we loaded a game and are not in Intro, skip boot sequence
       if (playerStats) {
           // Use useEffect pattern to avoid setting state during render
