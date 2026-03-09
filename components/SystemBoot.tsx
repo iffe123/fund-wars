@@ -12,18 +12,18 @@ const SystemBoot: React.FC<SystemBootProps> = ({ onComplete }) => {
   const [tutorialStep, setTutorialStep] = useState(0);
 
   const steps = [
-    { delay: 500, text: "INITIALIZING FUND_WARS_OS v9.2..." },
-    { delay: 1200, text: "CHECKING MEMORY... 64GB OK" },
-    { delay: 1600, text: "MOUNTING DRIVES... /ROOT OK" },
-    { delay: 2200, text: "LOADING ETHICS_MODULE..." },
-    { delay: 3500, text: "ERROR: ETHICS_MODULE NOT FOUND (SKIPPING...)" },
-    { delay: 4000, text: "ESTABLISHING SECURE CONNECTION..." },
-    { delay: 4500, text: "CONNECTED." },
+    { delay: 100, text: "INITIALIZING FUND_WARS_OS v9.2..." },
+    { delay: 300, text: "CHECKING MEMORY... 64GB OK" },
+    { delay: 500, text: "MOUNTING DRIVES... /ROOT OK" },
+    { delay: 700, text: "LOADING ETHICS_MODULE..." },
+    { delay: 900, text: "ERROR: ETHICS_MODULE NOT FOUND (SKIPPING...)" },
+    { delay: 1100, text: "ESTABLISHING SECURE CONNECTION..." },
+    { delay: 1300, text: "CONNECTED." },
   ];
 
   useEffect(() => {
     let timeoutIds: ReturnType<typeof setTimeout>[] = [];
-    
+
     steps.forEach((step) => {
       const id = setTimeout(() => {
         setBootLog(prev => [...prev, step.text]);
@@ -31,7 +31,7 @@ const SystemBoot: React.FC<SystemBootProps> = ({ onComplete }) => {
       timeoutIds.push(id);
     });
 
-    const loginId = setTimeout(() => setShowLogin(true), 5000);
+    const loginId = setTimeout(() => setShowLogin(true), 1500);
     timeoutIds.push(loginId);
 
     return () => timeoutIds.forEach(clearTimeout);

@@ -43,6 +43,8 @@ import WarningPanel from './components/WarningPanel';
 import GameEndModal from './components/GameEndModal';
 import TransparencyModal from './components/TransparencyModal';
 import EventDrivenWorkspace from './components/EventDrivenWorkspace';
+import StoryMilestoneModal from './components/StoryMilestoneModal';
+import { useStoryMilestones } from './hooks/useStoryMilestones';
 
 declare global {
   interface Window {
@@ -71,6 +73,7 @@ const App: React.FC = () => {
   const { toasts: oldToasts, addToast: addOldToast, removeToast, clearToasts } = useToast();
   const { toasts, removeToast: removeEnhancedToast, toast } = useEnhancedToast();
   const { isTransitioning: isWeekTransitioning, startTransition: startWeekTransition } = useWeekTransition();
+  const { pendingMilestone, dismissMilestone } = useStoryMilestones();
 
   // --- CORE STATE (from hooks) ---
   const [legalAccepted, setLegalAccepted] = useState(false);
@@ -475,7 +478,7 @@ const App: React.FC = () => {
   if (!legalAccepted) return <LegalDisclaimer onAccept={handleLegalAccept} />;
 
   if (!bootComplete) {
-      if (gamePhase === 'INTRO') return <IntroSequence onComplete={handleIntroComplete} />;
+      if (gamePhase === 'INTRO') return <IntroSequence quickStart onComplete={handleIntroComplete} />;
       // If we loaded a game and are not in Intro, skip boot sequence
       if (playerStats) {
           // Use useEffect pattern to avoid setting state during render
@@ -764,7 +767,21 @@ const App: React.FC = () => {
             />
         )}
 
-        {/* Legacy PostTutorialGuide removed - now using RPG event-driven onboarding */}
+        {/* STORY MILESTONE MODAL */}
+        {pendingMilestone && (
+            <StoryMilestoneModal
+                sceneId={pendingMilestone.sceneId}
+                onComplete={(effects) => {
+                    if (effects) updatePlayerStats(effects);
+                    dismissMilestone();
+                    playSfx('SUCCESS');
+                }}
+                onDismiss={() => {
+                    dismissMilestone();
+                    playSfx('KEYPRESS');
+                }}
+            />
+        )}
 
         {/* MOBILE BOTTOM NAV */}
         <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
