@@ -87,7 +87,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
       icon: 'fa-search',
       onClick: () => {
         updatePlayerStats({
-          modifyCompany: { id: company.id, updates: { isAnalyzed: true, latestCeoReport: 'Gemini flagged a patent footnote. Valuation sensitivity updated.' } },
+          modifyCompany: { id: company.id, updates: { isAnalyzed: true, latestCeoReport: 'AI flagged a patent footnote. Valuation sensitivity updated.' } },
           reputation: +2,
         });
         addLogEntry(`Diligence refreshed for ${company.name}`);

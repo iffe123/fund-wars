@@ -6,6 +6,7 @@
  */
 
 import type { PortfolioCompany, SectorExpertise, MarketVolatility, IndustrySector } from '../../types';
+import { callAI, isAIConfigured } from '../aiClient';
 
 // DDInsight type for due diligence findings
 export interface DDInsight {
@@ -16,23 +17,6 @@ export interface DDInsight {
   impact: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
-// Get Gemini client (lazy load to avoid circular deps)
-let _aiClientPromise: Promise<any> | null = null;
-
-const getAiClient = async () => {
-  // @ts-ignore
-  const API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_API_KEY : undefined;
-  if (!API_KEY) return null;
-
-  if (!_aiClientPromise) {
-    _aiClientPromise = import('@google/genai').then(({ GoogleGenAI }) => {
-      return new GoogleGenAI({ apiKey: API_KEY });
-    }).catch(() => null);
-  }
-
-  return _aiClientPromise;
-};
-
 /**
  * Generate AI-powered due diligence insights for a company
  */
@@ -41,10 +25,8 @@ export async function generateDDInsights(
   playerExpertise: SectorExpertise[] = [],
   marketConditions: MarketVolatility = 'NORMAL'
 ): Promise<DDInsight[]> {
-  const ai = await getAiClient();
-
   // Offline fallback
-  if (!ai) {
+  if (!isAIConfigured()) {
     return getOfflineDDInsights(company, marketConditions);
   }
 
@@ -85,7 +67,7 @@ ${sectorExpertise < 30 ? 'Note: Player is inexperienced in this sector. Include 
 ${marketConditions === 'CREDIT_CRUNCH' ? 'Note: Credit markets are tight. Emphasize refinancing risks.' : ''}
 ${debtToEbitda > 4 ? 'Note: High leverage. Include covenant/default risk analysis.' : ''}
 
-OUTPUT FORMAT (JSON array only, no markdown):
+OUTPUT FORMAT (JSON array only, no markdown fences):
 [
   {
     "type": "RED_FLAG",
@@ -98,16 +80,17 @@ OUTPUT FORMAT (JSON array only, no markdown):
 ]`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    const text = await callAI({
+      system: 'You are a senior PE due diligence analyst. Output valid JSON arrays only, no markdown fences.',
+      messages: [{ role: 'user', content: prompt }],
+      maxTokens: 1024,
+      temperature: 0.3,
     });
 
-    const raw = response?.text || '';
-
     // Try to extract JSON from the response
-    let jsonStr = raw;
-    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    let jsonStr = text;
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       jsonStr = jsonMatch[0];
     }

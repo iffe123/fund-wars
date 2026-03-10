@@ -217,7 +217,7 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
         {tutorialStep === 0 && (
           <div className="text-[12px] text-slate-500 space-y-1 border border-slate-800 p-3 bg-slate-950/40">
             <div className="font-bold text-amber-400 text-xs">HINT FEED</div>
-            <div>- NPC chat is powered by Gemini; ask for valuations, red flags, or gossip.</div>
+            <div>- NPC chat is AI-powered; ask for valuations, red flags, or gossip.</div>
             <div>- If cash runs dry, grab a bridge loan from LIFE_ACTIONS or we auto-wire one.</div>
             <div>- The Portfolio Dashboard button above jumps straight to company actions.</div>
           </div>

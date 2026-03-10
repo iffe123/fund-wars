@@ -544,8 +544,8 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                     {activeTab !== 'ADVISOR' && (
                         <div className="text-[10px] text-slate-500 mb-2 uppercase tracking-wide">
                             {isGeminiApiConfigured()
-                                ? "Gemini-driven replies adapt to your stats, debt, and the current case file. Toss sharper prompts for spicier intel."
-                                : <span className="text-amber-500"><i className="fas fa-exclamation-triangle mr-1"></i>OFFLINE MODE - AI not configured. NPCs use scripted responses. Set VITE_API_KEY to enable Gemini AI.</span>
+                                ? "AI-driven replies adapt to your stats, debt, and the current case file. Toss sharper prompts for spicier intel."
+                                : <span className="text-amber-500"><i className="fas fa-exclamation-triangle mr-1"></i>OFFLINE MODE - AI not configured. NPCs use scripted responses. Set VITE_ANTHROPIC_API_KEY to enable AI.</span>
                             }
                         </div>
                     )}

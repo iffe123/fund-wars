@@ -1,11 +1,11 @@
 /**
  * Dynamic AI Service
  *
- * Uses Gemini to generate dynamic narrative content that enhances
+ * Uses Claude to generate dynamic narrative content that enhances
  * the static story scenes. All functions have offline fallbacks.
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { callAI, isAIConfigured } from './aiClient';
 import type {
   Scene,
   Choice,
@@ -16,21 +16,7 @@ import type {
   StoryPath,
 } from '../types/storyEngine';
 
-// @ts-ignore
-const API_KEY = (typeof import.meta !== 'undefined' && import.meta.env)
-  ? import.meta.env.VITE_API_KEY
-  : undefined;
-
-let _aiClient: GoogleGenAI | null = null;
-const getAiClient = (): GoogleGenAI | null => {
-  if (!API_KEY) return null;
-  if (!_aiClient) {
-    _aiClient = new GoogleGenAI({ apiKey: API_KEY });
-  }
-  return _aiClient;
-};
-
-export const isDynamicAIAvailable = (): boolean => !!API_KEY;
+export const isDynamicAIAvailable = (): boolean => isAIConfigured();
 
 // Retry wrapper
 const withTimeout = async <T>(
@@ -65,22 +51,21 @@ export const generateDynamicNarrative = async (
   gameState: GameState,
   currentPath?: string | null,
 ): Promise<string | null> => {
-  const ai = getAiClient();
-  if (!ai) return getOfflineNarrative(scene, gameState);
+  if (!isAIConfigured()) return getOfflineNarrative(scene, gameState);
 
   try {
     const prompt = buildNarrativePrompt(scene, gameState, currentPath);
-    const response = await withTimeout(async () => {
-      const r = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: { systemInstruction: NARRATIVE_SYSTEM },
-      } as any);
-      return r;
+    const text = await withTimeout(async () => {
+      return callAI({
+        system: NARRATIVE_SYSTEM,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 256,
+        temperature: 0.8,
+      });
     });
 
-    const text = ((response as any)?.text || '').trim();
-    return text.length > 0 && text.length < 500 ? text : null;
+    const trimmed = text.trim();
+    return trimmed.length > 0 && trimmed.length < 500 ? trimmed : null;
   } catch {
     return getOfflineNarrative(scene, gameState);
   }
@@ -125,7 +110,7 @@ function getOfflineNarrative(scene: Scene, gameState: GameState): string | null 
 
   if (reputation > 70) {
     const repLines = [
-      'People nod to you as you pass—your reputation precedes you now.',
+      'People nod to you as you pass\u2014your reputation precedes you now.',
       'You notice junior analysts watching you. Your name carries weight here.',
     ];
     return repLines[Math.floor(Math.random() * repLines.length)];
@@ -172,8 +157,7 @@ export const generateNarratorCommentary = async (
   choiceText: string,
   gameState: GameState,
 ): Promise<string | null> => {
-  const ai = getAiClient();
-  if (!ai) return getOfflineCommentary(choiceText, gameState);
+  if (!isAIConfigured()) return getOfflineCommentary(choiceText, gameState);
 
   try {
     const prompt = `CHOICE MADE: "${choiceText}"
@@ -182,17 +166,17 @@ PATH: ${gameState.currentPath || 'undecided'}
 
 Generate a sarcastic 1-sentence narrator comment.`;
 
-    const response = await withTimeout(async () => {
-      const r = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: { systemInstruction: NARRATOR_SYSTEM },
-      } as any);
-      return r;
+    const text = await withTimeout(async () => {
+      return callAI({
+        system: NARRATOR_SYSTEM,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 256,
+        temperature: 0.8,
+      });
     });
 
-    const text = ((response as any)?.text || '').trim();
-    return text.length > 0 && text.length < 300 ? text : null;
+    const trimmed = text.trim();
+    return trimmed.length > 0 && trimmed.length < 300 ? trimmed : null;
   } catch {
     return getOfflineCommentary(choiceText, gameState);
   }
@@ -228,7 +212,7 @@ function getOfflineCommentary(choiceText: string, gameState: GameState): string 
 const CHOICE_SYSTEM = `You are generating a bonus choice for a private equity RPG scene.
 The bonus choice should be creative, unexpected, and reflect the player's unique path/stats.
 
-OUTPUT FORMAT (JSON only):
+OUTPUT FORMAT (JSON only, no markdown fences):
 {
   "text": "What the player says/does (max 80 chars)",
   "subtext": "Brief explanation (max 100 chars)",
@@ -256,8 +240,7 @@ export const generateBonusChoice = async (
   gameState: GameState,
   existingChoices: string[],
 ): Promise<BonusChoiceResult | null> => {
-  const ai = getAiClient();
-  if (!ai) return getOfflineBonusChoice(scene, gameState);
+  if (!isAIConfigured()) return getOfflineBonusChoice(scene, gameState);
 
   try {
     const prompt = `SCENE: "${scene.title}" - ${scene.narrative.slice(0, 300)}...
@@ -267,16 +250,15 @@ STATS: REP ${gameState.stats.reputation} | ETH ${gameState.stats.ethics} | STR $
 
 Generate ONE creative bonus choice that doesn't overlap with existing choices. Output JSON only.`;
 
-    const response = await withTimeout(async () => {
-      const r = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: { systemInstruction: CHOICE_SYSTEM },
-      } as any);
-      return r;
+    const text = await withTimeout(async () => {
+      return callAI({
+        system: CHOICE_SYSTEM,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 512,
+        temperature: 0.8,
+      });
     });
 
-    const text = ((response as any)?.text || '').trim();
     // Strip markdown code fences if present
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const parsed = JSON.parse(cleaned);
@@ -317,7 +299,7 @@ function getOfflineBonusChoice(scene: Scene, gameState: GameState): BonusChoiceR
 
   if (politics > 60) {
     return {
-      text: 'Work the room—call in a favor from your network',
+      text: 'Work the room\u2014call in a favor from your network',
       subtext: 'Your political connections pay dividends',
       narratorComment: 'It\'s not what you know, it\'s who you know.',
       style: 'hidden',
@@ -366,8 +348,7 @@ export const generatePathDescription = async (
   path: StoryPath,
   gameState: GameState,
 ): Promise<string | null> => {
-  const ai = getAiClient();
-  if (!ai) return null;
+  if (!isAIConfigured()) return null;
 
   try {
     const prompt = `PATH: "${path.title}" - ${path.description}
@@ -379,17 +360,17 @@ COMPLETED CHAPTERS: ${gameState.completedChapters.join(', ')}
 
 Generate a 2-3 sentence personalized description of why this path suits this player.`;
 
-    const response = await withTimeout(async () => {
-      const r = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: { systemInstruction: PATH_SYSTEM },
-      } as any);
-      return r;
+    const text = await withTimeout(async () => {
+      return callAI({
+        system: PATH_SYSTEM,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 256,
+        temperature: 0.8,
+      });
     });
 
-    const text = ((response as any)?.text || '').trim();
-    return text.length > 0 && text.length < 600 ? text : null;
+    const trimmed = text.trim();
+    return trimmed.length > 0 && trimmed.length < 600 ? trimmed : null;
   } catch {
     return null;
   }
@@ -403,8 +384,7 @@ export const generateChapterSummary = async (
   chapter: Chapter,
   gameState: GameState,
 ): Promise<string | null> => {
-  const ai = getAiClient();
-  if (!ai) return getOfflineChapterSummary(chapter, gameState);
+  if (!isAIConfigured()) return getOfflineChapterSummary(chapter, gameState);
 
   try {
     const prompt = `The player just completed chapter "${chapter.title}" (${chapter.theme}).
@@ -414,19 +394,17 @@ FLAGS: ${Array.from(gameState.flags).slice(-10).join(', ')}
 
 Generate a 2-3 sentence dramatic summary of how this chapter shaped the player's journey. Reference specific stats.`;
 
-    const response = await withTimeout(async () => {
-      const r = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: {
-          systemInstruction: 'You are the narrator of a dark PE RPG. Write dramatic, personalized chapter summaries. 2-3 sentences max. Output text only.',
-        },
-      } as any);
-      return r;
+    const text = await withTimeout(async () => {
+      return callAI({
+        system: 'You are the narrator of a dark PE RPG. Write dramatic, personalized chapter summaries. 2-3 sentences max. Output text only.',
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 256,
+        temperature: 0.8,
+      });
     });
 
-    const text = ((response as any)?.text || '').trim();
-    return text.length > 0 ? text : null;
+    const trimmed = text.trim();
+    return trimmed.length > 0 ? trimmed : null;
   } catch {
     return getOfflineChapterSummary(chapter, gameState);
   }
@@ -436,15 +414,15 @@ function getOfflineChapterSummary(chapter: Chapter, gameState: GameState): strin
   const { reputation, stress, ethics } = gameState.stats;
 
   if (stress > 70) {
-    return `Chapter "${chapter.title}" took its toll. Your stress is dangerously high at ${stress}—the cracks are starting to show.`;
+    return `Chapter "${chapter.title}" took its toll. Your stress is dangerously high at ${stress}\u2014the cracks are starting to show.`;
   }
   if (reputation > 60) {
     return `You emerged from "${chapter.title}" with your reputation intact at ${reputation}. People are starting to notice your name.`;
   }
   if (ethics < 30) {
-    return `"${chapter.title}" revealed how far you're willing to go. Ethics at ${ethics}—you're playing a dangerous game.`;
+    return `"${chapter.title}" revealed how far you're willing to go. Ethics at ${ethics}\u2014you're playing a dangerous game.`;
   }
-  return `Another chapter closes. "${chapter.title}" has changed you—whether for better or worse, only time will tell.`;
+  return `Another chapter closes. "${chapter.title}" has changed you\u2014whether for better or worse, only time will tell.`;
 }
 
 export default {

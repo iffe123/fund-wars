@@ -1,11 +1,11 @@
 /**
- * IC Gemini Service
+ * IC AI Service
  *
- * Provides AI-powered responses for IC meetings using the Gemini API.
+ * Provides AI-powered responses for IC meetings using the Claude API.
  * Includes retry logic and offline fallbacks.
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { callAI, callAIWithConversation, isAIConfigured } from '../../../services/aiClient';
 
 // ==================== CONFIGURATION ====================
 
@@ -15,28 +15,11 @@ const CONNECTION_CONFIG = {
   retryDelays: [1000, 2000, 4000],
 };
 
-// Get API key from environment
-// @ts-ignore
-const API_KEY = (typeof import.meta !== 'undefined' && import.meta.env)
-  ? import.meta.env.VITE_API_KEY
-  : undefined;
-
-// Lazy-initialized client
-let _aiClient: GoogleGenAI | null = null;
-
-const getAiClient = (): GoogleGenAI | null => {
-  if (!API_KEY) return null;
-  if (!_aiClient) {
-    _aiClient = new GoogleGenAI({ apiKey: API_KEY });
-  }
-  return _aiClient;
-};
-
 /**
- * Check if Gemini API is configured
+ * Check if AI API is configured
  */
 export const isGeminiApiConfigured = (): boolean => {
-  return !!API_KEY;
+  return isAIConfigured();
 };
 
 // ==================== RETRY WRAPPER ====================
@@ -62,11 +45,13 @@ const withRetry = async <T>(
       const errorMessage = lastError.message.toLowerCase();
       if (
         errorMessage.includes('invalid api key') ||
-        errorMessage.includes('api key not valid') ||
+        errorMessage.includes('invalid x-api-key') ||
+        errorMessage.includes('authentication_error') ||
         errorMessage.includes('permission denied') ||
-        errorMessage.includes('referrer') ||
+        errorMessage.includes('rate_limit') ||
         errorMessage.includes('quota exceeded') ||
-        errorMessage.includes('403')
+        errorMessage.includes('403') ||
+        errorMessage.includes('401')
       ) {
         throw lastError;
       }
@@ -99,52 +84,47 @@ export const getICPartnerResponse = async (
   userPrompt: string,
   history: ChatMessage[]
 ): Promise<string> => {
-  const ai = getAiClient();
-  if (!ai) {
-    throw new Error('Gemini API not configured');
+  if (!isAIConfigured()) {
+    throw new Error('AI API not configured');
   }
 
-  const chat = ai.chats.create({
-    model: 'gemini-2.5-flash',
-    config: {
-      systemInstruction: systemPrompt,
-    },
-    history,
-  });
+  // Convert Gemini-style history to Claude format
+  const messages = history.map(msg => ({
+    role: (msg.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+    content: msg.parts.map(p => p.text).join('\n'),
+  }));
 
-  const response = await withRetry(
-    () => chat.sendMessage({ message: userPrompt }),
+  const text = await withRetry(
+    () => callAIWithConversation(systemPrompt, messages, userPrompt, 512),
     'IC Partner API call'
   );
 
-  return response.text || 'I have no comment at this time.';
+  return text || 'I have no comment at this time.';
 };
 
 /**
  * Get IC evaluation
  */
 export const getICEvaluation = async (evaluationPrompt: string): Promise<string> => {
-  const ai = getAiClient();
-  if (!ai) {
-    throw new Error('Gemini API not configured');
+  if (!isAIConfigured()) {
+    throw new Error('AI API not configured');
   }
 
-  const response = await withRetry(
-    async () => {
-      const r = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [{ role: 'user', parts: [{ text: evaluationPrompt }] }],
-      } as any);
-      return r;
-    },
+  const text = await withRetry(
+    () => callAI({
+      system: 'You are an IC evaluation engine for a private equity RPG. Output valid JSON only.',
+      messages: [{ role: 'user', content: evaluationPrompt }],
+      maxTokens: 1024,
+      temperature: 0.3,
+    }),
     'IC Evaluation API call'
   );
 
-  return (response as any)?.text || '{}';
+  return text || '{}';
 };
 
 /**
- * Generate IC partner question with streaming
+ * Generate IC partner response (non-streaming replacement for streaming)
  */
 export const streamICPartnerResponse = async (
   systemPrompt: string,
@@ -152,38 +132,27 @@ export const streamICPartnerResponse = async (
   history: ChatMessage[],
   onChunk: (chunk: string) => void
 ): Promise<string> => {
-  const ai = getAiClient();
-  if (!ai) {
-    throw new Error('Gemini API not configured');
+  if (!isAIConfigured()) {
+    throw new Error('AI API not configured');
   }
 
-  const chat = ai.chats.create({
-    model: 'gemini-2.5-flash',
-    config: {
-      systemInstruction: systemPrompt,
-    },
-    history,
-  });
-
-  let fullResponse = '';
+  // Convert Gemini-style history to Claude format
+  const messages = history.map(msg => ({
+    role: (msg.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+    content: msg.parts.map(p => p.text).join('\n'),
+  }));
 
   try {
-    const response = await chat.sendMessageStream({ message: userPrompt });
-
-    for await (const chunk of response) {
-      const text = chunk.text || '';
-      fullResponse += text;
-      onChunk(text);
-    }
+    const text = await callAIWithConversation(systemPrompt, messages, userPrompt, 512);
+    // Simulate streaming by sending the full response as a single chunk
+    onChunk(text);
+    return text;
   } catch (error) {
-    console.error('Streaming error:', error);
-    // Fall back to non-streaming
-    const response = await chat.sendMessage({ message: userPrompt });
-    fullResponse = response.text || '';
-    onChunk(fullResponse);
+    console.error('AI response error:', error);
+    const fallback = 'I have no comment at this time.';
+    onChunk(fallback);
+    return fallback;
   }
-
-  return fullResponse;
 };
 
 // ==================== ERROR HANDLING ====================
@@ -191,14 +160,14 @@ export const streamICPartnerResponse = async (
 export const classifyICError = (error: Error): { type: string; message: string } => {
   const msg = error.message.toLowerCase();
 
-  if (msg.includes('api key')) {
+  if (msg.includes('api key') || msg.includes('authentication_error')) {
     return { type: 'auth', message: 'API authentication failed.' };
   }
-  if (msg.includes('referrer') || msg.includes('403')) {
-    return { type: 'referrer', message: 'API access blocked by referrer policy.' };
+  if (msg.includes('403') || msg.includes('401')) {
+    return { type: 'permission', message: 'API access denied.' };
   }
-  if (msg.includes('quota')) {
-    return { type: 'quota', message: 'API quota exceeded. Wait and try again.' };
+  if (msg.includes('rate_limit') || msg.includes('quota') || msg.includes('overloaded')) {
+    return { type: 'quota', message: 'API rate limit reached. Wait and try again.' };
   }
   if (msg.includes('timeout')) {
     return { type: 'timeout', message: 'Request timed out.' };

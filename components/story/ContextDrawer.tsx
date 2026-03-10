@@ -671,7 +671,7 @@ const AdvisorTab: React.FC<AdvisorTabProps> = ({ stats }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isConfigured = isGeminiApiConfigured();
 
-  // Convert stats to format expected by geminiService
+  // Convert stats to format expected by AI service
   const convertedStats = {
     ...stats,
     level: 'ASSOCIATE' as const,

@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { callAI, callAIWithConversation, isAIConfigured } from './aiClient';
 import type { ChatMessage, PlayerStats, Scenario, NPC, NPCMemory, KnowledgeEntry, NewsEvent } from '../types';
 
 // Connection configuration
@@ -30,18 +30,18 @@ const withRetry = async <T>(
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
-      // Don't retry on certain errors (auth, quota, referrer restrictions)
+      // Don't retry on certain errors (auth, quota)
       const errorMessage = lastError.message.toLowerCase();
       if (
         errorMessage.includes('invalid api key') ||
-        errorMessage.includes('api key not valid') ||
+        errorMessage.includes('invalid x-api-key') ||
         errorMessage.includes('permission denied') ||
-        errorMessage.includes('permission_denied') ||
-        errorMessage.includes('referrer') ||
-        errorMessage.includes('http_referrer_blocked') ||
-        errorMessage.includes('api_key_http_referrer_blocked') ||
+        errorMessage.includes('authentication_error') ||
         errorMessage.includes('quota exceeded') ||
-        errorMessage.includes('403')
+        errorMessage.includes('rate_limit') ||
+        errorMessage.includes('overloaded') ||
+        errorMessage.includes('403') ||
+        errorMessage.includes('401')
       ) {
         throw lastError;
       }
@@ -64,20 +64,14 @@ const withRetry = async <T>(
 const classifyError = (error: Error): { type: string; message: string } => {
   const msg = error.message.toLowerCase();
 
-  if (msg.includes('api key not valid') || msg.includes('invalid api key')) {
-    return { type: 'auth', message: 'Invalid API key. Please check your VITE_API_KEY configuration.' };
+  if (msg.includes('invalid x-api-key') || msg.includes('invalid api key') || msg.includes('authentication_error')) {
+    return { type: 'auth', message: 'Invalid API key. Please check your VITE_ANTHROPIC_API_KEY configuration.' };
   }
-  if (msg.includes('referrer') || msg.includes('http_referrer_blocked') || msg.includes('api_key_http_referrer_blocked')) {
-    return {
-      type: 'referrer',
-      message: 'API key referrer restriction error. The API key needs fundwars.app added to allowed referrers in Google Cloud Console.'
-    };
+  if (msg.includes('permission denied') || msg.includes('403') || msg.includes('401')) {
+    return { type: 'permission', message: 'API permission denied. Check API key configuration.' };
   }
-  if (msg.includes('permission denied') || msg.includes('permission_denied') || msg.includes('403')) {
-    return { type: 'permission', message: 'API permission denied. Check API key configuration in Google Cloud Console.' };
-  }
-  if (msg.includes('quota exceeded') || msg.includes('rate limit')) {
-    return { type: 'quota', message: 'API quota exceeded. Please wait a moment and try again.' };
+  if (msg.includes('rate_limit') || msg.includes('overloaded') || msg.includes('quota')) {
+    return { type: 'quota', message: 'API rate limit reached. Please wait a moment and try again.' };
   }
   if (msg.includes('timed out')) {
     return { type: 'timeout', message: 'Connection timed out. Please check your network and try again.' };
@@ -165,8 +159,8 @@ const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: stri
   // Log warning once per session
   if (!offlineWarningShown) {
     console.warn(
-      '%c⚠️ GEMINI API OFFLINE - NPCs using fallback responses.\n' +
-      'To enable AI-powered NPCs, set VITE_API_KEY in your .env file.\n' +
+      '%c\u26a0\ufe0f AI API OFFLINE - NPCs using fallback responses.\n' +
+      'To enable AI-powered NPCs, set VITE_ANTHROPIC_API_KEY in your .env file.\n' +
       'See README.md for setup instructions.',
       'color: #f59e0b; font-weight: bold; font-size: 14px;'
     );
@@ -210,23 +204,9 @@ const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: stri
   return `${intro} "${response}${contextNote}"`;
 };
 
-// --- ENV: read safely from Vite/Vercel ---
-// @ts-ignore
-const API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_API_KEY : undefined;
-
-// Lazy-initialized API client singleton
-let _aiClient: GoogleGenAI | null = null;
-const getAiClient = (): GoogleGenAI | null => {
-  if (!API_KEY) return null;
-  if (!_aiClient) {
-    _aiClient = new GoogleGenAI({ apiKey: API_KEY });
-  }
-  return _aiClient;
-};
-
 // Export function to check API status for UI components
 export const isGeminiApiConfigured = (): boolean => {
-  return !!API_KEY;
+  return isAIConfigured();
 };
 
 // ==================== DYNAMIC MARKET FEED ====================
@@ -239,13 +219,13 @@ const offlineMarketHeadlines = (playerStats: PlayerStats, marketVolatility?: str
   const macro = {
     NORMAL: [
       'Credit spreads steady; mid-market sponsors return to process discipline.',
-      'Buy-side chatter: “quality at a reasonable multiple” back in fashion.',
+      'Buy-side chatter: "quality at a reasonable multiple" back in fashion.',
       'Lenders reopen unitranche windows for boring cash-flow assets.',
     ],
     BULL_RUN: [
       'Risk-on stampede: growth multiples expand across sponsor-backed exits.',
-      'Bankers leak “oversubscribed book” memes; everyone believes again.',
-      'Strategics overpay for “AI adjacency” like it’s 2021.',
+      'Bankers leak "oversubscribed book" memes; everyone believes again.',
+      'Strategics overpay for "AI adjacency" like it\'s 2021.',
     ],
     CREDIT_CRUNCH: [
       'Debt desks tighten covenants; sponsor leverage assumptions get kneecapped.',
@@ -253,7 +233,7 @@ const offlineMarketHeadlines = (playerStats: PlayerStats, marketVolatility?: str
       'LPs push for liquidity; fundraising meetings turn hostile.',
     ],
     PANIC: [
-      'Forced sellers everywhere; “quality” becomes a synonym for “survival.”',
+      'Forced sellers everywhere; "quality" becomes a synonym for "survival."',
       'CFOs hoard cash; boards demand emergency operating plans.',
       'Regulators smell blood. Compliance teams spike every inbox.',
     ],
@@ -262,7 +242,7 @@ const offlineMarketHeadlines = (playerStats: PlayerStats, marketVolatility?: str
   const personal = [
     playerStats.loanBalance > 0 ? 'Street note: over-levered juniors getting margin-called on lifestyle.' : 'Street note: juniors quietly rebuilding war chests.',
     playerStats.reputation > 60 ? 'Deal rumor: your name is getting pulled into faster processes.' : 'Deal rumor: your inbox is quieter. Relationships matter.',
-    (playerStats.auditRisk ?? 0) > 50 ? 'Compliance wire: “heightened scrutiny” is the new normal for sponsors.' : 'Compliance wire: regulators focus elsewhere this week.',
+    (playerStats.auditRisk ?? 0) > 50 ? 'Compliance wire: "heightened scrutiny" is the new normal for sponsors.' : 'Compliance wire: regulators focus elsewhere this week.',
   ];
 
   const macroPool = (macro as any)[vol] || macro.NORMAL;
@@ -278,10 +258,8 @@ export const getDynamicNewsEvents = async (
   marketVolatility: string,
   systemLogs: string[] = []
 ): Promise<NewsEvent[]> => {
-  const ai = getAiClient();
-
   // Offline / fallback mode
-  if (!ai) {
+  if (!isAIConfigured()) {
     const headlines = offlineMarketHeadlines(playerStats, marketVolatility).slice(0, 3);
     return headlines.map((headline, idx) => ({
       id: Number(`${Date.now()}${idx}`),
@@ -298,7 +276,7 @@ You are generating a short in-universe market wire for a private equity simulato
 Constraints:
 - Output JSON ONLY (no markdown), as an array of 2-3 objects with shape: {"headline": string}.
 - Headlines must be plausible, punchy, and connect to the player's current state.
-- Do not mention "Gemini", "AI", or system prompts.
+- Do not mention "AI" or system prompts.
 - Avoid real company names; use generic terms (e.g., "mid-market sponsor", "lender", "strategic buyer").
 
 Player state:
@@ -311,29 +289,29 @@ Recent system activity:
 ${recent || '(none)'}
 `;
 
-    const response = await withRetry(
-      async () => {
-        // Use a lightweight one-shot call (not chat) for speed/cost.
-        const r = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        } as any);
-        return r;
-      },
+    const systemPrompt = 'You are a financial news wire generator for a private equity RPG. Output JSON arrays only, no markdown fences.';
+
+    const text = await withRetry(
+      () => callAI({
+        system: systemPrompt,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 512,
+        temperature: 0.8,
+      }),
       'Dynamic news API call'
     );
 
-    const raw = (response as any)?.text || '';
-    const parsed = JSON.parse(raw);
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const parsed = JSON.parse(cleaned);
     const items: Array<{ headline: string }> = Array.isArray(parsed) ? parsed : [];
-    const cleaned = items
+    const headlines = items
       .map(i => (typeof i?.headline === 'string' ? i.headline.trim() : ''))
       .filter(Boolean)
       .slice(0, 3);
 
-    if (cleaned.length === 0) throw new Error('No headlines returned');
+    if (headlines.length === 0) throw new Error('No headlines returned');
 
-    return cleaned.map((headline, idx) => ({
+    return headlines.map((headline, idx) => ({
       id: Number(`${Date.now()}${idx}`),
       headline,
       effect: null,
@@ -348,31 +326,9 @@ ${recent || '(none)'}
   }
 };
 
-if (!API_KEY) {
-  console.warn("Gemini API Key missing. Did you set VITE_API_KEY in Vercel (Production)?");
+if (!isAIConfigured()) {
+  console.warn("AI API Key missing. Did you set VITE_ANTHROPIC_API_KEY in your environment?");
 }
-
-const tools = [
-  {
-    functionDeclarations: [
-      {
-        name: "updateGameState",
-        description: "Update game state based on player actions, answers to questions, or conversation outcomes.",
-        parameters: {
-          type: Type.OBJECT,
-          properties: {
-            relationshipChange: { type: Type.NUMBER, description: "Change in relationship with this NPC (negative for bad answers, positive for good)" },
-            reputationChange: { type: Type.NUMBER, description: "Change in player reputation" },
-            stressChange: { type: Type.NUMBER, description: "Change in player stress" },
-            aumChange: { type: Type.NUMBER, description: "Amount of capital (AUM) committed by an LP in Founder Mode" },
-            logMessage: { type: Type.STRING, description: "Short log of what happened for memory" }
-          },
-          required: ["logMessage"]
-        }
-      }
-    ]
-  }
-];
 
 const advisorSystemInstruction = `
 VOICE GUIDELINES (SQI Filter):
@@ -461,8 +417,7 @@ export const getAdvisorResponse = async (
   playerStats?: PlayerStats | null,
   currentScenario?: Scenario | null
 ): Promise<string> => {
-  const ai = getAiClient();
-  if (!ai) {
+  if (!isAIConfigured()) {
     // Offline Machiavelli: never dead-end the run.
     const cash = playerStats?.cash ?? 0;
     const rep = playerStats?.reputation ?? 0;
@@ -472,37 +427,37 @@ export const getAdvisorResponse = async (
     const scenarioTitle = currentScenario?.title ? `"${currentScenario.title}"` : 'no active scenario';
 
     const pressure = [
-      stress > 75 ? 'you’re cracking' : null,
+      stress > 75 ? 'you\u2019re cracking' : null,
       rep < 20 ? 'nobody respects you' : null,
-      cash < 5000 ? 'you’re broke' : null,
-      debt > 0 ? 'you’re in debt' : null,
+      cash < 5000 ? 'you\u2019re broke' : null,
+      debt > 0 ? 'you\u2019re in debt' : null,
       audit > 60 ? 'regulators are sniffing' : null,
     ].filter(Boolean);
 
     const nextMoves: string[] = [];
     if (currentScenario?.choices && currentScenario.choices.length > 0) {
       nextMoves.push('Pick a choice that boosts Reputation or reduces Audit Risk unless you can stomach the heat.');
-      nextMoves.push('Hover the options: the UI shows stat previews. That’s the real “alpha.”');
+      nextMoves.push('Hover the options: the UI shows stat previews. That\u2019s the real "alpha."');
     } else if (playerStats?.portfolio?.length) {
       nextMoves.push('Go to ASSETS: analyze a company, then take one high-impact action (board / refinance / growth).');
     } else {
-      nextMoves.push('Generate deal flow, run diligence, and stop roleplaying as “busy.”');
+      nextMoves.push('Generate deal flow, run diligence, and stop roleplaying as "busy."');
     }
 
     if (debt > 0 && cash > 0) nextMoves.push('Pay down the worst debt. Interest is a silent assassin.');
-    if (cash < 1000) nextMoves.push('Cut lifestyle burn or you’ll be “terminated” by arithmetic.');
+    if (cash < 1000) nextMoves.push('Cut lifestyle burn or you\u2019ll be "terminated" by arithmetic.');
 
     const opener =
       `[OFFLINE ADVISOR]\n` +
-      `Listen, champ: the uplink’s down. You still have a brain—use it.\n` +
-      `Context: ${scenarioTitle}. Current problems: ${pressure.length ? pressure.join(', ') : 'none worth mocking… yet'}.\n\n`;
+      `Listen, champ: the uplink's down. You still have a brain\u2014use it.\n` +
+      `Context: ${scenarioTitle}. Current problems: ${pressure.length ? pressure.join(', ') : 'none worth mocking\u2026 yet'}.\n\n`;
 
     const reply =
       opener +
       `Your question: "${newPrompt.trim()}"\n\n` +
       `My answer (analog edition):\n` +
       `- ${nextMoves.slice(0, 3).join('\n- ')}\n\n` +
-      `Rule of thumb: in this game, nothing is “hidden”—if you don’t understand a system, open the Transparency panel and read the math.\n`;
+      `Rule of thumb: in this game, nothing is "hidden"\u2014if you don't understand a system, open the Transparency panel and read the math.\n`;
 
     return reply;
   }
@@ -533,39 +488,29 @@ export const getAdvisorResponse = async (
       }
     }
 
-    // Map the app's chat history to Gemini's history format
-    // CRITICAL: Map 'system' messages to 'user' role so the model treats them as context it must respond to.
-    const geminiHistory = history.map(msg => ({
-      role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
-      parts: [{ text: msg.text }],
+    // Map the app's chat history to Claude's message format
+    const messages = history.map(msg => ({
+      role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' as const : 'assistant' as const,
+      content: msg.text,
     }));
 
-    const chat = ai.chats.create({
-      model: 'gemini-2.5-flash',
-      config: {
-        systemInstruction: currentSystemInstruction,
-      },
-      history: geminiHistory
-    });
-
-    // Use retry wrapper for resilient connection
-    const response = await withRetry(
-      () => chat.sendMessage({ message: newPrompt }),
+    const text = await withRetry(
+      () => callAIWithConversation(currentSystemInstruction, messages, newPrompt, 1024),
       'Advisor API call'
     );
 
-    return response.text || "I have nothing to say.";
+    return text || "I have nothing to say.";
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     const classified = classifyError(err);
-    console.error(`Gemini API error (${classified.type}):`, err.message);
+    console.error(`AI API error (${classified.type}):`, err.message);
 
     // Return user-friendly message based on error type
     if (classified.type === 'auth') {
       return "SYSTEM ERROR: API authentication failed. Check your API key configuration.";
     }
-    if (classified.type === 'referrer' || classified.type === 'permission') {
-      return "SYSTEM ERROR: API access blocked. The API key needs the site domain added to allowed referrers in Google Cloud Console.";
+    if (classified.type === 'permission') {
+      return "SYSTEM ERROR: API access blocked. Check your API key permissions.";
     }
     if (classified.type === 'quota') {
       return "Easy there, kid. Even Wall Street has limits. Wait a moment and try again.";
@@ -584,7 +529,7 @@ export const getNPCResponse = async (
     playerStats: PlayerStats,
     currentScenario?: Scenario | null
 ): Promise<{ text: string, functionCalls?: any[] }> => {
-    if (!API_KEY) {
+    if (!isAIConfigured()) {
         return { text: offlineNpcReply(npc, playerStats, playerMessage) };
     }
 
@@ -593,13 +538,12 @@ export const getNPCResponse = async (
 
         if (npc.role.includes("Limited Partner")) {
             // Aggregate all NPC memories to form a "Reputation Report"
-            // This allows LPs to know about things you did to other people
             const legacyReport = Object.keys(playerStats.playerFlags).join(", ");
-            
+
             specializedProtocol = `
             FOUNDER MODE PROTOCOL (ROADSHOW):
             You are a potential investor (LP). The player is pitching you their new fund.
-            
+
             YOUR JUDGMENT CRITERIA:
             1. REPUTATION: Current Reputation is ${playerStats.reputation}/100.
                - If < 40: You are hostile. Why are you meeting with this nobody?
@@ -608,19 +552,22 @@ export const getNPCResponse = async (
                - Player Flags: [${legacyReport}]
                - If flags include 'COMMITTED_INSIDER_TRADING', 'LOST_COOL', 'DUMPED_WORK': Confront them about it. Refuse to invest unless they have a VERY good explanation.
                - If flags include 'PROFESSIONAL', 'SAVED_COMPANY': Be impressed.
-            
+
             DECISION LOGIC:
             - If they sound incompetent or their reputation is low, reject them.
             - If they pitch well AND have stats > 50 Reputation, CONSIDER investing.
-            - TO INVEST: Use the 'updateGameState' tool with 'aumChange' set to a number between 10000000 ($10M) and 100000000 ($100M).
             - Be skeptical. Ask tough questions about their strategy.
+
+            INVESTMENT RESPONSE:
+            - When you decide to invest, include at the END of your response a JSON block: {"aumChange": <amount between 10000000 and 100000000>}
+            - When you want to update game state, include: {"relationshipChange": <number>, "reputationChange": <number>, "stressChange": <number>, "logMessage": "<brief log>"}
             `;
         } else {
              specializedProtocol = `
             GATEKEEPER CHALLENGE PROTOCOL:
             - Occasionally (20% chance) or if the player asks for a favor, TEST THEM.
             - Ask a technical finance question.
-            - Use 'updateGameState' to reward/punish.
+            - When you want to update game state, include at the END a JSON block: {"relationshipChange": <number>, "reputationChange": <number>, "stressChange": <number>, "logMessage": "<brief log>"}
             `;
         }
 
@@ -639,7 +586,7 @@ export const getNPCResponse = async (
 
         const knowledgeDigest = summarizeKnowledge(playerStats.knowledgeLog || [], npc);
 
-        // Check if this is Sarah's first real interaction (few messages in history)
+        // Check if this is Sarah's first real interaction
         const isFirstInteraction = history.length <= 3;
         const isSarah = npc.id === 'sarah' || npc.name.toLowerCase().includes('sarah');
 
@@ -694,50 +641,43 @@ export const getNPCResponse = async (
         ${knowledgeDigest}
         `;
 
-        const ai = getAiClient();
-        if (!ai) {
-            return { text: offlineNpcReply(npc, playerStats, playerMessage) };
-        }
-
-        const geminiHistory = history.map(msg => ({
-            role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' : 'model',
-            parts: [{ text: msg.text }],
+        // Map history to Claude format
+        const messages = history.map(msg => ({
+            role: (msg.sender === 'player' || msg.sender === 'system') ? 'user' as const : 'assistant' as const,
+            content: msg.text,
         }));
 
-        const chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: {
-                systemInstruction: systemInstruction,
-                tools: tools
-            },
-            history: geminiHistory
-        });
-
-        // Use retry wrapper for resilient connection
-        const response = await withRetry(
-            () => chat.sendMessage({ message: playerMessage }),
+        const text = await withRetry(
+            () => callAIWithConversation(systemInstruction, messages, playerMessage, 512),
             'NPC API call'
         );
 
-        // Extract tool calls if any
-        const functionCalls = response.functionCalls;
+        // Extract JSON function calls embedded in the response
+        const functionCalls: any[] = [];
+        const jsonMatch = text.match(/\{[^{}]*"(?:aumChange|relationshipChange|reputationChange|stressChange|logMessage)"[^{}]*\}/);
+        if (jsonMatch) {
+            try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                functionCalls.push({
+                    name: 'updateGameState',
+                    args: parsed,
+                });
+            } catch {
+                // Ignore parse errors
+            }
+        }
+
+        // Clean the response text (remove JSON blocks)
+        const cleanText = text.replace(/\{[^{}]*"(?:aumChange|relationshipChange|reputationChange|stressChange|logMessage)"[^{}]*\}/g, '').trim();
 
         return {
-            text: response.text || "(Actions speak louder than words...)",
-            functionCalls: functionCalls
+            text: cleanText || "(Actions speak louder than words...)",
+            functionCalls: functionCalls.length > 0 ? functionCalls : undefined,
         };
     } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         const classified = classifyError(err);
-        console.error(`Gemini NPC API error (${classified.type}):`, err.message);
-
-        // Log specific guidance for referrer errors
-        if (classified.type === 'referrer' || classified.type === 'permission') {
-            console.error(
-                '%c⚠️ API KEY REFERRER ERROR: Add https://fundwars.app/* to the allowed HTTP referrers in Google Cloud Console → APIs & Services → Credentials → [Your API Key] → Application restrictions',
-                'color: #ef4444; font-weight: bold;'
-            );
-        }
+        console.error(`AI NPC API error (${classified.type}):`, err.message);
 
         // Fall back to offline responses
         return { text: offlineNpcReply(npc, playerStats, playerMessage) };
@@ -748,29 +688,26 @@ export const getPortfolioAdvice = async (
     playerStats: PlayerStats,
     npcId: string
 ): Promise<string> => {
-    const ai = getAiClient();
-    if (!ai) return "I can't talk right now.";
+    if (!isAIConfigured()) return "I can't talk right now.";
 
     try {
         const npcName = npcId === 'chad' ? 'Chad' : npcId === 'hunter' ? 'Hunter' : 'Sarah';
         const prompt = `Review my portfolio companies: ${playerStats.portfolio.map(c => c.name).join(', ')}. Give me one specific, actionable piece of advice or gossip about one of them. Keep it in character as ${npcName}.`;
 
-        const chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: { systemInstruction: "You are a Private Equity simulator engine." }
-        });
-
-        // Use retry wrapper for resilient connection
-        const response = await withRetry(
-            () => chat.sendMessage({ message: prompt }),
+        const text = await withRetry(
+            () => callAI({
+                system: "You are a Private Equity simulator engine.",
+                messages: [{ role: 'user', content: prompt }],
+                maxTokens: 512,
+            }),
             'Portfolio advice API call'
         );
 
-        return response.text || "Nothing to report.";
+        return text || "Nothing to report.";
     } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         const classified = classifyError(err);
-        console.error(`Gemini Portfolio API error (${classified.type}):`, err.message);
+        console.error(`AI Portfolio API error (${classified.type}):`, err.message);
         return "I can't talk right now.";
     }
 }
@@ -843,8 +780,7 @@ export const getSocraticResponse = async (
     previousExchange?: string[];
   }
 ): Promise<string> => {
-  const ai = getAiClient();
-  if (!ai) {
+  if (!isAIConfigured()) {
     // Offline Socratic fallback
     const fallbackQuestions = [
       "What assumptions are you making that you haven't questioned yet?",
@@ -874,23 +810,20 @@ ${context.playerThesis ? `- Player's Stated Thesis: "${context.playerThesis}"` :
 
     const fullPrompt = `${contextBlock}${previousContext}\nPLAYER ASKS: "${playerQuestion}"\n\nRespond with 1-3 Socratic questions. Never give direct answers.`;
 
-    const chat = ai.chats.create({
-      model: 'gemini-2.5-flash',
-      config: {
-        systemInstruction: socraticSystemInstruction,
-      },
-    });
-
-    const response = await withRetry(
-      () => chat.sendMessage({ message: fullPrompt }),
+    const text = await withRetry(
+      () => callAI({
+        system: socraticSystemInstruction,
+        messages: [{ role: 'user', content: fullPrompt }],
+        maxTokens: 512,
+      }),
       'Socratic mentor API call'
     );
 
-    return response.text || "What makes you think that's the right question to ask?";
+    return text || "What makes you think that's the right question to ask?";
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     console.error('Socratic mentor error:', err.message);
-    return "Interesting question. But before I respond—what's your gut telling you? Trust it, then verify.";
+    return "Interesting question. But before I respond\u2014what's your gut telling you? Trust it, then verify.";
   }
 };
 
@@ -966,10 +899,8 @@ export const getICPartnerQuestion = async (
   previousQuestion?: string,
   playerResponse?: string
 ): Promise<ICPartnerQuestion> => {
-  const ai = getAiClient();
-
   // Offline fallback
-  if (!ai) {
+  if (!isAIConfigured()) {
     const fallbackQuestions: Record<string, string[]> = {
       RISK_HAWK: [
         "What's the downside case here? Walk me through a 30% EBITDA decline.",
@@ -1018,20 +949,19 @@ Generate your next question and evaluate their previous response if applicable.
 Output valid JSON only.
 `;
 
-    const chat = ai.chats.create({
-      model: 'gemini-2.5-flash',
-      config: {
-        systemInstruction: icPartnerSystemInstruction(partner),
-      },
-    });
-
-    const response = await withRetry(
-      () => chat.sendMessage({ message: context }),
+    const text = await withRetry(
+      () => callAI({
+        system: icPartnerSystemInstruction(partner),
+        messages: [{ role: 'user', content: context }],
+        maxTokens: 512,
+        temperature: 0.3,
+      }),
       'IC partner question API call'
     );
 
     try {
-      const parsed = JSON.parse(response.text || '{}');
+      const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const parsed = JSON.parse(cleaned);
       return {
         question: parsed.question || "Tell me more about your thesis.",
         evaluationOfPreviousResponse: parsed.evaluationOfPreviousResponse,
@@ -1039,7 +969,7 @@ Output valid JSON only.
       };
     } catch {
       return {
-        question: response.text || "Elaborate on your value creation plan.",
+        question: text || "Elaborate on your value creation plan.",
       };
     }
   } catch (error) {
@@ -1121,10 +1051,8 @@ export const getNegotiationResponse = async (
   currentRapport: number,
   currentTension: number
 ): Promise<NegotiationResponse> => {
-  const ai = getAiClient();
-
   // Offline fallback
-  if (!ai) {
+  if (!isAIConfigured()) {
     const offlineResponses: Record<string, string[]> = {
       FOUNDER_CEO: [
         "This isn't just about the number. It's about what I've built.",
@@ -1177,19 +1105,15 @@ Respond in character. Also output JSON at the end:
 {"rapportChange": <-10 to +10>, "tensionChange": <-10 to +10>, "hint": "<subtle hint about hidden constraint or empty string>"}
 `;
 
-    const chat = ai.chats.create({
-      model: 'gemini-2.5-flash',
-      config: {
-        systemInstruction: negotiationSystemInstruction(counterparty),
-      },
-    });
-
-    const response = await withRetry(
-      () => chat.sendMessage({ message: context }),
+    const text = await withRetry(
+      () => callAI({
+        system: negotiationSystemInstruction(counterparty),
+        messages: [{ role: 'user', content: context }],
+        maxTokens: 512,
+        temperature: 0.8,
+      }),
       'Negotiation response API call'
     );
-
-    const text = response.text || "Let me think about that.";
 
     // Try to extract JSON from end of response
     let rapportChange = 0;
@@ -1255,10 +1179,8 @@ export const generateDealAutopsy = async (
     marketConditions: string;
   }
 ): Promise<DealAutopsyAnalysis> => {
-  const ai = getAiClient();
-
   // Offline fallback
-  if (!ai) {
+  if (!isAIConfigured()) {
     const success = dealData.moic >= 2.0;
     return {
       whatWentRight: success
@@ -1303,27 +1225,26 @@ Output valid JSON with this structure:
 }
 `;
 
-    const chat = ai.chats.create({
-      model: 'gemini-2.5-flash',
-      config: {
-        systemInstruction: 'You are an expert PE investment analyst providing post-mortem analysis of deals. Be specific, insightful, and educational. Reference real PE concepts and historical deal parallels.',
-      },
-    });
-
-    const response = await withRetry(
-      () => chat.sendMessage({ message: prompt }),
+    const text = await withRetry(
+      () => callAI({
+        system: 'You are an expert PE investment analyst providing post-mortem analysis of deals. Be specific, insightful, and educational. Reference real PE concepts and historical deal parallels. Output valid JSON only, no markdown fences.',
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 1024,
+        temperature: 0.3,
+      }),
       'Deal autopsy API call'
     );
 
     try {
-      return JSON.parse(response.text || '{}');
+      const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      return JSON.parse(cleaned);
     } catch {
       return {
         whatWentRight: [],
         whatWentWrong: [],
         skillsDemonstrated: [],
         skillsToDevelop: ['Deal Analysis'],
-        overallNarrative: response.text || 'Analysis unavailable.',
+        overallNarrative: text || 'Analysis unavailable.',
       };
     }
   } catch (error) {

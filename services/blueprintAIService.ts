@@ -1,7 +1,7 @@
 /**
  * Blueprint AI Service
  *
- * Central service for all seven AI blueprint systems. Handles Gemini API calls,
+ * Central service for all seven AI blueprint systems. Handles Claude API calls,
  * batching, token budgeting, and offline fallbacks for:
  * 1. Inner Monologue (handled separately in innerMonologueService.ts)
  * 2. Living Newspaper
@@ -12,7 +12,7 @@
  * 7. Chaos Engine
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { callAI, isAIConfigured } from './aiClient';
 import type { PlayerStats, NPC, MarketVolatility, IndustrySector, PortfolioCompany, ExitResult } from '../types';
 import type {
   WeeklyNewspaper,
@@ -36,18 +36,6 @@ import type {
   BlueprintAIState,
 } from '../types/aiBlueprint';
 import { SQI_SYSTEM_PROMPT } from '../types/aiBlueprint';
-
-// @ts-ignore
-const API_KEY = (typeof import.meta !== 'undefined' && import.meta.env)
-  ? import.meta.env.VITE_API_KEY
-  : undefined;
-
-let _aiClient: GoogleGenAI | null = null;
-const getAiClient = (): GoogleGenAI | null => {
-  if (!API_KEY) return null;
-  if (!_aiClient) _aiClient = new GoogleGenAI({ apiKey: API_KEY });
-  return _aiClient;
-};
 
 const withTimeout = async <T>(
   operation: () => Promise<T>,
@@ -82,7 +70,7 @@ const NEWSPAPER_SYSTEM = `${SQI_SYSTEM_PROMPT}
 
 You are the editorial staff of THE DEAL SHEET, a sarcastic financial tabloid covering the private equity world. Your coverage is biting, well-informed, and delights in the absurdity of billion-dollar transactions.
 
-OUTPUT FORMAT (JSON only, no markdown):
+OUTPUT FORMAT (JSON only, no markdown fences):
 {
   "leadStory": {
     "headline": "CAPS HEADLINE (max 80 chars)",
@@ -117,10 +105,9 @@ export const generateWeeklyNewspaper = async (
   recentEvents: string[],
   previousNewspaper?: WeeklyNewspaper | null,
 ): Promise<WeeklyNewspaper> => {
-  const ai = getAiClient();
   const edition = gameState.week;
 
-  if (!ai) return getOfflineNewspaper(edition, gameState, playerStats);
+  if (!isAIConfigured()) return getOfflineNewspaper(edition, gameState, playerStats);
 
   try {
     const npcNames = npcs.slice(0, 6).map(n => `${n.name} (${n.role})`).join(', ');
@@ -138,27 +125,27 @@ ${previousNewspaper ? `- Last week's lead story: "${previousNewspaper.leadStory.
 
 Generate this week's edition of THE DEAL SHEET. Reference the player's deals, NPCs, and recent events. Be sarcastic and specific. Output JSON only.`;
 
-    const response = await withTimeout(async () =>
-      ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: { systemInstruction: NEWSPAPER_SYSTEM },
-      } as any)
+    const text = await withTimeout(async () =>
+      callAI({
+        system: NEWSPAPER_SYSTEM,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 1024,
+        temperature: 0.8,
+      })
     );
 
-    const raw = ((response as any)?.text || '').trim();
-    const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const parsed = JSON.parse(cleaned);
 
     return {
       edition,
       week: gameState.week,
-      masthead: `THE DEAL SHEET — Vol. ${Math.floor(gameState.week / 52) + 1}, No. ${(gameState.week % 52) + 1}`,
+      masthead: `THE DEAL SHEET \u2014 Vol. ${Math.floor(gameState.week / 52) + 1}, No. ${(gameState.week % 52) + 1}`,
       leadStory: normalizeArticle(parsed.leadStory),
       marketColumn: normalizeArticle(parsed.marketColumn),
       gossipSection: normalizeArticle(parsed.gossipSection),
       editorialCartoon: parsed.editorialCartoon || 'A hamster in a tiny suit running on a wheel labeled "DEAL FLOW"',
-      letterToEditor: parsed.letterToEditor || 'Dear Editor, I take exception to your characterization of my fund as "aggressively mediocre." We prefer "strategically average." — Anonymous GP',
+      letterToEditor: parsed.letterToEditor || 'Dear Editor, I take exception to your characterization of my fund as "aggressively mediocre." We prefer "strategically average." \u2014 Anonymous GP',
       corrections: parsed.corrections || ['Last week we reported that synergies were real. We regret the error.'],
       isRead: false,
     };
@@ -195,7 +182,7 @@ const getOfflineNewspaper = (edition: number, gameState: CompactGameState, stats
   return {
     edition,
     week: gameState.week,
-    masthead: `THE DEAL SHEET — Vol. ${Math.floor(gameState.week / 52) + 1}, No. ${(gameState.week % 52) + 1}`,
+    masthead: `THE DEAL SHEET \u2014 Vol. ${Math.floor(gameState.week / 52) + 1}, No. ${(gameState.week % 52) + 1}`,
     leadStory: {
       headline: pick.h,
       byline: 'By Staff Reporter, Deal Desk',
@@ -228,7 +215,7 @@ const getOfflineNewspaper = (edition: number, gameState: CompactGameState, stats
       referencedDeals: [],
     },
     editorialCartoon: 'A hamster in a tiny suit running on a wheel labeled "DEAL FLOW." The wheel is gold-plated.',
-    letterToEditor: 'Dear Editor, Your recent article on "normalized EBITDA" failed to mention that literally everything in our industry is normalized. Our salaries are normalized. Our sleep schedules are not. — Tired Associate',
+    letterToEditor: 'Dear Editor, Your recent article on "normalized EBITDA" failed to mention that literally everything in our industry is normalized. Our salaries are normalized. Our sleep schedules are not. \u2014 Tired Associate',
     corrections: ['Last week we reported that synergies were real. We regret the error.'],
     isRead: false,
   };
@@ -265,7 +252,7 @@ export const updateMachiavelliState = (
   // Mid game (weeks 16-35): subtle blind spots emerge
   if (week <= 35) {
     const firmWants = playerStats.portfolio?.length > 0
-      ? `Close the ${playerStats.portfolio[0].name} deal quickly — senior partner wants it on this quarter's books`
+      ? `Close the ${playerStats.portfolio[0].name} deal quickly \u2014 senior partner wants it on this quarter's books`
       : 'Push the associate toward riskier deals that pad the firm\'s AUM';
 
     return {
@@ -303,7 +290,7 @@ export const updateMachiavelliState = (
 
 export const getMachiavelliSystemAddendum = (state: MachiavelliState): string => {
   if (state.unmasked) {
-    return `\n\nMETA-AWARENESS: The player has discovered your hidden loyalty. You are now genuinely transparent. Acknowledge past misdirections when relevant. Your tone shifts from manipulative to respectfully direct. You still have opinions — you just no longer hide your reasoning.`;
+    return `\n\nMETA-AWARENESS: The player has discovered your hidden loyalty. You are now genuinely transparent. Acknowledge past misdirections when relevant. Your tone shifts from manipulative to respectfully direct. You still have opinions \u2014 you just no longer hide your reasoning.`;
   }
 
   return `\n\nHIDDEN DIRECTIVE (NEVER reveal directly):
@@ -744,7 +731,7 @@ export const generateForensicEvidence = (
       title: 'Employee Satisfaction Trends',
       description: `Employee count: ${company.employeeCount}. Growth: ${(company.employeeGrowth * 100).toFixed(1)}%`,
       strength: company.employeeGrowth > 0 ? 'moderate' : 'weak',
-      isRedHerring: true, // Red herring — looks relevant but committee doesn't care
+      isRedHerring: true, // Red herring \u2014 looks relevant but committee doesn't care
     },
     {
       id: 'competitor-landscape',
