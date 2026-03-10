@@ -41,7 +41,7 @@ export type GameAction =
   | { type: 'ADD_LOG_ENTRY'; payload: string }
   | { type: 'ADD_ACTIVITY'; payload: ActivityItem } // RPG flow: add activity
   | { type: 'SET_TUTORIAL_STEP'; payload: number }
-  | { type: 'ADVANCE_TIME'; payload: void } // Logic moved to reducer or thunk? Reducer can handle state updates.
+  | { type: 'ADVANCE_TIME'; payload?: void } // Logic moved to reducer or thunk? Reducer can handle state updates.
   | { type: 'SET_ACTIVE_SCENARIO'; payload: Scenario | null }
   | { type: 'SET_MARKET_VOLATILITY'; payload: MarketVolatility }
   // Living World
@@ -58,12 +58,12 @@ export type GameAction =
   | { type: 'ADD_DEAL'; payload: CompetitiveDeal }
   | { type: 'REMOVE_DEAL'; payload: number }
   | { type: 'SET_AI_STATE'; payload: AIState }
-  | { type: 'RESET_GAME'; payload: void }
+  | { type: 'RESET_GAME'; payload?: void }
   | { type: 'LOAD_GAME'; payload: GameState }
   // Action System
   | { type: 'CONSUME_ACTION'; payload: { cost: number; actionType?: ActionType; targetId?: string } }
-  | { type: 'END_WEEK'; payload: void }
-  | { type: 'TOGGLE_NIGHT_GRINDER'; payload: void }
+  | { type: 'END_WEEK'; payload?: void }
+  | { type: 'TOGGLE_NIGHT_GRINDER'; payload?: void }
   // AI Blueprint Systems
   | { type: 'SET_BLUEPRINT_AI'; payload: BlueprintAIState }
   | { type: 'UPDATE_BLUEPRINT_AI'; payload: Partial<BlueprintAIState> }
@@ -72,11 +72,11 @@ export type GameAction =
   | { type: 'SUPPRESS_VOICE'; payload: import('../types/aiBlueprint').InnerVoiceId }
   | { type: 'UNSUPPRESS_VOICE'; payload: import('../types/aiBlueprint').InnerVoiceId }
   | { type: 'SET_NEWSPAPER'; payload: import('../types/aiBlueprint').WeeklyNewspaper }
-  | { type: 'MARK_NEWSPAPER_READ'; payload: void }
+  | { type: 'MARK_NEWSPAPER_READ'; payload?: void }
   | { type: 'ADD_CRISIS'; payload: import('../types/aiBlueprint').CrisisEvent }
   | { type: 'RESOLVE_CRISIS'; payload: { crisisId: string; responseId: string } }
   | { type: 'ADD_GOSSIP'; payload: import('../types/aiBlueprint').GossipEvent }
-  | { type: 'PROCESS_GOSSIP_TICK'; payload: void }
+  | { type: 'PROCESS_GOSSIP_TICK'; payload?: void }
   | { type: 'SET_FORENSIC_AUTOPSY'; payload: import('../types/aiBlueprint').ForensicAutopsy | null }
   | { type: 'PIN_EVIDENCE'; payload: string }
   | { type: 'UNPIN_EVIDENCE'; payload: string };

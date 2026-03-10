@@ -53,7 +53,7 @@ export interface RivalMindset {
   fearLevel: number; // 0-100, how threatened they feel by player
   respectLevel: number; // 0-100, how much they respect player
   vendettaPhase: VendettaPhase;
-  knownPlayerPatterns: Partial<PlayerPattern>;
+  knownPlayerPatterns?: Partial<PlayerPattern>;
   recentLosses: number;
   recentWins: number;
   isInCoalition: boolean;

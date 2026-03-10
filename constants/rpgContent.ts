@@ -1339,7 +1339,7 @@ What's your read?
     expiresInWeeks: 1,
     requirements: {
       minWeek: 3,
-      allowedVolatility: ['HIGH', 'CRISIS'],
+      allowedVolatility: ['CREDIT_CRUNCH', 'PANIC'] as const,
     },
   },
 

@@ -23,7 +23,7 @@ import type {
 // ============================================================================
 
 export type EventType = 'PRIORITY' | 'OPTIONAL' | 'BACKGROUND';
-export type EventCategory = 'DEAL' | 'NPC' | 'CRISIS' | 'OPPORTUNITY' | 'PERSONAL' | 'CAREER' | 'MARKET';
+export type EventCategory = 'DEAL' | 'NPC' | 'CRISIS' | 'OPPORTUNITY' | 'PERSONAL' | 'CAREER' | 'MARKET' | 'OPERATIONS';
 export type EventStakes = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type ChoiceAlignment = 'RUTHLESS' | 'DIPLOMATIC' | 'CAUTIOUS' | 'BOLD' | 'ETHICAL' | 'NEUTRAL';
 

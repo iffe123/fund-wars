@@ -5,7 +5,7 @@ import { AuctionResult } from '../components/CompetitiveAuctionModal';
 interface AuctionFlowDependencies {
   playerStats: PlayerStats | null;
   rivalFunds: RivalFund[];
-  playSfx: (sfx: string) => void;
+  playSfx: (sfx: import('../context/AudioContext').SfxType) => void;
   addLogEntry: (entry: string) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   removeDeal: (dealId: number) => void;

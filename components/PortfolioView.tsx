@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
-import type { PortfolioCompany, PortfolioAction, PlayerStats, CompanyStatus, DealPhase, LeverageModel } from '../types';
+import type { PortfolioCompany, PortfolioAction, PlayerStats, CompanyStatus, DealPhase, LeverageModel, ManagementActionType } from '../types';
 import { MARKET_VOLATILITY_STYLES } from '../constants';
 import { TerminalButton, TerminalPanel, AsciiProgress, Badge } from './TerminalUI';
 import { useGame } from '../context/GameContext';
@@ -245,7 +245,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
             dealClosed: true, // Transition from PIPELINE to OWNED
             dealPhase: 'WON' as DealPhase, // Update deal phase state machine
             actionsThisWeek: [], // Reset actions for new ownership phase
-            lastManagementActions: {}, // Initialize management action tracking
+            lastManagementActions: {} as Record<ManagementActionType, number>, // Initialize management action tracking
             acquisitionDate: {
               year: playerStats.gameTime?.year || 1,
               month: Math.ceil(((playerStats.gameTime?.week || 1) % 52) / 4.33) || 1
@@ -292,7 +292,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   };
 
   // Handle exit execution from ExitStrategyModal
-  const handleExecuteExit = (exitType: string, proceeds: number) => {
+  const handleExecuteExit = (result: import('../types').ExitResult, statChanges: import('../types').StatChanges) => {
     if (!showExitModal) return;
     updatePlayerStats({
       modifyCompany: {
@@ -302,9 +302,8 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
           dealClosed: false, // Remove from portfolio
         }
       },
-      cash: proceeds,
-      reputation: +5,
-      score: +500,
+      ...statChanges,
+      addExitResult: result,
     });
     setShowExitModal(null);
   };
@@ -468,7 +467,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
           ${marketVolatility === 'CREDIT_CRUNCH' ? 'bg-red-950/50 border-red-800/50' : ''}
           ${marketVolatility === 'PANIC' ? 'bg-amber-950/50 border-amber-800/50 animate-pulse' : ''}
         `}>
-          <i className={`fas ${MARKET_VOLATILITY_STYLES[marketVolatility].icon} ${marketVolatility !== 'NORMAL' ? 'animate-pulse' : ''}`}></i>
+          <i className={`fas ${MARKET_VOLATILITY_STYLES[marketVolatility].icon} animate-pulse`}></i>
           <span className="uppercase tracking-widest">MARKET ALERT: {marketVolatility.replace('_', ' ')}</span>
           <span className="opacity-70">// {MARKET_VOLATILITY_STYLES[marketVolatility].description.toUpperCase()}</span>
         </div>

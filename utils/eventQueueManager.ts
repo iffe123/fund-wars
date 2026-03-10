@@ -634,7 +634,7 @@ export const createImmediateEvent = (
   const queuedEvent: QueuedEvent = {
     eventId,
     addedWeek: queue.currentWeek,
-    source: `IMMEDIATE:${source}`,
+    source: 'CONSEQUENCE',
     priority: 8, // High priority but below PRIORITY events
   };
 

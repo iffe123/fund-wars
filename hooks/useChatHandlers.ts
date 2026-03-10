@@ -10,7 +10,7 @@ interface ChatHandlersDependencies {
   playerStats: PlayerStats | null;
   activeScenario: Scenario | null;
   npcs: NPC[];
-  playSfx: (sfx: string) => void;
+  playSfx: (sfx: import('../context/AudioContext').SfxType) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   sendNpcMessage: (npcId: string, message: string, sender?: 'player' | 'npc', senderName?: string) => void;
   updatePlayerStats: (changes: StatChanges) => void;

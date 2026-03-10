@@ -1,8 +1,10 @@
 
 import React, { createContext, useContext, useEffect, useRef, useCallback } from 'react';
 
+export type SfxType = 'BOOT' | 'KEYPRESS' | 'NOTIFICATION' | 'ERROR' | 'SUCCESS';
+
 interface AudioContextType {
-  playSfx: (type: 'BOOT' | 'KEYPRESS' | 'NOTIFICATION' | 'ERROR' | 'SUCCESS') => void;
+  playSfx: (type: SfxType) => void;
   playAmbience: (play: boolean) => void;
   mute: (muted: boolean) => void;
 }

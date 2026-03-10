@@ -18,7 +18,7 @@ const baseNpc: NPC = {
 
 describe('hydrateNpc', () => {
   it('guards against missing mood/trust and normalizes memories', () => {
-    const npc = hydrateNpc({ ...baseNpc, mood: undefined as unknown as number, memories: ['met at bar'] });
+    const npc = hydrateNpc({ ...baseNpc, mood: undefined as unknown as number, memories: ['met at bar'] as any });
     expect(npc.mood).toBeGreaterThanOrEqual(0);
     expect(npc.trust).toBeGreaterThanOrEqual(0);
     expect(npc.memories[0]).toHaveProperty('timestamp');

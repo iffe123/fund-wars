@@ -5,6 +5,7 @@ type AnalyticsEvent =
   | 'tutorial_start'
   | 'tutorial_complete'
   | 'deal_signed'
+  | 'game_start'
   | 'game_over'
   | 'game_reset'
   | 'user_stuck'

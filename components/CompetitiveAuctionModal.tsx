@@ -364,7 +364,24 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
         revenue: deal.metrics.revenue,
         ebitda: deal.metrics.ebitda,
         debt: deal.metrics.debt,
-        revenueGrowth: deal.metrics.growth
+        revenueGrowth: deal.metrics.growth,
+        employeeCount: Math.floor(deal.metrics.revenue / 200000),
+        employeeGrowth: 0,
+        ebitdaMargin: deal.metrics.ebitda / (deal.metrics.revenue || 1),
+        cashBalance: deal.metrics.revenue * 0.1,
+        runwayMonths: 36,
+        customerChurn: 0.05,
+        ceoPerformance: 60,
+        boardAlignment: 70,
+        managementTeam: [],
+        dealClosed: true,
+        isInExitProcess: false,
+        dealPhase: 'WON' as const,
+        actionsThisWeek: [],
+        lastManagementActions: {} as Record<import('../types').ManagementActionType, number>,
+        pendingDecisions: [],
+        nextBoardMeetingWeek: 12,
+        lastFinancialUpdate: 0,
       }
     };
 

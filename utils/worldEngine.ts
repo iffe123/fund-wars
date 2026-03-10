@@ -279,6 +279,16 @@ const getEventTitle = (type: CompanyEventType): string => {
     ACTIVIST_INVESTOR: 'Activist Approaches',
     IPO_WINDOW: 'IPO Window Opens',
     STRATEGIC_BUYER_INTEREST: 'Strategic Interest',
+    CYBERSECURITY_BREACH: 'Cybersecurity Breach',
+    KEY_EMPLOYEE_POACHING: 'Key Employee Poaching',
+    PRODUCT_RECALL: 'Product Recall',
+    LAWSUIT_FILED: 'Lawsuit Filed',
+    VIRAL_PR_CRISIS: 'Viral PR Crisis',
+    PARTNERSHIP_OPPORTUNITY: 'Partnership Opportunity',
+    TECHNOLOGY_DISRUPTION: 'Technology Disruption',
+    CEO_SCANDAL: 'CEO Scandal',
+    DEBT_COVENANT_BREACH: 'Debt Covenant Breach',
+    ACQUISITION_OFFER_RECEIVED: 'Acquisition Offer Received',
   };
   return titles[type] || 'Company Event';
 };
@@ -296,6 +306,16 @@ const getEventSeverity = (type: CompanyEventType): 'INFO' | 'WARNING' | 'CRITICA
     ACTIVIST_INVESTOR: 'CRITICAL',
     IPO_WINDOW: 'INFO',
     STRATEGIC_BUYER_INTEREST: 'INFO',
+    CYBERSECURITY_BREACH: 'CRITICAL',
+    KEY_EMPLOYEE_POACHING: 'WARNING',
+    PRODUCT_RECALL: 'CRITICAL',
+    LAWSUIT_FILED: 'CRITICAL',
+    VIRAL_PR_CRISIS: 'WARNING',
+    PARTNERSHIP_OPPORTUNITY: 'INFO',
+    TECHNOLOGY_DISRUPTION: 'WARNING',
+    CEO_SCANDAL: 'CRITICAL',
+    DEBT_COVENANT_BREACH: 'CRITICAL',
+    ACQUISITION_OFFER_RECEIVED: 'INFO',
   };
   return severities[type] || 'WARNING';
 };

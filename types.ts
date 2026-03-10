@@ -588,6 +588,28 @@ export interface StatChanges {
     moodChange?: number;
     memory?: NPCMemory | string;
   };
+
+  // === Initialization-only fields (used when creating initial PlayerStats from StatChanges) ===
+  playerFlags?: Record<string, boolean>;
+  gameYear?: number;
+  gameMonth?: number;
+  currentDayType?: DayType;
+  currentTimeSlot?: TimeSlot;
+  timeCursor?: number;
+  tutorialStep?: number;
+  loanBalance?: number;
+  knowledgeLog?: KnowledgeEntry[];
+  unlockedAchievements?: string[];
+  sectorExpertise?: Array<{ sector: IndustrySector; experience: number }>;
+  primarySector?: IndustrySector;
+  completedExits?: ExitResult[];
+  totalRealizedGains?: number;
+  personalFinances?: PersonalFinances;
+  fundFinances?: FundFinances | null;
+  dealAllocations?: DealAllocation[];
+  carryEligibleDeals?: string[];
+  activeSkillInvestments?: SkillInvestment[];
+  gameTime?: GameTime;
 }
 
 export interface SkillCheck {
@@ -604,8 +626,12 @@ export interface Choice {
   description?: string;
   sarcasticGuidance?: string;
   outcome: {
-    description:string;
+    description: string;
     statChanges: StatChanges;
+    npcEffects?: Array<{
+      npcId: string;
+      relationshipChange: number;
+    }>;
   };
   skillCheck?: SkillCheck;
 }
@@ -672,6 +698,7 @@ export interface ChatMessage {
   sender: 'player' | 'advisor' | 'npc' | 'system';
   senderName?: string;
   text: string;
+  timestamp?: number;
 }
 
 export type Difficulty = 'Easy' | 'Normal' | 'Hard';
@@ -954,6 +981,7 @@ export interface RivalMindsetState {
   fearLevel: number;
   respectLevel: number;
   vendettaPhase: VendettaPhase;
+  knownPlayerPatterns?: Partial<PlayerPatternData>;
   recentLosses: number;
   recentWins: number;
   isInCoalition: boolean;
