@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { gameReducer, initialState } from '../reducers/gameReducer';
 import type { GameState } from '../reducers/types';
-import { DealType } from '../types';
+import { DealType, PlayerLevel } from '../types';
 import type { PlayerStats } from '../types';
 import { DIFFICULTY_SETTINGS, COMPETITIVE_DEALS } from '../constants';
 
@@ -47,12 +47,16 @@ const createGameStateWithPlayer = (overrides?: Partial<PlayerStats>): GameState 
         isInExitProcess: false,
         nextBoardMeetingWeek: 12,
         lastFinancialUpdate: 0,
+        dealPhase: 'PIPELINE' as const,
+        actionsThisWeek: [],
+        lastManagementActions: {} as any,
+        pendingDecisions: [],
       }],
       ...overrides,
     }
   };
 
-  const state = gameReducer(initialState, initAction);
+  const state = gameReducer(initialState, initAction as any);
 
   // Apply any overrides that need to be set after initialization
   if (overrides && state.playerStats) {
@@ -293,7 +297,7 @@ describe('Regression: UPDATE_PLAYER_STATS with null playerStats initializes corr
     const state = gameReducer(initialState, {
       type: 'UPDATE_PLAYER_STATS',
       payload: {
-        level: 'ANALYST',
+        level: PlayerLevel.ASSOCIATE,
         cash: 2000,
         reputation: 15,
       },

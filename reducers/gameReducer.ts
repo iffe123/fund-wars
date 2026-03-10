@@ -16,7 +16,7 @@ import {
     PlayerStats, StatChanges, PortfolioCompany, SkillInvestment,
     DayType, TimeSlot, KnowledgeEntry, NPC, RivalFund, CompetitiveDeal,
     AIState, Warning, CompanyActiveEvent, NPCDrama, ActionType,
-    DealType, ACTION_COSTS
+    DealType, ACTION_COSTS, FactionReputation
 } from '../types';
 import { generateCompanyEvent } from '../constants/companyEvents';
 import {
@@ -206,7 +206,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                         level: changes.level,
                         cash: changes.cash ?? 1500,
                         reputation: changes.reputation ?? 10,
-                        factionReputation: changes.factionReputation ?? DEFAULT_FACTION_REPUTATION,
+                        factionReputation: hydrateFactionReputation(changes.factionReputation as FactionReputation ?? DEFAULT_FACTION_REPUTATION),
                         stress: changes.stress ?? 0,
                         energy: changes.energy ?? 100,
                         analystRating: changes.analystRating ?? 50,
@@ -232,7 +232,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                         knowledgeLog: changes.knowledgeLog ?? [],
                         knowledgeFlags: changes.knowledgeFlags ?? [],
                         unlockedAchievements: changes.unlockedAchievements ?? [],
-                        sectorExpertise: changes.sectorExpertise ?? [],
+                        sectorExpertise: [] as import('../types').SectorExpertise[],
                         primarySector: changes.primarySector,
                         completedExits: changes.completedExits ?? [],
                         totalRealizedGains: changes.totalRealizedGains ?? 0,
@@ -249,7 +249,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                         },
                         fundFinances: changes.fundFinances ?? null,
                         dealAllocations: changes.dealAllocations ?? [],
-                        carryEligibleDeals: changes.carryEligibleDeals ?? [],
+                        carryEligibleDeals: [] as number[],
                         activeSkillInvestments: changes.activeSkillInvestments ?? [],
                         gameTime: changes.gameTime ?? {
                             week: 1,

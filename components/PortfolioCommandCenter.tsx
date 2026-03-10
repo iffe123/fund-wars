@@ -4,6 +4,15 @@ import { TerminalButton, TerminalPanel } from './TerminalUI';
 import type { PortfolioCompany, CompanyStatus } from '../types';
 import { getCompanyStatus } from '../utils/worldEngine';
 
+interface CommandAction {
+  label: string;
+  icon: string;
+  onClick: () => void;
+  disabled?: boolean;
+  tooltip?: string;
+  highlight?: boolean;
+}
+
 interface PortfolioCommandCenterProps {
   isOpen: boolean;
   onClose: () => void;
@@ -72,7 +81,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
 
   // Get actions based on company status
   // SUBMIT IOI removed - use proper flow in Asset Manager (Diligence → Leverage → IOI)
-  const getPipelineActions = (company: PortfolioCompany) => [
+  const getPipelineActions = (company: PortfolioCompany): CommandAction[] => [
     {
       label: company.isAnalyzed ? 'Refresh Diligence' : 'Analyze File',
       icon: 'fa-search',
@@ -98,7 +107,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
     },
   ];
 
-  const getOwnedCompanyActions = (company: PortfolioCompany) => [
+  const getOwnedCompanyActions = (company: PortfolioCompany): CommandAction[] => [
     {
       label: 'Review Financials',
       icon: 'fa-chart-line',
@@ -159,7 +168,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
     },
   ];
 
-  const getExitingActions = (company: PortfolioCompany) => [
+  const getExitingActions = (company: PortfolioCompany): CommandAction[] => [
     {
       label: 'Continue Exit Process',
       icon: 'fa-forward',

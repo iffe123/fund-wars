@@ -83,10 +83,10 @@ const NPCDialogueModal: React.FC<NPCDialogueModalProps> = ({
     // Apply response effects
     if (response.effects) {
       if (response.effects.relationship) {
-        setRelationshipDelta(prev => prev + response.effects.relationship!);
+        setRelationshipDelta(prev => prev + response.effects?.relationship!);
       }
-      if (response.effects.unlockInfo) {
-        setInfoGained(prev => [...prev, response.effects.unlockInfo!]);
+      if (response.effects?.unlockInfo) {
+        setInfoGained(prev => [...prev, response.effects?.unlockInfo!]);
       }
     }
 
@@ -120,11 +120,11 @@ const NPCDialogueModal: React.FC<NPCDialogueModalProps> = ({
     if (!currentNode.responses && !currentNode.autoAdvance && !currentNode.nextNodeId) {
       // Apply node effects
       if (currentNode.effects) {
-        if (currentNode.effects.relationship) {
-          setRelationshipDelta(prev => prev + currentNode.effects.relationship!);
+        if (currentNode.effects?.relationship) {
+          setRelationshipDelta(prev => prev + currentNode.effects?.relationship!);
         }
-        if (currentNode.effects.unlockInfo) {
-          setInfoGained(prev => [...prev, currentNode.effects.unlockInfo!]);
+        if (currentNode.effects?.unlockInfo) {
+          setInfoGained(prev => [...prev, currentNode.effects?.unlockInfo!]);
         }
       }
 

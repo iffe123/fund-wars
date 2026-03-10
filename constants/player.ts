@@ -82,6 +82,7 @@ export const NORMAL_STATS: PlayerStats = {
     maxActions: 2,
     isNightGrinder: false,
     actionsUsedThisWeek: [],
+    actionsPerformedThisWeek: [],
   },
 };
 

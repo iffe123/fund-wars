@@ -12,7 +12,13 @@ export * from './constants/icPartners';
 
 // Services
 export * from './services/icPromptEngine';
-export * from './services/icEvaluationEngine';
+export {
+  generateEvaluationPrompt,
+  parseEvaluationResponse,
+  generateOfflineEvaluation,
+  parsePartnerVote,
+  generateVerdict,
+} from './services/icEvaluationEngine';
 export * from './services/icGeminiService';
 
 // Hooks

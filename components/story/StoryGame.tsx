@@ -13,7 +13,6 @@ import TitleScreen from './TitleScreen';
 import ChapterSelect from './ChapterSelect';
 import StoryScene from './StoryScene';
 import PathReveal from './PathReveal';
-import CharacterCreate from './CharacterCreate';
 import LoginScreen from '../LoginScreen';
 import PuzzleModal from '../PuzzleModal';
 import NPCDialogueModal from '../NPCDialogueModal';
@@ -54,9 +53,9 @@ const StoryGameInner: React.FC = () => {
   useEffect(() => {
     if (screen === 'playing' && game) {
       const flags = game.flags ? Array.from(game.flags) : [];
-      checkTriggers(game.stats.week || 1, flags);
+      checkTriggers((game as any).week || 1, flags);
     }
-  }, [screen, game?.stats.week, checkTriggers]);
+  }, [screen, game, checkTriggers]);
 
   // Handle puzzle completion - apply stat changes
   const handlePuzzleComplete = useCallback((result: PuzzleResult) => {
@@ -65,7 +64,7 @@ const StoryGameInner: React.FC = () => {
     if (result.passed && result.reward) {
       applyStatChanges({
         reputation: result.reward.reputation || 0,
-        financialEngineering: result.reward.financialEngineering || 0,
+        dealcraft: result.reward.financialEngineering || 0,
       });
     } else if (!result.passed && result.penalty) {
       applyStatChanges({
@@ -239,7 +238,7 @@ const StoryGameInner: React.FC = () => {
               dialogue={activeDialogue}
               playerStats={{
                 reputation: game.stats.reputation || 50,
-                financialEngineering: game.stats.financialEngineering || 10,
+                financialEngineering: game.stats.dealcraft || 10,
               }}
               flags={game.flags ? Array.from(game.flags) : []}
               onComplete={handleDialogueComplete}

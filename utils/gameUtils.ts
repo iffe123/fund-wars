@@ -209,3 +209,6 @@ export const hydrateCompetitiveDeal = (deal: unknown): CompetitiveDeal | null =>
 // ==================== CONSTANTS ====================
 
 export const MAX_PORTFOLIO_SIZE = 8;
+
+// Re-export from worldEngine for backwards compatibility
+export { initializePortfolioCompanyFields } from './worldEngine';

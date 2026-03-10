@@ -252,7 +252,11 @@ describe('Startup Phase 5: Game Initialization', () => {
       dealClosed: false,
       isInExitProcess: false,
       nextBoardMeetingWeek: 12,
-      lastFinancialUpdate: 0
+      lastFinancialUpdate: 0,
+      dealPhase: 'PIPELINE' as const,
+      actionsThisWeek: [],
+      lastManagementActions: {} as any,
+      pendingDecisions: [],
     };
 
     it('PackFancy is the initial portfolio company', () => {

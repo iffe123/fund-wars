@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { TerminalButton, TerminalPanel } from './TerminalUI';
 import { useHaptic } from '../hooks/useHaptic';
-import { useGame } from '../contexts/GameStateContext';
+import { useGameState } from '../contexts/GameStateContext';
 import {
   IC_PARTNERS,
   IC_QUESTIONS,
@@ -41,7 +41,7 @@ const PHASE_DESCRIPTIONS: Record<ICMeetingPhase, string> = {
 
 const ICPitchModal: React.FC<ICPitchModalProps> = ({ company, onComplete, onClose }) => {
   const { triggerImpact } = useHaptic();
-  const { playerStats } = useGame();
+  const { playerStats } = useGameState();
 
   // Meeting state
   const [phase, setPhase] = useState<ICMeetingPhase>('PREP');

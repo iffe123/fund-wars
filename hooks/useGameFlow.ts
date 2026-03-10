@@ -33,7 +33,7 @@ interface GameFlowDependencies {
   setBootComplete: (complete: boolean) => void;
 
   // Utilities
-  playSfx: (sfx: string) => void;
+  playSfx: (sfx: import('../context/AudioContext').SfxType) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   clearToasts: () => void;
   appendChatMessage: (message: ChatMessage) => void;
@@ -119,7 +119,7 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
         // Deal phase state machine fields
         dealPhase: 'PIPELINE',
         actionsThisWeek: [],
-        lastManagementActions: {},
+        lastManagementActions: {} as Record<import('../types').ManagementActionType, number>,
         pendingDecisions: [],
       },
     ];

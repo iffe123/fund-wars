@@ -43,7 +43,7 @@ export const useGamePersistence = () => {
 
         const loadGame = async () => {
             try {
-                const docRef = doc(db, 'users', currentUser.uid, 'savegame', 'primary');
+                const docRef = doc(db!, 'users', currentUser.uid, 'savegame', 'primary');
                 const docSnap = await getDocWithTimeout(docRef, 10000);
 
                 if (docSnap.exists()) {
@@ -106,7 +106,7 @@ export const useGamePersistence = () => {
         };
 
         try {
-            await setDoc(doc(db, 'users', currentUser.uid, 'savegame', 'primary'), gameStateToSave, { merge: true });
+            await setDoc(doc(db!, 'users', currentUser.uid, 'savegame', 'primary'), gameStateToSave, { merge: true });
             console.log("[CLOUD_SAVE] Game saved successfully.");
         } catch (error) {
             console.error("Error saving game:", error);

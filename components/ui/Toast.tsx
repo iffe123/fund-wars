@@ -144,7 +144,7 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({
   return (
     <div 
       className={`fixed ${positionClasses[position]} flex flex-col gap-2 pointer-events-none`}
-      style={{ zIndex: Z_INDEX.TOAST }}
+      style={{ zIndex: Z_INDEX.toast }}
     >
       {visibleToasts.map((toast) => (
         <div key={toast.id} className="pointer-events-auto">

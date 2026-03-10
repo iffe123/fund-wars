@@ -239,74 +239,7 @@ const ExitStrategyModal: React.FC<ExitStrategyModalProps> = ({
             </>
           )}
 
-          {/* Remove CONFIRM phase - not needed */}
-          {false && phase === 'RESULT' && selectedOption && projectedValues && (
-            <div>
-              <h3 className="text-xl font-bold text-white mb-4">{selectedOption.name}</h3>
-
-              {/* Projected Returns */}
-              <div className="bg-slate-800 rounded-lg p-4 mb-6">
-                <h4 className="text-sm uppercase text-slate-500 mb-3">Projected Returns</h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-white">{formatCurrency(projectedValues.exitValue)}</p>
-                    <p className="text-xs text-slate-500">Exit Value</p>
-                  </div>
-                  <div className="text-center">
-                    <p className={`text-2xl font-bold ${projectedValues.multiple >= 2 ? 'text-green-400' : projectedValues.multiple >= 1 ? 'text-amber-400' : 'text-red-400'}`}>
-                      {projectedValues.multiple.toFixed(2)}x
-                    </p>
-                    <p className="text-xs text-slate-500">Multiple</p>
-                  </div>
-                  <div className="text-center">
-                    <p className={`text-2xl font-bold ${projectedValues.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {projectedValues.profit >= 0 ? '+' : ''}{formatCurrency(projectedValues.profit)}
-                    </p>
-                    <p className="text-xs text-slate-500">Profit</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Timeline */}
-              <div className="bg-slate-800/50 rounded-lg p-4 mb-6">
-                <div className="flex items-center gap-2 text-sm">
-                  <i className="fas fa-clock text-slate-400"></i>
-                  <span className="text-slate-400">
-                    Expected time to close: <span className="text-white">{selectedOption.timeToClose} months</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Risks */}
-              <div className="mb-6">
-                <h4 className="text-sm uppercase text-slate-500 mb-2">Key Risks</h4>
-                <ul className="space-y-2">
-                  {selectedOption.risks.map((risk, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-slate-400">
-                      <i className="fas fa-exclamation-triangle text-amber-400 mt-0.5"></i>
-                      {risk}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setPhase('SELECT')}
-                  className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={handleExecuteExit}
-                  className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors"
-                >
-                  Execute Exit
-                </button>
-              </div>
-            </div>
-          )}
+          {/* CONFIRM phase removed - not needed */}
 
           {phase === 'RESULT' && exitOutcome && (
             <div className="text-center py-8">

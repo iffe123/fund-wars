@@ -108,7 +108,7 @@ export const useRivalAI = () => {
             // Decide tactical move using advanced AI
             const decision = decideTacticalMove(
                 rival,
-                mindset,
+                mindset as any,
                 playerStats,
                 workingDeals,
                 marketVolatility,

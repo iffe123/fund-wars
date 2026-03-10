@@ -9,7 +9,7 @@ export interface DialogueNode {
   id: string;
   speaker: string;
   text: string;
-  emotion?: 'neutral' | 'happy' | 'angry' | 'sad' | 'suspicious' | 'impressed' | 'dismissive';
+  emotion?: 'neutral' | 'happy' | 'angry' | 'sad' | 'suspicious' | 'impressed' | 'dismissive' | 'serious' | 'nervous';
   responses?: DialogueResponse[];
   autoAdvance?: boolean; // Auto-advance after delay
   effects?: DialogueEffects;
@@ -19,7 +19,7 @@ export interface DialogueNode {
 export interface DialogueResponse {
   id: string;
   text: string;
-  tone?: 'professional' | 'aggressive' | 'friendly' | 'sarcastic' | 'humble';
+  tone?: 'professional' | 'aggressive' | 'friendly' | 'sarcastic' | 'humble' | 'confident' | 'curious';
   nextNodeId: string;
   requirements?: {
     minReputation?: number;

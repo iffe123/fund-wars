@@ -348,7 +348,7 @@ const DealAutopsy: React.FC<DealAutopsyProps> = ({
                   </div>
                   <div className="text-sm text-cyan-300 italic">
                     <i className="fas fa-lightbulb mr-1"></i>
-                    Lesson: {historicalParallel.lesson || (historicalParallel as typeof DEAL_PARALLELS[0]).keyLessons?.[0]}
+                    Lesson: {'lesson' in historicalParallel ? historicalParallel.lesson : (historicalParallel as any).keyLessons?.[0]}
                   </div>
                 </div>
               )}
