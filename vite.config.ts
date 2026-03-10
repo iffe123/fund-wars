@@ -11,7 +11,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
-          if (id.includes('@google/genai')) return 'genai';
+          // No external AI SDK - using direct fetch to Anthropic API
           if (id.includes('firebase')) return 'firebase';
           if (id.includes('howler')) return 'howler';
           if (id.includes('react')) return 'react';

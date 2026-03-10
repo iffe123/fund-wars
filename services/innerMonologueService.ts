@@ -8,7 +8,7 @@
  * as AI-generated internal dialogue.
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { callAI, isAIConfigured } from './aiClient';
 import type { PlayerStats } from '../types';
 import type {
   InnerVoice,
@@ -18,18 +18,6 @@ import type {
   CompactGameState,
 } from '../types/aiBlueprint';
 import { SQI_SYSTEM_PROMPT } from '../types/aiBlueprint';
-
-// @ts-ignore
-const API_KEY = (typeof import.meta !== 'undefined' && import.meta.env)
-  ? import.meta.env.VITE_API_KEY
-  : undefined;
-
-let _aiClient: GoogleGenAI | null = null;
-const getAiClient = (): GoogleGenAI | null => {
-  if (!API_KEY) return null;
-  if (!_aiClient) _aiClient = new GoogleGenAI({ apiKey: API_KEY });
-  return _aiClient;
-};
 
 // ==================== VOICE DEFINITIONS ====================
 
@@ -42,7 +30,7 @@ Example: "Do the math. At 3.2x exit, that's $47M in carry. Your lake house just 
 
 Example: "That footnote on page 47. The one about 'normalized' EBITDA. Nobody normalizes unless they're hiding something."`,
 
-  empathy: `You are EMPATHY, an inner voice in a private equity professional's mind. You are quiet and speak rarely, but when you do, it's memorable and haunting. You see the human cost of every deal. You notice the employees, the families, the communities. You don't moralize — you just observe what others choose not to see.
+  empathy: `You are EMPATHY, an inner voice in a private equity professional's mind. You are quiet and speak rarely, but when you do, it's memorable and haunting. You see the human cost of every deal. You notice the employees, the families, the communities. You don't moralize \u2014 you just observe what others choose not to see.
 
 Example: "There are 340 employees at that company. You just said 'headcount reduction' like you were ordering lunch."`,
 
@@ -50,7 +38,7 @@ Example: "There are 340 employees at that company. You just said 'headcount redu
 
 Example: "Hunter closed that deal at 8.2x? You could have closed it at 7.5x with your eyes shut."`,
 
-  burnout: `You are BURNOUT, an inner voice in a private equity professional's mind. You use gallows humor and existential dread. You count the hours, the weekends missed, the relationships that faded. You're not angry — you're exhausted and darkly funny about it. You notice the absurdity of trading your life for spreadsheets.
+  burnout: `You are BURNOUT, an inner voice in a private equity professional's mind. You use gallows humor and existential dread. You count the hours, the weekends missed, the relationships that faded. You're not angry \u2014 you're exhausted and darkly funny about it. You notice the absurdity of trading your life for spreadsheets.
 
 Example: "Week 47. You've spent more time with this spreadsheet than with any human being this year. The spreadsheet doesn't mind."`,
 };
@@ -80,7 +68,7 @@ const OFFLINE_INTERJECTIONS: Record<InnerVoiceId, string[]> = {
     "The founder built this over twenty years. You'll optimize it in twenty months. Progress, right?",
   ],
   ego: [
-    "Another deal closed. Another notch on the belt. Keep counting — they keep score here.",
+    "Another deal closed. Another notch on the belt. Keep counting \u2014 they keep score here.",
     "The other associates are watching you. Some with admiration. Most with envy. Good.",
     "Second place is just the first loser in a nicer suit.",
     "Your name came up in the partners' meeting. That's either very good or very bad. Probably both.",
@@ -264,8 +252,7 @@ export const generateInterjection = async (
   const speakChance = voice.currentIntensity / 100;
   if (Math.random() > speakChance) return null;
 
-  const ai = getAiClient();
-  if (!ai) {
+  if (!isAIConfigured()) {
     return getOfflineInterjection(voice, trigger, gameState);
   }
 
@@ -278,20 +265,19 @@ RECENT: ${gameState.recentActions.slice(-3).join('; ')}
 
 Generate ONE short inner voice interjection (1-2 sentences max). Be specific to the context. Output ONLY the interjection text.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: {
-        systemInstruction: `${SQI_SYSTEM_PROMPT}\n\n${voice.systemPrompt}`,
-      },
-    } as any);
+    const text = await callAI({
+      system: `${SQI_SYSTEM_PROMPT}\n\n${voice.systemPrompt}`,
+      messages: [{ role: 'user', content: prompt }],
+      maxTokens: 256,
+      temperature: 0.8,
+    });
 
-    const text = ((response as any)?.text || '').trim();
-    if (!text || text.length > 300) return getOfflineInterjection(voice, trigger, gameState);
+    const trimmed = text.trim();
+    if (!trimmed || trimmed.length > 300) return getOfflineInterjection(voice, trigger, gameState);
 
     return {
       voiceId: voice.id,
-      text,
+      text: trimmed,
       trigger,
       tick: gameState.week,
       dismissed: false,
