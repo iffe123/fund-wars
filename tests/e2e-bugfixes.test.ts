@@ -304,7 +304,7 @@ describe('Regression: UPDATE_PLAYER_STATS with null playerStats initializes corr
     });
 
     expect(state.playerStats).not.toBeNull();
-    expect(state.playerStats!.level).toBe('ANALYST');
+    expect(state.playerStats!.level).toBe('Associate');
     expect(state.playerStats!.cash).toBe(2000);
     expect(state.playerStats!.personalFinances.bankBalance).toBe(2000);
   });
