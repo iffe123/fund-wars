@@ -101,6 +101,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         role="button"
         tabIndex={0}
         title="Click any stat for details"
+        aria-label="Player stats overview — click for details"
       >
       {/* MOBILE VIEW (< 768px) */}
       <div className="flex md:hidden items-center w-full justify-between gap-3">
@@ -110,7 +111,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
             <i className="fas fa-wallet text-emerald-400 text-sm"></i>
           </div>
           <div className="flex flex-col">
-            <span className="text-[9px] text-slate-400 uppercase tracking-wider font-bold">Bank</span>
+            <span className="text-[11px] text-slate-400 uppercase tracking-wider font-bold">Bank</span>
             <span className="text-emerald-400 font-bold text-sm tabular-nums">{formatMoney(stats.personalFinances?.bankBalance ?? stats.cash)}</span>
           </div>
         </div>
@@ -118,8 +119,8 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         {/* Debt Indicator (if applicable) */}
         {stats.loanBalance > 0 && (
           <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-red-950/30 border border-red-900/30">
-            <i className="fas fa-skull text-red-400 text-[10px]"></i>
-            <span className="text-red-400 text-[10px] font-bold">{formatMoney(stats.loanBalance)}</span>
+            <i className="fas fa-skull text-red-400 text-xs"></i>
+            <span className="text-red-400 text-xs font-bold">{formatMoney(stats.loanBalance)}</span>
           </div>
         )}
 
@@ -135,7 +136,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
                 />
               </div>
             </div>
-            <span className={`text-[10px] font-bold tabular-nums ${getStressColor(stats.stress)}`}>
+            <span className={`text-xs font-bold tabular-nums ${getStressColor(stats.stress)}`}>
               {stats.stress}%
             </span>
           </div>
@@ -143,7 +144,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
 
         {/* Level Badge */}
         <div className="px-2 py-1 rounded bg-amber-950/30 border border-amber-800/30">
-          <span className="text-amber-400 text-[10px] font-bold uppercase tracking-wider">L{stats.level}</span>
+          <span className="text-amber-400 text-xs font-bold uppercase tracking-wider">L{stats.level}</span>
         </div>
 
         {/* Stats Info Hint (Mobile) */}
@@ -173,8 +174,8 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
       <div className="hidden md:flex items-center gap-4 text-xs font-mono w-full justify-between">
         {/* Left Section - Personal Finances */}
         <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800/40 border border-slate-700/30">
-          <i className="fas fa-user text-slate-500 text-[10px] mr-1"></i>
-          <span className="text-[8px] text-slate-500 uppercase tracking-wider mr-2">Personal</span>
+          <i className="fas fa-user text-slate-400 text-[10px] mr-1"></i>
+          <span className="text-[10px] text-slate-400 uppercase tracking-wider mr-2">Personal</span>
 
           {/* Bank Balance */}
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-800/30">
@@ -193,8 +194,8 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
 
         {/* Center Section - Fund Capital */}
         <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-950/30 border border-blue-700/30">
-          <i className="fas fa-briefcase text-blue-500 text-[10px] mr-1"></i>
-          <span className="text-[8px] text-blue-500 uppercase tracking-wider mr-2">Fund</span>
+          <i className="fas fa-briefcase text-blue-400 text-[10px] mr-1"></i>
+          <span className="text-[10px] text-blue-400 uppercase tracking-wider mr-2">Fund</span>
 
           {/* Dry Powder */}
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-cyan-950/40 border border-cyan-800/30">

@@ -117,15 +117,24 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
       return slots.includes(currentTimeSlot);
   };
 
+  const [sendError, setSendError] = useState<string | null>(null);
+
   const handleSend = async () => {
       if (!input.trim()) return;
+      setSendError(null);
 
       if (activeTab === 'ADVISOR') {
           onSendMessageToAdvisor(input);
       } else {
           setLoadingNpcs(prev => ({ ...prev, [activeTab]: true }));
-          await onSendMessageToNPC(activeTab, input);
-          setLoadingNpcs(prev => ({ ...prev, [activeTab]: false }));
+          try {
+              await onSendMessageToNPC(activeTab, input);
+          } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : 'Failed to send message';
+              setSendError(message);
+          } finally {
+              setLoadingNpcs(prev => ({ ...prev, [activeTab]: false }));
+          }
       }
       setInput('');
   };
@@ -373,7 +382,10 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                                 ${isTutorialTarget ? 'z-[100] bg-amber-900/40 border-amber-400 ring-2 ring-amber-400 animate-pulse shadow-[0_0_20px_rgba(251,191,36,0.5)]' : ''}
                             `}
                         >
-                            <i className={`fas ${npc.avatar} ${npc.isRival ? 'text-red-500' : isTutorialTarget ? 'text-amber-400' : 'text-slate-500'} text-lg`}></i>
+                            <div className="relative">
+                              <i className={`fas ${npc.avatar} ${npc.isRival ? 'text-red-500' : isTutorialTarget ? 'text-amber-400' : 'text-slate-500'} text-lg`}></i>
+                              <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-slate-950 ${isAvailable ? 'bg-emerald-400' : 'bg-slate-600'}`} title={isAvailable ? 'Available' : 'Off-hours'}></span>
+                            </div>
                             <div className="flex-1 truncate hidden md:block">
                                 <span className={`font-bold block ${isTutorialTarget ? 'text-amber-200' : ''}`}>{npc.name}</span>
                                 <span className="text-[10px] opacity-70 truncate">{npc.role}</span>
@@ -550,6 +562,13 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                         </div>
                     )}
 
+                    {sendError && (
+                        <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded px-3 py-1.5 mb-2 flex items-center gap-2">
+                            <i className="fas fa-exclamation-circle"></i>
+                            <span>{sendError}</span>
+                            <button onClick={() => setSendError(null)} className="ml-auto text-red-400 hover:text-red-300"><i className="fas fa-times"></i></button>
+                        </div>
+                    )}
                     <div className="flex space-x-2">
                         <div className="flex-1 relative">
                             <input

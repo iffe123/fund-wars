@@ -26,10 +26,22 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
     onComplete(stress);
   };
 
+  // Skip intro button (shown on all stages)
+  const skipButton = (
+    <button
+      onClick={() => handleChoice(10)}
+      className="absolute top-6 right-6 text-slate-500 hover:text-white text-sm font-mono transition-colors z-50"
+      aria-label="Skip intro sequence"
+    >
+      SKIP INTRO →
+    </button>
+  );
+
   // Stage 0: The Glory
   if (stage === 0) {
     return (
       <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center p-8 z-50">
+        {skipButton}
         <div className={`transition-opacity duration-1000 ${textVisible ? 'opacity-100' : 'opacity-0'} text-center max-w-2xl`}>
           <h1 className="text-4xl md:text-6xl font-bower mb-8 tracking-wider">Wharton, Class of '24</h1>
           <p className="text-xl md:text-2xl font-light text-slate-300 mb-4">Valedictorian.</p>
@@ -51,6 +63,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
   if (stage === 1) {
     return (
       <div className="fixed inset-0 bg-slate-900 text-slate-200 flex flex-col items-center justify-center p-8 z-50">
+        {skipButton}
         <div className={`transition-opacity duration-1000 ${textVisible ? 'opacity-100' : 'opacity-0'} text-center max-w-2xl`}>
           <div className="mb-8">
             <span className="font-mono text-green-500 text-sm">SYSTEM_TIME: 06:45:00</span>
@@ -77,6 +90,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
   if (stage === 2) {
     return (
       <div className="fixed inset-0 bg-white text-slate-900 flex flex-col items-center justify-center p-8 z-50">
+        {skipButton}
         <div className={`transition-all duration-500 ${textVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'} max-w-2xl w-full bg-slate-50 border border-slate-200 p-8 rounded-xl shadow-2xl`}>
           <div className="flex items-center space-x-4 mb-6 pb-6 border-b border-slate-200">
              <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center border-2 border-slate-300">
@@ -119,6 +133,8 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
     );
   }
 
+  // Fallback: if stage exceeds expected range, complete the intro
+  onComplete(10);
   return null;
 };
 

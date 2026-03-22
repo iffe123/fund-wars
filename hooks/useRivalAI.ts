@@ -1,10 +1,10 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useGameState, useGameDispatch } from '../contexts/GameStateContext';
-import { 
-    calculateAdaptiveDifficulty, generateRivalMindset, getVendettaPhase, 
+import {
+    calculateAdaptiveDifficulty, generateRivalMindset, getVendettaPhase,
     checkCoalitionFormation, decideTacticalMove, generateSurpriseEvent,
     calculateTacticalMoveEffects, generateTacticalMoveMessage,
-    generateAIKnowledgeEntry
+    generateAIKnowledgeEntry, PSYCHOLOGICAL_TACTICS
 } from '../utils/rivalAI';
 import { 
     COALITION_ANNOUNCEMENTS, PSYCHOLOGICAL_WARFARE_MESSAGES, SURPRISE_ATTACK_MESSAGES, 
@@ -94,7 +94,9 @@ export const useRivalAI = () => {
         });
 
         // Process each rival's turn with advanced AI
+        let successfulActions = 0;
         for (const rival of sortedRivals) {
+            if (successfulActions >= 3) break;
             const cooldownReady = (rival.lastActionTick ?? -5) < currentTick - 1;
             if (!cooldownReady && Math.random() > 0.4) continue;
 
@@ -186,7 +188,6 @@ export const useRivalAI = () => {
                     break;
                 }
                 
-                // ... (Implementation for other cases similar to GameContext.tsx)
                 case 'RUMOR': {
                     if (success) {
                          const vendetta = rival.vendetta ?? 40;
@@ -195,7 +196,7 @@ export const useRivalAI = () => {
                             : f
                          );
                          fundsChanged = true;
-                         
+
                          const effects = calculateTacticalMoveEffects(decision, success, rival);
                          stressDelta += effects.stress || 0;
                          reputationDelta += effects.reputation || 0;
@@ -206,16 +207,193 @@ export const useRivalAI = () => {
                     }
                     break;
                 }
-                
-                // For brevity, skipping full implementation of other cases, but they follow the pattern.
-                // In a real implementation I would copy all cases.
-                // Assuming I should implement them for completeness.
-                
-                // ...
+
+                case 'COALITION': {
+                    if (success) {
+                        const vendetta = rival.vendetta ?? 40;
+                        workingFunds = workingFunds.map(f => f.id === rival.id
+                            ? { ...f, vendetta: clampStat(vendetta + 4), lastActionTick: currentTick }
+                            : f
+                        );
+                        fundsChanged = true;
+
+                        const effects = calculateTacticalMoveEffects(decision, success, rival);
+                        stressDelta += effects.stress || 0;
+                        reputationDelta += effects.reputation || 0;
+                        rivalRepDelta += effects.factionReputation?.RIVALS || 0;
+
+                        dispatch({ type: 'ADD_LOG_ENTRY', payload: generateTacticalMoveMessage(rival, decision, success) });
+                        knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                    }
+                    break;
+                }
+
+                case 'SABOTAGE': {
+                    if (success) {
+                        const vendetta = rival.vendetta ?? 40;
+                        workingFunds = workingFunds.map(f => f.id === rival.id
+                            ? { ...f, vendetta: clampStat(vendetta + 6), lastActionTick: currentTick }
+                            : f
+                        );
+                        fundsChanged = true;
+
+                        const effects = calculateTacticalMoveEffects(decision, success, rival);
+                        stressDelta += effects.stress || 0;
+                        reputationDelta += effects.reputation || 0;
+                        auditRiskDelta += effects.auditRisk || 0;
+                        rivalRepDelta += effects.factionReputation?.RIVALS || 0;
+
+                        dispatch({ type: 'ADD_LOG_ENTRY', payload: generateTacticalMoveMessage(rival, decision, success) });
+                        knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                    }
+                    break;
+                }
+
+                case 'MARKET_MANIPULATION': {
+                    if (success) {
+                        const vendetta = rival.vendetta ?? 40;
+                        workingFunds = workingFunds.map(f => f.id === rival.id
+                            ? { ...f, vendetta: clampStat(vendetta + 3), lastActionTick: currentTick }
+                            : f
+                        );
+                        fundsChanged = true;
+
+                        // Inflate asking prices on active deals the player might be interested in
+                        workingDeals = workingDeals.map(d => ({
+                            ...d,
+                            askingPrice: Math.round(d.askingPrice * (1 + 0.05 + Math.random() * 0.1)),
+                        }));
+                        dealsChanged = true;
+
+                        const effects = calculateTacticalMoveEffects(decision, success, rival);
+                        stressDelta += effects.stress || 0;
+                        reputationDelta += effects.reputation || 0;
+                        auditRiskDelta += effects.auditRisk || 0;
+                        rivalRepDelta += effects.factionReputation?.RIVALS || 0;
+
+                        dispatch({ type: 'ADD_LOG_ENTRY', payload: generateTacticalMoveMessage(rival, decision, success) });
+                        knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                    }
+                    break;
+                }
+
+                case 'PSYCHOLOGICAL_WARFARE': {
+                    if (success) {
+                        const vendetta = rival.vendetta ?? 40;
+                        const tactic = PSYCHOLOGICAL_TACTICS[Math.floor(Math.random() * PSYCHOLOGICAL_TACTICS.length)];
+
+                        workingFunds = workingFunds.map(f => f.id === rival.id
+                            ? { ...f, vendetta: clampStat(vendetta + 2), lastActionTick: currentTick }
+                            : f
+                        );
+                        fundsChanged = true;
+
+                        const effects = calculateTacticalMoveEffects(decision, success, rival);
+                        stressDelta += effects.stress || 0;
+                        reputationDelta += effects.reputation || 0;
+                        auditRiskDelta += effects.auditRisk || 0;
+                        energyDelta += effects.energy || 0;
+
+                        // Apply the specific psychological tactic effect
+                        if (tactic.effect === 'energy') {
+                            energyDelta += tactic.magnitude;
+                        } else if (tactic.effect === 'stress') {
+                            stressDelta += Math.round(tactic.magnitude * 0.5);
+                        }
+
+                        dispatch({
+                            type: 'ADD_LOG_ENTRY',
+                            payload: `PSYCH WARFARE: ${rival.managingPartner} ${tactic.message}`,
+                        });
+                        knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                    }
+                    break;
+                }
+
+                case 'SURPRISE_BID': {
+                    const vendetta = rival.vendetta ?? 40;
+                    const candidateDeals = workingDeals
+                        .filter(d => d.interestedRivals.includes(rival.id) || d.isHot)
+                        .sort((a, b) => (b.askingPrice - a.askingPrice));
+
+                    const targetDeal = candidateDeals[0];
+                    if (targetDeal && success) {
+                        workingDeals = workingDeals.filter(d => d.id !== targetDeal.id);
+                        dealsChanged = true;
+
+                        workingFunds = workingFunds.map(f => {
+                            if (f.id !== rival.id) return f;
+
+                            const portfolioEntry = {
+                                name: targetDeal.companyName,
+                                dealType: targetDeal.dealType,
+                                acquisitionPrice: Math.round(targetDeal.askingPrice * 1.2),
+                                currentValue: Math.round(targetDeal.askingPrice * 1.25),
+                                acquiredMonth: playerStats.gameMonth,
+                                acquiredYear: playerStats.gameYear,
+                            };
+
+                            fundsChanged = true;
+                            return {
+                                ...f,
+                                dryPowder: Math.max(0, f.dryPowder - Math.round(targetDeal.askingPrice * 0.8)),
+                                portfolio: [...f.portfolio, portfolioEntry],
+                                totalDeals: f.totalDeals + 1,
+                                winStreak: f.winStreak + 1,
+                                reputation: clampStat(f.reputation + 3),
+                                vendetta: clampStat(vendetta + 7),
+                                lastActionTick: currentTick,
+                            };
+                        });
+
+                        const effects = calculateTacticalMoveEffects(decision, success, rival);
+                        stressDelta += effects.stress || 0;
+                        reputationDelta -= 3;
+                        rivalRepDelta -= 3;
+
+                        dispatch({
+                            type: 'UPDATE_NPC',
+                            payload: {
+                                id: rival.npcId,
+                                updates: {
+                                    memories: [
+                                        ...state.npcs.find(n => n.id === rival.npcId)?.memories || [],
+                                        normalizeMemory({
+                                            summary: `Surprise bid stole ${targetDeal.companyName} right out from under you.`,
+                                            sentiment: 'negative',
+                                            tags: ['rival', 'deal', 'surprise_bid'],
+                                        }, rival.id)
+                                    ]
+                                }
+                            }
+                        });
+                        knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                        dispatch({ type: 'ADD_LOG_ENTRY', payload: generateTacticalMoveMessage(rival, decision, success) });
+                    }
+                    break;
+                }
+
+                case 'STRATEGIC_RETREAT': {
+                    const vendetta = rival.vendetta ?? 40;
+                    workingFunds = workingFunds.map(f => f.id === rival.id
+                        ? {
+                            ...f,
+                            vendetta: clampStat(vendetta - 8),
+                            aggressionLevel: Math.max(10, f.aggressionLevel - 5),
+                            lastActionTick: currentTick,
+                          }
+                        : f
+                    );
+                    fundsChanged = true;
+                    stressDelta -= 3;
+
+                    dispatch({ type: 'ADD_LOG_ENTRY', payload: generateTacticalMoveMessage(rival, decision, success) });
+                    knowledgeGain.push(generateAIKnowledgeEntry(rival, decision, success));
+                    break;
+                }
             }
-            
-            // Only process one rival per tick
-            if (success) break;
+
+            if (success) successfulActions++;
         }
 
         if (fundsChanged) dispatch({ type: 'SET_RIVAL_FUNDS', payload: workingFunds.map(hydrateRivalFund) });

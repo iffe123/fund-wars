@@ -32,8 +32,8 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
       },
     },
     modifiers: {
-      positive: 1.0,         // Reduced from 1.2 - no more easy wins
-      negative: 0.9,         // Increased from 0.8 - consequences still bite
+      positive: 1.3,         // Buffed from 1.0 - trust fund privilege pays off
+      negative: 0.7,         // Reduced from 0.9 - daddy's money cushions the blow
     },
   },
   Normal: {
@@ -54,27 +54,27 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
     description: "You clawed your way here with pure grit. Everyone is waiting for you to fail. One mistake could end everything.",
     initialStats: {
       ...NORMAL_STATS,
-      cash: 300,             // Reduced from 500 - even more broke
-      stress: 45,            // Increased from 35
+      cash: 2000,            // Increased from 300 - at least you saved something
+      stress: 30,            // Reduced from 45 - still manageable
       reputation: 5,         // Start with almost no reputation
       analystRating: 35,     // Reduced from 40
       financialEngineering: 3, // Reduced from 5
       portfolio: [],
       personalFinances: {
-        bankBalance: 300,
+        bankBalance: 2000,
         totalEarnings: 0,
         salaryYTD: 0,
         bonusYTD: 0,
         carryReceived: 0,
-        outstandingLoans: 25000,     // Increased from 15k - more debt
-        loanInterestRate: 0.10,      // Increased from 8% - worse terms
+        outstandingLoans: 10000,     // Reduced from 25k - less crushing debt
+        loanInterestRate: 0.08,      // Reduced from 10% - slightly better terms
         monthlyBurn: 2500,           // Increased burn rate
         lifestyleLevel: 'BROKE_ASSOCIATE',
       },
     },
     modifiers: {
-      positive: 0.7,         // Reduced from 0.8 - wins are rare
-      negative: 1.5,         // Increased from 1.2 - failures are devastating
+      positive: 0.8,         // Increased from 0.7 - wins are hard but possible
+      negative: 1.3,         // Reduced from 1.5 - failures hurt but don't destroy
     },
   },
 };

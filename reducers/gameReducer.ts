@@ -25,6 +25,7 @@ import {
 import { createDefaultBlueprintAIState } from '../services/blueprintAIService';
 import { suppressVoice, unsuppressVoice } from '../services/innerMonologueService';
 import { processGossipTick } from '../services/blueprintAIService';
+import { WEEKLY_DECAY, STRESS_THRESHOLDS, REPUTATION_THRESHOLDS } from '../constants/difficulty';
 
 // Helper: Calculate Annual Bonus
 const calculateAnnualBonus = (stats: PlayerStats): number => {
@@ -960,25 +961,67 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 actionsThisWeek: [],
             }));
 
+            // Apply weekly stat decay
+            const decayedReputation = clampStat((state.playerStats.reputation || 0) + WEEKLY_DECAY.reputation);
+            const decayedStress = clampStat((state.playerStats.stress || 0) + WEEKLY_DECAY.stress);
+
+            const newGameTime = {
+                week: currentWeek,
+                year: 1 + yearsPassed,
+                quarter,
+                actionsRemaining: state.playerStats.gameTime.maxActions,
+                maxActions: state.playerStats.gameTime.maxActions,
+                isNightGrinder: false,
+                actionsUsedThisWeek: [] as ActionType[],
+                actionsPerformedThisWeek: [] as string[],
+            };
+
+            // Check stress breakdown
+            if (decayedStress >= STRESS_THRESHOLDS.BREAKDOWN) {
+                const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                return {
+                    ...state,
+                    playerStats: {
+                        ...state.playerStats,
+                        stress: decayedStress,
+                        reputation: decayedReputation,
+                        portfolio: updatedPortfolio,
+                        gameTime: newGameTime,
+                    },
+                    gamePhase: 'GAME_OVER' as const,
+                    actionLog: [`${timestamp} // BURNOUT: Your stress levels have reached critical. You collapse at your desk.`, ...state.actionLog].slice(0, 50),
+                };
+            }
+
+            // Check reputation fired
+            if (decayedReputation <= REPUTATION_THRESHOLDS.FIRED && (state.playerStats.gameTime?.week ?? 0) > 4) {
+                const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                return {
+                    ...state,
+                    playerStats: {
+                        ...state.playerStats,
+                        stress: decayedStress,
+                        reputation: decayedReputation,
+                        portfolio: updatedPortfolio,
+                        gameTime: newGameTime,
+                    },
+                    gamePhase: 'GAME_OVER' as const,
+                    actionLog: [`${timestamp} // FIRED: Your reputation has tanked. Security escorts you out of the building.`, ...state.actionLog].slice(0, 50),
+                };
+            }
+
             const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            
+
             return {
                 ...state,
                 playerStats: {
                     ...state.playerStats,
                     energy: Math.max(0, (state.playerStats.energy || 100) + (nightGrinderPenalty.energy || 0)),
                     health: Math.max(0, (state.playerStats.health || 100) + (nightGrinderPenalty.health || 0)),
+                    stress: decayedStress,
+                    reputation: decayedReputation,
                     portfolio: updatedPortfolio,
-                    gameTime: {
-                        week: currentWeek,
-                        year: 1 + yearsPassed,
-                        quarter,
-                        actionsRemaining: state.playerStats.gameTime.maxActions,
-                        maxActions: state.playerStats.gameTime.maxActions,
-                        isNightGrinder: false,
-                        actionsUsedThisWeek: [],
-                        actionsPerformedThisWeek: [],
-                    }
+                    gameTime: newGameTime,
                 },
                 actionLog: [`${timestamp} // Week ${currentWeek} begins`, ...state.actionLog].slice(0, 50)
             };
