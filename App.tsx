@@ -478,9 +478,8 @@ const App: React.FC = () => {
   if (!legalAccepted) return <LegalDisclaimer onAccept={handleLegalAccept} />;
 
   if (!bootComplete) {
-      if (gamePhase === 'INTRO') return <IntroSequence quickStart onComplete={handleIntroComplete} />;
       // If we loaded a game and are not in Intro, skip boot sequence
-      if (playerStats) {
+      if (playerStats && gamePhase !== 'INTRO') {
           // Use useEffect pattern to avoid setting state during render
           // Show a brief loading state while transitioning
           return (
@@ -493,6 +492,10 @@ const App: React.FC = () => {
           );
       }
       return <SystemBoot onComplete={() => setBootComplete(true)} />;
+  }
+
+  if (gamePhase === 'INTRO') {
+      return <IntroSequence onComplete={handleIntroComplete} />;
   }
 
   return (
