@@ -1479,7 +1479,15 @@ But every ending is a new beginning. Every failure, a lesson learned.
 The world of Private Equity is unforgiving. But it rewards those who learn from their mistakes.
 
 *Ready to try again?*`,
-    choices: [],
+    requiresAcknowledgment: true,
+    choices: [
+      {
+        id: 'restart_chapter',
+        text: 'Return to Chapter Select',
+        nextSceneId: 'ch1_opening',
+        effects: {},
+      },
+    ],
   },
 
   // Chapter complete transition

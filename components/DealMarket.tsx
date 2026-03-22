@@ -88,7 +88,7 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
           const isExpanded = expandedDealId === deal.id;
           const affordable = canAfford(deal);
           const rivalNames = getRivalNames(deal.interestedRivals);
-          const multiple = deal.askingPrice / deal.metrics.ebitda;
+          const multiple = deal.metrics.ebitda > 0 ? deal.askingPrice / deal.metrics.ebitda : 0;
 
           return (
             <div
@@ -99,9 +99,13 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
                   : 'border-slate-700 bg-slate-800/50'
               } ${!affordable ? 'opacity-60' : ''}`}
             >
-              <div 
+              <div
                 className="p-3 cursor-pointer hover:bg-slate-700/30 transition-colors"
                 onClick={() => setExpandedDealId(isExpanded ? null : deal.id)}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
+                aria-label={`${deal.companyName} deal — ${(deal.askingPrice / 1000000).toFixed(0)}M${!affordable ? ' — insufficient funds' : ''}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
@@ -111,7 +115,12 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
                           <i className="fas fa-fire"></i> HOT
                         </span>
                       )}
-                      <span className="font-bold text-white truncate">{deal.companyName}</span>
+                      <span className="font-bold text-white truncate" title={deal.companyName}>{deal.companyName}</span>
+                      {!affordable && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/30 text-red-400 whitespace-nowrap">
+                          <i className="fas fa-ban mr-1"></i>LOW FUNDS
+                        </span>
+                      )}
                       <span className={`text-[10px] px-2 py-0.5 rounded border ${getDealTypeColor(deal.dealType)}`}>
                         {deal.dealType === DealType.LBO ? 'LBO' : deal.dealType === DealType.GROWTH_EQUITY ? 'GROWTH' : 'VC'}
                       </span>

@@ -272,8 +272,12 @@ Generate ONE creative bonus choice that doesn't overlap with existing choices. O
         ? parsed.style
         : 'risky',
       effects: {
-        stats: parsed.effects?.stats || {},
-        money: parsed.effects?.money || 0,
+        stats: parsed.effects?.stats
+          ? Object.fromEntries(
+              Object.entries(parsed.effects.stats).map(([k, v]) => [k, Math.max(-20, Math.min(20, Number(v) || 0))])
+            )
+          : {},
+        money: Math.max(-50000, Math.min(50000, Number(parsed.effects?.money) || 0)),
       },
     };
   } catch {
