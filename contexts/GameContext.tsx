@@ -5,7 +5,7 @@ import { RPGEventProvider, useRPGEvents } from './RPGEventContext';
 import { useGamePersistence } from '../hooks/useGamePersistence';
 import { useRivalAI } from '../hooks/useRivalAI';
 import { useMarketCycle } from '../hooks/useMarketCycle';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from './AuthContext';
 
 // Component to handle side effects and game loop logic
 const GameLogic: React.FC = () => {
@@ -77,3 +77,14 @@ export const useGame = () => {
 
 // Export RPGEventProvider for direct access if needed
 export { useRPGEvents };
+
+// Re-export utilities (previously in context/GameContext.tsx compatibility layer)
+export {
+    sanitizeKnowledgeLog,
+    sanitizeKnowledgeFlags,
+    hydrateNpc,
+    hydrateRivalFund,
+    hydrateFund,
+    hydrateCompetitiveDeal,
+    MAX_PORTFOLIO_SIZE
+} from '../utils/gameUtils';

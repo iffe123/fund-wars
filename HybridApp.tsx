@@ -6,9 +6,9 @@
  */
 
 import React, { useState, createContext, useContext, useCallback } from 'react';
-import { AuthProvider } from './context/AuthContext';
-import { AudioProvider } from './context/AudioContext';
-import { GameProvider } from './context/GameContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { AudioProvider } from './contexts/AudioContext';
+import { GameProvider } from './contexts/GameContext';
 import App from './App';
 import StoryApp from './StoryApp';
 

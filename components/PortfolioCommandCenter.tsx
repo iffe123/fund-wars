@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../contexts/GameContext';
 import { TerminalButton, TerminalPanel } from './TerminalUI';
 import type { PortfolioCompany, CompanyStatus } from '../types';
 import { getCompanyStatus } from '../utils/worldEngine';

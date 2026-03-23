@@ -12,11 +12,9 @@ export { useAuctionFlow } from './useAuctionFlow';
 export { useChatHandlers } from './useChatHandlers';
 
 // Existing hooks
-export { useToast } from './useToast';
 export { useEnhancedToast } from './useEnhancedToast';
 export { useWeekTransition } from './useWeekTransition';
 export { useGamePersistence } from './useGamePersistence';
 export { useRivalAI } from './useRivalAI';
 export { useMarketCycle } from './useMarketCycle';
-export { useGuidedAction } from './useGuidedAction';
 export { useHaptic } from './useHaptic';

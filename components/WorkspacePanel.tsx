@@ -2,7 +2,7 @@ import React, { memo, useMemo } from 'react';
 import type { PlayerStats, StatChanges, CompetitiveDeal, LifeAction } from '../types';
 import { TerminalPanel, TerminalButton } from './TerminalUI';
 import { LIFE_ACTIONS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS } from '../constants';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../contexts/GameContext';
 
 interface WorkspacePanelProps {
   playerStats: PlayerStats | null;

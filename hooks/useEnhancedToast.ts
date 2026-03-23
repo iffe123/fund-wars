@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useAudio } from '../context/AudioContext';
+import { useAudio } from '../contexts/AudioContext';
 import type { ToastConfig, ToastItem } from '../components/ui/Toast';
 
 export const useEnhancedToast = () => {

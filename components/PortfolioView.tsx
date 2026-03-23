@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, memo } from 'react';
 import type { PortfolioCompany, PortfolioAction, PlayerStats, CompanyStatus, DealPhase, LeverageModel, ManagementActionType } from '../types';
 import { MARKET_VOLATILITY_STYLES } from '../constants';
 import { TerminalButton, TerminalPanel, AsciiProgress, Badge } from './TerminalUI';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../contexts/GameContext';
 import AuctionModal from './AuctionModal';
 import BlackBoxModal from './BlackBoxModal';
 import BoardBattleModal from './BoardBattleModal';
@@ -23,7 +23,10 @@ interface PortfolioViewProps {
 }
 
 const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onAction, onBack, onJumpShip, canAccessFounder = false, backDisabled = false, onDiscuss }) => {
-  const { tutorialStep, updatePlayerStats, setTutorialStep, marketVolatility, rivalFunds, useAction, addLogEntry } = useGame();
+  const { updatePlayerStats, marketVolatility, rivalFunds, useAction, addLogEntry } = useGame();
+  // Legacy tutorial system removed - tutorialStep is always 0
+  const tutorialStep: number = 0;
+  const setTutorialStep = (_: number) => {}; // no-op for legacy code paths
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [analyzingIds, setAnalyzingIds] = useState<number[]>([]);
 
@@ -706,8 +709,8 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
         {selectedCompany && (
           <div className={`
             md:w-1/2 flex flex-col
-            absolute inset-0 md:static md:relative bg-black md:bg-transparent
-            ${(tutorialStep >= 3 && tutorialStep <= 6) ? 'z-[60]' : 'z-50 md:z-0'}
+            fixed inset-0 md:static md:relative bg-black md:bg-transparent
+            z-50 md:z-0
             animate-fade-in
           `}>
             <div className="bg-gradient-to-r from-slate-800/90 to-slate-800/70 px-4 py-2 text-[11px] uppercase text-slate-400 font-bold border-b border-slate-700/60 flex justify-between items-center shrink-0">
@@ -724,7 +727,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
               </button>
             </div>
 
-            <div className="p-4 overflow-auto custom-scrollbar flex-1 space-y-4 pb-28 md:pb-4">
+            <div className="p-4 overflow-y-auto overflow-x-hidden custom-scrollbar flex-1 space-y-4 pb-28 md:pb-4 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
 
               {/* CRISIS BANNER */}
               {selectedCompany.hasBoardCrisis && (
