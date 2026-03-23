@@ -2,7 +2,7 @@ import React, { memo, useMemo, useState, useCallback } from 'react';
 import type { PlayerStats, MarketVolatility } from '../types';
 import { PlayerLevel } from '../types';
 import { MARKET_VOLATILITY_STYLES, LEVEL_RANKS } from '../constants';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../contexts/GameContext';
 import TimeActionBar from './TimeActionBar';
 import StatsExplainerModal from './StatsExplainerModal';
 

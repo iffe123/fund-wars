@@ -85,16 +85,12 @@
         background: var(--terminal-bg);
         color: var(--terminal-text);
         overflow-x: hidden;
+        overflow-y: hidden; /* Let React app handle scroll, not body */
 
         /* Native App Feel */
-        overscroll-behavior-y: contain;
-        user-select: none;
+        overscroll-behavior-y: none; /* Prevent pull-to-refresh but allow scroll */
         -webkit-tap-highlight-color: transparent;
         -webkit-touch-callout: none;
-
-        /* Safe area padding for notched devices */
-        padding-top: var(--safe-area-inset-top);
-        padding-bottom: var(--safe-area-inset-bottom);
       }
 
       /* Terminal Scrollbar */

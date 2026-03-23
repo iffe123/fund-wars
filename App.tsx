@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { PlayerStats, ChatMessage, Choice, StatChanges, CompetitiveDeal, CompanyActiveEvent, NPCDrama } from './types';
 import { SCENARIOS, NEWS_EVENTS, PREDEFINED_QUESTIONS, Z_INDEX } from './constants';
 import NewsTicker from './components/NewsTicker';
@@ -14,16 +14,15 @@ import PlayerStatsDisplay from './components/PlayerStats';
 import BottomNav from './components/BottomNav';
 import LoginScreen from './components/LoginScreen';
 import LegalDisclaimer from './components/LegalDisclaimer';
-import { TerminalPanel, TerminalButton, TerminalToast } from './components/TerminalUI';
+import { TerminalPanel, TerminalButton } from './components/TerminalUI';
 import NpcListPanel from './components/NpcListPanel';
 import WorkspacePanel from './components/WorkspacePanel';
 import ScenarioPanel from './components/ScenarioPanel';
 import { getDynamicNewsEvents } from './services/geminiService';
-import { useGame } from './context/GameContext';
-import { useAuth } from './context/AuthContext';
-import { useAudio } from './context/AudioContext';
+import { useGame } from './contexts/GameContext';
+import { useAuth } from './contexts/AuthContext';
+import { useAudio } from './contexts/AudioContext';
 import { logEvent } from './services/analytics';
-import { useToast } from './hooks/useToast';
 import { useEnhancedToast } from './hooks/useEnhancedToast';
 import { ToastContainer } from './components/ui/Toast';
 import ActivityFeed from './components/ActivityFeed';
@@ -44,6 +43,8 @@ import GameEndModal from './components/GameEndModal';
 import TransparencyModal from './components/TransparencyModal';
 import EventDrivenWorkspace from './components/EventDrivenWorkspace';
 import StoryMilestoneModal from './components/StoryMilestoneModal';
+import CompanyEventModal from './components/CompanyEventModal';
+import NPCDramaModal from './components/NPCDramaModal';
 import { useStoryMilestones } from './hooks/useStoryMilestones';
 
 declare global {
@@ -70,8 +71,7 @@ const App: React.FC = () => {
   
   const { loading: authLoading } = useAuth();
   const { playSfx, playAmbience } = useAudio();
-  const { toasts: oldToasts, addToast: addOldToast, removeToast, clearToasts } = useToast();
-  const { toasts, removeToast: removeEnhancedToast, toast } = useEnhancedToast();
+  const { toasts, removeToast: removeEnhancedToast, toast, clearToasts } = useEnhancedToast();
   const { isTransitioning: isWeekTransitioning, startTransition: startWeekTransition } = useWeekTransition();
   const { pendingMilestone, dismissMilestone } = useStoryMilestones();
 
@@ -100,10 +100,10 @@ const App: React.FC = () => {
     navigateToAssets,
   } = useAppUIState();
 
-  // Wrapper for addToast to match expected signature
+  // Unified addToast wrapper using enhanced toast system
   const addToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
-    addOldToast(message, type);
-  }, [addOldToast]);
+    toast[type](message);
+  }, [toast]);
 
   // --- CHAT STATE (from useChatHandlers hook) ---
   const {
@@ -298,6 +298,18 @@ const App: React.FC = () => {
     handleWarningAction(warning);
     handleWarningActionWithNavigation(warning);
   }, [handleWarningAction, handleWarningActionWithNavigation]);
+
+  // Modal stack: only show ONE modal at a time, prioritized
+  const activeModal = useMemo(() => {
+    if (['GAME_OVER', 'PRISON', 'ALONE', 'VICTORY'].includes(gamePhase)) return 'GAME_END';
+    if (currentAuction) return 'AUCTION';
+    if (activeCompanyEvent) return 'COMPANY_EVENT';
+    if (activeDrama) return 'DRAMA';
+    if (pendingMilestone) return 'MILESTONE';
+    if (showStatsModal) return 'STATS';
+    if (showTransparencyModal) return 'TRANSPARENCY';
+    return null;
+  }, [gamePhase, currentAuction, activeCompanyEvent, activeDrama, pendingMilestone, showStatsModal, showTransparencyModal]);
 
   const renderCenterPanel = () => {
       // 1. Asset Manager View
@@ -499,17 +511,15 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen w-screen bg-black text-slate-200 flex flex-col overflow-hidden font-terminal">
-        {/* End-state overlay so the game flow always resolves visibly */}
-        {playerStats && ['GAME_OVER', 'PRISON', 'ALONE', 'VICTORY'].includes(gamePhase) && (
+    <div className="h-[100dvh] w-screen bg-black text-slate-200 flex flex-col overflow-hidden font-terminal">
+        {/* Modal Stack: Only one modal shown at a time, prioritized */}
+        {activeModal === 'GAME_END' && playerStats && (
             <GameEndModal
                 phase={gamePhase}
                 stats={playerStats}
                 actionLog={actionLog}
                 onRestart={handleResetSimulation}
                 onClose={() => {
-                    // Allow player to keep browsing the UI, but make the end state explicit.
-                    // They can restart from the modal at any time.
                     addToast('End state acknowledged. You can restart from the menu.', 'info');
                 }}
             />
@@ -543,7 +553,7 @@ const App: React.FC = () => {
         </div>
         
         {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
-        <div className="hidden md:grid flex-1 grid-cols-[250px_1fr_250px] overflow-hidden relative">
+        <div className="hidden md:grid flex-1 grid-cols-[minmax(200px,250px)_1fr_minmax(200px,250px)] overflow-hidden relative">
             {/* Left Panel (Comms) */}
             <div className="border-r border-slate-700 bg-black">
                 <NpcListPanel
@@ -620,9 +630,10 @@ const App: React.FC = () => {
         </div>
 
         {/* MOBILE LAYOUT (View Switcher) */}
-        <div className="md:hidden flex-1 flex flex-col overflow-hidden relative">
+        <div className="md:hidden flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative">
             {activeMobileTab === 'COMMS' && (
                 <CommsTerminal
+                    key="mobile-comms"
                     mode="MOBILE_EMBED"
                     isOpen={true}
                     npcList={npcs}
@@ -638,13 +649,13 @@ const App: React.FC = () => {
             )}
             
             {activeMobileTab === 'DESK' && (
-                <div className="flex-1 overflow-hidden relative bg-black">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden relative bg-black animate-fade-in" style={{ WebkitOverflowScrolling: 'touch' }}>
                     {renderCenterPanel()}
                 </div>
             )}
-            
+
             {activeMobileTab === 'NEWS' && (
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden animate-fade-in" style={{ WebkitOverflowScrolling: 'touch' }}>
                      <NewsTicker events={[...dynamicNews, ...NEWS_EVENTS]} systemLogs={actionLog} />
                 </div>
             )}
@@ -737,8 +748,9 @@ const App: React.FC = () => {
         {/* DESKTOP FLOATING CHAT TERMINAL - Always on top of content panels */}
         <div className="hidden md:block">
             <CommsTerminal
+                key="desktop-comms"
                 npcList={npcs}
-                selectedNpcId={selectedNpcId} // Pass this prop
+                selectedNpcId={selectedNpcId}
                 advisorMessages={chatHistory}
                 onSendMessageToAdvisor={handleSendMessageToAdvisor}
                 onSendMessageToNPC={handleSendMessageToNPC}
@@ -759,8 +771,8 @@ const App: React.FC = () => {
             }}
         />
 
-        {/* COMPETITIVE AUCTION MODAL */}
-        {currentAuction && playerStats && (
+        {/* AUCTION MODAL */}
+        {activeModal === 'AUCTION' && currentAuction && playerStats && (
             <CompetitiveAuctionModal
                 deal={currentAuction}
                 playerCash={playerStats.cash}
@@ -770,8 +782,35 @@ const App: React.FC = () => {
             />
         )}
 
+        {/* COMPANY EVENT MODAL */}
+        {activeModal === 'COMPANY_EVENT' && activeCompanyEvent && playerStats && (
+            <CompanyEventModal
+                event={activeCompanyEvent}
+                playerStats={playerStats}
+                onDecide={handleEventDecision}
+                onConsultMachiavelli={handleConsultMachiavelli}
+                useAction={useAction}
+                addToast={addToast}
+                addLogEntry={addLogEntry}
+            />
+        )}
+
+        {/* NPC DRAMA MODAL */}
+        {activeModal === 'DRAMA' && activeDrama && playerStats && (
+            <NPCDramaModal
+                drama={activeDrama}
+                playerStats={playerStats}
+                onResolve={() => setActiveDrama(null)}
+                onConsultMachiavelli={handleConsultMachiavelli}
+                useAction={useAction}
+                updatePlayerStats={updatePlayerStats}
+                addToast={addToast}
+                addLogEntry={addLogEntry}
+            />
+        )}
+
         {/* STORY MILESTONE MODAL */}
-        {pendingMilestone && (
+        {activeModal === 'MILESTONE' && pendingMilestone && (
             <StoryMilestoneModal
                 sceneId={pendingMilestone.sceneId}
                 onComplete={(effects) => {
@@ -786,18 +825,18 @@ const App: React.FC = () => {
             />
         )}
 
-        {/* MOBILE BOTTOM NAV */}
-        <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
-
-        {/* WARNING PANEL - Living World System */}
-        <WarningPanel
-            warnings={activeWarnings}
-            onDismiss={dismissWarning}
-            onAction={handleWarningWithContext}
-        />
+        {/* STATS EXPLAINER MODAL */}
+        {activeModal === 'STATS' && showStatsModal && playerStats && (
+            <StatsExplainerModal
+                stats={playerStats}
+                marketVolatility={marketVolatility}
+                onClose={handleStatsModalClose}
+                isFirstTime={!hasSeenStatsTutorial}
+            />
+        )}
 
         {/* TRANSPARENCY / RULES MODAL */}
-        {playerStats && (
+        {activeModal === 'TRANSPARENCY' && playerStats && (
             <TransparencyModal
                 isOpen={showTransparencyModal}
                 stats={playerStats}
@@ -806,164 +845,15 @@ const App: React.FC = () => {
             />
         )}
 
-        {/* COMPANY EVENT DECISION MODAL */}
-        {activeCompanyEvent && (
-            <div 
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-                style={{ zIndex: Z_INDEX.modalOverlay }}
-            >
-                <div className="w-full max-w-lg bg-slate-900 border border-amber-500/50 rounded-lg shadow-2xl">
-                    <div className="p-4 border-b border-amber-500/30 bg-amber-500/10">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-                                <i className="fas fa-exclamation-triangle text-amber-400"></i>
-                            </div>
-                            <div>
-                                <div className="text-xs text-amber-400/70 uppercase tracking-wider">Company Event (1 AP)</div>
-                                <div className="text-lg font-bold text-white">{activeCompanyEvent.title}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="p-4">
-                        <p className="text-sm text-slate-300 mb-4">{activeCompanyEvent.description}</p>
-                        {(playerStats?.gameTime?.actionsRemaining || 0) < 1 && (
-                            <div className="bg-red-950/50 border border-red-800/50 p-3 rounded mb-4">
-                                <div className="text-red-400 text-sm font-bold">No AP remaining</div>
-                                <div className="text-red-400/70 text-xs">Advance time to get more actions</div>
-                            </div>
-                        )}
-                        <div className="space-y-2">
-                            {activeCompanyEvent.options.map((option, idx) => {
-                                // Risk is 0-100 number: 0-30 = low, 31-60 = medium, 61+ = high
-                                const riskLevel = (option.risk || 0) >= 60 ? 'high' : (option.risk || 0) >= 30 ? 'medium' : 'low';
-                                const riskPercent = option.risk || 0;
-                                return (
-                                <button
-                                    key={idx}
-                                    disabled={(playerStats?.gameTime?.actionsRemaining || 0) < 1}
-                                    onClick={() => {
-                                        if (!useAction(1)) {
-                                            addToast('Not enough AP this week.', 'error');
-                                            return;
-                                        }
-                                        handleEventDecision(activeCompanyEvent.id, option.id);
-                                        addToast(`DECISION: ${option.label} — ${option.outcomeText}`, riskLevel === 'high' ? 'error' : 'success');
-                                        addLogEntry(`EVENT: ${activeCompanyEvent.title} - Chose: ${option.label}`);
-                                    }}
-                                    className={`w-full text-left p-3 border rounded transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                                        riskLevel === 'high'
-                                            ? 'border-red-500/50 hover:border-red-400 hover:bg-red-900/20'
-                                            : riskLevel === 'medium'
-                                            ? 'border-amber-500/50 hover:border-amber-400 hover:bg-amber-900/20'
-                                            : 'border-green-500/50 hover:border-green-400 hover:bg-green-900/20'
-                                    }`}
-                                >
-                                    <div className="text-sm font-bold text-white">{option.label}</div>
-                                    <div className="text-xs text-slate-400 mt-1">{option.description}</div>
-                                    <div className={`text-[10px] mt-1 ${
-                                        riskLevel === 'high' ? 'text-red-400' : riskLevel === 'medium' ? 'text-amber-400' : 'text-green-400'
-                                    }`}>
-                                        Risk: {riskPercent}% ({riskLevel.toUpperCase()})
-                                    </div>
-                                </button>
-                            );})}
-                        </div>
-                        <button
-                            onClick={() => handleConsultMachiavelli(activeCompanyEvent)}
-                            className="w-full mt-4 p-3 border border-purple-500/50 hover:border-purple-400 hover:bg-purple-900/20 rounded text-purple-400 text-sm flex items-center justify-center gap-2"
-                        >
-                            <i className="fas fa-user-secret"></i>
-                            Consult Machiavelli (Free)
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
+        {/* MOBILE BOTTOM NAV */}
+        <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
 
-        {/* NPC DRAMA DECISION MODAL */}
-        {activeDrama && (
-            <div 
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-                style={{ zIndex: Z_INDEX.modalOverlay }}
-            >
-                <div className="w-full max-w-lg bg-slate-900 border border-purple-500/50 rounded-lg shadow-2xl">
-                    <div className="p-4 border-b border-purple-500/30 bg-purple-500/10">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                                <i className="fas fa-theater-masks text-purple-400"></i>
-                            </div>
-                            <div>
-                                <div className="text-xs text-purple-400/70 uppercase tracking-wider">Office Drama (1 AP)</div>
-                                <div className="text-lg font-bold text-white">{activeDrama.title}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="p-4">
-                        <p className="text-sm text-slate-300 mb-4">{activeDrama.description}</p>
-                        {activeDrama.involvedNpcs && activeDrama.involvedNpcs.length > 0 && (
-                            <div className="text-xs text-slate-500 mb-3">
-                                <i className="fas fa-users mr-1"></i>
-                                Involved: {activeDrama.involvedNpcs.join(', ')}
-                            </div>
-                        )}
-                        {(playerStats?.gameTime?.actionsRemaining || 0) < 1 && (
-                            <div className="bg-red-950/50 border border-red-800/50 p-3 rounded mb-4">
-                                <div className="text-red-400 text-sm font-bold">No AP remaining</div>
-                                <div className="text-red-400/70 text-xs">Advance time to get more actions</div>
-                            </div>
-                        )}
-                        <div className="space-y-2">
-                            {activeDrama.choices.map((choice, idx) => (
-                                <button
-                                    key={idx}
-                                    disabled={(playerStats?.gameTime?.actionsRemaining || 0) < 1}
-                                    onClick={() => {
-                                        if (!useAction(1)) {
-                                            addToast('Not enough AP this week.', 'error');
-                                            return;
-                                        }
-                                        updatePlayerStats(choice.outcome.statChanges);
-                                        if (choice.outcome.npcEffects) {
-                                            choice.outcome.npcEffects.forEach(effect => {
-                                                updatePlayerStats({
-                                                    npcRelationshipUpdate: {
-                                                        npcId: effect.npcId,
-                                                        change: effect.relationshipChange,
-                                                        memory: `Drama: ${activeDrama.title} - ${choice.text}`
-                                                    }
-                                                });
-                                            });
-                                        }
-                                        setActiveDrama(null);
-                                        addToast(`DECISION: ${choice.text} — ${choice.outcome.description}`, 'info');
-                                        addLogEntry(`DRAMA: ${activeDrama.title} - Chose: ${choice.text}`);
-                                    }}
-                                    className="w-full text-left p-3 border border-slate-600 hover:border-purple-400 hover:bg-purple-900/10 rounded transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                    <div className="text-sm font-bold text-white">{choice.text}</div>
-                                    {choice.description && (
-                                        <div className="text-xs text-slate-400 mt-1">{choice.description}</div>
-                                    )}
-                                    <div className="text-[10px] text-cyan-500 mt-1">(1 AP)</div>
-                                </button>
-                            ))}
-                        </div>
-                        <button
-                            onClick={() => handleConsultMachiavelli(activeDrama)}
-                            className="w-full mt-4 p-3 border border-purple-500/50 hover:border-purple-400 hover:bg-purple-900/20 rounded text-purple-400 text-sm flex items-center justify-center gap-2"
-                        >
-                            <i className="fas fa-user-secret"></i>
-                            Consult Machiavelli (Free)
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
-
-        {/* Legacy TutorialTooltip/TutorialHighlight removed - using RPG event-driven onboarding */}
-
-        {/* TOAST LAYER - uses oldToasts from useToast (populated by addToast calls) */}
-        <TerminalToast toasts={oldToasts} removeToast={removeToast} />
+        {/* WARNING PANEL - Living World System (always visible, separate z-layer) */}
+        <WarningPanel
+            warnings={activeWarnings}
+            onDismiss={dismissWarning}
+            onAction={handleWarningWithContext}
+        />
 
         {/* WEEK TRANSITION */}
         {playerStats?.gameTime && (
@@ -978,15 +868,6 @@ const App: React.FC = () => {
         {/* GLITCH EFFECTS */}
         {playerStats && <SanityEffects stress={playerStats.stress} dependency={playerStats.dependency} />}
 
-        {/* STATS EXPLAINER MODAL */}
-        {showStatsModal && playerStats && (
-            <StatsExplainerModal
-                stats={playerStats}
-                marketVolatility={marketVolatility}
-                onClose={handleStatsModalClose}
-                isFirstTime={!hasSeenStatsTutorial}
-            />
-        )}
       {/* Activity Feed Slide-out Panel */}
       <div
         className={`

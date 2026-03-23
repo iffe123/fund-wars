@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStoryEngine, StoryEngineProvider } from '../../contexts/StoryEngineContext';
-import { AuthProvider, useAuth } from '../../context/AuthContext';
+import { AuthProvider, useAuth } from '../../contexts/AuthContext';
 import { ChallengeProvider, useChallenges, useActiveChallenge } from '../../contexts/ChallengeContext';
 import TitleScreen from './TitleScreen';
 import ChapterSelect from './ChapterSelect';

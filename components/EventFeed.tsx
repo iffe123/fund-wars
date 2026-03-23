@@ -136,7 +136,7 @@ const EventFeed: React.FC<EventFeedProps> = ({
       </div>
 
       {/* Event List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* Priority Event - Must handle first */}
         {priorityEvent && (
           <div className="relative">

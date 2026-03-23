@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { ChatMessage, NPC } from '../types';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../contexts/GameContext';
 import { isGeminiApiConfigured } from '../services/geminiService';
 
 interface CommsTerminalProps {

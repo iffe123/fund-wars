@@ -80,7 +80,8 @@ type RPGEventAction =
   // NEW: Flow system actions
   | { type: 'UPDATE_FLOW_STATE'; payload: GameFlowState }
   | { type: 'TOGGLE_AUTO_FLOW'; payload: boolean }
-  | { type: 'REFRESH_EVENT_QUEUE'; payload: { playerStats: PlayerStats; npcs: NPC[]; marketVolatility: MarketVolatility } };
+  | { type: 'REFRESH_EVENT_QUEUE'; payload: { playerStats: PlayerStats; npcs: NPC[]; marketVolatility: MarketVolatility } }
+  | { type: 'DISMISS_EVENT'; payload: string };
 
 // ============================================================================
 // INITIAL STATE
@@ -352,6 +353,19 @@ const rpgEventReducer = (state: RPGEventState, action: RPGEventAction): RPGEvent
       };
     }
 
+    case 'DISMISS_EVENT': {
+      const eventId = action.payload;
+      return {
+        ...state,
+        eventQueue: {
+          ...state.eventQueue,
+          optionalEvents: state.eventQueue.optionalEvents.filter(e => e.eventId !== eventId),
+          // Also clear priority if it matches
+          priorityEvent: state.eventQueue.priorityEvent?.eventId === eventId ? undefined : state.eventQueue.priorityEvent,
+        },
+      };
+    }
+
     default:
       return state;
   }
@@ -395,6 +409,7 @@ interface RPGEventContextType {
   createFreeInteraction: (type: 'NPC_CHAT' | 'NEWS_UPDATE' | 'MARKET_SHIFT' | 'PORTFOLIO_UPDATE', context: any) => StoryEvent;
   getFlowStatus: () => { availableEventCount: number; canProgress: boolean; suggestion: string };
   toggleAutoFlow: (enabled: boolean) => void;
+  dismissEvent: (eventId: string) => void;
 }
 
 const RPGEventContext = createContext<RPGEventContextType | null>(null);
@@ -710,6 +725,10 @@ export const RPGEventProvider: React.FC<RPGEventProviderProps> = ({ children }) 
     dispatch({ type: 'TOGGLE_AUTO_FLOW', payload: enabled });
   }, []);
 
+  const dismissEvent = useCallback((eventId: string) => {
+    dispatch({ type: 'DISMISS_EVENT', payload: eventId });
+  }, []);
+
   const contextValue: RPGEventContextType = {
     state,
     currentEvent: state.currentEvent,
@@ -738,6 +757,7 @@ export const RPGEventProvider: React.FC<RPGEventProviderProps> = ({ children }) 
     createFreeInteraction: createFreeInteractionAction,
     getFlowStatus: getFlowStatusAction,
     toggleAutoFlow: toggleAutoFlowAction,
+    dismissEvent,
   };
 
   return (

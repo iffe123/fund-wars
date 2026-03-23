@@ -33,7 +33,7 @@ interface GameFlowDependencies {
   setBootComplete: (complete: boolean) => void;
 
   // Utilities
-  playSfx: (sfx: import('../context/AudioContext').SfxType) => void;
+  playSfx: (sfx: import('../contexts/AudioContext').SfxType) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   clearToasts: () => void;
   appendChatMessage: (message: ChatMessage) => void;

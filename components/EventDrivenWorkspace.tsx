@@ -10,12 +10,12 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../contexts/GameContext';
 import { useRPGEvents } from '../contexts/RPGEventContext';
 import { TerminalPanel, TerminalButton } from './TerminalUI';
 import EventFeed from './EventFeed';
 import EventCard from './EventCard';
-import ConsequenceToast from './ConsequenceToast';
+// ConsequenceToast removed - consequences now route through central toast system
 import type { StoryEvent, EventChoice, EventConsequences } from '../types/rpgEvents';
 import type { StatChanges } from '../types';
 import { Z_INDEX } from '../constants';
@@ -68,15 +68,10 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     closeEventModal,
     advanceWeek,
     getFlowStatus,
+    dismissEvent,
   } = useRPGEvents();
 
-  // Local state for consequence display
-  const [activeConsequence, setActiveConsequence] = useState<{
-    consequences: EventConsequences;
-    playerLine?: string;
-    immediateResponse?: string;
-    epilogue?: string;
-  } | null>(null);
+  // Consequence display now uses central toast system
 
   // Event map for lookups
   const eventMap = useMemo(() => createEventMap(), []);
@@ -101,19 +96,22 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
       .filter((e): e is StoryEvent => e !== undefined);
   }, [rpgState.eventQueue.optionalEvents, eventMap]);
 
-  // Background messages
+  // Background messages (stable based on week, not random per render)
   const backgroundMessages = useMemo(() => {
     const messages: string[] = [];
+    const week = playerStats?.gameTime?.week ?? 0;
     if (playerStats?.portfolio?.length) {
-      const company = playerStats.portfolio[Math.floor(Math.random() * playerStats.portfolio.length)];
+      const idx = week % playerStats.portfolio.length;
+      const company = playerStats.portfolio[idx];
       messages.push(`${company.name}: Operations running normally`);
     }
     if (npcs.length > 0) {
-      const npc = npcs[Math.floor(Math.random() * npcs.length)];
+      const idx = week % npcs.length;
+      const npc = npcs[idx];
       messages.push(`${npc.name} is working on something`);
     }
     return messages;
-  }, [playerStats?.portfolio, npcs]);
+  }, [playerStats?.portfolio, playerStats?.gameTime?.week, npcs]);
 
   // Ensure events are available on mount and when player stats change
   useEffect(() => {
@@ -133,13 +131,10 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     const statChanges = applyConsequences(result.consequences);
     updatePlayerStats(statChanges);
 
-    // Show consequence toast
-    setActiveConsequence({
-      consequences: result.consequences,
-      playerLine: choice.playerLine,
-      immediateResponse: choice.immediateResponse,
-      epilogue: choice.epilogue,
-    });
+    // Show consequence via central toast
+    const consequenceMsg = choice.label + (result.consequences.notification?.message ? `: ${result.consequences.notification.message}` : ': Decision made.');
+    const consequenceType = result.consequences.notification?.type === 'warning' ? 'info' : (result.consequences.notification?.type || 'success');
+    addToast(consequenceMsg, consequenceType as 'error' | 'success' | 'info');
 
     // Log the action
     addLogEntry(`EVENT: ${event.title} - ${choice.label}`);
@@ -172,20 +167,14 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
       onTutorialComplete();
     }
 
-    // Toast for immediate feedback
-    if (result.consequences.notification) {
-      // Convert warning to info since addToast only accepts error/success/info
-      const toastType = result.consequences.notification.type === 'warning' ? 'info' : result.consequences.notification.type;
-      addToast(result.consequences.notification.message, toastType as 'error' | 'success' | 'info');
-    }
+    // Notification already handled above via central toast
   }, [playerStats, npcs, makeChoice, applyConsequences, updatePlayerStats, addLogEntry, addToast, onSwitchTab, onTutorialComplete]);
 
-  // Handle dismiss event (defer for later)
+  // Handle dismiss event (remove from queue)
   const handleDismissEvent = useCallback((eventId: string) => {
-    addToast('Event deferred to later', 'info');
-    // The event stays in queue but moves to lower priority
-    // In a full implementation, we'd modify the queue here
-  }, [addToast]);
+    dismissEvent(eventId);
+    addToast('Event deferred', 'info');
+  }, [dismissEvent, addToast]);
 
   // Handle advance week
   const handleAdvanceWeek = useCallback(() => {
@@ -212,8 +201,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     return null;
   }, [availableEvents]);
 
-  // Legacy tutorial mode check - will be phased out
-  const isTutorialActive = tutorialStep >= 1 && tutorialStep <= 6;
+  // Legacy tutorial system removed - RPG event system handles onboarding
 
   if (!playerStats) {
     return (
@@ -250,48 +238,6 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
             onConsultAdvisor={onConsultAdvisor}
             className="flex-1"
           />
-        </TerminalPanel>
-      </div>
-    );
-  }
-
-  // LEGACY: During tutorial (old system), show simplified view
-  // This provides backward compatibility while we transition
-  if (isTutorialActive) {
-    return (
-      <div style={{ zIndex: Z_INDEX.tutorialHighlight, position: 'relative' }}>
-        <TerminalPanel
-          title="WORKSPACE_HOME"
-          className={`h-full flex flex-col p-4 bg-black relative`}
-        >
-          <div className="flex-1 border-t border-slate-800 pt-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-bold text-slate-500">PENDING_TASKS</span>
-              <div
-                className={tutorialStep === 1 ? 'relative' : ''}
-                style={tutorialStep === 1 ? { zIndex: Z_INDEX.tutorialHighlight } : undefined}
-              >
-              <TerminalButton
-                label="MANAGE_ASSETS"
-                icon="fa-briefcase"
-                onClick={onManageAssets}
-                className={tutorialStep === 1 ? '!bg-green-500 !text-black !border-green-300 animate-pulse shadow-[0_0_25px_rgba(34,197,94,0.8)] ring-2 ring-green-400' : ''}
-              />
-              <div className="mt-2">
-                <TerminalButton
-                  label="PORTFOLIO_DASHBOARD"
-                  icon="fa-grid-2"
-                  onClick={onShowPortfolioDashboard}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="text-slate-400 text-sm italic mb-4">
-            URGENT: Review PackFancy Deal Memo.
-          </div>
-        </div>
         </TerminalPanel>
       </div>
     );
@@ -340,17 +286,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
         </div>
       </TerminalPanel>
 
-      {/* Consequence Toast */}
-      {activeConsequence && (
-        <ConsequenceToast
-          consequences={activeConsequence.consequences}
-          playerLine={activeConsequence.playerLine}
-          immediateResponse={activeConsequence.immediateResponse}
-          epilogue={activeConsequence.epilogue}
-          onDismiss={() => setActiveConsequence(null)}
-          autoDismissMs={15000} // 15 seconds - give players time to read consequences
-        />
-      )}
+      {/* Consequence feedback now handled via central toast system */}
     </>
   );
 };
