@@ -79,6 +79,13 @@ const App: React.FC = () => {
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
   const [dynamicNews, setDynamicNews] = useState<import('./types').NewsEvent[]>([]);
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
+
+  useEffect(() => {
+    const handler = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   // --- UI STATE (from useAppUIState hook) ---
   const {
@@ -581,9 +588,16 @@ const App: React.FC = () => {
                             return (
                                 <button
                                     key={tab}
-                                    onClick={() => !isDisabled && setActiveTab(tab)}
+                                    onClick={() => {
+                                        if (isDisabled) {
+                                            addToast('Founder Mode unlocks when you have $1M in personal funds.', 'info');
+                                            return;
+                                        }
+                                        setActiveTab(tab);
+                                    }}
                                     disabled={isDisabled}
                                     data-tutorial={tutorialAttr}
+                                    title={isDisabled ? 'Unlocks when you reach $1M in personal funds' : undefined}
                                     className={`px-3 py-2 text-xs font-bold uppercase transition-colors ${
                                         activeTab === tab
                                             ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-black'
@@ -598,7 +612,7 @@ const App: React.FC = () => {
                             );
                         })}
                     </div>
-                    
+
                     {/* Activity Feed Toggle */}
                     <button
                       onClick={() => setShowActivityFeed(!showActivityFeed)}
@@ -620,7 +634,7 @@ const App: React.FC = () => {
                       )}
                     </button>
                 </div>
-                {renderCenterPanel()}
+                {isDesktop && renderCenterPanel()}
             </div>
             
             {/* Right Panel (News) */}
@@ -650,7 +664,7 @@ const App: React.FC = () => {
             
             {activeMobileTab === 'DESK' && (
                 <div className="flex-1 overflow-y-auto overflow-x-hidden relative bg-black animate-fade-in" style={{ WebkitOverflowScrolling: 'touch' }}>
-                    {renderCenterPanel()}
+                    {!isDesktop && renderCenterPanel()}
                 </div>
             )}
 
@@ -899,10 +913,10 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Activity Feed Overlay (mobile) */}
+      {/* Activity Feed Overlay backdrop (all viewports) */}
       {showActivityFeed && (
         <div
-          className="fixed inset-0 bg-black/50 md:hidden"
+          className="fixed inset-0 bg-black/50"
           style={{ zIndex: Z_INDEX.modal - 2 }}
           onClick={() => setShowActivityFeed(false)}
         />

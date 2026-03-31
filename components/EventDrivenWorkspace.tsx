@@ -53,6 +53,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     npcs,
     marketVolatility,
     updatePlayerStats,
+    addActivity,
   } = useGame();
 
   const {
@@ -139,6 +140,22 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     // Log the action
     addLogEntry(`EVENT: ${event.title} - ${choice.label}`);
 
+    // Add to Activity Feed
+    const categoryToType: Record<string, 'deal' | 'relationship' | 'portfolio' | 'personal' | 'market' | 'time'> = {
+      DEAL: 'deal', NPC: 'relationship', CRISIS: 'market', OPPORTUNITY: 'deal',
+      PERSONAL: 'personal', CAREER: 'personal', MARKET: 'market', OPERATIONS: 'portfolio',
+    };
+    const stakeToSentiment: Record<string, 'positive' | 'neutral' | 'negative' | 'warning'> = {
+      LOW: 'neutral', MEDIUM: 'neutral', HIGH: 'warning', CRITICAL: 'negative',
+    };
+    addActivity({
+      type: categoryToType[event.category] || 'personal',
+      icon: `fas fa-${event.category === 'DEAL' ? 'briefcase' : event.category === 'NPC' ? 'user-tie' : event.category === 'CRISIS' ? 'exclamation-triangle' : 'circle-info'}`,
+      title: `${event.title}: ${choice.label}`,
+      detail: result.consequences.notification?.message || undefined,
+      sentiment: result.consequences.notification?.type === 'warning' ? 'warning' : (stakeToSentiment[event.stakes] || 'neutral'),
+    });
+
     // Handle tab switching from consequences (for onboarding)
     if (result.consequences.switchToTab && onSwitchTab) {
       onSwitchTab(result.consequences.switchToTab);
@@ -180,7 +197,14 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
   const handleAdvanceWeek = useCallback(() => {
     advanceWeek();
     onAdvanceTime();
-  }, [advanceWeek, onAdvanceTime]);
+    addActivity({
+      type: 'time',
+      icon: 'fas fa-forward',
+      title: 'Week Advanced',
+      detail: `Moving to week ${(playerStats?.gameTime?.week ?? 0) + 1}`,
+      sentiment: 'neutral',
+    });
+  }, [advanceWeek, onAdvanceTime, addActivity, playerStats?.gameTime?.week]);
 
   // Handle refresh events
   const handleRefreshEvents = useCallback(() => {

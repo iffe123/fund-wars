@@ -326,8 +326,8 @@ ${recent || '(none)'}
   }
 };
 
-if (!isAIConfigured()) {
-  console.warn("AI API Key missing. Did you set VITE_ANTHROPIC_API_KEY in your environment?");
+if (!isAIConfigured() && import.meta.env.DEV) {
+  console.info("AI API Key not set. Using fallback headlines.");
 }
 
 const advisorSystemInstruction = `

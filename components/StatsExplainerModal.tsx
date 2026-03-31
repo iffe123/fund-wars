@@ -254,9 +254,10 @@ const StatsExplainerModal: React.FC<StatsExplainerModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-700 flex items-center justify-center transition-colors"
+            className="w-9 h-9 rounded-lg bg-slate-700/50 hover:bg-red-900/50 hover:border-red-700/50 border border-transparent flex items-center justify-center transition-colors"
+            title="Close"
           >
-            <i className="fas fa-xmark text-slate-400"></i>
+            <i className="fas fa-xmark text-slate-300 text-lg"></i>
           </button>
         </div>
 
@@ -416,11 +417,12 @@ const StatsExplainerModal: React.FC<StatsExplainerModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-slate-800/50 border-t border-slate-700 flex justify-end shrink-0">
+        {/* Footer - sticky at bottom */}
+        <div className="sticky bottom-0 p-4 bg-slate-800/95 backdrop-blur-sm border-t border-slate-700 flex justify-between items-center shrink-0">
+          <span className="text-xs text-slate-500">Click any stat for details</span>
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition-colors text-sm"
+            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition-colors text-sm shadow-lg"
           >
             {isFirstTime ? 'Got It' : 'Close'}
           </button>

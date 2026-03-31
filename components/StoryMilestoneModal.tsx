@@ -11,6 +11,23 @@ import type { Scene, Choice, ChoiceEffects } from '../types/storyEngine';
 import type { StatChanges } from '../types';
 import { STORY_SCENES } from '../content/storyContent';
 
+/** Render inline markdown (***bold italic***, **bold**, *italic*) */
+function renderMarkdown(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('***') && part.endsWith('***') && part.length > 6) {
+      return <strong key={i} className="text-green-400 font-semibold italic">{part.slice(3, -3)}</strong>;
+    }
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return <strong key={i} className="text-green-400 font-semibold">{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return <em key={i} className="text-slate-400 italic">{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+}
+
 interface StoryMilestoneModalProps {
   sceneId: string;
   onComplete: (effects: StatChanges | null) => void;
@@ -168,9 +185,11 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
           </div>
           <button
             onClick={onDismiss}
-            className="text-slate-600 hover:text-slate-400 text-xs font-mono uppercase tracking-wider transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded border border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-500 text-slate-400 hover:text-slate-200 text-xs font-mono uppercase tracking-wider transition-all"
           >
-            [ESC] Skip
+            <i className="fas fa-forward-step text-[10px]"></i>
+            Skip
+            <kbd className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 border border-slate-600 text-slate-400">ESC</kbd>
           </button>
         </div>
 
@@ -209,7 +228,7 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
                 transition: 'opacity 0.5s, transform 0.5s',
               }}
             >
-              {paragraph}
+              {renderMarkdown(paragraph)}
             </p>
           ))}
         </div>

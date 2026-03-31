@@ -35,7 +35,7 @@ const TypewriterText: React.FC<TypewriterTextProps> = ({
 
   // Strip HTML-like markdown for character count
   const plainTextLength = useMemo(() => {
-    return text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').length;
+    return text.replace(/\*\*\*(.+?)\*\*\*/g, '$1').replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').length;
   }, [text]);
 
   // Check if animation is complete
@@ -113,8 +113,27 @@ function sliceFormattedText(text: string, charCount: number): string {
   let i = 0;
 
   while (i < text.length && count < charCount) {
+    // Check for *** (bold italic)
+    if (text.slice(i, i + 3) === '***') {
+      const endBoldItalic = text.indexOf('***', i + 3);
+      if (endBoldItalic !== -1) {
+        const content = text.slice(i + 3, endBoldItalic);
+        const charsNeeded = charCount - count;
+        if (charsNeeded >= content.length) {
+          result += '***' + content + '***';
+          count += content.length;
+          i = endBoldItalic + 3;
+        } else {
+          result += '***' + content.slice(0, charsNeeded) + '***';
+          count += charsNeeded;
+          i = endBoldItalic + 3;
+        }
+        continue;
+      }
+    }
+
     // Check for ** (bold)
-    if (text.slice(i, i + 2) === '**') {
+    if (text.slice(i, i + 2) === '**' && text[i + 2] !== '*') {
       const endBold = text.indexOf('**', i + 2);
       if (endBold !== -1) {
         const boldContent = text.slice(i + 2, endBold);
@@ -167,22 +186,7 @@ function formatText(text: string): React.ReactNode {
   const paragraphs = text.split('\n\n');
 
   return paragraphs.map((paragraph, index) => {
-    // Bold text **text**
-    let parts = paragraph.split(/(\*\*[^*]+\*\*)/g);
-    const elements: React.ReactNode[] = [];
-
-    parts.forEach((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        const content = part.slice(2, -2);
-        elements.push(
-          <strong key={`b-${i}`} className="text-green-400 font-semibold">
-            {formatItalics(content)}
-          </strong>
-        );
-      } else {
-        elements.push(<React.Fragment key={`t-${i}`}>{formatItalics(part)}</React.Fragment>);
-      }
-    });
+    const elements = formatInlineMarkdown(paragraph);
 
     // Check if this is a narrator comment (single * wrapping the whole thing)
     if (paragraph.match(/^\*[^*].*[^*]\*$/)) {
@@ -205,12 +209,27 @@ function formatText(text: string): React.ReactNode {
 }
 
 /**
- * Format italic text within content
+ * Parse inline markdown: ***bold italic***, **bold**, *italic*
  */
-function formatItalics(text: string): React.ReactNode {
-  const parts = text.split(/(\*[^*]+\*)/g);
+function formatInlineMarkdown(text: string): React.ReactNode {
+  // Split on ***bold italic***, **bold**, and *italic* patterns
+  const parts = text.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g);
 
   return parts.map((part, i) => {
+    if (part.startsWith('***') && part.endsWith('***') && part.length > 6) {
+      return (
+        <strong key={i} className="text-green-400 font-semibold italic">
+          {part.slice(3, -3)}
+        </strong>
+      );
+    }
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return (
+        <strong key={i} className="text-green-400 font-semibold">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
       return (
         <em key={i} className="text-gray-400 italic">
