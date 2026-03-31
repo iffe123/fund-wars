@@ -81,6 +81,7 @@ const App: React.FC = () => {
   const [bootComplete, setBootComplete] = useState(false);
   const [dynamicNews, setDynamicNews] = useState<import('./types').NewsEvent[]>([]);
   const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
+  const [seenActivityCount, setSeenActivityCount] = useState(0);
 
   useEffect(() => {
     const handler = () => setIsDesktop(window.innerWidth >= 768);
@@ -617,7 +618,13 @@ const App: React.FC = () => {
 
                     {/* Activity Feed Toggle */}
                     <button
-                      onClick={() => setShowActivityFeed(!showActivityFeed)}
+                      onClick={() => {
+                        const opening = !showActivityFeed;
+                        setShowActivityFeed(opening);
+                        if (opening && activities) {
+                          setSeenActivityCount(activities.length);
+                        }
+                      }}
                       className={`
                         px-3 py-2 rounded-lg border text-xs font-bold uppercase
                         transition-all duration-200
@@ -629,9 +636,9 @@ const App: React.FC = () => {
                     >
                       <i className="fas fa-list-ul mr-1"></i>
                       Activity
-                      {activities && activities.length > 0 && (
+                      {activities && activities.length > seenActivityCount && (
                         <span className="ml-1.5 px-1.5 py-0.5 bg-blue-500 text-white text-[10px] rounded-full">
-                          {activities.length > 99 ? '99+' : activities.length}
+                          {activities.length - seenActivityCount > 99 ? '99+' : activities.length - seenActivityCount}
                         </span>
                       )}
                     </button>

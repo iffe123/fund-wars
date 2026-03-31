@@ -247,8 +247,8 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         `}>
           <i className={`fas ${mktStyle.icon} ${mktStyle.color} ${marketVolatility !== 'NORMAL' ? 'animate-pulse' : ''}`}></i>
           <div className="flex flex-col">
-            <span className="text-[9px] text-slate-500 uppercase tracking-wider">Market</span>
-            <span className={`text-[10px] uppercase tracking-widest font-bold ${mktStyle.color}`}>
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider">Market</span>
+            <span className={`text-[11px] uppercase tracking-widest font-bold ${mktStyle.color}`}>
               {marketVolatility.replace('_', ' ')}
             </span>
           </div>
@@ -257,9 +257,9 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         {/* Right Section - Status Indicators */}
         <div className="flex items-center gap-4">
           {/* Time */}
-          <div className="flex items-center gap-2 text-slate-400">
-            <i className="fas fa-clock text-slate-500"></i>
-            <span className="text-[10px] uppercase tracking-wider">{stats.currentDayType} · {stats.currentTimeSlot}</span>
+          <div className="flex items-center gap-2 text-slate-300">
+            <i className="fas fa-clock text-slate-400"></i>
+            <span className="text-[11px] uppercase tracking-wider font-medium">{stats.currentDayType} · {stats.currentTimeSlot}</span>
           </div>
 
           {/* Divider */}
@@ -290,8 +290,8 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           <div className="w-px h-6 bg-slate-700/50"></div>
 
           {/* Factions */}
-          <div className="flex items-center gap-3 text-[10px] font-bold">
-            <span className="uppercase tracking-widest text-slate-400 text-[9px]">Factions</span>
+          <div className="flex items-center gap-3 text-[11px] font-bold">
+            <span className="uppercase tracking-widest text-slate-300 text-[10px]">Factions</span>
             <div className="flex items-center gap-2">
               <span className="text-blue-300 flex items-center gap-1" title="Managing Directors">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>

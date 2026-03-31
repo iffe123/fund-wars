@@ -417,8 +417,8 @@ const StatsExplainerModal: React.FC<StatsExplainerModalProps> = ({
           </div>
         </div>
 
-        {/* Footer - sticky at bottom */}
-        <div className="sticky bottom-0 p-4 bg-slate-800/95 backdrop-blur-sm border-t border-slate-700 flex justify-between items-center shrink-0">
+        {/* Footer - pinned at bottom of modal */}
+        <div className="p-4 bg-slate-800 border-t border-slate-700 flex justify-between items-center shrink-0">
           <span className="text-xs text-slate-500">Click any stat for details</span>
           <button
             onClick={onClose}
