@@ -301,7 +301,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
   // CommsTerminal should always float above content panels (z-[150] > z-[100] for tutorial panels)
   const containerClasses = mode === 'MOBILE_EMBED'
       ? "w-full h-full flex flex-col bg-slate-900"
-      : `fixed w-[90vw] md:w-[600px] h-[70vh] flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-[150] border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'ring-2 ring-amber-500' : ''}`;
+      : `fixed w-[90vw] md:w-[600px] md:max-w-[calc(100vw-520px)] h-[70vh] max-h-[calc(100vh-120px)] flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-[150] border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'ring-2 ring-amber-500' : ''}`;
 
   const containerStyle = mode === 'DESKTOP_OVERLAY'
       ? { top: dragPosition.y, left: dragPosition.x }
@@ -557,7 +557,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                         <div className="text-[10px] text-slate-500 mb-2 uppercase tracking-wide">
                             {isGeminiApiConfigured()
                                 ? "AI-driven replies adapt to your stats, debt, and the current case file. Toss sharper prompts for spicier intel."
-                                : <span className="text-amber-500"><i className="fas fa-exclamation-triangle mr-1"></i>OFFLINE MODE - AI not configured. NPCs use scripted responses. Set VITE_ANTHROPIC_API_KEY to enable AI.</span>
+                                : "NPCs use scripted responses. Type a message to interact."
                             }
                         </div>
                     )}

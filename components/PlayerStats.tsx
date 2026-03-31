@@ -93,7 +93,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
       <div
         onClick={handleGeneralStatsClick}
         className={`
-          h-14 bg-gradient-to-b from-slate-800 to-slate-900
+          h-16 bg-gradient-to-b from-slate-800 to-slate-900
           border-b border-slate-600 flex items-center px-4 justify-between shrink-0
           ${isPanic ? 'animate-pulse bg-red-950/20 border-red-900/50' : ''}
           cursor-pointer hover:bg-slate-700/50 transition-colors active:bg-slate-700
@@ -173,42 +173,42 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
       {/* DESKTOP VIEW (>= 768px) */}
       <div className="hidden md:flex items-center gap-4 text-xs font-mono w-full justify-between">
         {/* Left Section - Personal Finances */}
-        <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800/40 border border-slate-700/30">
-          <i className="fas fa-user text-slate-400 text-[10px] mr-1"></i>
-          <span className="text-[10px] text-slate-400 uppercase tracking-wider mr-2">Personal</span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/40 border border-slate-700/30">
+          <i className="fas fa-user text-slate-300 text-xs mr-1"></i>
+          <span className="text-[11px] text-slate-300 uppercase tracking-wider mr-2 font-semibold">Personal</span>
 
           {/* Bank Balance */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-800/30">
-            <i className="fas fa-wallet text-emerald-400 text-[10px]"></i>
-            <span className="text-emerald-400 font-bold tabular-nums text-[11px]">${(stats.personalFinances?.bankBalance ?? stats.cash).toLocaleString()}</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-800/30">
+            <i className="fas fa-wallet text-emerald-400 text-xs"></i>
+            <span className="text-emerald-300 font-bold tabular-nums text-xs">${(stats.personalFinances?.bankBalance ?? stats.cash).toLocaleString()}</span>
           </div>
 
           {/* Lifestyle */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-purple-950/40 border border-purple-800/30">
-            <i className="fas fa-home text-purple-400 text-[10px]"></i>
-            <span className="text-purple-400 text-[10px] font-medium">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-950/40 border border-purple-800/30">
+            <i className="fas fa-home text-purple-400 text-xs"></i>
+            <span className="text-purple-300 text-[11px] font-medium">
               {stats.personalFinances?.lifestyleLevel?.replace('_', ' ') || 'Broke'}
             </span>
           </div>
         </div>
 
         {/* Center Section - Fund Capital */}
-        <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-950/30 border border-blue-700/30">
-          <i className="fas fa-briefcase text-blue-400 text-[10px] mr-1"></i>
-          <span className="text-[10px] text-blue-400 uppercase tracking-wider mr-2">Fund</span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-950/30 border border-blue-700/30">
+          <i className="fas fa-briefcase text-blue-400 text-xs mr-1"></i>
+          <span className="text-[11px] text-blue-300 uppercase tracking-wider mr-2 font-semibold">Fund</span>
 
           {/* Dry Powder */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-cyan-950/40 border border-cyan-800/30">
-            <span className="text-[9px] text-cyan-600">Dry:</span>
-            <span className="text-cyan-400 font-bold tabular-nums text-[11px]">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950/40 border border-cyan-800/30">
+            <span className="text-[10px] text-cyan-400 font-medium">Dry:</span>
+            <span className="text-cyan-300 font-bold tabular-nums text-xs">
               {formatMoney(stats.fundFinances?.dryPowder || 50000000)}
             </span>
           </div>
 
           {/* Deployed */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-950/40 border border-amber-800/30">
-            <span className="text-[9px] text-amber-600">Deployed:</span>
-            <span className="text-amber-400 font-bold tabular-nums text-[11px]">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-950/40 border border-amber-800/30">
+            <span className="text-[10px] text-amber-400 font-medium">Deployed:</span>
+            <span className="text-amber-300 font-bold tabular-nums text-xs">
               {formatMoney(stats.fundFinances?.deployedCapital || portfolioValue)}
             </span>
           </div>
@@ -217,23 +217,23 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         {/* Right Section - Key Stats */}
         <div className="flex items-center gap-3">
           {/* Stress */}
-          <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/30 border border-slate-700/40">
-            <i className={`fas fa-brain ${getStressColor(stats.stress)} text-xs`}></i>
-            <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/30 border border-slate-700/40">
+            <i className={`fas fa-brain ${getStressColor(stats.stress)} text-sm`}></i>
+            <div className="w-20 h-2 bg-slate-700 rounded-full overflow-hidden">
               <div
                 className={`h-full ${getStressBarColor(stats.stress)} transition-all duration-300`}
                 style={{ width: `${Math.min(100, stats.stress)}%` }}
               />
             </div>
-            <span className={`font-bold tabular-nums text-[10px] ${getStressColor(stats.stress)}`}>
+            <span className={`font-bold tabular-nums text-xs ${getStressColor(stats.stress)}`}>
               {stats.stress}%
             </span>
           </div>
 
           {/* Reputation */}
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-950/30 border border-blue-800/40">
-            <i className="fas fa-star text-blue-400 text-xs"></i>
-            <span className="font-bold text-blue-400 tabular-nums">{stats.reputation}</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-950/30 border border-blue-800/40">
+            <i className="fas fa-star text-blue-400 text-sm"></i>
+            <span className="font-bold text-blue-300 tabular-nums text-xs">{stats.reputation}</span>
           </div>
         </div>
 
@@ -266,22 +266,22 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           <div className="w-px h-6 bg-slate-700/50"></div>
 
           {/* Quick Stats */}
-          <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest font-bold">
-            <span className="text-slate-400">L{stats.level}</span>
-            <span className="text-blue-400 flex items-center gap-1">
-              <i className="fas fa-chart-line text-[8px]"></i>
+          <div className="flex items-center gap-3 text-[11px] uppercase tracking-widest font-bold">
+            <span className="text-slate-300">L{stats.level}</span>
+            <span className="text-blue-300 flex items-center gap-1">
+              <i className="fas fa-chart-line text-[9px]"></i>
               {stats.analystRating}
             </span>
-            <span className={`flex items-center gap-1 ${stats.energy > 30 ? 'text-emerald-400' : 'text-red-400'}`}>
-              <i className="fas fa-bolt text-[8px]"></i>
+            <span className={`flex items-center gap-1 ${stats.energy > 30 ? 'text-emerald-300' : 'text-red-400'}`}>
+              <i className="fas fa-bolt text-[9px]"></i>
               {stats.energy}%
             </span>
-            <span className={`flex items-center gap-1 ${stats.ethics > 30 ? 'text-amber-400' : 'text-red-400'}`}>
-              <i className="fas fa-scale-balanced text-[8px]"></i>
+            <span className={`flex items-center gap-1 ${stats.ethics > 30 ? 'text-amber-300' : 'text-red-400'}`}>
+              <i className="fas fa-scale-balanced text-[9px]"></i>
               {stats.ethics}
             </span>
-            <span className={`flex items-center gap-1 ${stats.auditRisk < 50 ? 'text-slate-400' : 'text-red-400'}`}>
-              <i className="fas fa-magnifying-glass text-[8px]"></i>
+            <span className={`flex items-center gap-1 ${stats.auditRisk < 50 ? 'text-slate-300' : 'text-red-400'}`}>
+              <i className="fas fa-magnifying-glass text-[9px]"></i>
               {stats.auditRisk}%
             </span>
           </div>

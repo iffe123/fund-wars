@@ -9,6 +9,28 @@ import React, { useState, useCallback } from 'react';
 import type { StoryEvent, EventChoice, EventConsequences } from '../types/rpgEvents';
 import type { PlayerStats, NPC } from '../types';
 
+/**
+ * Render inline markdown (***bold italic***, **bold**, *italic*) to React nodes
+ */
+function renderMarkdown(text: string): React.ReactNode {
+  return text.split('\n\n').map((paragraph, pIdx) => {
+    const parts = paragraph.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g);
+    const elements = parts.map((part, i) => {
+      if (part.startsWith('***') && part.endsWith('***') && part.length > 6) {
+        return <strong key={i} className="text-green-400 font-semibold italic">{part.slice(3, -3)}</strong>;
+      }
+      if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+        return <strong key={i} className="text-green-400 font-semibold">{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+        return <em key={i} className="text-slate-300 italic">{part.slice(1, -1)}</em>;
+      }
+      return part;
+    });
+    return <span key={pIdx}>{elements}{pIdx < text.split('\n\n').length - 1 ? <><br /><br /></> : null}</span>;
+  });
+}
+
 interface EventCardProps {
   event: StoryEvent;
   playerStats: PlayerStats;
@@ -203,7 +225,7 @@ const EventCard: React.FC<EventCardProps> = ({
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-400 italic">{event.hook}</p>
+          <p className="text-sm text-slate-400 italic">{renderMarkdown(event.hook)}</p>
           {sourceNpc && (
             <p className="text-xs text-slate-500 mt-1">
               <i className="fas fa-user mr-1"></i>
@@ -226,7 +248,7 @@ const EventCard: React.FC<EventCardProps> = ({
         <div className="mt-4 space-y-4 animate-fadeIn">
           {/* Full Description */}
           <div className="text-sm text-slate-300 whitespace-pre-line border-l-2 border-slate-700 pl-3">
-            {event.description}
+            {renderMarkdown(event.description)}
           </div>
 
           {/* Context if exists */}

@@ -47,8 +47,8 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [] }) => {
         <i className="fas fa-rss text-amber-500/70 text-xs"></i>
         <span>Market Feed</span>
         <div className="flex-1"></div>
-        <div className={`text-[9px] font-bold uppercase tracking-widest ${aiOn ? 'text-emerald-500' : 'text-amber-500'}`} title={aiOn ? 'AI-generated headlines enabled' : 'AI not configured; using fallback headlines'}>
-          AI {aiOn ? 'ON' : 'OFF'}
+        <div className={`text-[9px] font-bold uppercase tracking-widest ${aiOn ? 'text-emerald-500' : 'text-slate-500'}`} title={aiOn ? 'AI-generated headlines enabled' : 'Using curated headlines'}>
+          {aiOn ? 'AI ON' : ''}
         </div>
         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
         <span className="text-emerald-500 text-[9px]">LIVE</span>
