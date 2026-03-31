@@ -26,15 +26,14 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
   const duration = toast.duration || 3000;
 
   useEffect(() => {
-    // Auto-dismiss after duration unless it's an error
-    if (toast.type !== 'error') {
-      const timer = setTimeout(() => {
-        setIsExiting(true);
-        setTimeout(() => onDismiss(toast.id), 200);
-      }, duration);
+    // Auto-dismiss all toasts. Errors get a longer display time.
+    const effectiveDuration = toast.type === 'error' ? Math.max(duration, 6000) : duration;
+    const timer = setTimeout(() => {
+      setIsExiting(true);
+      setTimeout(() => onDismiss(toast.id), 200);
+    }, effectiveDuration);
 
-      return () => clearTimeout(timer);
-    }
+    return () => clearTimeout(timer);
   }, [toast.id, toast.type, duration, onDismiss]);
 
   const getTypeStyles = () => {

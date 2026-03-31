@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import type { PlayerStats, ChatMessage, Choice, StatChanges, CompetitiveDeal, CompanyActiveEvent, NPCDrama } from './types';
 import { SCENARIOS, NEWS_EVENTS, PREDEFINED_QUESTIONS, Z_INDEX } from './constants';
 import NewsTicker from './components/NewsTicker';
@@ -561,9 +562,9 @@ const App: React.FC = () => {
         </div>
         
         {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
-        <div className="hidden md:grid flex-1 grid-cols-[minmax(200px,250px)_1fr_minmax(200px,250px)] overflow-hidden relative">
+        <div className="hidden md:grid flex-1 grid-cols-[minmax(200px,250px)_1fr_minmax(200px,250px)] overflow-hidden relative" style={{ isolation: 'isolate' }}>
             {/* Left Panel (Comms) */}
-            <div className="border-r border-slate-700 bg-black">
+            <div className="border-r border-slate-700 bg-black min-w-0 shrink-0">
                 <NpcListPanel
                   npcs={npcs}
                   selectedNpcId={selectedNpcId}
@@ -599,7 +600,7 @@ const App: React.FC = () => {
                                     disabled={isDisabled}
                                     data-tutorial={tutorialAttr}
                                     title={isDisabled ? 'Unlocks when you reach $1M in personal funds' : undefined}
-                                    className={`px-3 py-2 text-xs font-bold uppercase transition-colors ${
+                                    className={`px-3 py-2 text-xs font-bold uppercase transition-colors shrink-0 ${
                                         activeTab === tab
                                             ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-black'
                                             : isDisabled
@@ -883,44 +884,49 @@ const App: React.FC = () => {
         {/* GLITCH EFFECTS */}
         {playerStats && <SanityEffects stress={playerStats.stress} dependency={playerStats.dependency} />}
 
-      {/* Activity Feed Slide-out Panel */}
-      <div
-        className={`
-          fixed top-0 right-0 h-full w-80 bg-slate-900 border-l border-slate-700 shadow-2xl
-          transform transition-transform duration-300 ease-in-out
-          ${showActivityFeed ? 'translate-x-0' : 'translate-x-full'}
-        `}
-        style={{ zIndex: Z_INDEX.modal - 1 }}
-      >
-        <div className="h-full flex flex-col">
-          {/* Header */}
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <i className="fas fa-list-ul text-blue-400"></i>
-              Activity Feed
-            </h3>
-            <button
+      {/* Activity Feed — rendered via Portal to avoid layout interference */}
+      {createPortal(
+        <>
+          {/* Backdrop */}
+          {showActivityFeed && (
+            <div
+              className="fixed inset-0 bg-black/40"
+              style={{ zIndex: Z_INDEX.modal - 2 }}
               onClick={() => setShowActivityFeed(false)}
-              className="text-slate-400 hover:text-white transition-colors"
-            >
-              <i className="fas fa-times text-xl"></i>
-            </button>
-          </div>
-          
-          {/* Activity Feed */}
-          <div className="flex-1 overflow-hidden">
-            <ActivityFeed activities={activities || []} className="h-full" />
-          </div>
-        </div>
-      </div>
+            />
+          )}
+          {/* Slide-out Panel */}
+          <div
+            className={`
+              fixed top-0 right-0 h-full w-80 bg-slate-900 border-l border-slate-700 shadow-2xl
+              transition-transform duration-300 ease-in-out will-change-transform
+              ${showActivityFeed ? 'translate-x-0' : 'translate-x-full'}
+            `}
+            style={{ zIndex: Z_INDEX.modal - 1 }}
+          >
+            <div className="h-full flex flex-col">
+              {/* Header */}
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <i className="fas fa-list-ul text-blue-400"></i>
+                  Activity Feed
+                </h3>
+                <button
+                  onClick={() => setShowActivityFeed(false)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <i className="fas fa-times text-xl"></i>
+                </button>
+              </div>
 
-      {/* Activity Feed Overlay backdrop (all viewports) */}
-      {showActivityFeed && (
-        <div
-          className="fixed inset-0 bg-black/50"
-          style={{ zIndex: Z_INDEX.modal - 2 }}
-          onClick={() => setShowActivityFeed(false)}
-        />
+              {/* Activity Feed */}
+              <div className="flex-1 overflow-hidden">
+                <ActivityFeed activities={activities || []} className="h-full" />
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
       )}
 
       {/* Enhanced Toast System */}

@@ -156,7 +156,7 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
   }[scene.atmosphere ?? 'office'] ?? 'fa-building';
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] bg-black flex items-center justify-center p-4">
       {/* Subtle background grid */}
       <div
         className="absolute inset-0 opacity-[0.02]"
