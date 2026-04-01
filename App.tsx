@@ -873,12 +873,14 @@ const App: React.FC = () => {
         {/* MOBILE BOTTOM NAV */}
         <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
 
-        {/* WARNING PANEL - Living World System (always visible, separate z-layer) */}
-        <WarningPanel
-            warnings={activeWarnings}
-            onDismiss={dismissWarning}
-            onAction={handleWarningWithContext}
-        />
+        {/* WARNING PANEL - Living World System (hidden during story modals to avoid overlap) */}
+        {activeModal !== 'MILESTONE' && activeModal !== 'GAME_END' && (
+            <WarningPanel
+                warnings={activeWarnings}
+                onDismiss={dismissWarning}
+                onAction={handleWarningWithContext}
+            />
+        )}
 
         {/* WEEK TRANSITION */}
         {playerStats?.gameTime && (
