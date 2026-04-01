@@ -514,7 +514,8 @@ const App: React.FC = () => {
   }
 
   if (gamePhase === 'INTRO') {
-      return <IntroSequence onComplete={handleIntroComplete} />;
+      const quickStart = localStorage.getItem('fundwars_skip_intro') === 'true';
+      return <IntroSequence onComplete={handleIntroComplete} quickStart={quickStart} />;
   }
 
   return (

@@ -56,6 +56,13 @@ const INTRO_SLIDES: SlideContent[] = [
 const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = false }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [skipFutureIntros, setSkipFutureIntros] = useState(false);
+
+  const persistIntroPreference = useCallback(() => {
+    if (skipFutureIntros) {
+      localStorage.setItem('fundwars_skip_intro', 'true');
+    }
+  }, [skipFutureIntros]);
 
   // Quick start: skip all animations and go straight to game
   React.useEffect(() => {
@@ -79,13 +86,15 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
     } else {
       // Final slide - complete intro with default stress level
       // The stress selection is now removed for cleaner flow
+      persistIntroPreference();
       onComplete(5);
     }
-  }, [currentSlide, isTransitioning, onComplete]);
+  }, [currentSlide, isTransitioning, onComplete, persistIntroPreference]);
 
   const handleSkip = useCallback(() => {
+    persistIntroPreference();
     onComplete(5);
-  }, [onComplete]);
+  }, [onComplete, persistIntroPreference]);
 
   return (
     <div className="fixed inset-0 bg-slate-950 text-white overflow-hidden" style={{ zIndex: 100 }}>
@@ -123,6 +132,18 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
         >
           Skip Intro
         </button>
+      </div>
+
+      <div className="absolute top-14 right-4 z-10">
+        <label className="flex items-center gap-2 text-[10px] text-slate-500 font-mono uppercase tracking-wide">
+          <input
+            type="checkbox"
+            checked={skipFutureIntros}
+            onChange={(e) => setSkipFutureIntros(e.target.checked)}
+            className="accent-amber-500"
+          />
+          Skip next time
+        </label>
       </div>
 
       {/* Progress dots */}
