@@ -458,7 +458,9 @@ const App: React.FC = () => {
             }}
             onTutorialComplete={() => {
               // Handle tutorial completion from onboarding events
-              setGamePhase('SCENARIO');
+              // Continue in LIFE_MANAGEMENT phase (not SCENARIO, which requires an initialized scenario)
+              setGamePhase('LIFE_MANAGEMENT');
+              setActiveTab('WORKSPACE');
               logEvent('tutorial_complete');
               addLogEntry('ONBOARDING: Complete. Ready for real deals.');
               playSfx('SUCCESS');

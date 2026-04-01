@@ -67,7 +67,7 @@ const KPI: React.FC<{
 };
 
 const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen, onClose, onJumpToAssets }) => {
-  const { playerStats, updatePlayerStats, addLogEntry, tutorialStep, setTutorialStep } = useGame();
+  const { playerStats, updatePlayerStats, addLogEntry, addActivity, tutorialStep, setTutorialStep } = useGame();
 
   const companies = playerStats?.portfolio || [];
   const currentWeek = playerStats?.timeCursor || 0;
@@ -86,12 +86,23 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
       label: company.isAnalyzed ? 'Refresh Diligence' : 'Analyze File',
       icon: 'fa-search',
       onClick: () => {
+        const wasAnalyzed = company.isAnalyzed;
         updatePlayerStats({
           modifyCompany: { id: company.id, updates: { isAnalyzed: true, latestCeoReport: 'AI flagged a patent footnote. Valuation sensitivity updated.' } },
           reputation: +2,
         });
-        addLogEntry(`Diligence refreshed for ${company.name}`);
-        if (!company.isAnalyzed && tutorialStep === 3) setTutorialStep(4);
+        const msg = wasAnalyzed
+          ? `Diligence refreshed for ${company.name} — valuation model updated.`
+          : `CIM analyzed for ${company.name} — patent footnote flagged, reputation +2.`;
+        addLogEntry(msg);
+        addActivity({
+          type: 'portfolio',
+          icon: 'fas fa-search',
+          title: wasAnalyzed ? 'Diligence Refreshed' : 'File Analyzed',
+          detail: `${company.name}: ${company.latestCeoReport || 'Analysis complete.'}`,
+          sentiment: 'positive',
+        });
+        if (!wasAnalyzed && tutorialStep === 3) setTutorialStep(4);
       },
     },
     {

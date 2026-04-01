@@ -26,7 +26,7 @@ export const ONBOARDING_ARC: StoryArc = {
     {
       stage: 0,
       title: 'Welcome',
-      description: 'Your first day at Apex Capital.',
+      description: 'Your first day at Sterling Partners.',
       events: ['evt_onboarding_arrival'],
       advanceConditions: {
         completedEvents: ['evt_onboarding_arrival'],
@@ -117,10 +117,10 @@ export const ONBOARDING_EVENTS: StoryEvent[] = [
     type: 'PRIORITY',
     category: 'CAREER',
     title: 'Your First Day',
-    hook: 'Day one at Apex Capital. Don\'t blow it.',
+    hook: 'Day one at Sterling Partners. Don\'t blow it.',
     description: `The elevator opens to mahogany and money.
 
-Welcome to Apex Capital Partners. $2.4 billion AUM. Top-quartile returns. A place where careers are made—or destroyed in a single bad quarter.
+Welcome to Sterling Partners Partners. $2.4 billion AUM. Top-quartile returns. A place where careers are made—or destroyed in a single bad quarter.
 
 Your desk awaits in the analyst bullpen. Coffee's already getting cold. And somewhere across the trading floor, a Managing Director is about to drop something on your desk that will define your next six months.
 
@@ -498,7 +498,7 @@ But first—are you in or out on PackFancy?`,
           queuesEvent: { eventId: 'evt_first_deal', delayWeeks: 0 },
           notification: {
             title: 'Tutorial Complete!',
-            message: 'Welcome to Apex Capital. The real game begins now.',
+            message: 'Welcome to Sterling Partners. The real game begins now.',
             type: 'success',
           },
         },

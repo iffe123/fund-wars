@@ -33,6 +33,9 @@ export function useStoryMilestones(): UseStoryMilestonesReturn {
     if (!playerStats) return;
     if (pendingMilestone) return; // already showing one
 
+    // Don't trigger story milestones during onboarding — show them sequentially after
+    if (!worldFlags.has('TUTORIAL_COMPLETE')) return;
+
     const currentWeek = playerStats.gameTime?.week ?? playerStats.timeCursor ?? 0;
     if (currentWeek === lastCheckedWeek.current) return;
     lastCheckedWeek.current = currentWeek;

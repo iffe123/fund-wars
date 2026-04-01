@@ -242,7 +242,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
   // IMPORTANT: Skip if legacy tutorial is active (tutorialStep > 0) to avoid dual-tutorial conflict
   if (onboardingEvent && !worldFlags.has('TUTORIAL_COMPLETE') && tutorialStep === 0) {
     return (
-      <div style={{ zIndex: Z_INDEX.tutorialHighlight, position: 'relative' }}>
+      <div style={{ position: 'relative' }}>
         <TerminalPanel
           title="ONBOARDING"
           className="h-full flex flex-col p-4 bg-black relative"
@@ -250,7 +250,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
           <EventFeed
             priorityEvent={onboardingEvent}
             optionalEvents={[]}
-            backgroundMessages={['Welcome to Apex Capital...']}
+            backgroundMessages={['Welcome to Sterling Partners...']}
             playerStats={playerStats}
             npcs={npcs}
             worldFlags={worldFlags}
@@ -259,7 +259,6 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
             onDismissEvent={() => {}} // No dismissing onboarding events
             onAdvanceWeek={() => {}} // No advancing during onboarding
             onRefreshEvents={() => {}} // No refreshing during onboarding
-            onConsultAdvisor={onConsultAdvisor}
             className="flex-1"
           />
         </TerminalPanel>
@@ -283,7 +282,6 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
           onDismissEvent={handleDismissEvent}
           onAdvanceWeek={handleAdvanceWeek}
           onRefreshEvents={handleRefreshEvents}
-          onConsultAdvisor={onConsultAdvisor}
           className="flex-1"
         />
 
