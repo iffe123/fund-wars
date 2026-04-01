@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useStoryEngine } from '../../contexts/StoryEngineContext';
 
 interface TitleScreenProps {
   onNewGame: () => void;
