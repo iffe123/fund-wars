@@ -7,16 +7,18 @@ export const useMarketCycle = () => {
     const dispatch = useGameDispatch();
     const lastWeek = useRef<number>(-1);
 
-    // Market changes tied to week advancement, not a real-time timer
+    // Market changes tied to week advancement only
+    const currentWeek = playerStats?.gameTime?.week ?? 0;
+
     useEffect(() => {
         if (gamePhase === 'INTRO') return;
-
-        const currentWeek = playerStats?.gameTime?.week ?? playerStats?.timeCursor ?? 0;
         if (currentWeek === lastWeek.current) return;
+
+        const previousWeek = lastWeek.current;
         lastWeek.current = currentWeek;
 
-        // Don't change market on week 0/1 (let players settle in)
-        if (currentWeek <= 1) return;
+        // Don't change market on initial load or week 0/1
+        if (previousWeek === -1 || currentWeek <= 1) return;
 
         const rand = Math.random();
         let nextCycle: MarketVolatility = 'NORMAL';
@@ -31,9 +33,10 @@ export const useMarketCycle = () => {
             return;
         }
 
-        // Only update if market actually changes
         if (nextCycle !== marketVolatility) {
             dispatch({ type: 'SET_MARKET_VOLATILITY', payload: nextCycle });
         }
-    }, [gamePhase, playerStats?.gameTime?.week, playerStats?.timeCursor, marketVolatility, dispatch]);
+    // Only re-run when the week number actually changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentWeek, gamePhase]);
 };

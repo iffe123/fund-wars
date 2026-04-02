@@ -873,8 +873,8 @@ const App: React.FC = () => {
         {/* MOBILE BOTTOM NAV */}
         <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
 
-        {/* WARNING PANEL - Living World System (hidden during story modals to avoid overlap) */}
-        {activeModal !== 'MILESTONE' && activeModal !== 'GAME_END' && (
+        {/* WARNING PANEL - Living World System (hidden during any modal to avoid overlap) */}
+        {!activeModal && (
             <WarningPanel
                 warnings={activeWarnings}
                 onDismiss={dismissWarning}

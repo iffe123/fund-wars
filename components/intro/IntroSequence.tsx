@@ -12,7 +12,7 @@ const INTRO_SLIDES: SlideContent[] = [
     title: 'The Elevator',
     narrative: [
       'The elevator opens to mahogany and money.',
-      'Welcome to Sterling Partners Partners. $2.4 billion AUM. Top-quartile returns.',
+      'Welcome to Sterling Partners. $2.4 billion AUM. Top-quartile returns.',
       'A place where careers are made—or destroyed in a single bad quarter.',
     ],
     buttonText: 'Step Inside',

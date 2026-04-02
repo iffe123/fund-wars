@@ -13,7 +13,7 @@ import type { StoryEvent, StoryArc } from '../types/rpgEvents';
 
 export const ONBOARDING_ARC: StoryArc = {
   id: 'arc_onboarding',
-  title: 'First Day at Apex',
+  title: 'First Day at Sterling Partners',
   description: 'Learn the ropes of private equity through your first deal.',
   teaser: 'Every career starts somewhere. Yours starts now.',
   category: 'MAIN',
@@ -120,7 +120,7 @@ export const ONBOARDING_EVENTS: StoryEvent[] = [
     hook: 'Day one at Sterling Partners. Don\'t blow it.',
     description: `The elevator opens to mahogany and money.
 
-Welcome to Sterling Partners Partners. $2.4 billion AUM. Top-quartile returns. A place where careers are made—or destroyed in a single bad quarter.
+Welcome to Sterling Partners. $2.4 billion AUM. Top-quartile returns. A place where careers are made—or destroyed in a single bad quarter.
 
 Your desk awaits in the analyst bullpen. Coffee's already getting cold. And somewhere across the trading floor, a Managing Director is about to drop something on your desk that will define your next six months.
 
