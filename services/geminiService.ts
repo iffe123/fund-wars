@@ -40,6 +40,7 @@ const withRetry = async <T>(
         errorMessage.includes('quota exceeded') ||
         errorMessage.includes('rate_limit') ||
         errorMessage.includes('overloaded') ||
+        errorMessage.includes('not configured') ||
         errorMessage.includes('403') ||
         errorMessage.includes('401')
       ) {
@@ -64,6 +65,9 @@ const withRetry = async <T>(
 const classifyError = (error: Error): { type: string; message: string } => {
   const msg = error.message.toLowerCase();
 
+  if (msg.includes('not configured')) {
+    return { type: 'config', message: 'AI service not configured. Using offline advisor.' };
+  }
   if (msg.includes('invalid x-api-key') || msg.includes('invalid api key') || msg.includes('authentication_error')) {
     return { type: 'auth', message: 'AI authentication failed. Check server-side API key configuration.' };
   }
@@ -408,6 +412,53 @@ When the player asks about deal structures, deal types, or how to approach a spe
 Never just tell them what to do. Present options with consequences. Let them choose their own destruction—or triumph.
 `;
 
+const getOfflineAdvisorResponse = (
+  newPrompt: string,
+  playerStats?: PlayerStats | null,
+  currentScenario?: Scenario | null
+): string => {
+  const cash = playerStats?.cash ?? 0;
+  const rep = playerStats?.reputation ?? 0;
+  const stress = playerStats?.stress ?? 0;
+  const audit = playerStats?.auditRisk ?? 0;
+  const debt = playerStats?.loanBalance ?? 0;
+  const scenarioTitle = currentScenario?.title ? `"${currentScenario.title}"` : 'no active scenario';
+
+  const pressure = [
+    stress > 75 ? 'you\u2019re cracking' : null,
+    rep < 20 ? 'nobody respects you' : null,
+    cash < 5000 ? 'you\u2019re broke' : null,
+    debt > 0 ? 'you\u2019re in debt' : null,
+    audit > 60 ? 'regulators are sniffing' : null,
+  ].filter(Boolean);
+
+  const nextMoves: string[] = [];
+  if (currentScenario?.choices && currentScenario.choices.length > 0) {
+    nextMoves.push('Pick a choice that boosts Reputation or reduces Audit Risk unless you can stomach the heat.');
+    nextMoves.push('Hover the options: the UI shows stat previews. That\u2019s the real "alpha."');
+  } else if (playerStats?.portfolio?.length) {
+    nextMoves.push('Go to ASSETS: analyze a company, then take one high-impact action (board / refinance / growth).');
+  } else {
+    nextMoves.push('Generate deal flow, run diligence, and stop roleplaying as "busy."');
+  }
+
+  if (debt > 0 && cash > 0) nextMoves.push('Pay down the worst debt. Interest is a silent assassin.');
+  if (cash < 1000) nextMoves.push('Cut lifestyle burn or you\u2019ll be "terminated" by arithmetic.');
+
+  const opener =
+    `[OFFLINE ADVISOR]\n` +
+    `Listen, champ: the uplink's down. You still have a brain\u2014use it.\n` +
+    `Context: ${scenarioTitle}. Current problems: ${pressure.length ? pressure.join(', ') : 'none worth mocking\u2026 yet'}.\n\n`;
+
+  return (
+    opener +
+    `Your question: "${newPrompt.trim()}"\n\n` +
+    `My answer (analog edition):\n` +
+    `- ${nextMoves.slice(0, 3).join('\n- ')}\n\n` +
+    `Rule of thumb: in this game, nothing is "hidden"\u2014if you don't understand a system, open the Transparency panel and read the math.\n`
+  );
+};
+
 export const getAdvisorResponse = async (
   newPrompt: string,
   history: ChatMessage[],
@@ -415,48 +466,7 @@ export const getAdvisorResponse = async (
   currentScenario?: Scenario | null
 ): Promise<string> => {
   if (!isAIConfigured()) {
-    // Offline Machiavelli: never dead-end the run.
-    const cash = playerStats?.cash ?? 0;
-    const rep = playerStats?.reputation ?? 0;
-    const stress = playerStats?.stress ?? 0;
-    const audit = playerStats?.auditRisk ?? 0;
-    const debt = playerStats?.loanBalance ?? 0;
-    const scenarioTitle = currentScenario?.title ? `"${currentScenario.title}"` : 'no active scenario';
-
-    const pressure = [
-      stress > 75 ? 'you\u2019re cracking' : null,
-      rep < 20 ? 'nobody respects you' : null,
-      cash < 5000 ? 'you\u2019re broke' : null,
-      debt > 0 ? 'you\u2019re in debt' : null,
-      audit > 60 ? 'regulators are sniffing' : null,
-    ].filter(Boolean);
-
-    const nextMoves: string[] = [];
-    if (currentScenario?.choices && currentScenario.choices.length > 0) {
-      nextMoves.push('Pick a choice that boosts Reputation or reduces Audit Risk unless you can stomach the heat.');
-      nextMoves.push('Hover the options: the UI shows stat previews. That\u2019s the real "alpha."');
-    } else if (playerStats?.portfolio?.length) {
-      nextMoves.push('Go to ASSETS: analyze a company, then take one high-impact action (board / refinance / growth).');
-    } else {
-      nextMoves.push('Generate deal flow, run diligence, and stop roleplaying as "busy."');
-    }
-
-    if (debt > 0 && cash > 0) nextMoves.push('Pay down the worst debt. Interest is a silent assassin.');
-    if (cash < 1000) nextMoves.push('Cut lifestyle burn or you\u2019ll be "terminated" by arithmetic.');
-
-    const opener =
-      `[OFFLINE ADVISOR]\n` +
-      `Listen, champ: the uplink's down. You still have a brain\u2014use it.\n` +
-      `Context: ${scenarioTitle}. Current problems: ${pressure.length ? pressure.join(', ') : 'none worth mocking\u2026 yet'}.\n\n`;
-
-    const reply =
-      opener +
-      `Your question: "${newPrompt.trim()}"\n\n` +
-      `My answer (analog edition):\n` +
-      `- ${nextMoves.slice(0, 3).join('\n- ')}\n\n` +
-      `Rule of thumb: in this game, nothing is "hidden"\u2014if you don't understand a system, open the Transparency panel and read the math.\n`;
-
-    return reply;
+    return getOfflineAdvisorResponse(newPrompt, playerStats, currentScenario);
   }
 
   try {
@@ -501,6 +511,11 @@ export const getAdvisorResponse = async (
     const err = error instanceof Error ? error : new Error(String(error));
     const classified = classifyError(err);
     console.error(`AI API error (${classified.type}):`, err.message);
+
+    // If AI isn't configured, fall back to offline advisor instead of showing error
+    if (classified.type === 'config') {
+      return getOfflineAdvisorResponse(newPrompt, playerStats, currentScenario);
+    }
 
     // Return user-friendly message based on error type
     if (classified.type === 'auth') {
