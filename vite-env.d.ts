@@ -2,7 +2,6 @@
 
 interface ImportMetaEnv {
   [key: string]: any;
-  readonly VITE_ANTHROPIC_API_KEY?: string;
   readonly VITE_FIREBASE_API_KEY?: string;
   readonly VITE_FIREBASE_AUTH_DOMAIN?: string;
   readonly VITE_FIREBASE_PROJECT_ID?: string;

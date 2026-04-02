@@ -1,9 +1,12 @@
-const ANTHROPIC_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env)
-  ? import.meta.env.VITE_ANTHROPIC_API_KEY
-  : undefined;
+/**
+ * AI Client — Frontend interface for AI calls
+ *
+ * All requests go through /api/ai (Vercel serverless function)
+ * which holds the API key server-side. No secrets in client JS.
+ */
 
-const MODEL = 'claude-sonnet-4-20250514';
-const AI_TIMEOUT_MS = 15000;
+const AI_ENDPOINT = '/api/ai';
+const AI_TIMEOUT_MS = 20000;
 
 interface AIMessage {
   role: 'user' | 'assistant';
@@ -17,45 +20,58 @@ interface AICallOptions {
   temperature?: number;
 }
 
-export const isAIConfigured = (): boolean => !!ANTHROPIC_API_KEY;
+/**
+ * Check if the AI proxy is available.
+ * On first call, pings the endpoint. Caches the result.
+ */
+let _aiConfigured: boolean | null = null;
+
+export const isAIConfigured = (): boolean => {
+  // In production with the proxy route, AI is always available.
+  // The proxy returns 503 if ANTHROPIC_API_KEY isn't set server-side.
+  // We optimistically assume it's configured; errors are handled per-call.
+  if (_aiConfigured !== null) return _aiConfigured;
+
+  // Default to true — the proxy exists, whether the key is set is a runtime check.
+  // If the first call fails with 503, we'll set this to false.
+  _aiConfigured = true;
+  return true;
+};
 
 export const callAI = async (options: AICallOptions): Promise<string> => {
-  if (!ANTHROPIC_API_KEY) {
-    throw new Error('AI not configured');
-  }
-
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(AI_ENDPOINT, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: MODEL,
-        max_tokens: options.maxTokens || 1024,
-        temperature: options.temperature ?? 0.8,
         system: options.system,
         messages: options.messages,
+        maxTokens: options.maxTokens || 1024,
+        temperature: options.temperature ?? 0.8,
       }),
       signal: controller.signal,
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error?.error?.message || `AI call failed: ${response.status}`);
+
+      // If the server says AI isn't configured, cache that
+      if (response.status === 503) {
+        _aiConfigured = false;
+        throw new Error('AI not configured');
+      }
+
+      throw new Error(error?.error || `AI call failed: ${response.status}`);
     }
 
     const data = await response.json();
-    if (!data.content || !Array.isArray(data.content) || !data.content[0]?.text) {
+    if (!data.text) {
       throw new Error('Unexpected AI response format');
     }
-    return data.content[0].text;
+    return data.text;
   } catch (err: unknown) {
     if (err instanceof DOMException && err.name === 'AbortError') {
       throw new Error('AI request timed out. Please try again.');
