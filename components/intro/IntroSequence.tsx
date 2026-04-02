@@ -12,7 +12,7 @@ const INTRO_SLIDES: SlideContent[] = [
     title: 'The Elevator',
     narrative: [
       'The elevator opens to mahogany and money.',
-      'Welcome to Apex Capital Partners. $2.4 billion AUM. Top-quartile returns.',
+      'Welcome to Sterling Partners. $2.4 billion AUM. Top-quartile returns.',
       'A place where careers are made—or destroyed in a single bad quarter.',
     ],
     buttonText: 'Step Inside',
@@ -48,7 +48,7 @@ const INTRO_SLIDES: SlideContent[] = [
       'You have ONE WEEK to analyze this deal before the IOI deadline.',
       'Miss it, and Chad will find someone who won\'t.',
     ],
-    buttonText: 'Enter Apex Capital',
+    buttonText: 'Enter Sterling Partners',
     buttonVariant: 'accent',
   },
 ];

@@ -65,7 +65,7 @@ const classifyError = (error: Error): { type: string; message: string } => {
   const msg = error.message.toLowerCase();
 
   if (msg.includes('invalid x-api-key') || msg.includes('invalid api key') || msg.includes('authentication_error')) {
-    return { type: 'auth', message: 'Invalid API key. Please check your VITE_ANTHROPIC_API_KEY configuration.' };
+    return { type: 'auth', message: 'AI authentication failed. Check server-side API key configuration.' };
   }
   if (msg.includes('permission denied') || msg.includes('403') || msg.includes('401')) {
     return { type: 'permission', message: 'API permission denied. Check API key configuration.' };
@@ -158,12 +158,9 @@ const OFFLINE_RESPONSES = {
 const offlineNpcReply = (npc: NPC, playerStats: PlayerStats, playerMessage: string): string => {
   // Log warning once per session
   if (!offlineWarningShown) {
-    console.warn(
-      '%c\u26a0\ufe0f AI API OFFLINE - NPCs using fallback responses.\n' +
-      'To enable AI-powered NPCs, set VITE_ANTHROPIC_API_KEY in your .env file.\n' +
-      'See README.md for setup instructions.',
-      'color: #f59e0b; font-weight: bold; font-size: 14px;'
-    );
+    if (import.meta.env.DEV) {
+      console.info('AI offline — NPCs using fallback responses. Set ANTHROPIC_API_KEY in Vercel env vars to enable.');
+    }
     offlineWarningShown = true;
   }
 

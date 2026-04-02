@@ -13,7 +13,7 @@ import type { StoryEvent, StoryArc } from '../types/rpgEvents';
 
 export const ONBOARDING_ARC: StoryArc = {
   id: 'arc_onboarding',
-  title: 'First Day at Apex',
+  title: 'First Day at Sterling Partners',
   description: 'Learn the ropes of private equity through your first deal.',
   teaser: 'Every career starts somewhere. Yours starts now.',
   category: 'MAIN',
@@ -26,7 +26,7 @@ export const ONBOARDING_ARC: StoryArc = {
     {
       stage: 0,
       title: 'Welcome',
-      description: 'Your first day at Apex Capital.',
+      description: 'Your first day at Sterling Partners.',
       events: ['evt_onboarding_arrival'],
       advanceConditions: {
         completedEvents: ['evt_onboarding_arrival'],
@@ -117,25 +117,16 @@ export const ONBOARDING_EVENTS: StoryEvent[] = [
     type: 'PRIORITY',
     category: 'CAREER',
     title: 'Your First Day',
-    hook: 'Day one at Apex Capital. Don\'t blow it.',
-    description: `The elevator opens to mahogany and money.
+    hook: 'Day one at Sterling Partners. Don\'t blow it.',
+    description: `The elevator opens to mahogany and money. Welcome to Sterling Partners — $2.4 billion AUM, top-quartile returns.
 
-Welcome to Apex Capital Partners. $2.4 billion AUM. Top-quartile returns. A place where careers are made—or destroyed in a single bad quarter.
+Your desk awaits in the analyst bullpen. Coffee's already getting cold. A Managing Director is about to drop something on your desk that will define your next six months.
 
-Your desk awaits in the analyst bullpen. Coffee's already getting cold. And somewhere across the trading floor, a Managing Director is about to drop something on your desk that will define your next six months.
-
-The question is: are you ready for this?`,
-    context: 'This is your introduction to the world of private equity.',
-    involvedNpcs: ['machiavelli'],
+Are you ready?`,
+    involvedNpcs: [],
     involvedCompanies: [],
-    stakes: 'HIGH',
+    stakes: 'MEDIUM',
     isOnboarding: true,
-    mentorGuidance: {
-      character: 'machiavelli',
-      message: 'Welcome, rookie. I\'m your AI advisor—think of me as the cynical voice in your head that knows how this game is actually played.',
-      tip: 'Throughout the game, I\'ll provide hints on choices. Whether you listen is up to you.',
-      highlight: true,
-    },
     choices: [
       {
         id: 'ready_to_start',
@@ -154,7 +145,6 @@ The question is: are you ready for this?`,
           },
         },
         playerLine: 'I\'ve been waiting for this moment my whole life.',
-        epilogue: 'You take a deep breath and step into the bullpen. Time to make your mark.',
       },
       {
         id: 'skip_tutorial',
@@ -176,9 +166,6 @@ The question is: are you ready for this?`,
     ],
     triggerArcId: 'arc_onboarding',
     arcStage: 0,
-    advisorHints: {
-      machiavelli: 'The tutorial teaches you the basics. Skip it if you\'re impatient, but don\'t blame me when you miss something important.',
-    },
   },
 
   // === EVENT 2: The Assignment ===
@@ -197,7 +184,6 @@ He pauses at your cubicle entrance. "Have your analysis ready by end of day. And
 The CIM (Confidential Information Memorandum) sits there, waiting. Your first real deal.
 
 Time to check your **ASSET MANAGER** to see what you're working with.`,
-    context: 'The Asset Manager shows your deal pipeline. Click it to view deals.',
     sourceNpcId: 'chad',
     involvedNpcs: ['chad'],
     involvedCompanies: [1],
@@ -206,12 +192,6 @@ Time to check your **ASSET MANAGER** to see what you're working with.`,
     requirements: {
       requiredFlags: ['ONBOARDING_STARTED'],
       blockedByFlags: ['ONBOARDING_ASSIGNMENT_DONE'],
-    },
-    mentorGuidance: {
-      character: 'machiavelli',
-      message: 'The ASSET MANAGER is your command center for deals. You\'ll see them flow through stages: Pipeline → Diligence → Owned → Exit.',
-      tip: 'Every deal starts in your pipeline. Analyzing them costs Action Points (AP).',
-      highlight: true,
     },
     choices: [
       {
@@ -240,9 +220,6 @@ Time to check your **ASSET MANAGER** to see what you're working with.`,
     ],
     triggerArcId: 'arc_onboarding',
     arcStage: 1,
-    advisorHints: {
-      machiavelli: 'First impressions matter. A sloppy analysis will follow you. Take your time.',
-    },
   },
 
   // === EVENT 3: Analysis ===
@@ -269,17 +246,10 @@ But wait—there's something in the footnotes on page 40. A patent reference. **
 That's interesting. Very interesting.
 
 Try running the **LEVERAGE MODEL** to see what the deal economics could look like.`,
-    context: 'The Leverage Model shows how debt and equity combine in a buyout.',
     involvedNpcs: [],
     involvedCompanies: [1],
     stakes: 'MEDIUM',
     isOnboarding: true,
-    mentorGuidance: {
-      character: 'machiavelli',
-      message: 'The LEVERAGE MODEL lets you see how debt amplifies returns—but also risk. Click it on any deal you\'re analyzing.',
-      tip: 'In an LBO, you use debt to buy a company. Strong cash flow (EBITDA) pays down that debt. Weak cash flow = bankruptcy.',
-      highlight: true,
-    },
     choices: [
       {
         id: 'run_model',
@@ -308,9 +278,6 @@ Try running the **LEVERAGE MODEL** to see what the deal economics could look lik
     ],
     triggerArcId: 'arc_onboarding',
     arcStage: 2,
-    advisorHints: {
-      machiavelli: 'A model is only as good as its assumptions. Change the assumptions, change the outcome.',
-    },
   },
 
   // === EVENT 4: Meet Sarah ===
@@ -335,18 +302,11 @@ You nod.
 She's offering help. In this place, that's rare.
 
 Open the **COMMS** tab to talk to colleagues and gather intel.`,
-    context: 'NPCs have information. Building relationships unlocks it.',
     sourceNpcId: 'sarah',
     involvedNpcs: ['sarah'],
     involvedCompanies: [1],
     stakes: 'LOW',
     isOnboarding: true,
-    mentorGuidance: {
-      character: 'sarah',
-      message: 'Hi! I\'m Sarah. I can help with research, analysis, and intel. Just ask me questions in COMMS.',
-      tip: 'NPCs have relationships and trust levels. Help them, and they\'ll help you. Betray them... and they\'ll remember.',
-      highlight: true,
-    },
     choices: [
       {
         id: 'talk_to_sarah',
@@ -378,9 +338,6 @@ Open the **COMMS** tab to talk to colleagues and gather intel.`,
     ],
     triggerArcId: 'arc_onboarding',
     arcStage: 3,
-    advisorHints: {
-      machiavelli: 'Sarah\'s a straight shooter. Unlike some people in this office.',
-    },
   },
 
   // === EVENT 5: The Patent Question ===
@@ -405,18 +362,11 @@ You shake your head.
 She looks at you meaningfully. "The current management is focused on 'operational excellence'—cost cutting and efficiency. They're sitting on a gold mine and using it as a paperweight."
 
 This changes everything.`,
-    context: 'Asking the right questions gets you critical intel.',
     sourceNpcId: 'sarah',
     involvedNpcs: ['sarah'],
     involvedCompanies: [1],
     stakes: 'MEDIUM',
     isOnboarding: true,
-    mentorGuidance: {
-      character: 'machiavelli',
-      message: 'This is why you build relationships. Sarah just handed you the key to this deal. Remember who helps you.',
-      tip: 'In COMMS, you can ask NPCs specific questions. The more they trust you, the more they share.',
-      highlight: true,
-    },
     choices: [
       {
         id: 'ask_about_patent',
@@ -443,9 +393,6 @@ This changes everything.`,
     ],
     triggerArcId: 'arc_onboarding',
     arcStage: 4,
-    advisorHints: {
-      sarah: 'The patent portfolio is the real story here. Everything else is just cardboard.',
-    },
   },
 
   // === EVENT 6: Decision Time ===
@@ -471,18 +418,11 @@ After you submit an IOI, you'll need to choose your **deal structure**:
 - **Venture**: Pure equity bet on explosive growth.
 
 But first—are you in or out on PackFancy?`,
-    context: 'Your first deal decision. Choose wisely.',
     sourceNpcId: 'chad',
     involvedNpcs: ['chad', 'sarah'],
     involvedCompanies: [1],
-    stakes: 'HIGH',
+    stakes: 'MEDIUM',
     isOnboarding: true,
-    mentorGuidance: {
-      character: 'machiavelli',
-      message: 'This is it—your first real decision. Whatever you choose, own it. Second-guessing gets you nowhere in this business.',
-      tip: 'After the IOI, you\'ll pick a deal structure and the real game begins. You have 2 Action Points per week—spend them wisely.',
-      highlight: true,
-    },
     choices: [
       {
         id: 'submit_ioi',
@@ -498,7 +438,7 @@ But first—are you in or out on PackFancy?`,
           queuesEvent: { eventId: 'evt_first_deal', delayWeeks: 0 },
           notification: {
             title: 'Tutorial Complete!',
-            message: 'Welcome to Apex Capital. The real game begins now.',
+            message: 'Welcome to Sterling Partners. The real game begins now.',
             type: 'success',
           },
         },
@@ -527,9 +467,5 @@ But first—are you in or out on PackFancy?`,
     ],
     triggerArcId: 'arc_onboarding',
     arcStage: 5,
-    advisorHints: {
-      machiavelli: 'Fortune favors the bold. But so do spectacular flameouts. Your call.',
-      sarah: 'The patent is real. The question is whether management can execute. That\'s a judgment call.',
-    },
   },
 ];

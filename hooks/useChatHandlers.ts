@@ -3,7 +3,7 @@ import type { ChatMessage, PlayerStats, Scenario, NPC, StatChanges } from '../ty
 import { getAdvisorResponse, getNPCResponse } from '../services/geminiService';
 
 const DEFAULT_CHAT: ChatMessage[] = [
-  { sender: 'advisor', text: 'SYSTEM READY. Awaiting inputs.' },
+  { sender: 'advisor', text: 'Welcome, fresh meat. I\'m Machiavelli — your strategic advisor. I see everything, judge everything, and I\'m almost never wrong. Ask me about deals, people, or how not to get fired. Choose wisely.' },
 ];
 
 interface ChatHandlersDependencies {

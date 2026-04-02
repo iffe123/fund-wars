@@ -93,12 +93,17 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
           return (
             <div
               key={deal.id}
-              className={`border rounded-lg transition-all ${
-                deal.isHot 
-                  ? 'border-red-500/50 bg-red-500/5' 
+              className={`border rounded-lg transition-all relative ${
+                deal.isHot
+                  ? 'border-red-500/50 bg-red-500/5'
                   : 'border-slate-700 bg-slate-800/50'
-              } ${!affordable ? 'opacity-60' : ''}`}
+              } ${!affordable ? 'opacity-50 grayscale-[30%]' : ''}`}
             >
+              {!affordable && (
+                <div className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-red-900/80 border border-red-500/40 flex items-center justify-center" title="Insufficient funds">
+                  <i className="fas fa-lock text-red-400 text-xs"></i>
+                </div>
+              )}
               <div
                 className="p-3 cursor-pointer hover:bg-slate-700/30 transition-colors"
                 onClick={() => setExpandedDealId(isExpanded ? null : deal.id)}
