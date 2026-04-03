@@ -5,10 +5,12 @@ import { MarketVolatility } from '../types';
 export const useMarketCycle = () => {
     const { gamePhase, marketVolatility, playerStats } = useGameState();
     const dispatch = useGameDispatch();
-    const lastWeek = useRef<number>(-1);
 
     // Market changes tied to week advancement only
     const currentWeek = playerStats?.gameTime?.week ?? 0;
+
+    // Initialize lastWeek to the current week so remounts don't trigger a spurious change
+    const lastWeek = useRef<number>(currentWeek);
 
     useEffect(() => {
         if (gamePhase === 'INTRO') return;
@@ -19,6 +21,9 @@ export const useMarketCycle = () => {
 
         // Don't change market on initial load or week 0/1
         if (previousWeek === -1 || currentWeek <= 1) return;
+
+        // Only change market when the week has strictly advanced (not on re-renders or remounts)
+        if (currentWeek <= previousWeek) return;
 
         const rand = Math.random();
         let nextCycle: MarketVolatility = 'NORMAL';

@@ -1091,7 +1091,7 @@ Your heart rate spikes. Headhunters don't call unless someone's watching.
 
 She won't say which firm. But she wants to meet for coffee. "Just a conversation."
 
-You've been at Apex for six months. Is it too early to explore? Or is this the kind of opportunity you'd regret missing?
+You've been at Sterling Partners for six months. Is it too early to explore? Or is this the kind of opportunity you'd regret missing?
     `.trim(),
     context: 'Your career is your responsibility. No one else\'s.',
     involvedNpcs: [],
@@ -1119,7 +1119,7 @@ You've been at Apex for six months. Is it too early to explore? Or is this the k
       {
         id: 'loyal_decline',
         label: 'Politely Decline',
-        description: 'You\'re focused on Apex right now.',
+        description: 'You\'re focused on Sterling Partners right now.',
         alignment: 'ETHICAL',
         consequences: {
           stats: { stress: -5 },

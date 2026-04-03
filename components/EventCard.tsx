@@ -259,8 +259,8 @@ const EventCard: React.FC<EventCardProps> = ({
             </div>
           )}
 
-          {/* Machiavelli AI Advisor Panel — only show when advisor interaction is available */}
-          {onConsultAdvisor && (event.advisorHints?.machiavelli || event.stakes === 'HIGH' || event.stakes === 'CRITICAL') && (
+          {/* Machiavelli AI Advisor Panel — hide from priority/onboarding/story events (BUG A fix) */}
+          {onConsultAdvisor && !event.isOnboarding && event.type !== 'PRIORITY' && (event.advisorHints?.machiavelli || event.stakes === 'HIGH' || event.stakes === 'CRITICAL') && (
             <div className={`rounded-lg border overflow-hidden transition-all ${
               event.stakes === 'HIGH' || event.stakes === 'CRITICAL'
                 ? 'border-purple-500/60 bg-gradient-to-br from-purple-900/30 to-slate-900/50'

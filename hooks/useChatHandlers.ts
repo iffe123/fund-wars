@@ -4,6 +4,7 @@ import { getAdvisorResponse, getNPCResponse } from '../services/geminiService';
 
 const DEFAULT_CHAT: ChatMessage[] = [
   { sender: 'advisor', text: 'Welcome, fresh meat. I\'m Machiavelli — your strategic advisor. I see everything, judge everything, and I\'m almost never wrong. Ask me about deals, people, or how not to get fired. Choose wisely.' },
+  { sender: 'advisor', text: '📋 Quick tip: You can ask me about any deal in your pipeline, any colleague you\'re unsure about, or any decision you\'re facing. I\'ll give you the real analysis — not the sanitized version they teach at Wharton. Open COMMS anytime and find me here.' },
 ];
 
 interface ChatHandlersDependencies {
