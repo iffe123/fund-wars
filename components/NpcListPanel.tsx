@@ -38,10 +38,13 @@ const NpcListPanel: React.FC<NpcListPanelProps> = memo(({
         ))}
         <button
           onClick={() => onSelectNpc('advisor')}
-          className={`w-full text-left p-3 border-b border-slate-800 hover:bg-slate-800 transition-colors flex items-center space-x-3 ${selectedNpcId === 'advisor' ? 'bg-slate-800 text-blue-400' : 'text-slate-400'}`}
+          className={`w-full text-left p-3 border-b border-slate-800 hover:bg-purple-900/30 transition-colors flex items-center space-x-3 ${selectedNpcId === 'advisor' ? 'bg-purple-900/40 text-purple-300' : 'bg-purple-950/20 text-purple-400 border-l-2 border-l-purple-500'}`}
         >
-          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-          <div className="font-bold text-xs">MACHIAVELLI (AI)</div>
+          <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse shadow-[0_0_6px_rgba(168,85,247,0.5)]"></div>
+          <div className="flex-1">
+            <div className="font-bold text-xs">MACHIAVELLI (AI)</div>
+            <div className="text-[10px] text-purple-400/70">Strategic Advisor</div>
+          </div>
         </button>
       </div>
       <div className="p-2 border-t border-slate-700 bg-slate-900 text-[10px] text-center text-slate-500">

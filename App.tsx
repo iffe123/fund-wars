@@ -43,6 +43,7 @@ import WarningPanel from './components/WarningPanel';
 import GameEndModal from './components/GameEndModal';
 import TransparencyModal from './components/TransparencyModal';
 import EventDrivenWorkspace from './components/EventDrivenWorkspace';
+import { useRPGEvents } from './contexts/RPGEventContext';
 import StoryMilestoneModal from './components/StoryMilestoneModal';
 import CompanyEventModal from './components/CompanyEventModal';
 import NPCDramaModal from './components/NPCDramaModal';
@@ -75,6 +76,7 @@ const App: React.FC = () => {
   const { toasts, removeToast: removeEnhancedToast, toast, clearToasts } = useEnhancedToast();
   const { isTransitioning: isWeekTransitioning, startTransition: startWeekTransition } = useWeekTransition();
   const { pendingMilestone, dismissMilestone } = useStoryMilestones();
+  const { state: rpgState } = useRPGEvents();
 
   // --- CORE STATE (from hooks) ---
   const [legalAccepted, setLegalAccepted] = useState(false);
@@ -873,8 +875,8 @@ const App: React.FC = () => {
         {/* MOBILE BOTTOM NAV */}
         <BottomNav activeTab={activeMobileTab} onTabChange={setActiveMobileTab} />
 
-        {/* WARNING PANEL - Living World System (hidden during any modal to avoid overlap) */}
-        {!activeModal && (
+        {/* WARNING PANEL - Living World System (hidden during modals and story/priority events to avoid overlap) */}
+        {!activeModal && !rpgState.eventQueue.priorityEvent && (
             <WarningPanel
                 warnings={activeWarnings}
                 onDismiss={dismissWarning}

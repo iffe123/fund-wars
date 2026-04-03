@@ -242,36 +242,75 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
   // IMPORTANT: Skip if legacy tutorial is active (tutorialStep > 0) to avoid dual-tutorial conflict
   if (onboardingEvent && !worldFlags.has('TUTORIAL_COMPLETE') && tutorialStep === 0) {
     return (
-      <div style={{ position: 'relative' }}>
-        <TerminalPanel
-          title="ONBOARDING"
-          className="h-full flex flex-col p-4 bg-black relative"
-        >
-          <EventFeed
-            priorityEvent={onboardingEvent}
-            optionalEvents={[]}
-            backgroundMessages={['Welcome to Sterling Partners...']}
-            playerStats={playerStats}
-            npcs={npcs}
-            worldFlags={worldFlags}
-            currentPhase="PRIORITY_EVENT"
-            onChoice={handleEventChoice}
-            onDismissEvent={() => {}} // No dismissing onboarding events
-            onAdvanceWeek={() => {}} // No advancing during onboarding
-            onRefreshEvents={() => {}} // No refreshing during onboarding
-            className="flex-1"
-          />
-        </TerminalPanel>
+      <div
+        className="fixed inset-0 flex items-center justify-center bg-[rgb(10,15,25)]"
+        style={{ zIndex: Z_INDEX.tutorialBackdrop, backgroundColor: 'rgb(10, 15, 25)' }}
+      >
+        <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4">
+          <TerminalPanel
+            title="ONBOARDING"
+            className="flex flex-col p-4 bg-black"
+          >
+            <EventFeed
+              priorityEvent={onboardingEvent}
+              optionalEvents={[]}
+              backgroundMessages={['Welcome to Sterling Partners...']}
+              playerStats={playerStats}
+              npcs={npcs}
+              worldFlags={worldFlags}
+              currentPhase="PRIORITY_EVENT"
+              onChoice={handleEventChoice}
+              onDismissEvent={() => {}} // No dismissing onboarding events
+              onAdvanceWeek={() => {}} // No advancing during onboarding
+              onRefreshEvents={() => {}} // No refreshing during onboarding
+              className="flex-1"
+            />
+          </TerminalPanel>
+        </div>
       </div>
     );
   }
 
   // Full event-driven experience
+  // If there's a priority event, show it as a fullscreen overlay so no background bleeds through
+  if (priorityEvent) {
+    return (
+      <>
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-[rgb(10,15,25)]"
+          style={{ zIndex: Z_INDEX.tutorialBackdrop, backgroundColor: 'rgb(10, 15, 25)' }}
+        >
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4">
+            <TerminalPanel
+              title="PRIORITY_EVENT"
+              className="flex flex-col p-4 bg-black"
+            >
+              <EventFeed
+                priorityEvent={priorityEvent}
+                optionalEvents={[]}
+                backgroundMessages={[]}
+                playerStats={playerStats}
+                npcs={npcs}
+                worldFlags={worldFlags}
+                currentPhase={currentPhase}
+                onChoice={handleEventChoice}
+                onDismissEvent={handleDismissEvent}
+                onAdvanceWeek={handleAdvanceWeek}
+                onRefreshEvents={handleRefreshEvents}
+                className="flex-1"
+              />
+            </TerminalPanel>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <TerminalPanel title="COMMAND_CENTER" className="h-full flex flex-col bg-black">
         <EventFeed
-          priorityEvent={priorityEvent}
+          priorityEvent={null}
           optionalEvents={optionalEvents}
           backgroundMessages={backgroundMessages}
           playerStats={playerStats}
