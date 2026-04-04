@@ -109,6 +109,17 @@ const EventFeed: React.FC<EventFeedProps> = ({
       (stakeOrder[a.stakes] ?? 3) - (stakeOrder[b.stakes] ?? 3)
     );
   }, [optionalEvents]);
+  const nextOptionalEventId = sortedOptional[0]?.id ?? null;
+
+  const handleContinue = useCallback(() => {
+    if (priorityEvent) {
+      setExpandedEventId(priorityEvent.id);
+      return;
+    }
+    if (nextOptionalEventId) {
+      setExpandedEventId(nextOptionalEventId);
+    }
+  }, [priorityEvent, nextOptionalEventId]);
 
   return (
     <div className={`flex flex-col h-full bg-black ${className}`}>
@@ -132,6 +143,10 @@ const EventFeed: React.FC<EventFeedProps> = ({
               {apRemaining} AP remaining
             </div>
           </div>
+        </div>
+        <div className="mt-3 text-[11px] text-slate-500 flex items-center gap-2">
+          <i className="fas fa-chevron-down text-slate-600"></i>
+          <span>Tip: Click the chevron on any event card to collapse old events and keep new options visible.</span>
         </div>
       </div>
 
@@ -244,23 +259,39 @@ const EventFeed: React.FC<EventFeedProps> = ({
 
         {/* Advance Week Button */}
         {canAdvanceWeek && (
-          <button
-            data-tutorial="advance-btn"
-            onClick={onAdvanceWeek}
-            disabled={!!priorityEvent}
-            className={`
-              w-full py-3 rounded border transition-all flex items-center justify-center gap-3
-              ${priorityEvent
-                ? 'border-slate-700 text-slate-600 cursor-not-allowed'
-                : 'border-amber-600 text-amber-400 hover:bg-amber-900/30 hover:border-amber-500'
-              }
-            `}
-          >
-            <i className={`fas fa-forward ${!priorityEvent ? 'animate-pulse' : ''}`}></i>
-            <span className="text-sm font-bold uppercase tracking-wide">
-              {priorityEvent ? 'Handle Priority Event First' : 'Advance to Next Week'}
-            </span>
-          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              onClick={handleContinue}
+              disabled={!priorityEvent && sortedOptional.length === 0}
+              className={`
+                w-full py-3 rounded border transition-all flex items-center justify-center gap-2
+                ${(!priorityEvent && sortedOptional.length === 0)
+                  ? 'border-slate-700 text-slate-600 cursor-not-allowed'
+                  : 'border-cyan-700 text-cyan-300 hover:bg-cyan-900/20 hover:border-cyan-500'
+                }
+              `}
+            >
+              <i className="fas fa-arrow-down"></i>
+              <span className="text-xs font-bold uppercase tracking-wide">Continue Event Feed</span>
+            </button>
+            <button
+              data-tutorial="advance-btn"
+              onClick={onAdvanceWeek}
+              disabled={!!priorityEvent}
+              className={`
+                w-full py-3 rounded border transition-all flex items-center justify-center gap-3
+                ${priorityEvent
+                  ? 'border-slate-700 text-slate-600 cursor-not-allowed'
+                  : 'border-amber-600 text-amber-400 hover:bg-amber-900/30 hover:border-amber-500'
+                }
+              `}
+            >
+              <i className={`fas fa-forward ${!priorityEvent ? 'animate-pulse' : ''}`}></i>
+              <span className="text-sm font-bold uppercase tracking-wide">
+                {priorityEvent ? 'Handle Priority Event First' : 'Advance to Next Week'}
+              </span>
+            </button>
+          </div>
         )}
 
         {/* Hint for priority events */}

@@ -471,6 +471,7 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
   };
 
   const activeRivalCount = rivals.filter(r => !r.hasDropped).length;
+  const highestVendetta = rivals.reduce((max, r) => Math.max(max, r.fund.vendetta ?? 0), 0);
 
   return (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-sm p-2 md:p-4">
@@ -506,6 +507,18 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
               <div className={`font-mono font-bold ${activeRivalCount > 1 ? 'text-red-500' : 'text-green-500'}`}>
                 {activeRivalCount} ACTIVE
               </div>
+            </div>
+          </div>
+
+          <div className="bg-purple-950/25 border border-purple-700/40 rounded p-2 text-[11px] text-purple-200">
+            <div className="font-bold uppercase tracking-wider text-purple-300 mb-1">
+              <i className="fas fa-mask mr-1"></i>
+              Vendetta Intel
+            </div>
+            <div>
+              Rival vendetta amplifies aggression and surprise bids in auctions.
+              Current max vendetta in this room: <span className="font-bold">{highestVendetta}</span>/100.
+              Higher vendetta = bigger overbids and more hostile behavior.
             </div>
           </div>
 
