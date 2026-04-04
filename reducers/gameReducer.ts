@@ -618,15 +618,26 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 updatedStats.timeCursor = (updatedStats.timeCursor || 0) + crossedBoundary;
             }
 
-            // Ensure non-negative cash if loan changed (legacy logic)
-            if (changes.loanBalanceChange && updatedStats.cash < 0) {
+            // Prevent silent negative-cash states by automatically converting overdraft into emergency debt.
+            // This keeps spending outcomes visible without allowing impossible balances.
+            const actionLog = [...state.actionLog];
+            if (updatedStats.cash < 0) {
+                const deficit = Math.abs(updatedStats.cash);
+                updatedStats.personalFinances = {
+                    ...updatedStats.personalFinances,
+                    bankBalance: 0,
+                    outstandingLoans: (updatedStats.personalFinances.outstandingLoans || 0) + deficit,
+                };
                 updatedStats.cash = 0;
+                updatedStats.loanBalance = updatedStats.personalFinances.outstandingLoans;
+                actionLog.unshift(`${new Date().toLocaleTimeString()} // OVERDRAFT: Auto-bridge financing issued for $${Math.round(deficit).toLocaleString()}.`);
             }
 
             return {
                 ...state,
                 playerStats: updatedStats,
-                npcs: updatedNpcs
+                npcs: updatedNpcs,
+                actionLog
             };
         }
 

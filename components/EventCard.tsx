@@ -187,6 +187,23 @@ const EventCard: React.FC<EventCardProps> = ({
 
   // Get source NPC if exists
   const sourceNpc = event.sourceNpcId ? npcs.find(n => n.id === event.sourceNpcId) : null;
+  const describeChoiceImpact = (choice: EventChoice): string | null => {
+    const stats = choice.consequences?.stats;
+    if (!stats) return null;
+
+    const parts: string[] = [];
+    if (typeof stats.reputation === 'number' && stats.reputation !== 0) {
+      parts.push(`${stats.reputation > 0 ? '+' : ''}${stats.reputation} REP`);
+    }
+    if (typeof stats.stress === 'number' && stats.stress !== 0) {
+      parts.push(`${stats.stress > 0 ? '+' : ''}${stats.stress} STRESS`);
+    }
+    if (typeof stats.cash === 'number' && stats.cash !== 0) {
+      parts.push(`${stats.cash > 0 ? '+' : ''}$${Math.abs(stats.cash).toLocaleString()} CASH`);
+    }
+
+    return parts.length > 0 ? parts.join(' • ') : null;
+  };
 
   return (
     <div
@@ -238,6 +255,8 @@ const EventCard: React.FC<EventCardProps> = ({
         <button
           className="text-slate-500 hover:text-white transition-colors p-1"
           onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+          aria-label={isExpanded ? 'Collapse event details' : 'Expand event details'}
+          title={isExpanded ? 'Collapse event details' : 'Expand event details'}
         >
           <i className={`fas ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
         </button>
@@ -339,6 +358,7 @@ const EventCard: React.FC<EventCardProps> = ({
               const { available, reason } = checkChoiceAvailability(choice, playerStats, npcs, worldFlags);
               const alignment = choice.alignment || 'NEUTRAL';
               const alignStyle = alignmentStyles[alignment];
+              const impactPreview = describeChoiceImpact(choice);
 
               return (
                 <button
@@ -364,6 +384,12 @@ const EventCard: React.FC<EventCardProps> = ({
                     </div>
                   </div>
                   <p className="text-xs text-slate-400 mt-1">{choice.description}</p>
+                  {impactPreview && (
+                    <p className="text-[11px] text-cyan-300/80 mt-1">
+                      <i className="fas fa-chart-line mr-1"></i>
+                      Potential impact: {impactPreview}
+                    </p>
+                  )}
                   {!available && reason && (
                     <p className="text-xs text-red-500 mt-1">
                       <i className="fas fa-lock mr-1"></i>{reason}
