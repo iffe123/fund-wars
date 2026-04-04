@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { TerminalButton, TerminalPanel } from './TerminalUI';
 import type { PortfolioCompany, CompanyStatus } from '../types';
-import { getCompanyStatus } from '../utils/worldEngine';
 
 interface CommandAction {
   label: string;
@@ -203,7 +202,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
   const actionGrid = useMemo(() => {
     return companies.map((company) => {
       // Determine company status - safely handle missing fields
-      const status = company.isInExitProcess ? 'EXITING' :
+      const status: CompanyStatus = company.isInExitProcess ? 'EXITING' :
                     company.dealClosed !== false ? 'OWNED' : 'PIPELINE';
 
       let actions;
