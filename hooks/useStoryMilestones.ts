@@ -1,5 +1,5 @@
 /**
- * useStoryMilestones — checks milestone triggers each week and surfaces pending story scenes.
+ * useStoryMilestones - checks milestone triggers each week and surfaces pending story scenes.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -10,6 +10,7 @@ import {
   getTriggeredMilestone,
   getMilestoneDoneFlag,
 } from '../services/storyMilestoneService';
+import type { WeekPhase } from '../types/rpgEvents';
 
 interface UseStoryMilestonesReturn {
   pendingMilestone: StoryMilestone | null;
@@ -17,9 +18,33 @@ interface UseStoryMilestonesReturn {
   dismissMilestone: () => void;
 }
 
+interface StoryMilestoneGateState {
+  hasPendingMilestone: boolean;
+  tutorialComplete: boolean;
+  hasQueuedPriorityEvent: boolean;
+  currentPhase: WeekPhase;
+}
+
+export const shouldPauseStoryMilestones = ({
+  hasPendingMilestone,
+  tutorialComplete,
+  hasQueuedPriorityEvent,
+  currentPhase,
+}: StoryMilestoneGateState): boolean => {
+  if (hasPendingMilestone) return true;
+  if (!tutorialComplete) return true;
+  if (hasQueuedPriorityEvent) return true;
+  return currentPhase === 'PRIORITY_EVENT';
+};
+
 export function useStoryMilestones(): UseStoryMilestonesReturn {
   const { playerStats, npcs } = useGame();
-  const { worldFlags, setWorldFlag } = useRPGEvents();
+  const {
+    worldFlags,
+    setWorldFlag,
+    state: rpgState,
+    currentPhase,
+  } = useRPGEvents();
 
   const [pendingMilestone, setPendingMilestone] = useState<StoryMilestone | null>(null);
   const [triggeredIds, setTriggeredIds] = useState<Set<string>>(new Set());
@@ -31,10 +56,12 @@ export function useStoryMilestones(): UseStoryMilestonesReturn {
   // Check milestones when the week changes
   useEffect(() => {
     if (!playerStats) return;
-    if (pendingMilestone) return; // already showing one
-
-    // Don't trigger story milestones during onboarding — show them sequentially after
-    if (!worldFlags.has('TUTORIAL_COMPLETE')) return;
+    if (shouldPauseStoryMilestones({
+      hasPendingMilestone: pendingMilestone !== null,
+      tutorialComplete: worldFlags.has('TUTORIAL_COMPLETE'),
+      hasQueuedPriorityEvent: Boolean(rpgState.eventQueue.priorityEvent),
+      currentPhase,
+    })) return;
 
     const currentWeek = playerStats.gameTime?.week ?? playerStats.timeCursor ?? 0;
     if (currentWeek === lastCheckedWeek.current) return;
@@ -49,7 +76,7 @@ export function useStoryMilestones(): UseStoryMilestonesReturn {
         return next;
       });
     }
-  }, [playerStats, npcs, worldFlags, triggeredIds, pendingMilestone]);
+  }, [playerStats, npcs, worldFlags, triggeredIds, pendingMilestone, rpgState.eventQueue.priorityEvent, currentPhase]);
 
   // Dismiss the current milestone and set its done-flag
   const dismissMilestone = useCallback(() => {

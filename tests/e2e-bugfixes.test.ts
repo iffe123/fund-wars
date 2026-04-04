@@ -4,6 +4,7 @@ import type { GameState } from '../reducers/types';
 import { DealType, PlayerLevel } from '../types';
 import type { PlayerStats } from '../types';
 import { DIFFICULTY_SETTINGS, COMPETITIVE_DEALS } from '../constants';
+import { shouldPauseStoryMilestones } from '../hooks/useStoryMilestones';
 
 /**
  * E2E Bug Fix Tests
@@ -339,6 +340,35 @@ describe('Regression: ADVANCE_TIME does not crash with initialized state', () =>
     expect(nextState.playerStats!.cash).toBe(
       nextState.playerStats!.personalFinances.bankBalance
     );
+  });
+});
+
+describe('BUG FIX 6: Story milestones wait for the priority queue to clear', () => {
+  it('pauses milestones until onboarding is complete', () => {
+    expect(shouldPauseStoryMilestones({
+      hasPendingMilestone: false,
+      tutorialComplete: false,
+      hasQueuedPriorityEvent: false,
+      currentPhase: 'MORNING_BRIEFING',
+    })).toBe(true);
+  });
+
+  it('pauses milestones while a priority event is queued', () => {
+    expect(shouldPauseStoryMilestones({
+      hasPendingMilestone: false,
+      tutorialComplete: true,
+      hasQueuedPriorityEvent: true,
+      currentPhase: 'MORNING_BRIEFING',
+    })).toBe(true);
+  });
+
+  it('allows milestones once the queue is clear', () => {
+    expect(shouldPauseStoryMilestones({
+      hasPendingMilestone: false,
+      tutorialComplete: true,
+      hasQueuedPriorityEvent: false,
+      currentPhase: 'MORNING_BRIEFING',
+    })).toBe(false);
   });
 });
 

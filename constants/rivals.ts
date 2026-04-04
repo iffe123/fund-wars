@@ -45,7 +45,7 @@ export const RIVAL_FUNDS: RivalFund[] = [
   },
   {
     id: 'apex_equity',
-    name: 'Apex Equity Group',
+    name: 'Apex Equity',
     managingPartner: 'Marcus Webb',
     npcId: 'marcus',
     strategy: 'OPPORTUNISTIC',
