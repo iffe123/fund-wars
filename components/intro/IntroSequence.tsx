@@ -57,10 +57,11 @@ const INTRO_SLIDES: SlideContent[] = [
     id: 'mechanics',
     title: 'How to Survive',
     narrative: [
-      'Every action costs AP (Action Points). You get a limited number each week. Spend them wisely — analyze deals, network, manage your stress.',
+      'Every major action costs AP (Action Points). You get a limited number each week. Spend them wisely — run diligence, submit offers, network, and manage stress.',
       'STRESS builds with every hard decision and late night. Hit 100% and you burn out. Rest, socialize, or find other ways to cope.',
       'REPUTATION determines your standing at the firm and unlocks new opportunities. Make smart deals and keep the MDs happy.',
       'At the end of each week, click "End Week" to advance time and face new challenges.',
+      'Quick glossary: IOI = Indicative Offer (your first bid), IC = Investment Committee (partner approval meeting).',
     ],
     buttonText: 'Understood',
     buttonVariant: 'primary',

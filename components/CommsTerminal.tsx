@@ -42,6 +42,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
   const [input, setInput] = useState('');
   const [loadingNpcs, setLoadingNpcs] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const dragOffset = useRef({ x: 0, y: 0 });
   const isDragging = useRef(false);
   const [dragPosition, setDragPosition] = useState({ x: 24, y: 24 });
@@ -92,11 +93,16 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
     }
   }, [selectedNpcId]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior,
+      });
+      return;
+    }
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
-
-  useEffect(scrollToBottom, [activeTab, advisorMessages, npcList]);
 
   const describeMood = (value: number) => {
       if (value >= 75) return 'Warm';
@@ -149,8 +155,14 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
           onSendMessageToAdvisor(response);
       } else {
           setLoadingNpcs(prev => ({ ...prev, [activeTab]: true }));
-          await onSendMessageToNPC(activeTab, response);
-          setLoadingNpcs(prev => ({ ...prev, [activeTab]: false }));
+          try {
+              await onSendMessageToNPC(activeTab, response);
+          } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : 'Failed to send message';
+              setSendError(message);
+          } finally {
+              setLoadingNpcs(prev => ({ ...prev, [activeTab]: false }));
+          }
           // TUTORIAL RAIL: Step 5 Complete
           if (tutorialStep === 5 && response.toLowerCase().includes("patent")) {
                setTutorialStep(6);
@@ -302,6 +314,14 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
   // activeNPC is now defined above (before early returns) to satisfy hooks rules
   const isNpcLoading = activeTab !== 'ADVISOR' && loadingNpcs[activeTab];
 
+  useEffect(() => {
+      scrollToBottom('auto');
+  }, [activeTab]);
+
+  useEffect(() => {
+      scrollToBottom();
+  }, [activeMessages.length, isNpcLoading]);
+
   // Styling logic based on mode
   // CommsTerminal should always float above content panels (z-[150] > z-[100] for tutorial panels)
   const containerClasses = mode === 'MOBILE_EMBED'
@@ -445,7 +465,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 p-4 pt-20 pb-48 overflow-y-auto space-y-4 custom-scrollbar scroll-smooth" style={{ scrollPaddingBottom: '12rem' }}>
+                <div ref={messagesContainerRef} className="flex-1 p-4 pt-20 pb-48 overflow-y-auto space-y-4 custom-scrollbar scroll-smooth" style={{ scrollPaddingBottom: '12rem' }}>
                     {activeMessages.map((msg, index) => {
                         const isPlayer = msg.sender === 'player';
                         const isSystem = msg.sender === 'system';
