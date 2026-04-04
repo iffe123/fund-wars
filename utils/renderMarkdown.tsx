@@ -9,7 +9,8 @@ import React from 'react';
 
 /** Render inline markdown (***bold italic***, **bold**, *italic*) */
 export function renderMarkdown(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  // Use .+? (lazy, allows nested asterisks) instead of [^*]+ (fails on nested markdown)
+  const parts = text.split(/(\*\*\*.+?\*\*\*|\*\*.+?\*\*|\*(?!\s)[^*]*[^*\s]\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith('***') && part.endsWith('***') && part.length > 6) {
       return <strong key={i} className="text-green-400 font-semibold italic">{part.slice(3, -3)}</strong>;

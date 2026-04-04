@@ -204,6 +204,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 if (changes.level !== undefined) {
                     // Initialize player stats from the changes payload
                     const initialPlayerStats: PlayerStats = {
+                        playerName: changes.playerName ?? 'Associate',
                         level: changes.level,
                         cash: changes.cash ?? 1500,
                         reputation: changes.reputation ?? 10,

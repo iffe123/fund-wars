@@ -317,6 +317,7 @@ export interface NPCSchedule {
     description: string;
   }>;
   preferredChannel?: string;
+  unavailableReason?: string;
 }
 
 export interface NPC {
@@ -472,6 +473,7 @@ export interface GameTime {
 }
 
 export interface PlayerStats {
+  playerName: string;
   level: PlayerLevel;
   cash: number;  // Legacy: now derived from personalFinances.bankBalance
   reputation: number;
@@ -590,6 +592,7 @@ export interface StatChanges {
   };
 
   // === Initialization-only fields (used when creating initial PlayerStats from StatChanges) ===
+  playerName?: string;
   playerFlags?: Record<string, boolean>;
   gameYear?: number;
   gameMonth?: number;

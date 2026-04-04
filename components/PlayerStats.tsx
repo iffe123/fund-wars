@@ -203,13 +203,13 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           <span className="text-xs text-slate-200 uppercase tracking-wider mr-2 font-semibold">Personal</span>
 
           {/* Bank Balance */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/50 border border-emerald-700/40">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/50 border border-emerald-700/40" title="Personal Cash — Your bank account. Earn through salary, bonuses, and carry. Spend on lifestyle and investments.">
             <i className="fas fa-wallet text-emerald-400 text-xs"></i>
             <span className="text-emerald-300 font-bold tabular-nums text-sm">${(stats.personalFinances?.bankBalance ?? stats.cash).toLocaleString()}</span>
           </div>
 
           {/* Lifestyle */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-950/50 border border-purple-700/40">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-950/50 border border-purple-700/40" title="Lifestyle Level — Your spending tier. Higher lifestyles cost more but reduce stress and boost reputation.">
             <i className="fas fa-home text-purple-400 text-xs"></i>
             <span className="text-purple-200 text-xs font-medium">
               {stats.personalFinances?.lifestyleLevel?.replace('_', ' ') || 'Broke'}
@@ -223,7 +223,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           <span className="text-xs text-blue-200 uppercase tracking-wider mr-2 font-semibold">Fund</span>
 
           {/* Dry Powder */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950/50 border border-cyan-700/30">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950/50 border border-cyan-700/30" title="Dry Powder — Uninvested fund capital available for new deals.">
             <span className="text-[11px] text-cyan-300 font-medium">Dry:</span>
             <span className="text-cyan-200 font-bold tabular-nums text-sm">
               {formatMoney(stats.fundFinances?.dryPowder || 50000000)}
@@ -231,7 +231,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           </div>
 
           {/* Deployed */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-950/50 border border-amber-700/30">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-950/50 border border-amber-700/30" title="Deployed Capital — Fund money currently invested in portfolio companies.">
             <span className="text-[11px] text-amber-300 font-medium">Deployed:</span>
             <span className="text-amber-200 font-bold tabular-nums text-sm">
               {formatMoney(stats.fundFinances?.deployedCapital || portfolioValue)}
@@ -242,7 +242,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         {/* Right Section - Key Stats */}
         <div className="flex items-center gap-3">
           {/* Stress */}
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/50 border border-slate-600/40">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/50 border border-slate-600/40" title="Stress — Builds from hard decisions and overwork. At 100% you burn out. Rest or socialize to reduce.">
             <i className={`fas fa-brain ${getStressColor(stats.stress)} text-sm`}></i>
             <div className="w-20 h-2.5 bg-slate-700 rounded-full overflow-hidden">
               <div
@@ -256,7 +256,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           </div>
 
           {/* Reputation */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-950/40 border border-blue-700/40">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-950/40 border border-blue-700/40" title="Reputation — Your standing at the firm and in the industry. Higher reputation unlocks better deals and contacts.">
             <i className="fas fa-star text-blue-400 text-sm"></i>
             <span className="font-bold text-blue-200 tabular-nums text-sm">{stats.reputation}</span>
           </div>
@@ -282,7 +282,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         {/* Right Section - Status Indicators */}
         <div className="flex items-center gap-4">
           {/* Time */}
-          <div className="flex items-center gap-2 text-slate-200">
+          <div className="flex items-center gap-2 text-slate-200" title="Current Time — Some NPCs are only available at certain times. Actions advance the clock.">
             <i className="fas fa-clock text-slate-300"></i>
             <span className="text-xs uppercase tracking-wider font-medium">{stats.currentDayType} · {stats.currentTimeSlot}</span>
           </div>
@@ -292,20 +292,20 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
 
           {/* Quick Stats */}
           <div className="flex items-center gap-3 text-xs uppercase tracking-widest font-bold">
-            <span className="text-slate-200">L{stats.level}</span>
-            <span className="text-blue-200 flex items-center gap-1">
+            <span className="text-slate-200" title="Your seniority level at the firm. Higher levels unlock new abilities and compensation.">L{stats.level}</span>
+            <span className="text-blue-200 flex items-center gap-1" title="Analyst Rating — How the firm rates your analytical skills. Affects deal quality and promotions.">
               <i className="fas fa-chart-line text-[10px]"></i>
               {stats.analystRating}
             </span>
-            <span className={`flex items-center gap-1 ${stats.energy > 30 ? 'text-emerald-200' : 'text-red-400'}`}>
+            <span className={`flex items-center gap-1 ${stats.energy > 30 ? 'text-emerald-200' : 'text-red-400'}`} title="Energy — Your stamina for the week. Actions cost energy. Rest to recover.">
               <i className="fas fa-bolt text-[10px]"></i>
               {stats.energy}%
             </span>
-            <span className={`flex items-center gap-1 ${stats.ethics > 30 ? 'text-amber-200' : 'text-red-400'}`}>
+            <span className={`flex items-center gap-1 ${stats.ethics > 30 ? 'text-amber-200' : 'text-red-400'}`} title="Ethics — Your moral compass. Low ethics increases audit risk and changes NPC reactions.">
               <i className="fas fa-scale-balanced text-[10px]"></i>
               {stats.ethics}
             </span>
-            <span className={`flex items-center gap-1 ${stats.auditRisk < 50 ? 'text-slate-200' : 'text-red-400'}`}>
+            <span className={`flex items-center gap-1 ${stats.auditRisk < 50 ? 'text-slate-200' : 'text-red-400'}`} title="Audit Risk — Chance of regulatory investigation. Keep this low or face consequences.">
               <i className="fas fa-magnifying-glass text-[10px]"></i>
               {stats.auditRisk}%
             </span>

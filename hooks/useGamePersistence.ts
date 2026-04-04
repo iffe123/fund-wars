@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -11,10 +11,11 @@ export const useGamePersistence = () => {
     const { currentUser } = useAuth();
     const state = useGameState();
     const dispatch = useGameDispatch();
-    const { 
-        playerStats, gamePhase, activeScenario, marketVolatility, 
-        npcs, tutorialStep, actionLog, rivalFunds, activeDeals 
+    const {
+        playerStats, gamePhase, activeScenario, marketVolatility,
+        npcs, tutorialStep, actionLog, rivalFunds, activeDeals
     } = state;
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
     // Load Game
     useEffect(() => {
@@ -107,6 +108,7 @@ export const useGamePersistence = () => {
 
         try {
             await setDoc(doc(db!, 'users', currentUser.uid, 'savegame', 'primary'), gameStateToSave, { merge: true });
+            setLastSaved(new Date());
             console.log("[CLOUD_SAVE] Game saved successfully.");
         } catch (error) {
             console.error("Error saving game:", error);
@@ -120,4 +122,6 @@ export const useGamePersistence = () => {
             return () => clearTimeout(timeout);
         }
     }, [playerStats, gamePhase, saveGame]);
+
+    return { lastSaved };
 };

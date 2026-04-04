@@ -304,6 +304,15 @@ const App: React.FC = () => {
       navigateToAssets();
   }, [setShowPortfolioDashboard, navigateToAssets]);
 
+  // IB_CHAT open/close state for desktop layout integration
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const handleChatClose = useCallback(() => {
+      setIsChatOpen(false);
+  }, []);
+  const handleChatOpen = useCallback(() => {
+      setIsChatOpen(true);
+  }, []);
+
   // Wrapper for warning action that also calls the context action
   const handleWarningWithContext = useCallback((warning: typeof activeWarnings[0]) => {
     handleWarningAction(warning);
@@ -567,13 +576,13 @@ const App: React.FC = () => {
         </div>
         
         {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
-        <div className="hidden md:grid flex-1 grid-cols-[minmax(200px,250px)_1fr_minmax(200px,250px)] overflow-hidden relative" style={{ isolation: 'isolate' }}>
+        <div className={`hidden md:grid flex-1 overflow-hidden relative ${isChatOpen ? 'grid-cols-[minmax(200px,250px)_1fr_minmax(200px,250px)_minmax(380px,480px)]' : 'grid-cols-[minmax(200px,250px)_1fr_minmax(200px,250px)]'}`} style={{ isolation: 'isolate' }}>
             {/* Left Panel (Comms) */}
             <div className="border-r border-slate-700 bg-black min-w-0 shrink-0">
                 <NpcListPanel
                   npcs={npcs}
                   selectedNpcId={selectedNpcId}
-                  onSelectNpc={handleNpcSelect}
+                  onSelectNpc={(npcId) => { handleNpcSelect(npcId); setIsChatOpen(true); }}
                 />
             </div>
 
@@ -597,12 +606,11 @@ const App: React.FC = () => {
                                     key={tab}
                                     onClick={() => {
                                         if (isDisabled) {
-                                            addToast('Founder Mode unlocks when you have $1M in personal funds.', 'info');
+                                            addToast('Founder Mode unlocks when you reach $1M in personal funds. Keep grinding!', 'info');
                                             return;
                                         }
                                         setActiveTab(tab);
                                     }}
-                                    disabled={isDisabled}
                                     data-tutorial={tutorialAttr}
                                     title={isDisabled ? 'Unlocks when you reach $1M in personal funds' : undefined}
                                     className={`px-3 py-2 text-xs font-bold uppercase transition-colors shrink-0 ${
@@ -662,6 +670,48 @@ const App: React.FC = () => {
             <div className="border-l border-slate-700 bg-black">
                  <NewsTicker events={[...dynamicNews, ...NEWS_EVENTS]} systemLogs={actionLog} />
             </div>
+
+            {/* Chat Panel (4th column, shown when chat is open) */}
+            {isChatOpen && (
+                <div className="border-l border-slate-700 bg-slate-900 min-w-0 h-full overflow-hidden flex flex-col">
+                    {/* Chat Panel Header */}
+                    <div className="bg-slate-800 p-2 flex justify-between items-center border-b border-amber-500/30 shrink-0">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span className="text-amber-500 font-bold ml-2 tracking-widest text-sm">BLOOMBERG_IB</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={handleChatBackToPortfolio}
+                                className="text-slate-800 bg-amber-300 hover:bg-amber-200 font-bold px-3 py-1 rounded-sm uppercase text-[10px] tracking-widest"
+                            >
+                                Portfolio
+                            </button>
+                            <button onClick={handleChatClose} className="text-slate-500 hover:text-amber-500" title="Minimize chat">
+                                <i className="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                        <CommsTerminal
+                            key="desktop-comms-inline"
+                            mode="MOBILE_EMBED"
+                            isOpen={true}
+                            npcList={npcs}
+                            selectedNpcId={selectedNpcId}
+                            advisorMessages={chatHistory}
+                            onSendMessageToAdvisor={handleSendMessageToAdvisor}
+                            onSendMessageToNPC={handleSendMessageToNPC}
+                            isLoadingAdvisor={isAdvisorLoading}
+                            predefinedQuestions={PREDEFINED_QUESTIONS}
+                            onClose={handleChatClose}
+                            onBackToPortfolio={handleChatBackToPortfolio}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
 
         {/* MOBILE LAYOUT (View Switcher) */}
@@ -774,27 +824,30 @@ const App: React.FC = () => {
             )}
         </div>
         
-        {/* DESKTOP BOTTOM BAR: CMD LINE */}
-        <div className="hidden md:flex h-8 bg-slate-900 border-t border-slate-700 items-center px-2 text-xs font-mono text-green-500">
-            <span className="mr-2">{">"}</span>
-            <span className="animate-pulse">_</span>
+        {/* DESKTOP BOTTOM BAR: CMD LINE + Save Indicator */}
+        <div className="hidden md:flex h-8 bg-slate-900 border-t border-slate-700 items-center px-2 text-xs font-mono text-green-500 justify-between">
+            <div className="flex items-center">
+                <span className="mr-2">{">"}</span>
+                <span className="animate-pulse">_</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-500 text-[10px]">
+                <i className="fas fa-cloud-arrow-up text-emerald-600"></i>
+                <span>Auto-saved</span>
+            </div>
         </div>
 
-        {/* DESKTOP FLOATING CHAT TERMINAL - Always on top of content panels */}
-        <div className="hidden md:block">
-            <CommsTerminal
-                key="desktop-comms"
-                npcList={npcs}
-                selectedNpcId={selectedNpcId}
-                advisorMessages={chatHistory}
-                onSendMessageToAdvisor={handleSendMessageToAdvisor}
-                onSendMessageToNPC={handleSendMessageToNPC}
-                isLoadingAdvisor={isAdvisorLoading}
-                predefinedQuestions={PREDEFINED_QUESTIONS}
-                onClose={handleChatBackToPortfolio}
-                onBackToPortfolio={handleChatBackToPortfolio}
-            />
-        </div>
+        {/* DESKTOP CHAT LAUNCHER BUTTON (only shows when chat is closed) */}
+        {!isChatOpen && (
+            <button
+                onClick={handleChatOpen}
+                className="hidden md:flex fixed bottom-6 right-6 bg-amber-500 text-black font-mono text-sm py-3 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-40 items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-amber-400 rounded-md"
+            >
+                <div className="relative">
+                    <i className="fas fa-terminal animate-pulse"></i>
+                </div>
+                <span className="font-bold tracking-widest">IB_CHAT // CONNECT</span>
+            </button>
+        )}
 
         <PortfolioCommandCenter
             isOpen={showPortfolioDashboard}

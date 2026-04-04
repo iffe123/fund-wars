@@ -50,6 +50,7 @@ export const hydrateGameState = (data: any, defaultState: GameState): GameState 
 
             hydratedPlayerStats = {
                 ...data.playerStats,
+                playerName: data.playerStats.playerName || 'Associate',
                 loanBalance: data.playerStats.loanBalance ?? 0,
                 loanRate: data.playerStats.loanRate ?? 0,
                 factionReputation: hydrateFactionReputation(data.playerStats.factionReputation),
