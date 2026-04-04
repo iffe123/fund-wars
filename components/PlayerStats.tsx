@@ -2,6 +2,7 @@ import React, { memo, useMemo, useState, useCallback } from 'react';
 import type { PlayerStats, MarketVolatility } from '../types';
 import { PlayerLevel } from '../types';
 import { MARKET_VOLATILITY_STYLES, LEVEL_RANKS } from '../constants';
+import { STRESS_THRESHOLDS } from '../constants/difficulty';
 import { useGame } from '../contexts/GameContext';
 import TimeActionBar from './TimeActionBar';
 import StatsExplainerModal from './StatsExplainerModal';
@@ -87,6 +88,30 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           playerEnergy={stats.energy}
           playerHealth={stats.health}
         />
+      )}
+
+      {/* Stress Warning Banner */}
+      {stats.stress >= STRESS_THRESHOLDS.WARNING && (
+        <div
+          className={`
+            px-4 py-2 flex items-center gap-3 text-xs font-mono uppercase tracking-wider border-b
+            ${stats.stress >= STRESS_THRESHOLDS.CRITICAL
+              ? 'bg-red-950/60 border-red-800/50 text-red-300 animate-pulse'
+              : 'bg-amber-950/40 border-amber-800/40 text-amber-300'
+            }
+          `}
+          role="alert"
+        >
+          <i className={`fas ${stats.stress >= STRESS_THRESHOLDS.CRITICAL ? 'fa-triangle-exclamation' : 'fa-brain'} text-sm`}></i>
+          <span className="font-bold">
+            {stats.stress >= STRESS_THRESHOLDS.BREAKDOWN
+              ? 'BURNOUT IMMINENT — Take time off or face breakdown!'
+              : stats.stress >= STRESS_THRESHOLDS.CRITICAL
+              ? 'CRITICAL STRESS — Performance penalties active. Manage your wellbeing.'
+              : 'HIGH STRESS WARNING — Consider lifestyle actions to reduce stress.'}
+          </span>
+          <span className="ml-auto tabular-nums font-bold">{stats.stress}%</span>
+        </div>
       )}
 
       {/* Stats Header */}

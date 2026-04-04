@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { ChatMessage, NPC } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { isGeminiApiConfigured } from '../services/geminiService';
+import { renderMarkdown } from '../utils/renderMarkdown';
 
 interface CommsTerminalProps {
   npcList: NPC[];
@@ -76,13 +77,17 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
       }
   }, [tutorialStep, isOpen]);
 
-  // Sync activeTab with selectedNpcId prop
+  // Sync activeTab with selectedNpcId prop and auto-open if closed
   useEffect(() => {
     if (selectedNpcId) {
         if (selectedNpcId === 'advisor') {
             setActiveTab('ADVISOR');
         } else {
             setActiveTab(selectedNpcId);
+        }
+        // Auto-open the terminal when an NPC is selected (e.g. from COMMS sidebar)
+        if (!isOpen) {
+            openTerminal();
         }
     }
   }, [selectedNpcId]);
@@ -498,7 +503,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                                             </div>
                                         )}
                                         
-                                        <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                                        <p className="leading-relaxed whitespace-pre-wrap">{renderMarkdown(msg.text)}</p>
 
                                         {/* Timestamp */}
                                         <div className={`text-[9px] mt-1.5 ${isPlayer ? 'text-blue-300/60' : 'text-slate-500'}`}>

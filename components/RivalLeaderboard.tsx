@@ -178,6 +178,11 @@ const RivalLeaderboard: React.FC<RivalLeaderboardProps> = ({ rivalFunds, playerS
           <div className="text-xs opacity-70">of {leaderboard.length} funds</div>
         </div>
 
+        <div className="text-[10px] text-slate-500 mb-2 px-1 flex items-center gap-2">
+          <i className="fas fa-info-circle text-slate-600"></i>
+          <span>Ranked by AUM. Click any fund for detailed metrics (MOIC, deals, strategy).</span>
+        </div>
+
         <div className="space-y-1">
           {leaderboard.map((fund, index) => {
             const strategyStyle = getStrategyIcon(fund.strategy);

@@ -94,11 +94,12 @@ export const INITIAL_NPCS: NPC[] = [
     faction: 'REGULATORS',
     dialogueHistory: [{ sender: 'npc', senderName: 'Agent Smith', text: "We are monitoring market activity closely." }],
     schedule: {
-      weekday: ['MORNING'],
+      weekday: ['MORNING', 'AFTERNOON'],
       weekend: [],
       preferredChannel: 'formal memos',
       standingMeetings: [
         { dayType: 'WEEKDAY', timeSlot: 'MORNING', description: 'Compliance check' },
+        { dayType: 'WEEKDAY', timeSlot: 'AFTERNOON', description: 'Regulatory filings review' },
       ],
     },
     lastContactTick: 0,
