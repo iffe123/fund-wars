@@ -100,14 +100,15 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(activities.length);
+  const hasNewActivity = activities.length > prevCountRef.current;
 
   useEffect(() => {
     // Auto-scroll to top when new activity is added
-    if (activities.length > prevCountRef.current && containerRef.current) {
+    if (hasNewActivity && containerRef.current) {
       containerRef.current.scrollTop = 0;
     }
     prevCountRef.current = activities.length;
-  }, [activities.length]);
+  }, [activities.length, hasNewActivity]);
 
   const recentActivities = activities.slice(0, maxVisible);
 
@@ -133,7 +134,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
         <ActivityItemComponent
           key={activity.id}
           activity={activity}
-          isNew={index === 0 && activities.length > prevCountRef.current}
+          isNew={index === 0 && hasNewActivity}
         />
       ))}
     </div>
@@ -141,23 +142,23 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
 };
 
 // Add animation keyframes
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
+if (typeof document !== 'undefined' && !document.getElementById('activity-feed-styles')) {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+    .animate-slideIn {
+      animation: slideIn 0.3s ease-out;
     }
-  }
-  .animate-slideIn {
-    animation: slideIn 0.3s ease-out;
-  }
-`;
-if (!document.getElementById('activity-feed-styles')) {
+  `;
   style.id = 'activity-feed-styles';
   document.head.appendChild(style);
 }

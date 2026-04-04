@@ -26,7 +26,7 @@ import { useAudio } from './contexts/AudioContext';
 import { logEvent } from './services/analytics';
 import { useEnhancedToast } from './hooks/useEnhancedToast';
 import { ToastContainer } from './components/ui/Toast';
-import ActivityFeed from './components/ActivityFeed';
+import ActivityFeed, { type ActivityItem } from './components/ActivityFeed';
 import WeekTransition from './components/WeekTransition';
 import { useWeekTransition } from './hooks/useWeekTransition';
 import { useAppUIState } from './hooks/useAppUIState';
@@ -54,6 +54,53 @@ declare global {
     google?: unknown;
   }
 }
+
+const buildActivityFromLogEntry = (entry: string, index: number): ActivityItem => {
+  const [rawTimestamp, rawMessage = entry] = entry.split(' // ');
+  const title = rawMessage.trim() || 'System update';
+  const normalizedTitle = title.toLowerCase();
+
+  let type: ActivityItem['type'] = 'personal';
+  let icon = 'fas fa-circle-info';
+  let sentiment: ActivityItem['sentiment'] = 'neutral';
+
+  if (normalizedTitle.includes('new deal') || normalizedTitle.includes('auction') || normalizedTitle.includes('ioi')) {
+    type = 'deal';
+    icon = 'fas fa-briefcase';
+    sentiment = normalizedTitle.includes('lost') ? 'negative' : 'positive';
+  } else if (normalizedTitle.includes('relationship') || normalizedTitle.includes('trust') || normalizedTitle.includes('mood')) {
+    type = 'relationship';
+    icon = 'fas fa-user-friends';
+    sentiment = normalizedTitle.includes('cooled') ? 'warning' : 'neutral';
+  } else if (normalizedTitle.includes('week') || normalizedTitle.includes('payroll') || normalizedTitle.includes('salary')) {
+    type = 'time';
+    icon = 'fas fa-calendar-alt';
+    sentiment = 'positive';
+  } else if (normalizedTitle.includes('market')) {
+    type = 'market';
+    icon = 'fas fa-chart-line';
+  } else if (normalizedTitle.includes('portfolio') || normalizedTitle.includes('company event')) {
+    type = 'portfolio';
+    icon = 'fas fa-building';
+  }
+
+  const timestamp = new Date();
+  const timeMatch = rawTimestamp?.match(/(\d{1,2}):(\d{2}):(\d{2})/);
+  if (timeMatch) {
+    timestamp.setHours(Number(timeMatch[1]), Number(timeMatch[2]), Number(timeMatch[3]), 0);
+  } else {
+    timestamp.setTime(timestamp.getTime() - index * 60_000);
+  }
+
+  return {
+    id: `action-log-${index}-${title}`,
+    timestamp,
+    type,
+    icon,
+    title,
+    sentiment,
+  };
+};
 
 // DEFAULT_CHAT moved to useChatHandlers hook
 
@@ -110,6 +157,49 @@ const App: React.FC = () => {
     handleStatsModalClose,
     navigateToAssets,
   } = useAppUIState();
+
+  const activityFeedItems = useMemo<ActivityItem[]>(() => {
+    if (activities && activities.length > 0) {
+      return activities;
+    }
+
+    if (!actionLog || actionLog.length === 0) {
+      return [];
+    }
+
+    return actionLog.slice(0, 20).map((entry, index) => buildActivityFromLogEntry(entry, index));
+  }, [activities, actionLog]);
+
+  const unseenActivityCount = Math.max(0, activityFeedItems.length - seenActivityCount);
+
+  useEffect(() => {
+    if (!showActivityFeed || typeof document === 'undefined') {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const previousPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowActivityFeed(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPaddingRight;
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [showActivityFeed, setShowActivityFeed]);
 
   // Unified addToast wrapper using enhanced toast system
   const addToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
@@ -641,10 +731,11 @@ const App: React.FC = () => {
                       onClick={() => {
                         const opening = !showActivityFeed;
                         setShowActivityFeed(opening);
-                        if (opening && activities) {
-                          setSeenActivityCount(activities.length);
+                        if (opening) {
+                          setSeenActivityCount(activityFeedItems.length);
                         }
                       }}
+                      aria-label={unseenActivityCount > 0 ? `Activity feed, ${unseenActivityCount} unread` : 'Activity feed'}
                       className={`
                         px-3 py-2 rounded-lg border text-xs font-bold uppercase
                         transition-all duration-200
@@ -656,9 +747,9 @@ const App: React.FC = () => {
                     >
                       <i className="fas fa-list-ul mr-1"></i>
                       Activity
-                      {activities && activities.length > seenActivityCount && (
-                        <span className="ml-1.5 px-1.5 py-0.5 bg-blue-500 text-white text-[10px] rounded-full">
-                          {activities.length - seenActivityCount > 99 ? '99+' : activities.length - seenActivityCount}
+                      {unseenActivityCount > 0 && (
+                        <span aria-hidden="true" className="ml-1.5 px-1.5 py-0.5 bg-blue-500 text-white text-[10px] rounded-full">
+                          {unseenActivityCount > 99 ? '99+' : unseenActivityCount}
                         </span>
                       )}
                     </button>
@@ -959,43 +1050,39 @@ const App: React.FC = () => {
         {playerStats && <SanityEffects stress={playerStats.stress} dependency={playerStats.dependency} />}
 
       {/* Activity Feed — rendered via Portal to avoid layout interference */}
-      {createPortal(
+      {showActivityFeed && createPortal(
         <>
-          {/* Backdrop */}
-          {showActivityFeed && (
-            <div
-              className="fixed inset-0 bg-black/40"
-              style={{ zIndex: Z_INDEX.modal - 2 }}
-              onClick={() => setShowActivityFeed(false)}
-            />
-          )}
-          {/* Slide-out Panel */}
           <div
-            className={`
-              fixed top-0 right-0 h-full w-80 bg-slate-900 border-l border-slate-700 shadow-2xl
-              transition-transform duration-300 ease-in-out will-change-transform
-              ${showActivityFeed ? 'translate-x-0' : 'translate-x-full'}
-            `}
-            style={{ zIndex: Z_INDEX.modal - 1 }}
-          >
-            <div className="h-full flex flex-col">
-              {/* Header */}
-              <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <i className="fas fa-list-ul text-blue-400"></i>
-                  Activity Feed
-                </h3>
-                <button
-                  onClick={() => setShowActivityFeed(false)}
-                  className="text-slate-400 hover:text-white transition-colors"
-                >
-                  <i className="fas fa-times text-xl"></i>
-                </button>
-              </div>
+            className="fixed inset-0 bg-black/40"
+            style={{ zIndex: Z_INDEX.modalBackdrop }}
+            onClick={() => setShowActivityFeed(false)}
+          />
+          <div className="fixed inset-y-0 right-0 pointer-events-none" style={{ zIndex: Z_INDEX.modal }}>
+            <div
+              className="pointer-events-auto h-full w-80 bg-slate-900 border-l border-slate-700 shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Activity feed"
+            >
+              <div className="h-full flex flex-col">
+                {/* Header */}
+                <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <i className="fas fa-list-ul text-blue-400"></i>
+                    Activity Feed
+                  </h3>
+                  <button
+                    onClick={() => setShowActivityFeed(false)}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    <i className="fas fa-times text-xl"></i>
+                  </button>
+                </div>
 
-              {/* Activity Feed */}
-              <div className="flex-1 overflow-hidden">
-                <ActivityFeed activities={activities || []} className="h-full" />
+                {/* Activity Feed */}
+                <div className="flex-1 overflow-hidden">
+                  <ActivityFeed activities={activityFeedItems} className="h-full" />
+                </div>
               </div>
             </div>
           </div>
