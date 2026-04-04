@@ -395,7 +395,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                                 <span className={`font-bold block ${isTutorialTarget ? 'text-amber-200' : ''}`}>{npc.name}</span>
                                 <span className="text-[10px] opacity-70 truncate">{npc.role}</span>
                                 <span className="text-[10px] text-slate-500 truncate">Mood {npc.mood}/100 • Trust {npc.trust}/100</span>
-                                <span className={`text-[9px] uppercase block ${isAvailable ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                <span className={`text-[9px] uppercase block ${isAvailable ? 'text-emerald-400' : 'text-slate-400'}`} title={!isAvailable && npc.schedule?.unavailableReason ? npc.schedule.unavailableReason : undefined}>
                                     {isAvailable ? 'Available' : 'Off-hours'}
                                 </span>
                             </div>

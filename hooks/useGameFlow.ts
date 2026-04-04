@@ -81,7 +81,7 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
     startWeekTransition,
   } = deps;
 
-  const handleIntroComplete = useCallback((stress: number) => {
+  const handleIntroComplete = useCallback((stress: number, playerName?: string) => {
     // Init Stats with standard settings and mandatory PackFancy setup
     const diffSettings = DIFFICULTY_SETTINGS['Normal'];
     const initialPortfolio: PortfolioCompany[] = [
@@ -127,6 +127,7 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
     // Apply difficulty settings
     updatePlayerStats({
       ...diffSettings.initialStats,
+      playerName: playerName || 'Associate',
       stress: diffSettings.initialStats.stress + stress,
       playedScenarioIds: [SCENARIOS?.[0]?.id ?? 1],
       portfolio: initialPortfolio,

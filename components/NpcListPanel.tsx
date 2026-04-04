@@ -22,7 +22,7 @@ const NpcListPanel: React.FC<NpcListPanelProps> = memo(({
       title="COMMS"
       className="h-full flex flex-col"
     >
-      <div className="flex-1 bg-black">
+      <div className="flex-1 bg-black overflow-y-auto">
         {npcs.map(npc => (
           <button
             key={npc.id}

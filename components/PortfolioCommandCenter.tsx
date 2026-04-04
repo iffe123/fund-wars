@@ -288,7 +288,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
                       />
                       <KPI
                         label="Employees"
-                        value={company.employeeCount || '-'}
+                        value={company.employeeCount != null && company.employeeCount > 0 ? company.employeeCount : 'N/A'}
                         trend={company.employeeGrowth}
                       />
                     </div>

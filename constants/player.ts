@@ -20,6 +20,7 @@ export const DEFAULT_FACTION_REPUTATION: FactionReputation = {
 // Starting cash is intentionally low - you're a new associate living paycheck to paycheck
 // This creates tension where every expense matters and players must prioritize
 export const NORMAL_STATS: PlayerStats = {
+  playerName: 'Associate',
   level: PlayerLevel.ASSOCIATE,
   cash: 1500,              // Legacy field - kept in sync with personalFinances.bankBalance
   reputation: 10,

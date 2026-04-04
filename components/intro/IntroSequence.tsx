@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import IntroSlide, { SlideContent } from './IntroSlide';
 
 interface IntroSequenceProps {
-  onComplete: (stressLevel: number) => void;
+  onComplete: (stressLevel: number, playerName?: string) => void;
   quickStart?: boolean;
 }
 
@@ -42,6 +42,30 @@ const INTRO_SLIDES: SlideContent[] = [
     characterRole: 'Managing Director',
   },
   {
+    id: 'your-tools',
+    title: 'Your Command Center',
+    narrative: [
+      'Your desk is your command center. Here\'s what you have to work with:',
+      'COMMS — Your contacts are on the left. Click any name to open a conversation. Build relationships, gather intel, call in favors.',
+      'BLOOMBERG IB — The chat terminal on the right connects you to your AI advisor, Machiavelli. He\'s ruthless, brilliant, and always available. Use him.',
+      'DESK — Your main workspace shows events, decisions, and deal flow. This is where the action happens.',
+    ],
+    buttonText: 'Got It',
+    buttonVariant: 'primary',
+  },
+  {
+    id: 'mechanics',
+    title: 'How to Survive',
+    narrative: [
+      'Every action costs AP (Action Points). You get a limited number each week. Spend them wisely — analyze deals, network, manage your stress.',
+      'STRESS builds with every hard decision and late night. Hit 100% and you burn out. Rest, socialize, or find other ways to cope.',
+      'REPUTATION determines your standing at the firm and unlocks new opportunities. Make smart deals and keep the MDs happy.',
+      'At the end of each week, click "End Week" to advance time and face new challenges.',
+    ],
+    buttonText: 'Understood',
+    buttonVariant: 'primary',
+  },
+  {
     id: 'mission',
     title: 'Your Mission',
     narrative: [
@@ -57,6 +81,8 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [skipFutureIntros, setSkipFutureIntros] = useState(false);
+  const [playerName, setPlayerName] = useState('');
+  const [showNameEntry, setShowNameEntry] = useState(false);
 
   const persistIntroPreference = useCallback(() => {
     if (skipFutureIntros) {
@@ -73,6 +99,11 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
 
   if (quickStart) return null;
 
+  const finishIntro = useCallback(() => {
+    persistIntroPreference();
+    onComplete(5, playerName.trim() || undefined);
+  }, [onComplete, persistIntroPreference, playerName]);
+
   const handleContinue = useCallback(() => {
     if (isTransitioning) return;
 
@@ -84,16 +115,14 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
         setIsTransitioning(false);
       }, 400);
     } else {
-      // Final slide - complete intro with default stress level
-      // The stress selection is now removed for cleaner flow
-      persistIntroPreference();
-      onComplete(5);
+      // Final slide - show name entry before completing
+      setShowNameEntry(true);
     }
-  }, [currentSlide, isTransitioning, onComplete, persistIntroPreference]);
+  }, [currentSlide, isTransitioning]);
 
   const handleSkip = useCallback(() => {
     persistIntroPreference();
-    onComplete(5);
+    onComplete(5, undefined);
   }, [onComplete, persistIntroPreference]);
 
   return (
@@ -164,11 +193,39 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
         ))}
       </div>
 
+      {/* Name Entry Overlay */}
+      {showNameEntry && (
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+          <div className="max-w-md w-full mx-6">
+            <h2 className="text-2xl font-bold text-white mb-2 font-mono">One Last Thing</h2>
+            <p className="text-slate-400 mb-6 text-sm">What should we call you?</p>
+            <input
+              type="text"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') finishIntro(); }}
+              placeholder="Enter your name..."
+              maxLength={24}
+              autoFocus
+              className="w-full bg-slate-950 border-2 border-slate-600 text-white rounded px-4 py-3 text-lg font-mono focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/50 transition-all mb-4 placeholder-slate-600"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={finishIntro}
+                className="flex-1 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold font-mono text-sm uppercase tracking-widest rounded-sm transition-all"
+              >
+                {playerName.trim() ? 'Let\'s Go' : 'Stay Anonymous'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Slide container */}
       <div className={`
         absolute inset-0
         transition-opacity duration-400
-        ${isTransitioning ? 'opacity-0' : 'opacity-100'}
+        ${isTransitioning || showNameEntry ? 'opacity-0' : 'opacity-100'}
       `}>
         {INTRO_SLIDES.map((slide, index) => (
           <IntroSlide
