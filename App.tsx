@@ -613,8 +613,16 @@ const App: React.FC = () => {
                                             : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                                     }`}
                                 >
-                                    {tabLabels[tab]}
-                                    {isDisabled && <i className="fas fa-lock ml-1"></i>}
+                                    <span className="relative group/tab">
+                                        {tabLabels[tab]}
+                                        {isDisabled && <i className="fas fa-lock ml-1"></i>}
+                                        {isDisabled && (
+                                            <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-48 px-3 py-2 text-[10px] text-slate-300 bg-slate-900 border border-slate-600 rounded shadow-lg opacity-0 group-hover/tab:opacity-100 transition-opacity pointer-events-none z-50 normal-case tracking-normal font-normal">
+                                                <i className="fas fa-info-circle text-amber-400 mr-1"></i>
+                                                Reach <strong className="text-amber-400">$1M</strong> in personal funds to unlock Founder Mode and start your own fund.
+                                            </span>
+                                        )}
+                                    </span>
                                 </button>
                             );
                         })}

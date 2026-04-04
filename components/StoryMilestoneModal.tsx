@@ -10,23 +10,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Scene, Choice, ChoiceEffects } from '../types/storyEngine';
 import type { StatChanges } from '../types';
 import { STORY_SCENES } from '../content/storyContent';
-
-/** Render inline markdown (***bold italic***, **bold**, *italic*) */
-function renderMarkdown(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('***') && part.endsWith('***') && part.length > 6) {
-      return <strong key={i} className="text-green-400 font-semibold italic">{part.slice(3, -3)}</strong>;
-    }
-    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
-      return <strong key={i} className="text-green-400 font-semibold">{part.slice(2, -2)}</strong>;
-    }
-    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-      return <em key={i} className="text-slate-400 italic">{part.slice(1, -1)}</em>;
-    }
-    return part;
-  });
-}
+import { renderMarkdown } from '../utils/renderMarkdown';
 
 interface StoryMilestoneModalProps {
   sceneId: string;
@@ -262,7 +246,7 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
             ))}
             {selectedChoice.narratorComment && (
               <div className="text-xs text-slate-500 italic mt-2">
-                {selectedChoice.narratorComment}
+                {renderMarkdown(selectedChoice.narratorComment)}
               </div>
             )}
           </div>
@@ -302,10 +286,10 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
                     </span>
                     <div className="flex-1">
                       <div className="text-sm text-slate-200 group-hover:text-white transition-colors">
-                        {choice.text}
+                        {renderMarkdown(choice.text)}
                       </div>
                       {choice.subtext && (
-                        <div className="text-xs text-slate-500 mt-1">{choice.subtext}</div>
+                        <div className="text-xs text-slate-500 mt-1">{renderMarkdown(choice.subtext)}</div>
                       )}
                       {choice.style && choice.style !== 'normal' && (
                         <span className="inline-block text-[10px] uppercase tracking-wider mt-1 px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">

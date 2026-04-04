@@ -40,6 +40,15 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [] }) => {
     }
   };
 
+  const headlineTypes = ['BREAKING', 'SECTOR UPDATE', 'ANALYSIS', 'RUMOR', 'MARKET INTEL'] as const;
+  const headlineTypeStyles: Record<string, string> = {
+    'BREAKING': 'text-red-400 font-bold',
+    'SECTOR UPDATE': 'text-slate-500',
+    'ANALYSIS': 'text-blue-400',
+    'RUMOR': 'text-purple-400 italic',
+    'MARKET INTEL': 'text-amber-400',
+  };
+
   return (
     <div className="bg-gradient-to-b from-black to-slate-950/50 border-l border-slate-700/50 h-full flex flex-col font-mono">
       {/* Header */}
@@ -91,6 +100,8 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [] }) => {
           <div className="space-y-3">
             {events.slice(0, 5).map((e, i) => {
               const sentiment = getSentiment(e.headline);
+              const hType = headlineTypes[i % headlineTypes.length];
+              const hStyle = headlineTypeStyles[hType] || 'text-slate-500';
               return (
                 <div
                   key={i}
@@ -102,7 +113,7 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [] }) => {
                 >
                   <div className="flex items-center justify-between text-[9px] text-slate-500 mb-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="uppercase tracking-wider">Sector Update</span>
+                      <span className={`uppercase tracking-wider ${hStyle}`}>{hType}</span>
                       <i className={`fas ${getSentimentIcon(sentiment)} text-[8px]`}></i>
                     </div>
                     <span className="text-slate-400">{getTimeAgo(i)}</span>
