@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DealType, type PortfolioCompany } from '../types';
 import type { PitchEvaluation, ICPartnerVote } from '../features/investment-committee/types/icTypes';
 import { generateVerdict } from '../features/investment-committee/services/icEvaluationEngine';
-import { buildICPrepBrief } from '../features/investment-committee/utils/icPrep';
+import { buildICPrepBrief, getDealCapitalSnapshot } from '../features/investment-committee/utils/icPrep';
 
 const packFancyDeal: PortfolioCompany = {
   id: 1,
@@ -40,10 +40,14 @@ const packFancyDeal: PortfolioCompany = {
   pendingDecisions: [],
   leverageModelViewed: true,
   leverageModelParams: {
-    entryMultiple: 6.2,
-    exitMultiple: 7.0,
+    entryMultiple: 3.7,
+    exitMultiple: 4.2,
     projectedIRR: 0.214,
     projectedMOIC: 2.26,
+    enterpriseValue: 55500000,
+    debtAmount: 27750000,
+    debtPercent: 0.5,
+    equityCheck: 27750000,
   },
 };
 
@@ -62,12 +66,23 @@ const solidEvaluation: PitchEvaluation = {
 };
 
 describe('First-deal flow tuning', () => {
+  it('derives a coherent capital snapshot from the modeled deal terms', () => {
+    const capital = getDealCapitalSnapshot(packFancyDeal);
+
+    expect(capital.entryEnterpriseValue).toBe(55500000);
+    expect(capital.debtAmount).toBe(27750000);
+    expect(capital.equityCheck).toBe(27750000);
+    expect(capital.leverageMultiple).toBeCloseTo(1.85, 2);
+  });
+
   it('builds a deal-specific PackFancy prep brief', () => {
     const brief = buildICPrepBrief(packFancyDeal);
 
     expect(brief.headline.toLowerCase()).toContain('hidden-value');
     expect(brief.whyNow.toLowerCase()).toContain('ip');
+    expect(brief.thesis).toContain('$28M equity check');
     expect(brief.proofPoints.some((point) => point.includes('IRR'))).toBe(true);
+    expect(brief.risks.some((risk) => risk.toLowerCase().includes('exit'))).toBe(true);
     expect(brief.risks.some((risk) => risk.toLowerCase().includes('management'))).toBe(true);
   });
 

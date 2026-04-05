@@ -251,6 +251,10 @@ export interface PortfolioCompany {
     exitMultiple: number;
     projectedIRR: number;
     projectedMOIC: number;
+    enterpriseValue?: number;
+    debtAmount?: number;
+    debtPercent?: number;
+    equityCheck?: number;
   };
   icStatus?: ICDealStatus;
   icConditions?: string[];

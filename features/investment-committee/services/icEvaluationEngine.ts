@@ -16,6 +16,7 @@ import type {
   ICMessage,
 } from '../types/icTypes';
 import { ALL_IC_PARTNERS } from '../constants/icPartners';
+import { getDealCapitalSnapshot } from '../utils/icPrep';
 
 // ==================== EVALUATION PROMPT ====================
 
@@ -41,12 +42,13 @@ export const generateEvaluationPrompt = (
       };
     });
 
+  const capital = getDealCapitalSnapshot(deal);
   const dealMetrics = `
 Deal: ${deal.name}
 Revenue: $${(deal.revenue / 1000000).toFixed(1)}M
 EBITDA: $${(deal.ebitda / 1000000).toFixed(1)}M
-Entry Multiple: ${(deal.leverageModelParams?.entryMultiple || deal.currentValuation / deal.ebitda).toFixed(1)}x
-Leverage: ${(deal.debt / deal.ebitda).toFixed(1)}x
+Entry Multiple: ${capital.entryMultiple.toFixed(1)}x
+Leverage: ${capital.leverageMultiple.toFixed(1)}x
 Revenue Growth: ${(deal.revenueGrowth * 100).toFixed(1)}%
 Target IRR: ${deal.leverageModelParams ? (deal.leverageModelParams.projectedIRR * 100).toFixed(1) + '%' : 'Not modeled'}
 `;

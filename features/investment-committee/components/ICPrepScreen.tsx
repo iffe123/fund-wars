@@ -7,7 +7,7 @@
 import React from 'react';
 import type { PortfolioCompany } from '../../../types';
 import type { ICPartner } from '../types/icTypes';
-import { buildICPrepBrief } from '../utils/icPrep';
+import { buildICPrepBrief, getDealCapitalSnapshot } from '../utils/icPrep';
 
 interface ICPrepScreenProps {
   deal: PortfolioCompany;
@@ -22,11 +22,7 @@ export const ICPrepScreen: React.FC<ICPrepScreenProps> = ({
   onEnter,
   onCancel,
 }) => {
-  const leverage = deal.debt / deal.ebitda;
-  const entryMultiple = deal.leverageModelParams?.entryMultiple || (deal.currentValuation / deal.ebitda);
-  const equityCheck = deal.leverageModelParams
-    ? deal.currentValuation - deal.debt
-    : deal.investmentCost;
+  const capital = getDealCapitalSnapshot(deal);
   const prepBrief = buildICPrepBrief(deal);
 
   return (
@@ -37,7 +33,7 @@ export const ICPrepScreen: React.FC<ICPrepScreenProps> = ({
         </div>
         <h2 className="text-2xl font-bold text-slate-200">{deal.name}</h2>
         <div className="text-sm text-slate-400 mt-1">
-          ${(equityCheck / 1000000).toFixed(0)}M equity check at {entryMultiple.toFixed(1)}x EBITDA
+          ${(capital.equityCheck / 1000000).toFixed(0)}M equity check at {capital.entryMultiple.toFixed(1)}x EBITDA
         </div>
       </div>
 
@@ -60,8 +56,8 @@ export const ICPrepScreen: React.FC<ICPrepScreenProps> = ({
           </div>
           <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/30">
             <div className="text-[10px] text-slate-500 uppercase mb-1">Leverage</div>
-            <div className={`text-sm font-bold ${leverage > 4 ? 'text-amber-400' : 'text-slate-200'}`}>
-              {leverage.toFixed(1)}x
+            <div className={`text-sm font-bold ${capital.leverageMultiple > 4 ? 'text-amber-400' : 'text-slate-200'}`}>
+              {capital.leverageMultiple.toFixed(1)}x
             </div>
           </div>
           <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/30">

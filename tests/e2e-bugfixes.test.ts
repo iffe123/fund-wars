@@ -5,6 +5,9 @@ import { DealType, PlayerLevel } from '../types';
 import type { PlayerStats } from '../types';
 import { DIFFICULTY_SETTINGS, COMPETITIVE_DEALS } from '../constants';
 import { shouldPauseStoryMilestones } from '../hooks/useStoryMilestones';
+import { createEventMap, STORY_ARCS } from '../constants/rpgContent';
+import { checkEventRequirements, createInitialEventQueue, processWeeklyQueue, scheduleEvent } from '../utils/eventQueueManager';
+import { getTriggeredMilestone } from '../services/storyMilestoneService';
 
 /**
  * E2E Bug Fix Tests
@@ -200,11 +203,12 @@ describe('BUG FIX 4: END_WEEK correctly increments week', () => {
   it('END_WEEK resets actionsUsedThisWeek and actionsPerformedThisWeek', () => {
     // First consume an action
     let state = createGameStateWithPlayer();
+    const initialActions = state.playerStats!.gameTime.actionsRemaining;
     state = gameReducer(state, {
       type: 'CONSUME_ACTION',
       payload: { cost: 1, actionType: undefined, targetId: undefined },
     });
-    expect(state.playerStats!.gameTime.actionsRemaining).toBe(1);
+    expect(state.playerStats!.gameTime.actionsRemaining).toBe(initialActions - 1);
 
     // End the week
     const nextState = gameReducer(state, { type: 'END_WEEK', payload: undefined });
@@ -369,6 +373,94 @@ describe('BUG FIX 6: Story milestones wait for the priority queue to clear', () 
       hasQueuedPriorityEvent: false,
       currentPhase: 'MORNING_BRIEFING',
     })).toBe(false);
+  });
+});
+
+describe('BUG FIX 7: Opening-week narrative pacing stays coherent', () => {
+  it('does not inject a random priority crisis into week one once the PackFancy beat is cleared', () => {
+    const state = createGameStateWithPlayer({ reputation: 18 });
+    const queue = createInitialEventQueue();
+    const eventMap = createEventMap();
+    const worldFlags = new Set<string>(['TUTORIAL_COMPLETE', 'FOUND_PATENT', 'PACKFANCY_STRUCTURED']);
+
+    const refreshed = processWeeklyQueue(
+      queue,
+      eventMap,
+      STORY_ARCS,
+      state.playerStats!,
+      state.npcs,
+      worldFlags,
+      state.marketVolatility,
+    );
+
+    expect(refreshed.priorityEvent).toBeUndefined();
+  });
+
+  it('holds scheduled PackFancy fallout until the following week', () => {
+    const state = createGameStateWithPlayer({ reputation: 18 });
+    const eventMap = createEventMap();
+    const worldFlags = new Set<string>(['TUTORIAL_COMPLETE', 'FOUND_PATENT', 'PACKFANCY_STRUCTURED']);
+
+    const queued = scheduleEvent(
+      createInitialEventQueue(),
+      'evt_hunter_credit_steal',
+      1,
+      'test',
+    );
+
+    const sameWeek = processWeeklyQueue(
+      queued,
+      eventMap,
+      STORY_ARCS,
+      state.playerStats!,
+      state.npcs,
+      worldFlags,
+      state.marketVolatility,
+    );
+
+    expect(sameWeek.priorityEvent).toBeUndefined();
+
+    const nextWeek = processWeeklyQueue(
+      { ...queued, currentWeek: 2 },
+      eventMap,
+      STORY_ARCS,
+      state.playerStats!,
+      state.npcs,
+      worldFlags,
+      state.marketVolatility,
+    );
+
+    expect(nextWeek.priorityEvent?.eventId).toBe('evt_hunter_credit_steal');
+  });
+
+  it('keeps the gala out of the opening week when the player cannot plausibly afford it', () => {
+    const state = createGameStateWithPlayer({ cash: 1500, reputation: 10 });
+    const gala = createEventMap().get('evt_networking_gala');
+
+    expect(gala).toBeDefined();
+    expect(checkEventRequirements(
+      gala!.requirements,
+      state.playerStats!,
+      state.npcs,
+      STORY_ARCS,
+      1,
+      new Set<string>(['TUTORIAL_COMPLETE']),
+      state.marketVolatility,
+      new Set<string>(),
+    )).toBe(false);
+  });
+
+  it('retires the legacy first-day milestone once event-driven onboarding is complete', () => {
+    const state = createGameStateWithPlayer({ reputation: 18 });
+
+    const milestone = getTriggeredMilestone(
+      state.playerStats!,
+      state.npcs,
+      new Set<string>(['TUTORIAL_COMPLETE']),
+      new Set<string>(),
+    );
+
+    expect(milestone).toBeNull();
   });
 });
 

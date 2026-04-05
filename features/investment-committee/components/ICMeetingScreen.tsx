@@ -18,6 +18,7 @@ import { ICChatInterface } from './ICChatInterface';
 import { ICPitchInput } from './ICPitchInput';
 import { ICTimer } from './ICTimer';
 import { ICVerdictScreen } from './ICVerdictScreen';
+import { getDealCapitalSnapshot } from '../utils/icPrep';
 
 interface ICMeetingScreenProps {
   deal: PortfolioCompany;
@@ -37,6 +38,7 @@ export const ICMeetingScreen: React.FC<ICMeetingScreenProps> = ({
 }) => {
   const [hasEntered, setHasEntered] = useState(false);
   const [showOpeningInput, setShowOpeningInput] = useState(true);
+  const capital = getDealCapitalSnapshot(deal);
 
   const {
     session,
@@ -190,7 +192,7 @@ export const ICMeetingScreen: React.FC<ICMeetingScreenProps> = ({
                     {session.partners[session.partners.length - 1]?.name}
                   </div>
                   <div className="text-xs text-slate-400 italic">
-                    "The floor is yours. Tell us why we should write a ${((deal.currentValuation - deal.debt) / 1000000).toFixed(0)} million check for {deal.name}."
+                    {`"The floor is yours. Tell us why we should write a $${(capital.equityCheck / 1000000).toFixed(0)} million check for ${deal.name}."`}
                   </div>
                 </div>
               </div>

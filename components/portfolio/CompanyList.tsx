@@ -75,7 +75,7 @@ export const CompanyList: React.FC<CompanyListProps> = memo(({
     <div className={`${selectedId ? 'md:w-1/2 hidden md:flex' : 'w-full flex'} border-r border-slate-700/50 flex-col transition-all bg-black/50 overflow-hidden`}>
       <div className="bg-gradient-to-r from-slate-800/80 to-slate-800/60 px-4 py-2 text-[11px] uppercase text-slate-400 font-bold border-b border-slate-700/60 shrink-0 flex items-center gap-2">
         <i className="fas fa-folder-open text-amber-500/70 text-xs"></i>
-        Active Holdings
+        Portfolio & Pipeline
         <Badge variant="default" size="sm">{companies.length}</Badge>
       </div>
 

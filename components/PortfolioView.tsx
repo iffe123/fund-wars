@@ -326,6 +326,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   // Helper: Handle LEVERAGE model application
   const handleApplyLeverageModel = useCallback((model: LeverageModel, suggestedBid: number) => {
     if (!showLeverageModal) return;
+    const debtAmount = suggestedBid * (model.debtPercent / 100);
 
     // Update company with model data, pre-fill bid context, and mark as viewed
     updatePlayerStats({
@@ -335,15 +336,22 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
             latestCeoReport: `Leverage model applied: ${(model.projectedIRR * 100).toFixed(1)}% IRR, ${model.projectedMOIC.toFixed(2)}x MOIC at ${formatMoney(suggestedBid)} entry.`,
             leverageModelViewed: true,
             dealPhase: getCompanyDealPhase(showLeverageModal),
+            currentValuation: suggestedBid,
+            debt: debtAmount,
+            investmentCost: model.equityCheck,
             leverageModelParams: {
               entryMultiple: model.entryMultiple,
               exitMultiple: model.exitMultiple,
               projectedIRR: model.projectedIRR,
-            projectedMOIC: model.projectedMOIC,
-          },
+              projectedMOIC: model.projectedMOIC,
+              enterpriseValue: suggestedBid,
+              debtAmount,
+              debtPercent: model.debtPercent / 100,
+              equityCheck: model.equityCheck,
+            },
+          }
         }
-      }
-    });
+      });
 
     addLogEntry(`LEVERAGE MODEL: ${showLeverageModal.name} - Target IRR ${(model.projectedIRR * 100).toFixed(1)}%, MOIC ${model.projectedMOIC.toFixed(2)}x`);
     setShowLeverageModal(null);
@@ -712,7 +720,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
         <div className={`${selectedId ? 'md:w-1/2 hidden md:flex' : 'w-full flex'} border-r border-slate-700/50 flex-col transition-all bg-black/50 overflow-hidden`}>
           <div className="bg-gradient-to-r from-slate-800/80 to-slate-800/60 px-4 py-2 text-[11px] uppercase text-slate-400 font-bold border-b border-slate-700/60 shrink-0 flex items-center gap-2">
             <i className="fas fa-folder-open text-amber-500/70 text-xs"></i>
-            Active Holdings
+            Portfolio & Pipeline
             <Badge variant="default" size="sm">{portfolio.length}</Badge>
           </div>
 

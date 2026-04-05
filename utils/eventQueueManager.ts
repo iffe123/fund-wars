@@ -398,18 +398,13 @@ export const processWeeklyQueue = (
 
   newQueue.scheduledEvents = futureEvents;
 
-  // REDESIGN: Always generate priority event if none exists
-  // This ensures game never stops for lack of content
-  if (!newQueue.priorityEvent) {
-    const priorityEvent = selectRandomEvent('PRIORITY', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek, completedEventIds);
-    if (priorityEvent) {
-      newQueue.priorityEvent = priorityEvent;
-    }
-  }
+  // Priority events should arrive deliberately via scheduling or explicit arc logic.
+  // Randomly force-spawning high-stakes drama creates narrative whiplash and
+  // can block the core deal loop before the player is ready for it.
 
-  // REDESIGN: Ensure minimum 5 optional events (increased from 3)
-  // Players should always have choices available
-  const MIN_OPTIONAL_EVENTS = 5;
+  // Keep the desk stocked with a lighter optional menu instead of overwhelming
+  // the player with five unrelated choices in the opening weeks.
+  const MIN_OPTIONAL_EVENTS = currentWeek <= 2 ? 2 : 3;
   while (newQueue.optionalEvents.length < MIN_OPTIONAL_EVENTS) {
     const optionalEvent = selectRandomEvent('OPTIONAL', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek, completedEventIds);
     if (optionalEvent) {
@@ -424,8 +419,8 @@ export const processWeeklyQueue = (
     }
   }
 
-  // REDESIGN: Generate background events for atmosphere (2-4 per week)
-  const MIN_BACKGROUND_EVENTS = 2;
+  // Keep some ambient motion without drowning the player in noise.
+  const MIN_BACKGROUND_EVENTS = currentWeek <= 2 ? 1 : 2;
   while (newQueue.backgroundEvents.length < MIN_BACKGROUND_EVENTS) {
     const backgroundEvent = selectRandomEvent('OPTIONAL', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek, completedEventIds);
     if (backgroundEvent) {
