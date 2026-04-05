@@ -44,7 +44,10 @@ export const STORY_MILESTONES: StoryMilestone[] = [
   {
     id: 'ms_first_day',
     sceneId: 'ch1_opening',
-    triggerConditions: { minWeek: 1, blockedByFlags: ['MS_FIRST_DAY_DONE'] },
+    triggerConditions: {
+      minWeek: 1,
+      blockedByFlags: ['MS_FIRST_DAY_DONE', 'TUTORIAL_COMPLETE'],
+    },
     priority: 'HIGH',
     oneShot: true,
     category: 'CAREER',
@@ -55,7 +58,7 @@ export const STORY_MILESTONES: StoryMilestone[] = [
     triggerConditions: {
       minWeek: 2,
       minPortfolioSize: 1,
-      blockedByFlags: ['MS_CHAD_ASSIGNMENT_DONE'],
+      blockedByFlags: ['MS_CHAD_ASSIGNMENT_DONE', 'TUTORIAL_COMPLETE'],
     },
     priority: 'HIGH',
     oneShot: true,
@@ -182,7 +185,7 @@ export const STORY_MILESTONES: StoryMilestone[] = [
     sceneId: 'ch1_hunter_intro',
     triggerConditions: {
       minWeek: 2,
-      blockedByFlags: ['MS_HUNTER_INTRO_DONE'],
+      blockedByFlags: ['MS_HUNTER_INTRO_DONE', 'TUTORIAL_COMPLETE'],
     },
     priority: 'MEDIUM',
     oneShot: true,

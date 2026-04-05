@@ -13,6 +13,7 @@ import type {
   ICMessage,
   ICContext,
 } from '../types/icTypes';
+import { getDealCapitalSnapshot } from '../utils/icPrep';
 
 // ==================== SYSTEM PROMPT GENERATION ====================
 
@@ -33,8 +34,9 @@ export const generateICSystemPrompt = (
   const isFirstLiveIC = playerHistory.meetingsAttended === 0;
 
   // Calculate deal metrics for context
-  const entryMultiple = deal.leverageModelParams?.entryMultiple || (deal.currentValuation / deal.ebitda);
-  const leverage = deal.debt / deal.ebitda;
+  const capital = getDealCapitalSnapshot(deal);
+  const entryMultiple = capital.entryMultiple;
+  const leverage = capital.leverageMultiple;
   const ebitdaMargin = deal.ebitdaMargin * 100;
 
   return `You are ${partner.name} (${partner.nickname}), ${partner.role} at Blackwood Capital Partners, a fictional private equity firm in a business simulation game.
@@ -59,8 +61,9 @@ The player (a ${playerHistory.currentLevel} at your fund) is presenting an inves
 - Revenue: $${(deal.revenue / 1000000).toFixed(1)}M
 - EBITDA: $${(deal.ebitda / 1000000).toFixed(1)}M (${ebitdaMargin.toFixed(1)}% margin)
 - Entry Multiple: ${entryMultiple.toFixed(1)}x EBITDA
-- Current Valuation: $${(deal.currentValuation / 1000000).toFixed(1)}M
-- Debt: $${(deal.debt / 1000000).toFixed(1)}M (${leverage.toFixed(1)}x leverage)
+- Entry Enterprise Value: $${(capital.entryEnterpriseValue / 1000000).toFixed(1)}M
+- Debt: $${(capital.debtAmount / 1000000).toFixed(1)}M (${leverage.toFixed(1)}x leverage)
+- Equity Check: $${(capital.equityCheck / 1000000).toFixed(1)}M
 - Revenue Growth: ${(deal.revenueGrowth * 100).toFixed(1)}%
 - CEO: ${deal.ceo}
 - CEO Performance: ${deal.ceoPerformance}/100
@@ -221,8 +224,9 @@ const getPartnerSpecificGuidance = (
   partner: ICPartner,
   deal: PortfolioCompany
 ): string => {
-  const leverage = deal.debt / deal.ebitda;
-  const entryMultiple = deal.leverageModelParams?.entryMultiple || (deal.currentValuation / deal.ebitda);
+  const capital = getDealCapitalSnapshot(deal);
+  const leverage = capital.leverageMultiple;
+  const entryMultiple = capital.entryMultiple;
 
   switch (partner.id) {
     case 'margaret':
@@ -337,13 +341,14 @@ export const buildConversationContext = (
  * Format deal summary for prompts
  */
 export const formatDealSummary = (deal: PortfolioCompany): string => {
-  const leverage = deal.debt / deal.ebitda;
-  const entryMultiple = deal.leverageModelParams?.entryMultiple || (deal.currentValuation / deal.ebitda);
+  const capital = getDealCapitalSnapshot(deal);
+  const leverage = capital.leverageMultiple;
+  const entryMultiple = capital.entryMultiple;
 
   return `
 Deal: ${deal.name}
 Sector: ${deal.sector || 'General Industrial'}
-Valuation: $${(deal.currentValuation / 1000000).toFixed(1)}M at ${entryMultiple.toFixed(1)}x EBITDA
+Valuation: $${(capital.entryEnterpriseValue / 1000000).toFixed(1)}M at ${entryMultiple.toFixed(1)}x EBITDA
 Leverage: ${leverage.toFixed(1)}x
 Revenue: $${(deal.revenue / 1000000).toFixed(1)}M (${(deal.revenueGrowth * 100).toFixed(1)}% growth)
 EBITDA: $${(deal.ebitda / 1000000).toFixed(1)}M (${(deal.ebitdaMargin * 100).toFixed(1)}% margin)

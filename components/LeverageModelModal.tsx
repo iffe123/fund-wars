@@ -59,7 +59,7 @@ const LeverageModelModal: React.FC<LeverageModelModalProps> = ({
   const [entryMultiple, setEntryMultiple] = useState(defaultEntryMultiple);
   const [debtPercent, setDebtPercent] = useState(50);
   const [holdPeriodYears, setHoldPeriodYears] = useState(5);
-  const [exitMultiple, setExitMultiple] = useState(defaultEntryMultiple + 1);
+  const [exitMultiple, setExitMultiple] = useState(defaultEntryMultiple);
   const [revenueGrowthRate, setRevenueGrowthRate] = useState(
     Math.round(company.revenueGrowth * 100) || 10
   );

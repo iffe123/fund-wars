@@ -308,7 +308,7 @@ export const STORY_EVENTS: StoryEvent[] = [
     type: 'PRIORITY',
     category: 'DEAL',
     title: 'Plant Your Flag',
-    hook: 'Your IOI is in. Chad wants a structure now, and Hunter is already circling your deal.',
+    hook: 'Chad wants a structure now, and Hunter is already circling your PackFancy angle.',
     requirements: {
       requiredFlags: ['TUTORIAL_COMPLETE'],
       blockedByFlags: ['PACKFANCY_STRUCTURED', 'FIRST_DEAL_PASSED'],
@@ -316,7 +316,7 @@ export const STORY_EVENTS: StoryEvent[] = [
     description: `
 PackFancy is no longer a cute diligence exercise. It is your first live deal fight.
 
-Your PackFancy IOI bought you one thing: a seat in the room. Not the room itself.
+Your first PackFancy swing bought you one thing: a seat in the room. Not the room itself.
 
 Chad is standing over your desk with coffee in one hand and impatience in the other.
 
@@ -567,6 +567,7 @@ He knows you heard. And he doesn\'t care.
     involvedCompanies: [],
     stakes: 'HIGH',
     requirements: {
+      minWeek: 2,
       requiredFlags: ['FOUND_PATENT', 'PACKFANCY_STRUCTURED'],
       blockedByFlags: ['SHARED_CREDIT'], // If Sarah got credit, Hunter can't steal it
     },
@@ -691,6 +692,9 @@ What do you do?
     involvedNpcs: ['mom'],
     involvedCompanies: [],
     stakes: 'CRITICAL',
+    requirements: {
+      minWeek: 6,
+    },
     choices: [
       {
         id: 'drop_everything',
@@ -806,6 +810,11 @@ Do you want in?
     involvedNpcs: ['chad', 'hunter', 'sheikh'],
     involvedCompanies: [],
     stakes: 'MEDIUM',
+    requirements: {
+      minWeek: 4,
+      minCash: 5000,
+      minReputation: 12,
+    },
     choices: [
       {
         id: 'claim_ticket',
