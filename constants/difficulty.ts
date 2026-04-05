@@ -41,7 +41,7 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
     description: "Top school, top grades. Now you're just another shark. You have potential, but no protection. Mistakes cost you dearly.",
     initialStats: {
         ...NORMAL_STATS,
-        stress: 15,          // Added baseline stress - it's a tough job
+        stress: 5,           // Low initial stress - players need room to manage it during onboarding
         portfolio: [],
     },
     modifiers: {
@@ -55,7 +55,7 @@ export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
     initialStats: {
       ...NORMAL_STATS,
       cash: 2000,            // Increased from 300 - at least you saved something
-      stress: 30,            // Reduced from 45 - still manageable
+      stress: 20,            // Give players room to manage stress during early game
       reputation: 5,         // Start with almost no reputation
       analystRating: 35,     // Reduced from 40
       financialEngineering: 3, // Reduced from 5
@@ -106,6 +106,6 @@ export const REPUTATION_THRESHOLDS = {
 // Weekly stat decay - things get worse if you don't actively improve
 export const WEEKLY_DECAY = {
   reputation: -1,           // Reputation fades without wins
-  stress: 3,                // Stress builds naturally
+  stress: 2,                // Stress builds naturally (reduced from 3 to give more breathing room)
   relationshipDecay: -2,    // NPC relationships cool off
 };

@@ -741,6 +741,9 @@ What do you do?
         label: 'Send What You Can',
         description: 'Wire $10,000 and promise more when bonus hits.',
         alignment: 'NEUTRAL',
+        requires: {
+          stat: { name: 'cash', min: 10000 },
+        },
         consequences: {
           stats: { cash: -10000, stress: 15 },
           npcEffects: [

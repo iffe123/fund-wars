@@ -41,13 +41,21 @@ const impactStatLabels: Partial<Record<keyof StatChanges, string>> = {
   reputation: 'Rep',
   stress: 'Stress',
   energy: 'Energy',
+  analystRating: 'Analyst Rating',
+  financialEngineering: 'Financial Engineering',
+  ethics: 'Ethics',
+  auditRisk: 'Audit Risk',
+  score: 'Score',
+  health: 'Health',
+  dependency: 'Dependency',
 };
 
 const formatStatDetail = (key: keyof StatChanges, value: number): string => {
+  const label = impactStatLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
   if (key === 'cash') {
-    return `${value > 0 ? '+' : '-'}$${Math.abs(value).toLocaleString()} ${impactStatLabels[key]}`;
+    return `${value > 0 ? '+' : '-'}$${Math.abs(value).toLocaleString()} ${label}`;
   }
-  return `${value > 0 ? '+' : ''}${value} ${impactStatLabels[key] || key}`;
+  return `${value > 0 ? '+' : ''}${value} ${label}`;
 };
 
 const buildDecisionPulse = (
@@ -62,8 +70,13 @@ const buildDecisionPulse = (
   const { consequences } = result;
 
   if (result.skillCheckResult) {
+    const skillName = result.skillCheckResult.skill
+      ? (impactStatLabels[result.skillCheckResult.skill as keyof StatChanges] || result.skillCheckResult.skill.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim())
+      : 'Skill';
     details.push(
-      `${result.skillCheckResult.passed ? 'Skill check passed' : 'Skill check missed'} (${result.skillCheckResult.rolled}/${result.skillCheckResult.threshold})`
+      result.skillCheckResult.passed
+        ? `${skillName} Check Passed`
+        : `${skillName} Check Failed`
     );
   }
 
@@ -136,6 +149,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     marketVolatility,
     updatePlayerStats,
     addActivity,
+    useAction,
   } = useGame();
 
   const {
@@ -212,6 +226,11 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
   // Handle event choice
   const handleEventChoice = useCallback((event: StoryEvent, choice: EventChoice) => {
     if (!playerStats) return;
+
+    // Consume 1 AP for non-onboarding event choices
+    if (!event.isOnboarding) {
+      useAction(1);
+    }
 
     // Make the choice using RPG system, passing the event explicitly
     const result = makeChoice(choice, playerStats, npcs, event);

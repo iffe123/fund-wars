@@ -324,10 +324,10 @@ The typing indicator appears one more time:
     atmosphere: 'office',
     speaker: {
       id: 'chad',
-      name: 'Chad Sterling',
+      name: 'Chad Worthington III',
       mood: 'neutral',
     },
-    narrative: `Chad Sterling doesn't look up as you enter. He's on speakerphone, and whoever is on the other end is getting eviscerated.
+    narrative: `Chad Worthington III doesn't look up as you enter. He's on speakerphone, and whoever is on the other end is getting eviscerated.
 
 **"—Listen, I don't care what your DCF says. Your terminal value assumptions are divorced from reality. Call me when you have real numbers."**
 
@@ -394,10 +394,10 @@ His phone rings. He's already moving on.
     atmosphere: 'office',
     speaker: {
       id: 'chad',
-      name: 'Chad Sterling',
+      name: 'Chad Worthington III',
       mood: 'smug',
     },
-    narrative: `You knock on the door frame. Chad Sterling looks up with the expression of a man whose time is being wasted.
+    narrative: `You knock on the door frame. Chad Worthington III looks up with the expression of a man whose time is being wasted.
 
 **"Come in. You're blocking the hall."**
 
@@ -449,7 +449,7 @@ He's already back to his emails.`,
     atmosphere: 'office',
     speaker: {
       id: 'chad',
-      name: 'Chad Sterling',
+      name: 'Chad Worthington III',
       mood: 'neutral',
     },
     narrative: `For a moment, Chad actually looks at you. Like, *really* looks at you.
@@ -483,7 +483,7 @@ He checks his Rolex.
     atmosphere: 'crisis',
     speaker: {
       id: 'chad',
-      name: 'Chad Sterling',
+      name: 'Chad Worthington III',
       mood: 'angry',
     },
     narrative: `Chad's expression doesn't change, but the temperature in the room drops about 10 degrees.
@@ -517,7 +517,7 @@ He turns back, his smile completely devoid of warmth.
     atmosphere: 'office',
     speaker: {
       id: 'chad',
-      name: 'Chad Sterling',
+      name: 'Chad Worthington III',
       mood: 'smug',
     },
     narrative: `Chad chuckles, but it's not a friendly sound.
@@ -936,7 +936,7 @@ But you found it. Without help. On your own terms.
     atmosphere: 'office',
     speaker: {
       id: 'chad',
-      name: 'Chad Sterling',
+      name: 'Chad Worthington III',
       mood: 'happy',
     },
     narrative: `Chad leans back in his chair, the ghost of an actual smile on his face.
@@ -1261,7 +1261,7 @@ Brief silence.
 
 You spin around.
 
-**Chad Sterling** is standing in the doorway. His face is ashen. His hand grips the doorframe like he's preventing himself from lunging at you.
+**Chad Worthington III** is standing in the doorway. His face is ashen. His hand grips the doorframe like he's preventing himself from lunging at you.
 
 **"Did you just..."** His voice is barely a whisper. **"Did you just offer to send our INTERNAL VALUATION MODEL to an investment banker?"**
 
@@ -1720,7 +1720,7 @@ The Newark skyline appears through the windshield.`,
     atmosphere: 'office',
     speaker: {
       id: 'chad',
-      name: 'Chad Sterling',
+      name: 'Chad Worthington III',
       mood: 'neutral',
     },
     narrative: `Chad sets down his phone—a rare gesture.
@@ -2140,7 +2140,7 @@ He stands, extends a weathered hand.
     atmosphere: 'meeting',
     speaker: {
       id: 'chad',
-      name: 'Chad Sterling',
+      name: 'Chad Worthington III',
       mood: 'neutral',
     },
     narrative: `Chad leans back, unfazed.
