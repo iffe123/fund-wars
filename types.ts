@@ -59,11 +59,20 @@ export type CompanyStatus = 'PIPELINE' | 'OWNED' | 'EXITING';
 export type DealPhase =
   | 'PIPELINE'      // Initial state - can only do DILIGENCE
   | 'ANALYZING'     // DD in progress (intermediate state)
-  | 'ANALYZED'      // DD complete - can SUBMIT IOI, DISCUSS, WALK AWAY, or use LEVERAGE tool
-  | 'BIDDING'       // IOI submitted, waiting for auction result
+  | 'ANALYZED'      // DD complete - can build the model and decide whether to enter the process
+  | 'IOI_SUBMITTED' // Soft IOI sent - the deal is live, but the final bid still needs IC support
+  | 'IC_APPROVED'   // IC backed the deal - the final bid can now be submitted
+  | 'BIDDING'       // Final bid submitted, waiting for auction result
   | 'WON'           // Deal won - moves to portfolio as OWNED
   | 'LOST'          // Lost to rival - removed from pipeline
   | 'WALKED_AWAY';  // Player chose to pass
+
+export type ICDealStatus =
+  | 'NOT_STARTED'
+  | 'APPROVED'
+  | 'CONDITIONAL'
+  | 'TABLED'
+  | 'REJECTED';
 
 // Management action types for owned companies
 export type ManagementActionType =
@@ -243,6 +252,11 @@ export interface PortfolioCompany {
     projectedIRR: number;
     projectedMOIC: number;
   };
+  icStatus?: ICDealStatus;
+  icConditions?: string[];
+  icSpecificAdvice?: string;
+  icStrengths?: string[];
+  icWeaknesses?: string[];
 
   // NEW: Active Events
   activeEvent?: CompanyActiveEvent;

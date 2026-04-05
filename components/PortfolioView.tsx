@@ -8,7 +8,7 @@ import BlackBoxModal from './BlackBoxModal';
 import BoardBattleModal from './BoardBattleModal';
 import ExitStrategyModal from './ExitStrategyModal';
 import LeverageModelModal from './LeverageModelModal';
-import { ICMeetingScreen } from '../features/investment-committee';
+import { ICMeetingScreen, type ICVerdict } from '../features/investment-committee';
 import { calculatePortfolioAnalytics, formatMoney as formatMoneyUtil } from '../utils/scenarioGating';
 import { getCompanyStatus } from '../utils/worldEngine';
 
@@ -63,15 +63,168 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
 
   // Helper: Get company's deal phase (with backward compatibility)
   const getCompanyDealPhase = useCallback((company: PortfolioCompany): DealPhase => {
+    if (company.dealPhase === 'ANALYZED' && (company.icStatus === 'APPROVED' || company.icStatus === 'CONDITIONAL')) {
+      return 'IC_APPROVED';
+    }
+
+    if (company.dealPhase === 'ANALYZED' && (company.icStatus === 'TABLED' || company.icStatus === 'REJECTED')) {
+      return 'IOI_SUBMITTED';
+    }
+
     // If dealPhase is explicitly set, use it
     if (company.dealPhase) return company.dealPhase;
 
     // Backward compatibility: derive phase from existing fields
     if (company.dealClosed) return 'WON';
     if (company.isInExitProcess) return 'WON'; // Still owned, just exiting
+    if (company.icStatus === 'APPROVED' || company.icStatus === 'CONDITIONAL') return 'IC_APPROVED';
     if (company.isAnalyzed) return 'ANALYZED';
     return 'PIPELINE';
   }, []);
+
+  const hasSubmittedIOI = useCallback((company: PortfolioCompany): boolean => {
+    const phase = getCompanyDealPhase(company);
+    return phase === 'IOI_SUBMITTED' || phase === 'IC_APPROVED' || phase === 'BIDDING' || phase === 'WON' || phase === 'LOST';
+  }, [getCompanyDealPhase]);
+
+  const hasICClearance = useCallback((company: PortfolioCompany): boolean => {
+    const phase = getCompanyDealPhase(company);
+    return phase === 'IC_APPROVED' || phase === 'BIDDING' || phase === 'WON' || phase === 'LOST';
+  }, [getCompanyDealPhase]);
+
+  const needsICRework = useCallback((company: PortfolioCompany): boolean => {
+    return company.icStatus === 'TABLED' || company.icStatus === 'REJECTED';
+  }, []);
+
+  const getDealDeskStatus = useCallback((company: PortfolioCompany) => {
+    const phase = getCompanyDealPhase(company);
+    const conditions = company.icConditions || [];
+    const topCondition = conditions[0];
+
+    if (!company.isAnalyzed) {
+      return {
+        tone: 'text-blue-400 border-blue-800/40 bg-blue-950/20',
+        title: 'Open question',
+        detail: 'Run diligence to learn whether this is a real deal or banker wallpaper.',
+      };
+    }
+
+    if (!company.leverageModelViewed) {
+      return {
+        tone: 'text-purple-300 border-purple-800/40 bg-purple-950/20',
+        title: 'Build the case',
+        detail: 'The model is where the story gets sharp. Know price, leverage, and return drivers before you move.',
+      };
+    }
+
+    if (!hasSubmittedIOI(company)) {
+      return {
+        tone: 'text-emerald-300 border-emerald-800/40 bg-emerald-950/20',
+        title: 'Seat still open',
+        detail: 'Submit a soft IOI to stay in the process. That gets you to IC, not straight to a win.',
+      };
+    }
+
+    if (phase === 'IOI_SUBMITTED' && (!company.icStatus || company.icStatus === 'NOT_STARTED')) {
+      return {
+        tone: 'text-amber-300 border-amber-800/40 bg-amber-950/20',
+        title: 'Now win the room',
+        detail: 'You are in the process. The next real gate is IC approval before a final bid can go live.',
+      };
+    }
+
+    if (company.icStatus === 'TABLED') {
+      return {
+        tone: 'text-amber-300 border-amber-800/40 bg-amber-950/20',
+        title: 'IC tabled the deal',
+        detail: topCondition || company.icSpecificAdvice || 'Tighten the thesis and come back with a more specific answer.',
+      };
+    }
+
+    if (company.icStatus === 'REJECTED') {
+      return {
+        tone: 'text-red-300 border-red-800/40 bg-red-950/20',
+        title: 'IC pushed back hard',
+        detail: company.icSpecificAdvice || topCondition || 'You still have a seat in the process, but you need a better defense or you should walk away.',
+      };
+    }
+
+    if (company.icStatus === 'CONDITIONAL') {
+      return {
+        tone: 'text-cyan-300 border-cyan-800/40 bg-cyan-950/20',
+        title: 'Cleared with guardrails',
+        detail: topCondition || 'The committee will back a final bid, but they expect you to respect the guardrails they laid down.',
+      };
+    }
+
+    if (phase === 'IC_APPROVED') {
+      return {
+        tone: 'text-emerald-300 border-emerald-800/40 bg-emerald-950/20',
+        title: 'Green light',
+        detail: 'IC is behind you. Take your shot with a final bid while the deal is still in reach.',
+      };
+    }
+
+    if (phase === 'BIDDING') {
+      return {
+        tone: 'text-purple-300 border-purple-800/40 bg-purple-950/20',
+        title: 'Bid live',
+        detail: 'You are in the auction. Now it is price, nerve, and timing.',
+      };
+    }
+
+    return {
+      tone: 'text-slate-300 border-slate-700/50 bg-slate-900/30',
+      title: 'Deal in motion',
+      detail: company.latestCeoReport,
+    };
+  }, [getCompanyDealPhase, hasSubmittedIOI]);
+
+  const selectedDealDeskStatus = selectedCompany ? getDealDeskStatus(selectedCompany) : null;
+  const selectedDealPhase = selectedCompany ? getCompanyDealPhase(selectedCompany) : 'PIPELINE';
+  const selectedHasSubmittedIOI = selectedCompany ? hasSubmittedIOI(selectedCompany) : false;
+  const selectedHasICClearance = selectedCompany ? hasICClearance(selectedCompany) : false;
+  const selectedNeedsICRework = selectedCompany ? needsICRework(selectedCompany) : false;
+  const selectedBidActionDisabled = !selectedCompany
+    || !selectedCompany.isAnalyzed
+    || !selectedCompany.leverageModelViewed
+    || isMarketPanic
+    || (!selectedHasICClearance && selectedHasSubmittedIOI)
+    || ((playerStats.gameTime?.actionsRemaining || 0) < 1);
+  const selectedBidActionTitle = !selectedCompany
+    ? undefined
+    : isMarketPanic
+      ? 'Market is frozen during panic - wait for stability'
+      : !selectedCompany.isAnalyzed
+        ? 'Run Diligence first to analyze this deal'
+        : !selectedCompany.leverageModelViewed
+          ? 'Run the Leverage Model first to unlock bidding'
+          : selectedHasSubmittedIOI && !selectedHasICClearance
+            ? 'Win IC support before you can launch the final bid'
+            : undefined;
+  const selectedBidActionLabel = isMarketPanic
+    ? 'Market Frozen'
+    : !selectedCompany?.isAnalyzed || !selectedCompany?.leverageModelViewed
+      ? 'Locked'
+      : selectedHasICClearance
+        ? 'Submit Final Bid'
+        : 'Submit IOI';
+  const selectedBidActionIcon = isMarketPanic
+    ? 'fa-snowflake'
+    : !selectedCompany?.isAnalyzed || !selectedCompany?.leverageModelViewed
+      ? 'fa-lock'
+      : selectedHasICClearance
+        ? 'fa-gavel'
+        : 'fa-clipboard-check';
+  const selectedBidActionSubtext = isMarketPanic
+    ? 'Wait for stability'
+    : !selectedCompany?.isAnalyzed
+      ? 'Run Diligence First'
+      : !selectedCompany?.leverageModelViewed
+        ? 'Run Model First'
+        : selectedHasSubmittedIOI && !selectedHasICClearance
+          ? 'IC Approval Required'
+          : '(1 AP)';
 
   // Helper: Check if action was used this week on a company
   const hasUsedActionThisWeek = useCallback((company: PortfolioCompany, actionType: string): boolean => {
@@ -105,7 +258,10 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   }, [onDiscuss, addLogEntry]);
 
   // Helper: Handle IC meeting completion
-  const handleICComplete = useCallback((outcome: 'APPROVED' | 'CONDITIONALLY_APPROVED' | 'TABLED' | 'REJECTED' | 'CANCELLED') => {
+  const handleICComplete = useCallback((
+    outcome: 'APPROVED' | 'CONDITIONALLY_APPROVED' | 'TABLED' | 'REJECTED' | 'CANCELLED',
+    verdict?: ICVerdict
+  ) => {
     if (!showICMeeting) return;
 
     const company = showICMeeting;
@@ -116,21 +272,75 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
       return;
     }
 
-    // Apply outcomes based on IC decision
+    const icFeedbackUpdates = {
+      icConditions: verdict?.conditions || [],
+      icSpecificAdvice: verdict?.feedback.specificAdvice,
+      icStrengths: verdict?.feedback.strengths || [],
+      icWeaknesses: verdict?.feedback.weaknesses || [],
+    };
+
     if (outcome === 'APPROVED') {
-      addLogEntry(`IC MEETING: ${company.name} APPROVED - Proceeding to auction`);
-      updatePlayerStats({ reputation: +5 });
-      // Automatically proceed to auction
-      setShowAuction(company);
+      addLogEntry(`IC MEETING: ${company.name} APPROVED - Final bid unlocked`);
+      updatePlayerStats({
+        reputation: verdict?.consequences.reputationChange ?? 5,
+        modifyCompany: {
+          id: company.id,
+          updates: {
+            dealPhase: 'IC_APPROVED' as DealPhase,
+            icStatus: 'APPROVED',
+            latestCeoReport: 'IC cleared the deal. Final bid window is open.',
+            ...icFeedbackUpdates,
+          }
+        }
+      });
     } else if (outcome === 'CONDITIONALLY_APPROVED') {
-      addLogEntry(`IC MEETING: ${company.name} CONDITIONALLY APPROVED - Address conditions before proceeding`);
-      updatePlayerStats({ reputation: +2 });
+      addLogEntry(`IC MEETING: ${company.name} CONDITIONALLY APPROVED - Final bid unlocked with guardrails`);
+      updatePlayerStats({
+        reputation: verdict?.consequences.reputationChange ?? 2,
+        modifyCompany: {
+          id: company.id,
+          updates: {
+            dealPhase: 'IC_APPROVED' as DealPhase,
+            icStatus: 'CONDITIONAL',
+            latestCeoReport: verdict?.conditions?.length
+              ? `IC guardrails: ${verdict.conditions.slice(0, 2).join(' | ')}`
+              : 'IC will support the deal, but only with tighter execution discipline.',
+            ...icFeedbackUpdates,
+          }
+        }
+      });
     } else if (outcome === 'TABLED') {
-      addLogEntry(`IC MEETING: ${company.name} TABLED - Committee needs more information`);
-      updatePlayerStats({ reputation: -1, stress: +5 });
+      addLogEntry(`IC MEETING: ${company.name} TABLED - Tighten the case and come back`);
+      updatePlayerStats({
+        reputation: verdict?.consequences.reputationChange ?? -1,
+        stress: +4,
+        modifyCompany: {
+          id: company.id,
+          updates: {
+            dealPhase: 'IOI_SUBMITTED' as DealPhase,
+            icStatus: 'TABLED',
+            latestCeoReport: verdict?.conditions?.length
+              ? `IC tabled the deal: ${verdict.conditions.slice(0, 2).join(' | ')}`
+              : 'IC asked for a tighter downside case before backing the bid.',
+            ...icFeedbackUpdates,
+          }
+        }
+      });
     } else if (outcome === 'REJECTED') {
-      addLogEntry(`IC MEETING: ${company.name} REJECTED - Committee did not approve the investment`);
-      updatePlayerStats({ reputation: -3, stress: +10 });
+      addLogEntry(`IC MEETING: ${company.name} REJECTED - The deal is still in process, but your thesis was not good enough`);
+      updatePlayerStats({
+        reputation: verdict?.consequences.reputationChange ?? -3,
+        stress: +6,
+        modifyCompany: {
+          id: company.id,
+          updates: {
+            dealPhase: 'IOI_SUBMITTED' as DealPhase,
+            icStatus: 'REJECTED',
+            latestCeoReport: verdict?.feedback.specificAdvice || 'IC rejected the case. Rebuild the thesis or walk away.',
+            ...icFeedbackUpdates,
+          }
+        }
+      });
     }
   }, [showICMeeting, addLogEntry, updatePlayerStats]);
 
@@ -140,15 +350,16 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
 
     // Update company with model data, pre-fill bid context, and mark as viewed
     updatePlayerStats({
-      modifyCompany: {
-        id: showLeverageModal.id,
-        updates: {
-          latestCeoReport: `Leverage model applied: ${(model.projectedIRR * 100).toFixed(1)}% IRR, ${model.projectedMOIC.toFixed(2)}x MOIC at ${formatMoney(suggestedBid)} entry.`,
-          leverageModelViewed: true,
-          leverageModelParams: {
-            entryMultiple: model.entryMultiple,
-            exitMultiple: model.exitMultiple,
-            projectedIRR: model.projectedIRR,
+        modifyCompany: {
+          id: showLeverageModal.id,
+          updates: {
+            latestCeoReport: `Leverage model applied: ${(model.projectedIRR * 100).toFixed(1)}% IRR, ${model.projectedMOIC.toFixed(2)}x MOIC at ${formatMoney(suggestedBid)} entry.`,
+            leverageModelViewed: true,
+            dealPhase: getCompanyDealPhase(showLeverageModal),
+            leverageModelParams: {
+              entryMultiple: model.entryMultiple,
+              exitMultiple: model.exitMultiple,
+              projectedIRR: model.projectedIRR,
             projectedMOIC: model.projectedMOIC,
           },
         }
@@ -160,7 +371,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
 
     // Record the action
     recordCompanyAction(showLeverageModal.id, 'LEVERAGE');
-  }, [showLeverageModal, updatePlayerStats, addLogEntry, formatMoney, recordCompanyAction]);
+  }, [showLeverageModal, updatePlayerStats, addLogEntry, formatMoney, recordCompanyAction, getCompanyDealPhase]);
 
   const handleAnalyze = (companyId: number) => {
     // Check if we have enough actions (skip during tutorial)
@@ -201,40 +412,54 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   };
 
   const handleSubmitIOI = (companyId: number) => {
-    // Check if we have enough actions (skip during tutorial)
-    if (tutorialStep === 0 && !useAction('SUBMIT_IOI')) {
-      return; // Not enough actions
-    }
-
-    // TRIGGER LIVE AUCTION
     const company = portfolio.find(c => c.id === companyId);
-    if (company && tutorialStep !== 6) { // Don't trigger auction on tutorial step
-      // Update deal phase to BIDDING
-      updatePlayerStats({
-        modifyCompany: {
-          id: companyId,
-          updates: {
-            dealPhase: 'BIDDING' as DealPhase,
-          }
-        }
-      });
-      recordCompanyAction(companyId, 'SUBMIT_IOI');
-      setShowAuction(company);
+    if (!company) return;
+
+    if (tutorialStep === 0 && !useAction('SUBMIT_IOI')) {
       return;
     }
 
-    // Default Logic (Tutorial or Fallback)
-    if (tutorialStep === 6) {
-      setTutorialStep(0);
+    updatePlayerStats({
+      modifyCompany: {
+        id: companyId,
+        updates: {
+          dealPhase: 'IOI_SUBMITTED' as DealPhase,
+          icStatus: company.icStatus === 'TABLED' || company.icStatus === 'REJECTED'
+            ? company.icStatus
+            : 'NOT_STARTED',
+          latestCeoReport: 'IOI submitted. You are in the process, but IC still has to bless the final bid.',
+        }
+      }
+    });
+    recordCompanyAction(companyId, 'SUBMIT_IOI');
+    addLogEntry(`IOI SUBMITTED: ${company.name} is in the process. Win IC backing before the final bid.`);
+  };
+
+  const handleSubmitFinalBid = (companyId: number) => {
+    const company = portfolio.find(c => c.id === companyId);
+    if (!company) return;
+
+    if (tutorialStep === 0 && !useAction('SUBMIT_IOI')) {
+      return;
     }
-    const dummyAction: PortfolioAction = {
-      id: 'submit_ioi',
-      text: 'Submit IOI',
-      description: 'Commit to the deal.',
-      icon: 'fa-signature',
-      outcome: { description: 'IOI Submitted.', statChanges: {}, logMessage: 'IOI Submitted' }
-    };
-    onAction(companyId, dummyAction);
+
+    updatePlayerStats({
+      modifyCompany: {
+        id: companyId,
+        updates: {
+          dealPhase: 'BIDDING' as DealPhase,
+          latestCeoReport: company.icStatus === 'CONDITIONAL'
+            ? 'Final bid submitted under IC guardrails.'
+            : 'Final bid submitted after full IC approval.',
+        }
+      }
+    });
+    recordCompanyAction(companyId, 'FINAL_BID');
+    addLogEntry(`FINAL BID: ${company.name} launched into auction after ${company.icStatus === 'CONDITIONAL' ? 'conditional' : 'full'} IC support.`);
+    setShowAuction({
+      ...company,
+      dealPhase: 'BIDDING',
+    });
   };
 
   const handleAuctionComplete = (success: boolean, finalBid: number) => {
@@ -257,9 +482,9 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
         }
       });
       const dummyAction: PortfolioAction = {
-        id: 'submit_ioi',
-        text: 'Submit IOI',
-        description: 'Commit to the deal.',
+        id: 'submit_final_bid',
+        text: 'Submit Final Bid',
+        description: 'Take your approved case into the live process.',
         icon: 'fa-signature',
         outcome: { description: `Auction Won at $${(finalBid/1000000).toFixed(1)}M`, statChanges: { reputation: +10 }, logMessage: `Won auction for ${showAuction.name}` }
       };
@@ -795,6 +1020,29 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                 </div>
               </div>
 
+              {getSelectedCompanyStatus() === 'PIPELINE' && selectedDealDeskStatus && (
+                <div className={`rounded-lg p-4 border ${selectedDealDeskStatus.tone}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <i className="fas fa-signal"></i>
+                    <span className="text-[11px] uppercase tracking-widest font-bold">Deal Desk</span>
+                  </div>
+                  <div className="text-sm font-semibold text-slate-100 mb-1">{selectedDealDeskStatus.title}</div>
+                  <p className="text-xs leading-relaxed text-slate-300">{selectedDealDeskStatus.detail}</p>
+                  {selectedCompany.icConditions && selectedCompany.icConditions.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {selectedCompany.icConditions.slice(0, 2).map((condition) => (
+                        <span
+                          key={condition}
+                          className="text-[10px] px-2 py-1 rounded-full border border-slate-600/60 bg-slate-900/40 text-slate-300"
+                        >
+                          {condition}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* ANALYTICS SECTION */}
               {selectedAnalytics && selectedCompany.dealClosed && (
                 <div className="space-y-3">
@@ -901,10 +1149,10 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                         : 'bg-blue-950/30 border-blue-700/50 animate-pulse'
                     }`}>
                       <div className={`text-xs font-bold ${selectedCompany?.isAnalyzed ? 'text-emerald-400' : 'text-blue-400'}`}>
-                        {selectedCompany?.isAnalyzed ? '✓' : '1'}
+                        {selectedCompany?.isAnalyzed ? 'Ã¢Å“â€œ' : '1'}
                       </div>
                       <div className="text-[9px] text-slate-400 mt-1">Diligence</div>
-                      <div className="text-[8px] text-slate-500">(1 AP)</div>
+                      <div className="text-[8px] text-emerald-500">Free</div>
                     </div>
                     <i className="fas fa-chevron-right text-slate-600 text-[10px]"></i>
 
@@ -923,7 +1171,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                             ? 'text-purple-400'
                             : 'text-slate-500'
                       }`}>
-                        {selectedCompany?.leverageModelViewed ? '✓' : '2'}
+                        {selectedCompany?.leverageModelViewed ? 'Ã¢Å“â€œ' : '2'}
                       </div>
                       <div className="text-[9px] text-slate-400 mt-1">Model</div>
                       <div className="text-[8px] text-emerald-500">Free</div>
@@ -932,22 +1180,22 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
 
                     {/* Step 3: Submit IOI */}
                     <div className={`flex-1 p-2 rounded-lg border text-center transition-all ${
-                      selectedCompany?.dealPhase === 'BIDDING' || selectedCompany?.dealPhase === 'WON'
+                      selectedHasSubmittedIOI
                         ? 'bg-emerald-950/30 border-emerald-700/50'
                         : selectedCompany?.leverageModelViewed
                           ? 'bg-emerald-950/30 border-emerald-700/50 animate-pulse'
                           : 'bg-slate-800/30 border-slate-700/50 opacity-50'
                     }`}>
                       <div className={`text-xs font-bold ${
-                        selectedCompany?.dealPhase === 'BIDDING' || selectedCompany?.dealPhase === 'WON'
+                        selectedHasSubmittedIOI
                           ? 'text-emerald-400'
                           : selectedCompany?.leverageModelViewed
                             ? 'text-emerald-400'
                             : 'text-slate-500'
                       }`}>
-                        {selectedCompany?.dealPhase === 'BIDDING' || selectedCompany?.dealPhase === 'WON' ? '✓' : '3'}
+                        {selectedHasSubmittedIOI ? '✓' : '3'}
                       </div>
-                      <div className="text-[9px] text-slate-400 mt-1">Submit IOI</div>
+                      <div className="text-[9px] text-slate-400 mt-1">Send IOI</div>
                       <div className="text-[8px] text-slate-500">(1 AP)</div>
                     </div>
                   </div>
@@ -959,8 +1207,14 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                     {selectedCompany?.isAnalyzed && !selectedCompany?.leverageModelViewed && (
                       <span className="text-purple-400">→ Run Leverage Model to set your bid parameters</span>
                     )}
-                    {selectedCompany?.leverageModelViewed && selectedCompany?.dealPhase !== 'BIDDING' && selectedCompany?.dealPhase !== 'WON' && (
-                      <span className="text-emerald-400">→ Ready to Submit IOI and enter auction</span>
+                    {selectedCompany?.leverageModelViewed && !selectedHasSubmittedIOI && (
+                      <span className="text-emerald-400">→ Ready to submit a soft IOI and lock your IC slot</span>
+                    )}
+                    {selectedHasSubmittedIOI && !selectedHasICClearance && (
+                      <span className="text-amber-400">→ Win IC support before you launch the final bid</span>
+                    )}
+                    {selectedHasICClearance && selectedDealPhase !== 'BIDDING' && selectedDealPhase !== 'WON' && (
+                      <span className="text-cyan-400">→ IC cleared you. Take your best shot with a final bid</span>
                     )}
                   </div>
                 </div>
@@ -1002,14 +1256,14 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                   <button
                     data-tutorial={tutorialStep === 3 ? 'diligence-btn' : undefined}
                     onClick={() => handleAnalyze(selectedCompany.id)}
-                    disabled={analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)}
+                    disabled={analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed}
                     className={`
                       relative border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
                       ${tutorialStep === 3
                         ? 'bg-amber-950/50 border-amber-500 text-amber-400'
                         : 'bg-slate-800/50 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500'
                       }
-                      ${(analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1)) ? 'opacity-40 cursor-not-allowed' : ''}
+                      ${(analyzingIds.includes(selectedCompany.id) || selectedCompany.isAnalyzed) ? 'opacity-40 cursor-not-allowed' : ''}
                     `}
                   >
                     {analyzingIds.includes(selectedCompany.id) ? (
@@ -1018,53 +1272,49 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                       <i className="fas fa-search text-lg mb-2"></i>
                     )}
                     <span className="text-[10px] font-bold uppercase tracking-wider">Diligence</span>
-                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
+                    <span className="text-[8px] text-emerald-500 mt-0.5">(Free)</span>
                   </button>
 
                   <button
-                    onClick={() => handleSubmitIOI(selectedCompany.id)}
-                    disabled={(!selectedCompany.isAnalyzed && tutorialStep === 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1) || (tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed)}
-                    title={
-                      isMarketPanic
-                        ? 'Market is frozen during panic - wait for stability'
-                        : tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed
-                          ? 'Run the Leverage Model first to unlock IOI submission'
-                          : !selectedCompany.isAnalyzed && tutorialStep === 0
-                            ? 'Run Diligence first to analyze this deal'
-                            : undefined
-                    }
+                    onClick={() => selectedHasICClearance ? handleSubmitFinalBid(selectedCompany.id) : handleSubmitIOI(selectedCompany.id)}
+                    disabled={selectedBidActionDisabled}
+                    title={selectedBidActionTitle}
                     className={`
                       border rounded-lg flex flex-col items-center justify-center p-4 transition-all duration-200
                       ${tutorialStep === 6
                         ? 'z-[70] relative bg-emerald-900/50 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-pulse-glow'
                         : 'bg-emerald-950/30 border-emerald-700/50 text-emerald-400 hover:bg-emerald-900/40 hover:border-emerald-600'
                       }
-                      ${((!selectedCompany.isAnalyzed && tutorialStep === 0) || isMarketPanic || (tutorialStep === 0 && (playerStats.gameTime?.actionsRemaining || 0) < 1) || (tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed)) ? 'opacity-30 grayscale cursor-not-allowed' : ''}
+                      ${selectedBidActionDisabled ? 'opacity-30 grayscale cursor-not-allowed' : ''}
                     `}
                   >
-                    <i className={`fas ${isMarketPanic ? 'fa-snowflake' : tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed ? 'fa-lock' : 'fa-clipboard-check'} text-lg mb-2`}></i>
+                    <i className={`fas ${selectedBidActionIcon} text-lg mb-2`}></i>
                     <span className="text-[10px] font-bold uppercase tracking-wider">
-                      {isMarketPanic ? "Market Frozen" : tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed ? "Locked" : "Submit IOI"}
+                      {selectedBidActionLabel}
                     </span>
-                    {isMarketPanic ? (
-                      <span className="text-[9px] text-blue-400 mt-0.5">Wait for stability</span>
-                    ) : tutorialStep === 0 && selectedCompany.isAnalyzed && !selectedCompany.leverageModelViewed ? (
-                      <span className="text-[9px] text-amber-400 mt-0.5 font-medium animate-pulse">⬇ Run Model First</span>
-                    ) : !selectedCompany.isAnalyzed && tutorialStep === 0 ? (
-                      <span className="text-[9px] text-amber-400 mt-0.5">Run Diligence First</span>
-                    ) : (
-                      <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
-                    )}
+                    <span
+                      className={`mt-0.5 ${
+                        selectedBidActionSubtext === '(1 AP)'
+                          ? 'text-[8px] text-slate-500'
+                          : selectedBidActionSubtext === 'Wait for stability'
+                            ? 'text-[9px] text-blue-400'
+                            : selectedBidActionSubtext === 'IC Approval Required'
+                              ? 'text-[9px] text-amber-400 font-medium'
+                              : 'text-[9px] text-amber-400'
+                      }`}
+                    >
+                      {selectedBidActionSubtext}
+                    </span>
                   </button>
 
                   <button
                     onClick={() => handleWalkAway(selectedCompany.id)}
-                    disabled={tutorialStep !== 0 || (playerStats.gameTime?.actionsRemaining || 0) < 1}
+                    disabled={tutorialStep !== 0}
                     className="border border-red-800/50 bg-red-950/30 text-red-400 hover:bg-red-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <i className="fas fa-door-open text-lg mb-2"></i>
                     <span className="text-[10px] font-bold uppercase tracking-wider">Walk Away</span>
-                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
+                    <span className="text-[8px] text-emerald-500 mt-0.5">(Free)</span>
                   </button>
 
                   {/* LEVERAGE button - only available for ANALYZED deals */}
@@ -1085,29 +1335,31 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                     >
                       <i className={`fas fa-calculator text-lg mb-2 ${!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'animate-bounce' : ''}`}></i>
                       <span className="text-[10px] font-bold uppercase tracking-wider">
-                        {!selectedCompany.leverageModelViewed && tutorialStep === 0 ? '📊 Run Model' : 'Leverage Model'}
+                        {!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'Ã°Å¸â€œÅ  Run Model' : 'Leverage Model'}
                       </span>
                       <span className={`text-[8px] mt-0.5 ${!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'text-cyan-300 font-bold' : 'text-emerald-500'}`}>
-                        {!selectedCompany.leverageModelViewed && tutorialStep === 0 ? '⬆ REQUIRED TO UNLOCK IOI' : '(Free)'}
+                        {!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'Ã¢Â¬â€  REQUIRED TO UNLOCK IOI' : '(Free)'}
                       </span>
                     </button>
                   )}
 
                   {/* IC PITCH button - available after leverage model is viewed */}
-                  {selectedCompany.isAnalyzed && selectedCompany.leverageModelViewed && tutorialStep === 0 && (
+                  {selectedCompany.isAnalyzed && selectedCompany.leverageModelViewed && tutorialStep === 0 && !selectedHasICClearance && (
                     <button
                       onClick={() => setShowICMeeting(selectedCompany)}
-                      disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1 || isMarketPanic}
+                      disabled={!selectedHasSubmittedIOI || isMarketPanic}
                       className={`
                         border rounded-lg flex flex-col items-center justify-center p-4 transition-all col-span-2 md:col-span-1
                         border-amber-500/70 bg-amber-950/40 text-amber-400 hover:bg-amber-900/50 hover:border-amber-400
                         shadow-[0_0_15px_rgba(245,158,11,0.2)]
-                        ${((playerStats.gameTime?.actionsRemaining || 0) < 1 || isMarketPanic) ? 'opacity-40 cursor-not-allowed' : ''}
+                        ${(!selectedHasSubmittedIOI || isMarketPanic) ? 'opacity-40 cursor-not-allowed' : ''}
                       `}
                     >
                       <i className="fas fa-users text-lg mb-2"></i>
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Enter IC</span>
-                      <span className="text-[8px] text-amber-300 mt-0.5">Pitch to Partners</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider">{selectedNeedsICRework ? 'Re-enter IC' : 'Enter IC'}</span>
+                      <span className="text-[8px] text-amber-300 mt-0.5">
+                        {!selectedHasSubmittedIOI ? 'Submit IOI First' : selectedNeedsICRework ? 'Tighten the case' : 'Pitch to Partners'}
+                      </span>
                     </button>
                   )}
                 </div>
@@ -1153,7 +1405,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                   >
                     <i className="fas fa-money-bill-wave text-base mb-1"></i>
                     <span className="text-[9px] font-bold uppercase tracking-wider">Dividend</span>
-                    <span className="text-[7px] text-red-400">(1 AP) ⚠️</span>
+                    <span className="text-[7px] text-red-400">(1 AP) Ã¢Å¡Â Ã¯Â¸Â</span>
                   </button>
 
                   <button

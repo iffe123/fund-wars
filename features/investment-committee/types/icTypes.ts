@@ -155,6 +155,9 @@ export interface ICSession {
   evaluation?: PitchEvaluation;
   verdict?: ICVerdict;
   timeRemaining: number;          // Seconds
+  maxQuestions: number;
+  openingTimeSeconds: number;
+  responseTimeSeconds: number;
 }
 
 // ==================== PLAYER IC HISTORY ====================
@@ -206,11 +209,11 @@ export type PartnerMood = 'NEUTRAL' | 'SKEPTICAL' | 'INTERESTED' | 'IMPRESSED' |
 export interface UseICConversationReturn {
   session: ICSession | null;
   uiState: ICUIState;
-  startSession: (deal: PortfolioCompany) => void;
+  startSession: (deal: PortfolioCompany, playerLevel: PlayerLevel) => void;
   submitOpeningPitch: (pitch: string) => Promise<void>;
   submitResponse: (response: string) => Promise<void>;
   endSession: () => void;
-  acceptVerdict: () => void;
+  acceptVerdict: () => ICVerdict | null;
   pushBackOnVerdict: () => Promise<void>;
 }
 

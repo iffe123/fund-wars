@@ -30,6 +30,7 @@ export const generateICSystemPrompt = (
   const timesImpressed = partnerRelationship?.timesImpressed || 0;
   const timesDisappointed = partnerRelationship?.timesDisappointed || 0;
   const knownWeaknesses = partnerRelationship?.knownWeaknesses || [];
+  const isFirstLiveIC = playerHistory.meetingsAttended === 0;
 
   // Calculate deal metrics for context
   const entryMultiple = deal.leverageModelParams?.entryMultiple || (deal.currentValuation / deal.ebitda);
@@ -87,6 +88,7 @@ ${knownWeaknesses.length > 0 ? `Known weaknesses (things they failed on before):
 Total IC meetings attended: ${playerHistory.meetingsAttended}
 Identified weaknesses across ICs: ${playerHistory.identifiedWeaknesses.join(', ') || 'None identified yet'}
 Times impressed partners: ${playerHistory.impressedCount}
+${isFirstLiveIC ? 'This is the player\'s first live IC. Be demanding but fair: specific, grounded answers should earn real credit, and a coherent but imperfect case should skew toward CONDITIONAL rather than theatrical rejection.' : ''}
 
 ## Your Task (${currentPhase} phase)
 ${getPhaseInstructions(currentPhase, partner)}
@@ -101,6 +103,7 @@ ${getPhaseInstructions(currentPhase, partner)}
 7. Your questions should feel like a real IC meeting - challenging but fair
 8. NEVER provide teaching moments explicitly - let them learn by defending their position
 9. Keep responses in your speech style: ${partner.speechStyle}
+10. Reward direct answers with conditional support even if the delivery is not polished
 
 ## Response Format
 - Keep responses concise (2-4 sentences for questions)

@@ -88,6 +88,15 @@ export const useICConversation = (): UseICConversationReturn => {
   const startSession = useCallback((deal: PortfolioCompany, playerLevel: PlayerLevel) => {
     const leverage = deal.debt / deal.ebitda;
     const { partners } = selectPartnersForMeeting(deal.dealType, leverage, playerLevel);
+    const isFirstLiveIC = playerHistoryRef.current.meetingsAttended === 0;
+    const isOnboardingDeal = /packfancy/i.test(deal.name);
+    const maxQuestions = isFirstLiveIC ? IC_CONSTANTS.MIN_QUESTIONS : IC_CONSTANTS.MAX_QUESTIONS;
+    const openingTimeSeconds = isOnboardingDeal && isFirstLiveIC
+      ? IC_CONSTANTS.OPENING_PITCH_TIME_SECONDS + 60
+      : IC_CONSTANTS.OPENING_PITCH_TIME_SECONDS;
+    const responseTimeSeconds = isOnboardingDeal && isFirstLiveIC
+      ? IC_CONSTANTS.RESPONSE_TIME_SECONDS + 30
+      : IC_CONSTANTS.RESPONSE_TIME_SECONDS;
 
     // Update player history
     playerHistoryRef.current.currentLevel = playerLevel;
@@ -107,7 +116,10 @@ export const useICConversation = (): UseICConversationReturn => {
       playerResponses: [],
       currentQuestionIndex: 0,
       startTime: Date.now(),
-      timeRemaining: IC_CONSTANTS.OPENING_PITCH_TIME_SECONDS,
+      timeRemaining: openingTimeSeconds,
+      maxQuestions,
+      openingTimeSeconds,
+      responseTimeSeconds,
     };
 
     setSession(newSession);
@@ -228,7 +240,7 @@ export const useICConversation = (): UseICConversationReturn => {
           ...prev,
           phase: 'INTERROGATION',
           currentQuestionIndex: 1,
-          timeRemaining: IC_CONSTANTS.RESPONSE_TIME_SECONDS,
+          timeRemaining: prev.responseTimeSeconds,
         };
       });
 
@@ -267,7 +279,7 @@ export const useICConversation = (): UseICConversationReturn => {
       questionCountRef.current += 1;
 
       // Check if we've reached max questions
-      if (questionCountRef.current >= IC_CONSTANTS.MAX_QUESTIONS) {
+      if (questionCountRef.current >= session.maxQuestions) {
         // Move to verdict phase
         await generateVerdictPhase();
         return;
@@ -309,7 +321,7 @@ export const useICConversation = (): UseICConversationReturn => {
               lastQuestion,
               response,
               questionCountRef.current,
-              IC_CONSTANTS.MAX_QUESTIONS
+              session.maxQuestions
             );
 
         questionResponse = await getICPartnerResponse(
@@ -345,7 +357,7 @@ export const useICConversation = (): UseICConversationReturn => {
         return {
           ...prev,
           currentQuestionIndex: questionCountRef.current,
-          timeRemaining: IC_CONSTANTS.RESPONSE_TIME_SECONDS,
+          timeRemaining: prev.responseTimeSeconds,
         };
       });
 
