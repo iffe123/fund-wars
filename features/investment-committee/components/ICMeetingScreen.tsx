@@ -7,7 +7,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import type { PortfolioCompany, PlayerLevel } from '../../../types';
-import type { ICPhase } from '../types/icTypes';
+import type { ICPhase, ICVerdict } from '../types/icTypes';
 import { IC_CONSTANTS } from '../types/icTypes';
 import { useICConversation } from '../hooks/useICConversation';
 import { useICTimer } from '../hooks/useICTimer';
@@ -22,7 +22,10 @@ import { ICVerdictScreen } from './ICVerdictScreen';
 interface ICMeetingScreenProps {
   deal: PortfolioCompany;
   playerLevel: PlayerLevel;
-  onComplete: (outcome: 'APPROVED' | 'CONDITIONALLY_APPROVED' | 'TABLED' | 'REJECTED' | 'CANCELLED') => void;
+  onComplete: (
+    outcome: 'APPROVED' | 'CONDITIONALLY_APPROVED' | 'TABLED' | 'REJECTED' | 'CANCELLED',
+    verdict?: ICVerdict
+  ) => void;
   onClose: () => void;
 }
 
@@ -57,29 +60,28 @@ export const ICMeetingScreen: React.FC<ICMeetingScreenProps> = ({
   const handleEnter = useCallback(() => {
     startSession(deal, playerLevel);
     setHasEntered(true);
-    timer.startTimer(IC_CONSTANTS.OPENING_PITCH_TIME_SECONDS);
-  }, [deal, playerLevel, startSession, timer]);
+  }, [deal, playerLevel, startSession]);
 
   // Handle opening pitch submission
   const handleOpeningPitch = useCallback(async (pitch: string) => {
     timer.pauseTimer();
     await submitOpeningPitch(pitch);
     setShowOpeningInput(false);
-    timer.startTimer(IC_CONSTANTS.RESPONSE_TIME_SECONDS);
-  }, [submitOpeningPitch, timer]);
+    timer.startTimer(session?.responseTimeSeconds || IC_CONSTANTS.RESPONSE_TIME_SECONDS);
+  }, [submitOpeningPitch, timer, session?.responseTimeSeconds]);
 
   // Handle response submission
   const handleResponse = useCallback(async (response: string) => {
     timer.pauseTimer();
     await submitResponse(response);
-    timer.startTimer(IC_CONSTANTS.RESPONSE_TIME_SECONDS);
-  }, [submitResponse, timer]);
+    timer.startTimer(session?.responseTimeSeconds || IC_CONSTANTS.RESPONSE_TIME_SECONDS);
+  }, [submitResponse, timer, session?.responseTimeSeconds]);
 
   // Handle verdict acceptance
   const handleAcceptVerdict = useCallback(() => {
     const verdict = acceptVerdict();
     if (verdict) {
-      onComplete(verdict.outcome);
+      onComplete(verdict.outcome, verdict);
     }
   }, [acceptVerdict, onComplete]);
 
@@ -95,9 +97,15 @@ export const ICMeetingScreen: React.FC<ICMeetingScreenProps> = ({
     if (uiState.isLoading) {
       timer.pauseTimer();
     } else if (session?.phase === 'INTERROGATION' && !uiState.showVerdict) {
-      timer.startTimer(timer.timeRemaining || IC_CONSTANTS.RESPONSE_TIME_SECONDS);
+      timer.startTimer(timer.timeRemaining || session.responseTimeSeconds || IC_CONSTANTS.RESPONSE_TIME_SECONDS);
     }
-  }, [uiState.isLoading, session?.phase, uiState.showVerdict]);
+  }, [uiState.isLoading, session?.phase, session?.responseTimeSeconds, uiState.showVerdict]);
+
+  useEffect(() => {
+    if (hasEntered && session?.phase === 'PREP') {
+      timer.startTimer(session.openingTimeSeconds || IC_CONSTANTS.OPENING_PITCH_TIME_SECONDS);
+    }
+  }, [hasEntered, session?.id, session?.phase, session?.openingTimeSeconds, timer]);
 
   // Show prep screen if not entered
   if (!hasEntered || !session) {
@@ -141,7 +149,7 @@ export const ICMeetingScreen: React.FC<ICMeetingScreenProps> = ({
             <div className="text-lg font-bold text-slate-200">IC Meeting: {deal.name}</div>
             <div className="text-xs text-slate-500">
               {session.phase === 'OPENING' && 'Opening Pitch'}
-              {session.phase === 'INTERROGATION' && `Question ${session.currentQuestionIndex} of ${IC_CONSTANTS.MAX_QUESTIONS}`}
+              {session.phase === 'INTERROGATION' && `Question ${session.currentQuestionIndex} of ${session.maxQuestions}`}
               {session.phase === 'DELIBERATION' && 'Committee Deliberating...'}
             </div>
           </div>

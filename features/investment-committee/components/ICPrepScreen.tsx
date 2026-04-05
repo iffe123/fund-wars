@@ -7,6 +7,7 @@
 import React from 'react';
 import type { PortfolioCompany } from '../../../types';
 import type { ICPartner } from '../types/icTypes';
+import { buildICPrepBrief } from '../utils/icPrep';
 
 interface ICPrepScreenProps {
   deal: PortfolioCompany;
@@ -26,10 +27,10 @@ export const ICPrepScreen: React.FC<ICPrepScreenProps> = ({
   const equityCheck = deal.leverageModelParams
     ? deal.currentValuation - deal.debt
     : deal.investmentCost;
+  const prepBrief = buildICPrepBrief(deal);
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
       <div className="p-6 text-center border-b border-slate-700/50 bg-gradient-to-b from-slate-800/50 to-transparent">
         <div className="text-[11px] uppercase tracking-[0.3em] text-amber-500 mb-2">
           Investment Committee Meeting
@@ -40,7 +41,6 @@ export const ICPrepScreen: React.FC<ICPrepScreenProps> = ({
         </div>
       </div>
 
-      {/* Deal Summary */}
       <div className="p-4 border-b border-slate-700/50">
         <h3 className="text-[11px] uppercase tracking-widest text-slate-500 font-bold mb-3">
           Deal Summary
@@ -75,8 +75,70 @@ export const ICPrepScreen: React.FC<ICPrepScreenProps> = ({
         </div>
       </div>
 
-      {/* Committee Members */}
-      <div className="p-4 border-b border-slate-700/50 flex-1">
+      <div className="p-4 border-b border-slate-700/50 bg-cyan-950/20">
+        <div className="flex items-start gap-3">
+          <i className="fas fa-crosshairs text-cyan-400 mt-0.5" />
+          <div className="space-y-2">
+            <div className="text-[10px] text-cyan-400 uppercase tracking-wider font-bold">
+              Your Angle
+            </div>
+            <div className="text-sm font-semibold text-slate-100">{prepBrief.headline}</div>
+            <p className="text-xs text-slate-300 leading-relaxed">{prepBrief.thesis}</p>
+            <p className="text-xs text-slate-400 leading-relaxed">{prepBrief.whyNow}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 border-b border-slate-700/50 bg-slate-950/40">
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-lg border border-emerald-800/40 bg-emerald-950/20 p-3">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-2">
+              What Wins The Room
+            </div>
+            <ul className="space-y-2 text-xs text-slate-300">
+              {prepBrief.proofPoints.map((point) => (
+                <li key={point} className="leading-relaxed">* {point}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded-lg border border-amber-800/40 bg-amber-950/20 p-3">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-2">
+              What Can Kill It
+            </div>
+            <ul className="space-y-2 text-xs text-slate-300">
+              {prepBrief.risks.map((risk) => (
+                <li key={risk} className="leading-relaxed">* {risk}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded-lg border border-blue-800/40 bg-blue-950/20 p-3">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-2">
+              How To Respond
+            </div>
+            <ul className="space-y-2 text-xs text-slate-300">
+              {prepBrief.playbook.map((item) => (
+                <li key={item} className="leading-relaxed">* {item}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 border-b border-slate-700/50 bg-amber-950/20">
+        <div className="flex items-start gap-3">
+          <i className="fas fa-lightbulb text-amber-500 mt-0.5" />
+          <div>
+            <div className="text-[10px] text-amber-500 uppercase tracking-wider font-bold mb-1">
+              Suggested Opening Shape
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">{prepBrief.suggestedOpening}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 border-b border-slate-700/50 flex-1 overflow-y-auto">
         <h3 className="text-[11px] uppercase tracking-widest text-slate-500 font-bold mb-3">
           Committee Present
         </h3>
@@ -102,25 +164,6 @@ export const ICPrepScreen: React.FC<ICPrepScreenProps> = ({
         </div>
       </div>
 
-      {/* Tips */}
-      <div className="p-4 border-b border-slate-700/50 bg-amber-950/20">
-        <div className="flex items-start gap-3">
-          <i className="fas fa-lightbulb text-amber-500 mt-0.5" />
-          <div>
-            <div className="text-[10px] text-amber-500 uppercase tracking-wider font-bold mb-1">
-              Preparation Tips
-            </div>
-            <ul className="text-xs text-slate-400 space-y-1">
-              <li>• Know your numbers cold. They will test them.</li>
-              <li>• Be specific. Generic answers will be challenged.</li>
-              <li>• Acknowledge risks honestly. Denial is worse than awareness.</li>
-              <li>• Show conviction, but be open to pushback.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Actions */}
       <div className="p-4 flex gap-3 justify-center">
         <button
           onClick={onCancel}

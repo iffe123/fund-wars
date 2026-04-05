@@ -94,6 +94,11 @@ Assess each dimension from 0.0 to 1.0:
    - Look for: Specific numbers, customer names, operational details
    - Penalize: MBA buzzwords, generic frameworks, consultant-speak
 
+## Scoring Guidance
+- Reward answers that directly address the partner's question before returning to the broader thesis
+- A grounded, specific defense with acknowledged risks should earn real credit even if the delivery is not polished
+- Use CONDITIONAL support instead of a hard rejection when the case is credible but still needs tightening
+
 ## Response Format (JSON only, no other text)
 {
   "thesis_clarity": 0.X,
@@ -165,8 +170,8 @@ export const generateOfflineEvaluation = (
   // Check for key concepts
   const financialTerms = ['irr', 'moic', 'ebitda', 'leverage', 'multiple', 'margin', 'covenant'];
   const riskTerms = ['risk', 'downside', 'stress', 'scenario', 'concern', 'mitigation'];
-  const valueTerms = ['value creation', 'operational', 'margin expansion', 'growth', 'synergy', 'improvement'];
-  const specificTerms = ['%', '$', 'million', 'specific', 'plan', 'day', 'week', 'month'];
+  const valueTerms = ['value creation', 'operational', 'margin expansion', 'growth', 'improvement', 'pricing', '100-day', 'salesforce', 'procurement'];
+  const specificTerms = ['%', '$', 'million', 'plan', 'day', 'week', 'month', 'customer', 'contract', 'management', 'buyer', 'patent'];
   const buzzwords = ['synergy', 'leverage', 'optimize', 'strategic', 'world-class', 'best-in-class'];
 
   // Score based on presence of key terms
@@ -295,11 +300,11 @@ export const generateVerdict = (
 
   // Determine outcome
   let outcome: ICOutcome;
-  if (yesVotes >= 3 || (yesVotes >= 2 && richardApproves)) {
+  if (yesVotes >= 3 || (yesVotes >= 2 && richardApproves && noVotes === 0)) {
     outcome = 'APPROVED';
-  } else if (noVotes >= 3 || (noVotes >= 2 && !richardApproves)) {
+  } else if (noVotes >= 3 || (noVotes >= 2 && conditionalVotes === 0 && !richardApproves)) {
     outcome = 'REJECTED';
-  } else if (conditionalVotes >= 2 || (conditionalVotes >= 1 && yesVotes >= 1)) {
+  } else if (yesVotes + conditionalVotes >= 2 || conditionalVotes >= 1) {
     outcome = 'CONDITIONALLY_APPROVED';
   } else {
     outcome = 'TABLED';
@@ -417,7 +422,7 @@ export const generateOfflineVerdict = (
 ): ICVerdict => {
   const partners = ALL_IC_PARTNERS;
   const partnerVotes: ICPartnerVote[] = partners.map((partner) => {
-    const adjustedScore = evaluation.overallScore + (Math.random() * 0.2 - 0.1);
+    const adjustedScore = evaluation.overallScore + (Math.random() * 0.12 - 0.06);
     const passes = adjustedScore >= partner.approvalThreshold;
     const nearThreshold = Math.abs(adjustedScore - partner.approvalThreshold) < 0.1;
 
