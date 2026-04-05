@@ -195,56 +195,44 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         </div>
       </div>
 
-      {/* DESKTOP VIEW (>= 768px) — improved contrast & readability */}
-      <div className="hidden md:flex items-center gap-4 text-xs font-mono w-full justify-between">
-        {/* Left Section - Personal Finances */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/60 border border-slate-600/40">
-          <i className="fas fa-user text-slate-200 text-xs mr-1"></i>
-          <span className="text-xs text-slate-200 uppercase tracking-wider mr-2 font-semibold">Personal</span>
+      {/* DESKTOP VIEW (>= 768px) — Simplified: only core metrics that matter */}
+      <div className="hidden md:flex items-center gap-3 text-xs font-mono w-full justify-between">
+        {/* Left - Identity & Cash */}
+        <div className="flex items-center gap-3">
+          {/* Level Badge */}
+          <div className="px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-800/40">
+            <span className="text-amber-300 text-xs font-bold uppercase tracking-wider">{stats.level}</span>
+          </div>
 
           {/* Bank Balance */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/50 border border-emerald-700/40" title="Personal Cash — Your bank account. Earn through salary, bonuses, and carry. Spend on lifestyle and investments.">
-            <i className="fas fa-wallet text-emerald-400 text-xs"></i>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-700/40" title="Your bank account. Earn through salary, bonuses, and carry.">
+            <i className="fas fa-wallet text-emerald-400 text-sm"></i>
             <span className="text-emerald-300 font-bold tabular-nums text-sm">${(stats.personalFinances?.bankBalance ?? stats.cash).toLocaleString()}</span>
           </div>
 
-          {/* Lifestyle */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-950/50 border border-purple-700/40" title="Lifestyle Level — Your spending tier. Higher lifestyles cost more but reduce stress and boost reputation.">
-            <i className="fas fa-home text-purple-400 text-xs"></i>
-            <span className="text-purple-200 text-xs font-medium">
-              {stats.personalFinances?.lifestyleLevel?.replace('_', ' ') || 'Broke'}
-            </span>
-          </div>
-        </div>
-
-        {/* Center Section - Fund Capital */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-950/40 border border-blue-600/30">
-          <i className="fas fa-briefcase text-blue-400 text-xs mr-1"></i>
-          <span className="text-xs text-blue-200 uppercase tracking-wider mr-2 font-semibold">Fund</span>
-
-          {/* Dry Powder */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950/50 border border-cyan-700/30" title="Dry Powder — Uninvested fund capital available for new deals.">
-            <span className="text-[11px] text-cyan-300 font-medium">Dry:</span>
+          {/* Dry Powder (fund capital) */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/40 border border-cyan-700/30" title="Fund capital available for new deals.">
+            <i className="fas fa-briefcase text-cyan-400 text-sm"></i>
             <span className="text-cyan-200 font-bold tabular-nums text-sm">
               {formatMoney(stats.fundFinances?.dryPowder || 50000000)}
             </span>
           </div>
 
-          {/* Deployed */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-950/50 border border-amber-700/30" title="Deployed Capital — Fund money currently invested in portfolio companies.">
-            <span className="text-[11px] text-amber-300 font-medium">Deployed:</span>
-            <span className="text-amber-200 font-bold tabular-nums text-sm">
-              {formatMoney(stats.fundFinances?.deployedCapital || portfolioValue)}
-            </span>
-          </div>
+          {/* Debt warning - only show if in debt */}
+          {stats.loanBalance > 0 && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-950/40 border border-red-800/40" title="Outstanding debt — pay this off to avoid interest charges.">
+              <i className="fas fa-skull text-red-400 text-xs"></i>
+              <span className="text-red-300 font-bold tabular-nums text-sm">-{formatMoney(stats.loanBalance)}</span>
+            </div>
+          )}
         </div>
 
-        {/* Right Section - Key Stats */}
+        {/* Center - Stress & Reputation (the two things you manage) */}
         <div className="flex items-center gap-3">
           {/* Stress */}
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/50 border border-slate-600/40" title="Stress — Builds from hard decisions and overwork. At 100% you burn out. Rest or socialize to reduce.">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-600/40" title="Stress — builds from overwork. At 100% you burn out.">
             <i className={`fas fa-brain ${getStressColor(stats.stress)} text-sm`}></i>
-            <div className="w-20 h-2.5 bg-slate-700 rounded-full overflow-hidden">
+            <div className="w-24 h-2.5 bg-slate-700 rounded-full overflow-hidden">
               <div
                 className={`h-full ${getStressBarColor(stats.stress)} transition-all duration-300`}
                 style={{ width: `${Math.min(100, stats.stress)}%` }}
@@ -256,93 +244,35 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           </div>
 
           {/* Reputation */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-950/40 border border-blue-700/40" title="Reputation — Your standing at the firm and in the industry. Higher reputation unlocks better deals and contacts.">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-950/40 border border-blue-700/40" title="Your standing in the industry. Higher = better deals and contacts.">
             <i className="fas fa-star text-blue-400 text-sm"></i>
             <span className="font-bold text-blue-200 tabular-nums text-sm">{stats.reputation}</span>
           </div>
         </div>
 
-        {/* Center Section - Market Status */}
-        <div className={`
-          flex items-center gap-2 px-4 py-2 rounded-lg border
-          ${marketVolatility === 'NORMAL' ? 'bg-slate-800/40 border-slate-600/40' : ''}
-          ${marketVolatility === 'BULL_RUN' ? 'bg-emerald-950/40 border-emerald-700/40' : ''}
-          ${marketVolatility === 'CREDIT_CRUNCH' ? 'bg-red-950/40 border-red-700/40' : ''}
-          ${marketVolatility === 'PANIC' ? 'bg-amber-950/40 border-amber-700/40 animate-pulse' : ''}
-        `}>
-          <i className={`fas ${mktStyle.icon} ${mktStyle.color} ${marketVolatility !== 'NORMAL' ? 'animate-pulse' : ''}`}></i>
-          <div className="flex flex-col">
-            <span className="text-[11px] text-slate-300 uppercase tracking-wider">Market</span>
+        {/* Right - Market & Actions */}
+        <div className="flex items-center gap-3">
+          {/* Market Status */}
+          <div className={`
+            flex items-center gap-2 px-3 py-1.5 rounded-lg border
+            ${marketVolatility === 'NORMAL' ? 'bg-slate-800/40 border-slate-600/40' : ''}
+            ${marketVolatility === 'BULL_RUN' ? 'bg-emerald-950/40 border-emerald-700/40' : ''}
+            ${marketVolatility === 'CREDIT_CRUNCH' ? 'bg-red-950/40 border-red-700/40' : ''}
+            ${marketVolatility === 'PANIC' ? 'bg-amber-950/40 border-amber-700/40 animate-pulse' : ''}
+          `}>
+            <i className={`fas ${mktStyle.icon} ${mktStyle.color} ${marketVolatility !== 'NORMAL' ? 'animate-pulse' : ''}`}></i>
             <span className={`text-xs uppercase tracking-widest font-bold ${mktStyle.color}`}>
               {marketVolatility.replace('_', ' ')}
             </span>
           </div>
-        </div>
 
-        {/* Right Section - Status Indicators */}
-        <div className="flex items-center gap-4">
-          {/* Time */}
-          <div className="flex items-center gap-2 text-slate-200" title="Current Time — Some NPCs are only available at certain times. Actions advance the clock.">
-            <i className="fas fa-clock text-slate-300"></i>
-            <span className="text-xs uppercase tracking-wider font-medium">{stats.currentDayType} · {stats.currentTimeSlot}</span>
-          </div>
-
-          {/* Divider */}
-          <div className="w-px h-6 bg-slate-600/50"></div>
-
-          {/* Quick Stats */}
-          <div className="flex items-center gap-3 text-xs uppercase tracking-widest font-bold">
-            <span className="text-slate-200" title="Your seniority level at the firm. Higher levels unlock new abilities and compensation.">{stats.level}</span>
-            <span className="text-blue-200 flex items-center gap-1" title="Analyst Rating — How the firm rates your analytical skills. Affects deal quality and promotions.">
-              <i className="fas fa-chart-line text-[10px]"></i>
-              {stats.analystRating}
-            </span>
-            <span className={`flex items-center gap-1 ${stats.energy > 30 ? 'text-emerald-200' : 'text-red-400'}`} title="Energy — Your stamina for the week. Actions cost energy. Rest to recover.">
-              <i className="fas fa-bolt text-[10px]"></i>
-              {stats.energy}%
-            </span>
-            <span className={`flex items-center gap-1 ${stats.ethics > 30 ? 'text-amber-200' : 'text-red-400'}`} title="Ethics — Your moral compass. Low ethics increases audit risk and changes NPC reactions.">
-              <i className="fas fa-scale-balanced text-[10px]"></i>
-              {stats.ethics}
-            </span>
-            <span className={`flex items-center gap-1 ${stats.auditRisk < 50 ? 'text-slate-200' : 'text-red-400'}`} title="Audit Risk — Chance of regulatory investigation. Keep this low or face consequences.">
-              <i className="fas fa-magnifying-glass text-[10px]"></i>
-              {stats.auditRisk}%
-            </span>
-          </div>
-
-          {/* Divider */}
-          <div className="w-px h-6 bg-slate-600/50"></div>
-
-          {/* Factions */}
-          <div className="flex items-center gap-3 text-xs font-bold">
-            <span className="uppercase tracking-widest text-slate-200 text-[11px]">Factions</span>
-            <div className="flex items-center gap-2">
-              <span className="text-blue-200 flex items-center gap-1" title="Managing Directors">
-                <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-                {factions.MANAGING_DIRECTORS}
-              </span>
-              <span className="text-emerald-200 flex items-center gap-1" title="Limited Partners">
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                {factions.LIMITED_PARTNERS}
-              </span>
-              <span className="text-amber-100 flex items-center gap-1" title="Analysts">
-                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                {factions.ANALYSTS}
-              </span>
-              <span className="text-red-100 flex items-center gap-1" title="Regulators">
-                <span className="w-2 h-2 rounded-full bg-red-400"></span>
-                {factions.REGULATORS}
-              </span>
-              <span className="text-pink-100 flex items-center gap-1" title="Rivals">
-                <span className="w-2 h-2 rounded-full bg-pink-400"></span>
-                {factions.RIVALS}
-              </span>
+          {/* Audit Risk - only show when dangerous (>30%) */}
+          {stats.auditRisk > 30 && (
+            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${stats.auditRisk >= 50 ? 'bg-red-950/40 border-red-800/40 animate-pulse' : 'bg-amber-950/30 border-amber-800/30'}`} title="Audit Risk — regulators are watching you.">
+              <i className={`fas fa-magnifying-glass ${stats.auditRisk >= 50 ? 'text-red-400' : 'text-amber-400'} text-xs`}></i>
+              <span className={`text-xs font-bold ${stats.auditRisk >= 50 ? 'text-red-300' : 'text-amber-300'}`}>{stats.auditRisk}%</span>
             </div>
-          </div>
-
-          {/* Divider */}
-          {onOpenTransparency && <div className="w-px h-6 bg-slate-600/50"></div>}
+          )}
 
           {/* Transparency shortcut */}
           {onOpenTransparency && (
@@ -351,12 +281,12 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
                 e.stopPropagation();
                 onOpenTransparency();
               }}
-              className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/40 border border-slate-600/40 hover:bg-slate-700/40 transition-colors"
-              title="Transparency & rules"
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/40 border border-slate-600/40 hover:bg-slate-700/40 transition-colors"
+              title="View all stats & rules"
               aria-label="Open transparency & rules"
             >
-              <i className="fas fa-eye text-slate-200 text-[11px]"></i>
-              <span className="text-[11px] uppercase tracking-widest font-bold text-slate-200">Rules</span>
+              <i className="fas fa-eye text-slate-300 text-[11px]"></i>
+              <span className="text-[11px] uppercase tracking-widest font-bold text-slate-300">More</span>
             </button>
           )}
         </div>

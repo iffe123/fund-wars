@@ -117,66 +117,58 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
     },
   ];
 
-  const getOwnedCompanyActions = (company: PortfolioCompany): CommandAction[] => [
-    {
-      label: 'Review Financials',
-      icon: 'fa-chart-line',
-      onClick: () => {
-        updatePlayerStats({
-          modifyCompany: { id: company.id, updates: { lastFinancialUpdate: currentWeek } },
-          stress: +3,
-        });
-        addLogEntry(`Reviewed ${company.name} quarterly financials`);
+  // Simplified owned company actions: 3 clear choices matching the Asset Manager
+  const getOwnedCompanyActions = (company: PortfolioCompany): CommandAction[] => {
+    const actions: CommandAction[] = [];
+
+    // Board crisis takes priority if active
+    if (company.hasBoardCrisis) {
+      actions.push({
+        label: 'Resolve Crisis',
+        icon: 'fa-gavel',
+        highlight: true,
+        onClick: () => {
+          updatePlayerStats({
+            modifyCompany: { id: company.id, updates: { hasBoardCrisis: false } },
+            stress: -5,
+            reputation: +6,
+          });
+          addLogEntry(`Resolved board crisis at ${company.name}`);
+        },
+      });
+    }
+
+    actions.push(
+      {
+        label: 'Improve Ops',
+        icon: 'fa-cogs',
+        onClick: () => {
+          const boost = 1 + (Math.random() * 0.1 + 0.05);
+          updatePlayerStats({
+            modifyCompany: { id: company.id, updates: {
+              currentValuation: Math.round(company.currentValuation * boost),
+              revenueGrowth: company.revenueGrowth + 0.02,
+            }},
+            stress: +5,
+          });
+          addLogEntry(`Operational improvements at ${company.name} — valuation boosted`);
+        },
       },
-    },
-    {
-      label: company.hasBoardCrisis ? 'Enter Board War' : 'Board Meeting',
-      icon: company.hasBoardCrisis ? 'fa-gavel' : 'fa-users',
-      highlight: company.hasBoardCrisis,
-      onClick: () => {
-        updatePlayerStats({
-          modifyCompany: { id: company.id, updates: { hasBoardCrisis: false } },
-          stress: company.hasBoardCrisis ? -5 : +5,
-          reputation: company.hasBoardCrisis ? +6 : +2,
-        });
-        addLogEntry(company.hasBoardCrisis ? `Resolved board crisis at ${company.name}` : `Attended board meeting at ${company.name}`);
+      {
+        label: 'Prepare Exit',
+        icon: 'fa-sign-out-alt',
+        onClick: () => {
+          updatePlayerStats({
+            modifyCompany: { id: company.id, updates: { isInExitProcess: true } },
+            stress: +10,
+          });
+          addLogEntry(`Initiated exit process for ${company.name}`);
+        },
       },
-    },
-    {
-      label: 'Strategic Initiative',
-      icon: 'fa-lightbulb',
-      onClick: () => {
-        updatePlayerStats({
-          modifyCompany: { id: company.id, updates: { revenueGrowth: company.revenueGrowth + 0.02 } },
-          cash: -50000,
-          stress: +5,
-        });
-        addLogEntry(`Launched strategic initiative at ${company.name}`);
-      },
-    },
-    {
-      label: 'CEO Call',
-      icon: 'fa-phone',
-      onClick: () => {
-        updatePlayerStats({
-          modifyCompany: { id: company.id, updates: { ceoPerformance: Math.min(100, (company.ceoPerformance || 70) + 5) } },
-          energy: -5,
-        });
-        addLogEntry(`Had alignment call with ${company.ceo}`);
-      },
-    },
-    {
-      label: 'Prepare Exit',
-      icon: 'fa-sign-out-alt',
-      onClick: () => {
-        updatePlayerStats({
-          modifyCompany: { id: company.id, updates: { isInExitProcess: true } },
-          stress: +10,
-        });
-        addLogEntry(`Initiated exit process for ${company.name}`);
-      },
-    },
-  ];
+    );
+
+    return actions;
+  };
 
   const getExitingActions = (company: PortfolioCompany): CommandAction[] => [
     {

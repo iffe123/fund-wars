@@ -101,81 +101,60 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
     const conditions = company.icConditions || [];
     const topCondition = conditions[0];
 
+    // Simplified deal desk status — clear step-by-step guidance
     if (!company.isAnalyzed) {
       return {
         tone: 'text-blue-400 border-blue-800/40 bg-blue-950/20',
-        title: 'Open question',
-        detail: 'Run diligence to learn whether this is a real deal or banker wallpaper.',
+        title: 'Step 1: Run Diligence',
+        detail: 'Analyze the deal to uncover risks and opportunities.',
       };
     }
 
     if (!company.leverageModelViewed) {
       return {
         tone: 'text-purple-300 border-purple-800/40 bg-purple-950/20',
-        title: 'Build the case',
-        detail: 'The model is where the story gets sharp. Know price, leverage, and return drivers before you move.',
+        title: 'Step 2: Build Your Model',
+        detail: 'Set your entry price, leverage, and return targets.',
       };
     }
 
-    if (!hasSubmittedIOI(company)) {
-      return {
-        tone: 'text-emerald-300 border-emerald-800/40 bg-emerald-950/20',
-        title: 'Seat still open',
-        detail: 'Submit a soft IOI to stay in the process. That gets you to IC, not straight to a win.',
-      };
-    }
-
-    if (phase === 'IOI_SUBMITTED' && (!company.icStatus || company.icStatus === 'NOT_STARTED')) {
+    if (!hasSubmittedIOI(company) || (phase === 'IOI_SUBMITTED' && (!company.icStatus || company.icStatus === 'NOT_STARTED'))) {
       return {
         tone: 'text-amber-300 border-amber-800/40 bg-amber-950/20',
-        title: 'Now win the room',
-        detail: 'You are in the process. The next real gate is IC approval before a final bid can go live.',
+        title: 'Step 3: Get IC Approval',
+        detail: 'Pitch to the Investment Committee to unlock bidding.',
       };
     }
 
-    if (company.icStatus === 'TABLED') {
-      return {
-        tone: 'text-amber-300 border-amber-800/40 bg-amber-950/20',
-        title: 'IC tabled the deal',
-        detail: topCondition || company.icSpecificAdvice || 'Tighten the thesis and come back with a more specific answer.',
-      };
-    }
-
-    if (company.icStatus === 'REJECTED') {
+    if (company.icStatus === 'TABLED' || company.icStatus === 'REJECTED') {
       return {
         tone: 'text-red-300 border-red-800/40 bg-red-950/20',
-        title: 'IC pushed back hard',
-        detail: company.icSpecificAdvice || topCondition || 'You still have a seat in the process, but you need a better defense or you should walk away.',
+        title: 'IC Pushed Back',
+        detail: topCondition || company.icSpecificAdvice || 'Strengthen your case and try again, or walk away.',
       };
     }
 
-    if (company.icStatus === 'CONDITIONAL') {
-      return {
-        tone: 'text-cyan-300 border-cyan-800/40 bg-cyan-950/20',
-        title: 'Cleared with guardrails',
-        detail: topCondition || 'The committee will back a final bid, but they expect you to respect the guardrails they laid down.',
-      };
-    }
-
-    if (phase === 'IC_APPROVED') {
+    if (phase === 'IC_APPROVED' || company.icStatus === 'CONDITIONAL' || company.icStatus === 'APPROVED') {
       return {
         tone: 'text-emerald-300 border-emerald-800/40 bg-emerald-950/20',
-        title: 'Green light',
-        detail: 'IC is behind you. Take your shot with a final bid while the deal is still in reach.',
+        title: 'Step 4: Submit Your Bid',
+        detail: company.icStatus === 'CONDITIONAL'
+          ? `Approved with conditions: ${topCondition || 'Follow the guardrails.'}`
+          : 'IC approved. Submit your final bid to enter the auction.',
       };
     }
 
     if (phase === 'BIDDING') {
       return {
         tone: 'text-purple-300 border-purple-800/40 bg-purple-950/20',
-        title: 'Bid live',
-        detail: 'You are in the auction. Now it is price, nerve, and timing.',
+        title: 'Auction Live',
+        detail: 'Your bid is in. Price, nerve, and timing.',
       };
     }
 
     return {
       tone: 'text-slate-300 border-slate-700/50 bg-slate-900/30',
-      title: 'Deal in motion',
+      title: 'Deal Active',
       detail: company.latestCeoReport,
     };
   }, [getCompanyDealPhase, hasSubmittedIOI]);
@@ -1134,88 +1113,76 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                 </div>
               )}
 
-              {/* DEAL PROGRESS INDICATOR - For Pipeline Deals */}
+              {/* DEAL PROGRESS - Simplified 4-step flow for Pipeline Deals */}
               {getSelectedCompanyStatus() === 'PIPELINE' && (
                 <div className="card-elevated rounded-lg p-4 mb-4">
                   <div className="flex items-center gap-2 text-slate-500 mb-3">
                     <i className="fas fa-tasks text-blue-500/70"></i>
                     <span className="text-[11px] uppercase tracking-widest font-bold">Deal Progress</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {/* Step 1: Due Diligence */}
+                  <div className="flex items-center gap-1">
+                    {/* Step 1: Diligence */}
                     <div className={`flex-1 p-2 rounded-lg border text-center transition-all ${
                       selectedCompany?.isAnalyzed
                         ? 'bg-emerald-950/30 border-emerald-700/50'
                         : 'bg-blue-950/30 border-blue-700/50 animate-pulse'
                     }`}>
-                      <div className={`text-xs font-bold ${selectedCompany?.isAnalyzed ? 'text-emerald-400' : 'text-blue-400'}`}>
-                        {selectedCompany?.isAnalyzed ? 'Ã¢Å“â€œ' : '1'}
+                      <div className={`text-[10px] font-bold ${selectedCompany?.isAnalyzed ? 'text-emerald-400' : 'text-blue-400'}`}>
+                        {selectedCompany?.isAnalyzed ? '\u2713 Analyzed' : '1. Analyze'}
                       </div>
-                      <div className="text-[9px] text-slate-400 mt-1">Diligence</div>
-                      <div className="text-[8px] text-emerald-500">Free</div>
                     </div>
-                    <i className="fas fa-chevron-right text-slate-600 text-[10px]"></i>
+                    <i className="fas fa-chevron-right text-slate-700 text-[8px]"></i>
 
-                    {/* Step 2: Leverage Model */}
+                    {/* Step 2: Model */}
                     <div className={`flex-1 p-2 rounded-lg border text-center transition-all ${
                       selectedCompany?.leverageModelViewed
                         ? 'bg-emerald-950/30 border-emerald-700/50'
                         : selectedCompany?.isAnalyzed
                           ? 'bg-purple-950/30 border-purple-700/50 animate-pulse'
-                          : 'bg-slate-800/30 border-slate-700/50 opacity-50'
+                          : 'bg-slate-800/30 border-slate-700/50 opacity-40'
                     }`}>
-                      <div className={`text-xs font-bold ${
-                        selectedCompany?.leverageModelViewed
-                          ? 'text-emerald-400'
-                          : selectedCompany?.isAnalyzed
-                            ? 'text-purple-400'
-                            : 'text-slate-500'
+                      <div className={`text-[10px] font-bold ${
+                        selectedCompany?.leverageModelViewed ? 'text-emerald-400'
+                          : selectedCompany?.isAnalyzed ? 'text-purple-400' : 'text-slate-600'
                       }`}>
-                        {selectedCompany?.leverageModelViewed ? 'Ã¢Å“â€œ' : '2'}
+                        {selectedCompany?.leverageModelViewed ? '\u2713 Modeled' : '2. Model'}
                       </div>
-                      <div className="text-[9px] text-slate-400 mt-1">Model</div>
-                      <div className="text-[8px] text-emerald-500">Free</div>
                     </div>
-                    <i className="fas fa-chevron-right text-slate-600 text-[10px]"></i>
+                    <i className="fas fa-chevron-right text-slate-700 text-[8px]"></i>
 
-                    {/* Step 3: Submit IOI */}
+                    {/* Step 3: IC Approval */}
                     <div className={`flex-1 p-2 rounded-lg border text-center transition-all ${
-                      selectedHasSubmittedIOI
+                      selectedHasICClearance
                         ? 'bg-emerald-950/30 border-emerald-700/50'
                         : selectedCompany?.leverageModelViewed
-                          ? 'bg-emerald-950/30 border-emerald-700/50 animate-pulse'
-                          : 'bg-slate-800/30 border-slate-700/50 opacity-50'
+                          ? 'bg-amber-950/30 border-amber-700/50 animate-pulse'
+                          : 'bg-slate-800/30 border-slate-700/50 opacity-40'
                     }`}>
-                      <div className={`text-xs font-bold ${
-                        selectedHasSubmittedIOI
-                          ? 'text-emerald-400'
-                          : selectedCompany?.leverageModelViewed
-                            ? 'text-emerald-400'
-                            : 'text-slate-500'
+                      <div className={`text-[10px] font-bold ${
+                        selectedHasICClearance ? 'text-emerald-400'
+                          : selectedCompany?.leverageModelViewed ? 'text-amber-400' : 'text-slate-600'
                       }`}>
-                        {selectedHasSubmittedIOI ? '✓' : '3'}
+                        {selectedHasICClearance ? '\u2713 Approved' : '3. Approve'}
                       </div>
-                      <div className="text-[9px] text-slate-400 mt-1">Send IOI</div>
-                      <div className="text-[8px] text-slate-500">(1 AP)</div>
                     </div>
-                  </div>
-                  {/* Next step hint */}
-                  <div className="mt-3 text-[10px] text-slate-500 text-center">
-                    {!selectedCompany?.isAnalyzed && (
-                      <span className="text-blue-400">→ Complete Due Diligence to analyze the deal</span>
-                    )}
-                    {selectedCompany?.isAnalyzed && !selectedCompany?.leverageModelViewed && (
-                      <span className="text-purple-400">→ Run Leverage Model to set your bid parameters</span>
-                    )}
-                    {selectedCompany?.leverageModelViewed && !selectedHasSubmittedIOI && (
-                      <span className="text-emerald-400">→ Ready to submit a soft IOI and lock your IC slot</span>
-                    )}
-                    {selectedHasSubmittedIOI && !selectedHasICClearance && (
-                      <span className="text-amber-400">→ Win IC support before you launch the final bid</span>
-                    )}
-                    {selectedHasICClearance && selectedDealPhase !== 'BIDDING' && selectedDealPhase !== 'WON' && (
-                      <span className="text-cyan-400">→ IC cleared you. Take your best shot with a final bid</span>
-                    )}
+                    <i className="fas fa-chevron-right text-slate-700 text-[8px]"></i>
+
+                    {/* Step 4: Bid */}
+                    <div className={`flex-1 p-2 rounded-lg border text-center transition-all ${
+                      selectedDealPhase === 'BIDDING' || selectedDealPhase === 'WON'
+                        ? 'bg-emerald-950/30 border-emerald-700/50'
+                        : selectedHasICClearance
+                          ? 'bg-cyan-950/30 border-cyan-700/50 animate-pulse'
+                          : 'bg-slate-800/30 border-slate-700/50 opacity-40'
+                    }`}>
+                      <div className={`text-[10px] font-bold ${
+                        selectedDealPhase === 'WON' ? 'text-emerald-400'
+                          : selectedDealPhase === 'BIDDING' ? 'text-cyan-400'
+                          : selectedHasICClearance ? 'text-cyan-400' : 'text-slate-600'
+                      }`}>
+                        {selectedDealPhase === 'WON' ? '\u2713 Won' : '4. Bid'}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1272,7 +1239,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                       <i className="fas fa-search text-lg mb-2"></i>
                     )}
                     <span className="text-[10px] font-bold uppercase tracking-wider">Diligence</span>
-                    <span className="text-[8px] text-emerald-500 mt-0.5">(Free)</span>
+                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
                   </button>
 
                   <button
@@ -1335,10 +1302,10 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                     >
                       <i className={`fas fa-calculator text-lg mb-2 ${!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'animate-bounce' : ''}`}></i>
                       <span className="text-[10px] font-bold uppercase tracking-wider">
-                        {!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'Ã°Å¸â€œÅ  Run Model' : 'Leverage Model'}
+                        {!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'Run Model' : 'Leverage Model'}
                       </span>
-                      <span className={`text-[8px] mt-0.5 ${!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'text-cyan-300 font-bold' : 'text-emerald-500'}`}>
-                        {!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'Ã¢Â¬â€  REQUIRED TO UNLOCK IOI' : '(Free)'}
+                      <span className={`text-[8px] mt-0.5 ${!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'text-cyan-300 font-bold' : 'text-slate-500'}`}>
+                        {!selectedCompany.leverageModelViewed && tutorialStep === 0 ? 'REQUIRED NEXT STEP' : '(Free)'}
                       </span>
                     </button>
                   )}
@@ -1365,102 +1332,61 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                 </div>
               )}
 
-              {/* OWNED Actions */}
+              {/* OWNED Actions -- Simplified: 3 clear choices */}
               {getSelectedCompanyStatus() === 'OWNED' && (
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                  <button
-                    onClick={() => handleReviewPerformance(selectedCompany.id)}
-                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1}
-                    className="border border-blue-700/50 bg-blue-950/30 text-blue-400 hover:bg-blue-900/40 flex flex-col items-center justify-center p-3 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <i className="fas fa-chart-bar text-base mb-1"></i>
-                    <span className="text-[9px] font-bold uppercase tracking-wider">Review</span>
-                    <span className="text-[7px] text-slate-500">(1 AP)</span>
-                  </button>
-
+                <div className="grid grid-cols-3 gap-3">
                   <button
                     onClick={() => handleOperationalImprovement(selectedCompany.id)}
                     disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1}
-                    className="border border-emerald-700/50 bg-emerald-950/30 text-emerald-400 hover:bg-emerald-900/40 flex flex-col items-center justify-center p-3 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="border border-emerald-700/50 bg-emerald-950/30 text-emerald-400 hover:bg-emerald-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <i className="fas fa-cogs text-base mb-1"></i>
-                    <span className="text-[9px] font-bold uppercase tracking-wider">Improve</span>
-                    <span className="text-[7px] text-slate-500">(1 AP)</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleRefinanceDebt(selectedCompany.id)}
-                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1 || selectedCompany.debt <= 0}
-                    className="border border-purple-700/50 bg-purple-950/30 text-purple-400 hover:bg-purple-900/40 flex flex-col items-center justify-center p-3 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <i className="fas fa-sync-alt text-base mb-1"></i>
-                    <span className="text-[9px] font-bold uppercase tracking-wider">Refinance</span>
-                    <span className="text-[7px] text-slate-500">(1 AP)</span>
+                    <i className="fas fa-cogs text-lg mb-2"></i>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Improve Ops</span>
+                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
                   </button>
 
                   <button
                     onClick={() => handleDividendRecap(selectedCompany.id)}
                     disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1}
-                    className="border border-amber-700/50 bg-amber-950/30 text-amber-400 hover:bg-amber-900/40 flex flex-col items-center justify-center p-3 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="border border-amber-700/50 bg-amber-950/30 text-amber-400 hover:bg-amber-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <i className="fas fa-money-bill-wave text-base mb-1"></i>
-                    <span className="text-[9px] font-bold uppercase tracking-wider">Dividend</span>
-                    <span className="text-[7px] text-red-400">(1 AP) Ã¢Å¡Â Ã¯Â¸Â</span>
+                    <i className="fas fa-money-bill-wave text-lg mb-2"></i>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Cash Out</span>
+                    <span className="text-[8px] text-red-400 mt-0.5">(1 AP) risky</span>
                   </button>
 
                   <button
                     onClick={() => handlePrepareForExit(selectedCompany.id)}
-                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 2}
-                    className="border border-cyan-700/50 bg-cyan-950/30 text-cyan-400 hover:bg-cyan-900/40 flex flex-col items-center justify-center p-3 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1}
+                    className="border border-cyan-700/50 bg-cyan-950/30 text-cyan-400 hover:bg-cyan-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <i className="fas fa-sign-out-alt text-base mb-1"></i>
-                    <span className="text-[9px] font-bold uppercase tracking-wider">Prep Exit</span>
-                    <span className="text-[7px] text-slate-500">(2 AP)</span>
+                    <i className="fas fa-sign-out-alt text-lg mb-2"></i>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Prep Exit</span>
+                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
                   </button>
                 </div>
               )}
 
-              {/* EXITING Actions */}
+              {/* EXITING Actions -- Simplified: 2 clear choices */}
               {getSelectedCompanyStatus() === 'EXITING' && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <button
-                    onClick={() => handleListForSale(selectedCompany.id)}
-                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 2}
-                    className="border border-emerald-700/50 bg-emerald-950/30 text-emerald-400 hover:bg-emerald-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <i className="fas fa-tag text-lg mb-2"></i>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">List for Sale</span>
-                    <span className="text-[8px] text-slate-500 mt-0.5">(2 AP)</span>
-                  </button>
-
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setShowExitModal(selectedCompany)}
                     disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1}
-                    className="border border-blue-700/50 bg-blue-950/30 text-blue-400 hover:bg-blue-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="border border-emerald-700/50 bg-emerald-950/30 text-emerald-400 hover:bg-emerald-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <i className="fas fa-handshake text-lg mb-2"></i>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Negotiate</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Execute Exit</span>
                     <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
-                  </button>
-
-                  <button
-                    onClick={() => setShowExitModal(selectedCompany)}
-                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 2}
-                    className="border border-amber-700/50 bg-amber-950/30 text-amber-400 hover:bg-amber-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <i className="fas fa-bullhorn text-lg mb-2"></i>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">IPO Prep</span>
-                    <span className="text-[8px] text-slate-500 mt-0.5">(2 AP)</span>
                   </button>
 
                   <button
                     onClick={() => handleCancelExit(selectedCompany.id)}
-                    disabled={(playerStats.gameTime?.actionsRemaining || 0) < 1}
-                    className="border border-red-800/50 bg-red-950/30 text-red-400 hover:bg-red-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="border border-red-800/50 bg-red-950/30 text-red-400 hover:bg-red-900/40 flex flex-col items-center justify-center p-4 rounded-lg transition-all"
                   >
                     <i className="fas fa-undo text-lg mb-2"></i>
                     <span className="text-[10px] font-bold uppercase tracking-wider">Cancel Exit</span>
-                    <span className="text-[8px] text-slate-500 mt-0.5">(1 AP)</span>
+                    <span className="text-[8px] text-emerald-500 mt-0.5">(Free)</span>
                   </button>
                 </div>
               )}
