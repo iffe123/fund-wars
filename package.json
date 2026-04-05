@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "check-conflicts": "rg '<<<<<<' || true",
-    "test:e2e": "bash scripts/e2e-smoke.sh"
+    "test:e2e": "node scripts/e2e-smoke.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^5.0.0",
