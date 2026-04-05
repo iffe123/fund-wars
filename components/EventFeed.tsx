@@ -9,10 +9,19 @@
  */
 
 import React, { useMemo, useCallback, useState } from 'react';
-import type { StoryEvent, EventChoice, EventConsequences, WeekPhase } from '../types/rpgEvents';
-import type { PlayerStats, NPC, MarketVolatility } from '../types';
+import type { StoryEvent, EventChoice, WeekPhase } from '../types/rpgEvents';
+import type { PlayerStats, NPC, StatChanges } from '../types';
 import EventCard from './EventCard';
 import { TerminalButton } from './TerminalUI';
+
+export interface DecisionPulse {
+  eventTitle: string;
+  choiceLabel: string;
+  tone: 'success' | 'warning' | 'error' | 'info';
+  summary: string;
+  details: string[];
+  nextBeat?: string;
+}
 
 interface EventFeedProps {
   // Events
@@ -35,6 +44,7 @@ interface EventFeedProps {
 
   // Optional
   className?: string;
+  decisionPulse?: DecisionPulse | null;
 }
 
 // Phase descriptions for the UI
@@ -66,6 +76,99 @@ const phaseDescriptions: Record<WeekPhase, { title: string; description: string;
   },
 };
 
+const statLabels: Partial<Record<keyof StatChanges, string>> = {
+  cash: 'Cash',
+  reputation: 'Rep',
+  stress: 'Stress',
+  energy: 'Energy',
+  analystRating: 'Analyst',
+  financialEngineering: 'Model',
+  ethics: 'Ethics',
+  auditRisk: 'Audit',
+  score: 'Score',
+};
+
+const positiveStats = new Set<keyof StatChanges>([
+  'cash',
+  'reputation',
+  'energy',
+  'analystRating',
+  'financialEngineering',
+  'ethics',
+  'score',
+]);
+
+const negativeStats = new Set<keyof StatChanges>([
+  'stress',
+  'auditRisk',
+]);
+
+const formatCompactImpact = (key: keyof StatChanges, value: number): string => {
+  if (key === 'cash') {
+    return `${value > 0 ? '+' : '-'}$${Math.abs(value).toLocaleString()}`;
+  }
+  return `${value > 0 ? '+' : ''}${value} ${statLabels[key] || key}`;
+};
+
+const getChoicePressureProfile = (choice: EventChoice) => {
+  const stats = choice.consequences.stats;
+  if (!stats) {
+    return {
+      rewardScore: 0,
+      riskScore: choice.consequences.notification?.type === 'error' ? 2 : 0,
+      rewardText: '',
+      riskText: choice.consequences.notification?.type === 'error' ? 'backfire risk' : '',
+    };
+  }
+
+  const rewardSignals: string[] = [];
+  const riskSignals: string[] = [];
+  let rewardScore = 0;
+  let riskScore = 0;
+
+  for (const [rawKey, rawValue] of Object.entries(stats)) {
+    if (typeof rawValue !== 'number' || rawValue === 0) continue;
+
+    const key = rawKey as keyof StatChanges;
+    const value = rawValue;
+    const magnitude = key === 'cash' ? Math.abs(value) / 2500 : Math.abs(value);
+
+    if ((positiveStats.has(key) && value > 0) || (negativeStats.has(key) && value < 0)) {
+      rewardScore += magnitude;
+      rewardSignals.push(formatCompactImpact(key, value));
+    }
+
+    if ((negativeStats.has(key) && value > 0) || (positiveStats.has(key) && value < 0)) {
+      riskScore += magnitude;
+      riskSignals.push(formatCompactImpact(key, value));
+    }
+  }
+
+  if (choice.consequences.notification?.type === 'success') rewardScore += 2;
+  if (choice.consequences.notification?.type === 'warning') riskScore += 1.5;
+  if (choice.consequences.notification?.type === 'error') riskScore += 3;
+
+  return {
+    rewardScore,
+    riskScore,
+    rewardText: rewardSignals.slice(0, 3).join(' | '),
+    riskText: riskSignals.slice(0, 3).join(' | '),
+  };
+};
+
+const getPressureLabel = (event: StoryEvent): { label: string; accent: string } => {
+  if (event.expiresInWeeks === 0 || event.stakes === 'CRITICAL') {
+    return { label: 'REDLINE', accent: 'text-red-300' };
+  }
+  if (event.expiresInWeeks === 1 || event.stakes === 'HIGH') {
+    return { label: 'HOT', accent: 'text-amber-300' };
+  }
+  if (event.stakes === 'MEDIUM') {
+    return { label: 'LIVE', accent: 'text-cyan-300' };
+  }
+  return { label: 'STABLE', accent: 'text-emerald-300' };
+};
+
 const EventFeed: React.FC<EventFeedProps> = ({
   priorityEvent,
   optionalEvents,
@@ -80,6 +183,7 @@ const EventFeed: React.FC<EventFeedProps> = ({
   onRefreshEvents,
   onConsultAdvisor,
   className = '',
+  decisionPulse = null,
 }) => {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(
     priorityEvent?.id || optionalEvents[0]?.id || null
@@ -110,6 +214,27 @@ const EventFeed: React.FC<EventFeedProps> = ({
     );
   }, [optionalEvents]);
   const nextOptionalEventId = sortedOptional[0]?.id ?? null;
+  const spotlightEvent = priorityEvent || sortedOptional[0] || null;
+  const spotlightProfile = useMemo(() => {
+    if (!spotlightEvent) return null;
+
+    const rewardCandidate = spotlightEvent.choices
+      .map(choice => ({ choice, profile: getChoicePressureProfile(choice) }))
+      .sort((a, b) => b.profile.rewardScore - a.profile.rewardScore)[0];
+    const riskCandidate = spotlightEvent.choices
+      .map(choice => ({ choice, profile: getChoicePressureProfile(choice) }))
+      .sort((a, b) => b.profile.riskScore - a.profile.riskScore)[0];
+
+    return {
+      pressure: getPressureLabel(spotlightEvent),
+      reward: rewardCandidate && rewardCandidate.profile.rewardScore > 0
+        ? `${rewardCandidate.choice.label}: ${rewardCandidate.profile.rewardText}`
+        : 'Find a new edge before the room cools off.',
+      risk: riskCandidate && riskCandidate.profile.riskScore > 0
+        ? `${riskCandidate.choice.label}: ${riskCandidate.profile.riskText}`
+        : 'Letting this drift costs momentum.',
+    };
+  }, [spotlightEvent]);
 
   const handleContinue = useCallback(() => {
     if (priorityEvent) {
@@ -148,7 +273,81 @@ const EventFeed: React.FC<EventFeedProps> = ({
           <i className="fas fa-chevron-down text-slate-600"></i>
           <span>Tip: Click the chevron on any event card to collapse old events and keep new options visible.</span>
         </div>
+        {spotlightEvent && spotlightProfile && (
+          <div className="mt-4 rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.25em] text-slate-500">This Week&apos;s Edge</div>
+                <div className="text-sm font-semibold text-white">{spotlightEvent.title}</div>
+              </div>
+              <div className={`text-xs font-bold uppercase tracking-widest ${spotlightProfile.pressure.accent}`}>
+                {spotlightProfile.pressure.label}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+              <div className="rounded border border-red-900/60 bg-red-950/20 p-2">
+                <div className="text-[10px] uppercase tracking-wider text-red-300/70">Clock</div>
+                <div className="mt-1 text-slate-200">
+                  {spotlightEvent.expiresInWeeks === undefined
+                    ? 'No hard deadline yet'
+                    : spotlightEvent.expiresInWeeks === 0
+                    ? 'This blows up now'
+                    : `${spotlightEvent.expiresInWeeks} week${spotlightEvent.expiresInWeeks > 1 ? 's' : ''} to act`}
+                </div>
+              </div>
+              <div className="rounded border border-emerald-900/60 bg-emerald-950/20 p-2">
+                <div className="text-[10px] uppercase tracking-wider text-emerald-300/70">Best Payoff</div>
+                <div className="mt-1 text-slate-200">{spotlightProfile.reward}</div>
+              </div>
+              <div className="rounded border border-amber-900/60 bg-amber-950/20 p-2">
+                <div className="text-[10px] uppercase tracking-wider text-amber-300/70">Costliest Miss</div>
+                <div className="mt-1 text-slate-200">{spotlightProfile.risk}</div>
+              </div>
+            </div>
+            <div className="text-xs text-slate-400 border-t border-slate-800 pt-2">
+              {spotlightEvent.context || spotlightEvent.hook}
+            </div>
+          </div>
+        )}
       </div>
+
+      {decisionPulse && (
+        <div className="px-4 pt-4">
+          <div className={`
+            rounded-lg border p-3
+            ${decisionPulse.tone === 'success' ? 'border-emerald-800/70 bg-emerald-950/20' : ''}
+            ${decisionPulse.tone === 'warning' ? 'border-amber-800/70 bg-amber-950/20' : ''}
+            ${decisionPulse.tone === 'error' ? 'border-red-800/70 bg-red-950/20' : ''}
+            ${decisionPulse.tone === 'info' ? 'border-cyan-800/70 bg-cyan-950/20' : ''}
+          `}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.25em] text-slate-500">Last Move</div>
+                <div className="text-sm font-semibold text-white">{decisionPulse.eventTitle}: {decisionPulse.choiceLabel}</div>
+              </div>
+              <div className="text-[10px] uppercase tracking-widest text-slate-400">
+                Immediate Impact
+              </div>
+            </div>
+            <p className="mt-2 text-sm text-slate-200">{decisionPulse.summary}</p>
+            {decisionPulse.details.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {decisionPulse.details.map((detail, index) => (
+                  <span key={`${decisionPulse.choiceLabel}-${index}`} className="px-2 py-1 rounded border border-slate-800 bg-black/30 text-xs text-slate-300">
+                    {detail}
+                  </span>
+                ))}
+              </div>
+            )}
+            {decisionPulse.nextBeat && (
+              <div className="mt-3 text-xs text-cyan-300/80">
+                <i className="fas fa-arrow-right mr-1"></i>
+                Next beat: {decisionPulse.nextBeat}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Event List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>

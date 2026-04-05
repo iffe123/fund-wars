@@ -65,7 +65,8 @@ export const checkEventRequirements = (
   arcs: StoryArc[],
   currentWeek: number,
   worldFlags: Set<string>,
-  marketVolatility: MarketVolatility
+  marketVolatility: MarketVolatility,
+  completedEventIds: ReadonlySet<string> = new Set<string>()
 ): boolean => {
   if (!requirements) return true;
 
@@ -91,6 +92,8 @@ export const checkEventRequirements = (
   // Flag checks
   if (requirements.requiredFlags?.some(flag => !worldFlags.has(flag))) return false;
   if (requirements.blockedByFlags?.some(flag => worldFlags.has(flag))) return false;
+  if (requirements.completedEvents?.some(eventId => !completedEventIds.has(eventId))) return false;
+  if (requirements.notCompletedEvents?.some(eventId => completedEventIds.has(eventId))) return false;
 
   // NPC relationship checks
   if (requirements.npcRelationships) {
@@ -314,11 +317,20 @@ const mergeConsequences = (
 ): EventConsequences => {
   return {
     ...base,
+    notification: override.notification ?? base.notification,
+    logMessage: override.logMessage ?? base.logMessage,
     stats: { ...base.stats, ...override.stats },
     npcEffects: [...(base.npcEffects || []), ...(override.npcEffects || [])],
     setsFlags: [...(base.setsFlags || []), ...(override.setsFlags || [])],
     clearsFlags: [...(base.clearsFlags || []), ...(override.clearsFlags || [])],
     companyEffects: [...(base.companyEffects || []), ...(override.companyEffects || [])],
+    queuesEvent: override.queuesEvent ?? base.queuesEvent,
+    blocksEvents: override.blocksEvents ?? base.blocksEvents,
+    advancesArc: override.advancesArc ?? base.advancesArc,
+    failsArc: override.failsArc ?? base.failsArc,
+    guidedAction: override.guidedAction ?? base.guidedAction,
+    switchToTab: override.switchToTab ?? base.switchToTab,
+    unlockAchievement: override.unlockAchievement ?? base.unlockAchievement,
   };
 };
 
@@ -341,6 +353,7 @@ export const processWeeklyQueue = (
 ): EventQueue => {
   const newQueue = { ...queue };
   const currentWeek = queue.currentWeek;
+  const completedEventIds = new Set(queue.completedEvents.map(event => event.eventId));
 
   // Move scheduled events that are due
   const dueEvents = queue.scheduledEvents.filter(se => se.triggerWeek <= currentWeek);
@@ -357,8 +370,13 @@ export const processWeeklyQueue = (
         arcs, 
         currentWeek, 
         worldFlags, 
-        marketVolatility
+        marketVolatility,
+        completedEventIds
       )) {
+        if (completedEventIds.has(event.id)) {
+          continue;
+        }
+
         const queuedEvent: QueuedEvent = {
           eventId: scheduledEvent.eventId,
           addedWeek: currentWeek,
@@ -383,7 +401,7 @@ export const processWeeklyQueue = (
   // REDESIGN: Always generate priority event if none exists
   // This ensures game never stops for lack of content
   if (!newQueue.priorityEvent) {
-    const priorityEvent = selectRandomEvent('PRIORITY', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek);
+    const priorityEvent = selectRandomEvent('PRIORITY', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek, completedEventIds);
     if (priorityEvent) {
       newQueue.priorityEvent = priorityEvent;
     }
@@ -393,7 +411,7 @@ export const processWeeklyQueue = (
   // Players should always have choices available
   const MIN_OPTIONAL_EVENTS = 5;
   while (newQueue.optionalEvents.length < MIN_OPTIONAL_EVENTS) {
-    const optionalEvent = selectRandomEvent('OPTIONAL', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek);
+    const optionalEvent = selectRandomEvent('OPTIONAL', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek, completedEventIds);
     if (optionalEvent) {
       // Avoid duplicates
       if (!newQueue.optionalEvents.some(e => e.eventId === optionalEvent.eventId)) {
@@ -409,7 +427,7 @@ export const processWeeklyQueue = (
   // REDESIGN: Generate background events for atmosphere (2-4 per week)
   const MIN_BACKGROUND_EVENTS = 2;
   while (newQueue.backgroundEvents.length < MIN_BACKGROUND_EVENTS) {
-    const backgroundEvent = selectRandomEvent('OPTIONAL', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek);
+    const backgroundEvent = selectRandomEvent('OPTIONAL', allEvents, arcs, playerStats, npcs, worldFlags, marketVolatility, currentWeek, completedEventIds);
     if (backgroundEvent) {
       // Convert to background event with lower priority
       backgroundEvent.priority = 1;
@@ -448,13 +466,15 @@ const selectRandomEvent = (
   npcs: NPC[],
   worldFlags: Set<string>,
   marketVolatility: MarketVolatility,
-  currentWeek: number
+  currentWeek: number,
+  completedEventIds: ReadonlySet<string>
 ): QueuedEvent | null => {
   const eligibleEvents: StoryEvent[] = [];
 
   for (const [id, event] of allEvents) {
     if (event.type !== type) continue;
-    if (!checkEventRequirements(event.requirements, playerStats, npcs, arcs, currentWeek, worldFlags, marketVolatility)) {
+    if (completedEventIds.has(id)) continue;
+    if (!checkEventRequirements(event.requirements, playerStats, npcs, arcs, currentWeek, worldFlags, marketVolatility, completedEventIds)) {
       continue;
     }
     eligibleEvents.push(event);

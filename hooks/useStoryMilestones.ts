@@ -14,6 +14,7 @@ import type { WeekPhase } from '../types/rpgEvents';
 
 interface UseStoryMilestonesReturn {
   pendingMilestone: StoryMilestone | null;
+  visibleMilestone: StoryMilestone | null;
   acknowledgedMilestones: string[];
   dismissMilestone: () => void;
 }
@@ -89,8 +90,18 @@ export function useStoryMilestones(): UseStoryMilestonesReturn {
     setPendingMilestone(null);
   }, [pendingMilestone, setWorldFlag]);
 
+  const visibleMilestone = shouldPauseStoryMilestones({
+    hasPendingMilestone: false,
+    tutorialComplete: worldFlags.has('TUTORIAL_COMPLETE'),
+    hasQueuedPriorityEvent: Boolean(rpgState.eventQueue.priorityEvent),
+    currentPhase,
+  })
+    ? null
+    : pendingMilestone;
+
   return {
     pendingMilestone,
+    visibleMilestone,
     acknowledgedMilestones,
     dismissMilestone,
   };

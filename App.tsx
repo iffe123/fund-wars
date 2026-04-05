@@ -122,7 +122,7 @@ const App: React.FC = () => {
   const { playSfx, playAmbience } = useAudio();
   const { toasts, removeToast: removeEnhancedToast, toast, clearToasts } = useEnhancedToast();
   const { isTransitioning: isWeekTransitioning, startTransition: startWeekTransition } = useWeekTransition();
-  const { pendingMilestone, dismissMilestone } = useStoryMilestones();
+  const { visibleMilestone, dismissMilestone } = useStoryMilestones();
   const { state: rpgState } = useRPGEvents();
 
   // --- CORE STATE (from hooks) ---
@@ -415,11 +415,11 @@ const App: React.FC = () => {
     if (currentAuction) return 'AUCTION';
     if (activeCompanyEvent) return 'COMPANY_EVENT';
     if (activeDrama) return 'DRAMA';
-    if (pendingMilestone) return 'MILESTONE';
+    if (visibleMilestone) return 'MILESTONE';
     if (showStatsModal) return 'STATS';
     if (showTransparencyModal) return 'TRANSPARENCY';
     return null;
-  }, [gamePhase, currentAuction, activeCompanyEvent, activeDrama, pendingMilestone, showStatsModal, showTransparencyModal]);
+  }, [gamePhase, currentAuction, activeCompanyEvent, activeDrama, visibleMilestone, showStatsModal, showTransparencyModal]);
 
   const renderCenterPanel = () => {
       // 1. Asset Manager View
@@ -738,6 +738,7 @@ const App: React.FC = () => {
                       aria-label={unseenActivityCount > 0 ? `Activity feed, ${unseenActivityCount} unread` : 'Activity feed'}
                       className={`
                         px-3 py-2 rounded-lg border text-xs font-bold uppercase
+                        inline-flex items-center gap-1.5 whitespace-nowrap
                         transition-all duration-200
                         ${showActivityFeed
                           ? 'bg-blue-900/50 border-blue-500/60 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.3)]'
@@ -746,9 +747,9 @@ const App: React.FC = () => {
                       `}
                     >
                       <i className="fas fa-list-ul mr-1"></i>
-                      Activity
+                      <span>Activity</span>
                       {unseenActivityCount > 0 && (
-                        <span aria-hidden="true" className="ml-1.5 px-1.5 py-0.5 bg-blue-500 text-white text-[10px] rounded-full">
+                        <span aria-hidden="true" className="px-1.5 py-0.5 bg-blue-500 text-white text-[10px] rounded-full">
                           {unseenActivityCount > 99 ? '99+' : unseenActivityCount}
                         </span>
                       )}
@@ -989,9 +990,9 @@ const App: React.FC = () => {
         )}
 
         {/* STORY MILESTONE MODAL */}
-        {activeModal === 'MILESTONE' && pendingMilestone && (
+        {activeModal === 'MILESTONE' && visibleMilestone && (
             <StoryMilestoneModal
-                sceneId={pendingMilestone.sceneId}
+                sceneId={visibleMilestone.sceneId}
                 onComplete={(effects) => {
                     if (effects) updatePlayerStats(effects);
                     dismissMilestone();
