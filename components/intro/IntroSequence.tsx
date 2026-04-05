@@ -38,7 +38,7 @@ const INTRO_SLIDES: SlideContent[] = [
     buttonText: 'Get Started',
     buttonVariant: 'secondary',
     showCharacterPortrait: true,
-    characterName: 'Chad Worthington',
+    characterName: 'Chad Worthington III',
     characterRole: 'Managing Director',
   },
   {

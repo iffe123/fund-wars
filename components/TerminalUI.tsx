@@ -161,6 +161,22 @@ interface TerminalPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   style?: React.CSSProperties;
 }
 
+// Map SCREAMING_SNAKE_CASE panel titles to human-readable display names
+const panelTitleMap: Record<string, string> = {
+  'PRIORITY_EVENT': 'Priority Event',
+  'COMMAND_CENTER': 'Command Center',
+  'DEAL_FLOW': 'Deal Flow',
+  'DEAL_FLOW // COMPETITIVE MARKET': 'Deal Flow // Competitive Market',
+  'FUND_RANKINGS': 'Fund Rankings',
+  'ASSET_MANAGER': 'Asset Manager',
+  'FOUNDER_DASHBOARD': 'Founder Dashboard',
+  'WORKSPACE_HOME': 'Workspace',
+  'PORTFOLIO_COMMAND_CENTER': 'Portfolio Command Center',
+};
+
+const formatPanelTitle = (title: string): string =>
+  panelTitleMap[title] || title;
+
 export const TerminalPanel: React.FC<TerminalPanelProps> = ({
   children,
   title,
@@ -187,7 +203,7 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({
         <div className="flex items-center gap-2">
           {headerIcon && <i className={`fas ${headerIcon} text-amber-500/80 text-xs`}></i>}
           <span className="text-[11px] uppercase tracking-widest text-slate-400 font-bold">
-            {title}
+            {formatPanelTitle(title)}
           </span>
         </div>
         {action && <div className="flex items-center gap-2">{action}</div>}

@@ -10,7 +10,7 @@ import type { NPC, FamilyMember } from '../types';
 export const INITIAL_NPCS: NPC[] = [
   {
     id: 'chad',
-    name: 'Chad (MD)',
+    name: 'Chad Worthington III',
     role: 'Managing Director',
     avatar: 'fa-user-tie',
     relationship: 50,
@@ -20,7 +20,7 @@ export const INITIAL_NPCS: NPC[] = [
     memories: [],
     isRival: false,
     faction: 'MANAGING_DIRECTORS',
-    dialogueHistory: [{ sender: 'npc', senderName: 'Chad (MD)', text: "Don't screw this up, rookie. I need this bonus." }],
+    dialogueHistory: [{ sender: 'npc', senderName: 'Chad Worthington III', text: "Don't screw this up, rookie. I need this bonus." }],
     schedule: {
       weekday: ['MORNING', 'AFTERNOON'],
       weekend: ['MORNING'],

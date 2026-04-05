@@ -418,10 +418,10 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                               <i className={`fas ${npc.avatar} ${npc.isRival ? 'text-red-500' : isTutorialTarget ? 'text-amber-400' : 'text-slate-500'} text-lg`}></i>
                               <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-slate-950 ${isAvailable ? 'bg-emerald-400' : 'bg-slate-600'}`} title={isAvailable ? 'Available' : 'Off-hours'}></span>
                             </div>
-                            <div className="flex-1 truncate hidden md:block">
-                                <span className={`font-bold block ${isTutorialTarget ? 'text-amber-200' : ''}`}>{npc.name}</span>
-                                <span className="text-[10px] opacity-70 truncate">{npc.role}</span>
-                                <span className="text-[10px] text-slate-500 truncate">Mood {npc.mood}/100 • Trust {npc.trust}/100</span>
+                            <div className="flex-1 min-w-0 hidden md:block">
+                                <span className={`font-bold block truncate ${isTutorialTarget ? 'text-amber-200' : ''}`}>{npc.name}</span>
+                                <span className="text-[10px] opacity-70 block truncate">{npc.role}</span>
+                                <span className="text-[10px] text-slate-500 block">{describeMood(npc.mood ?? 50)} · {describeTrust(npc.trust ?? 50)}</span>
                                 <span className={`text-[9px] uppercase block ${isAvailable ? 'text-emerald-400' : 'text-slate-400'}`} title={!isAvailable && npc.schedule?.unavailableReason ? npc.schedule.unavailableReason : undefined}>
                                     {isAvailable ? 'Available' : 'Off-hours'}
                                 </span>
@@ -450,18 +450,18 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                             {activeTab === 'ADVISOR' ? 'Machiavelli (Advisor)' : activeNPC?.name}
                         </span>
                         {activeTab !== 'ADVISOR' && activeNPC && (
-                            <div className="flex flex-wrap gap-2 mt-1 text-[10px] text-slate-400">
-                                <span className="px-2 py-1 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
-                                    Mood {activeNPC.mood}/100 · {describeMood(activeNPC.mood)}
+                            <div className="flex flex-wrap gap-1.5 mt-1 text-[10px] text-slate-400">
+                                <span className="px-1.5 py-0.5 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
+                                    {describeMood(activeNPC.mood ?? 50)}
                                 </span>
-                                <span className="px-2 py-1 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
-                                    Trust {activeNPC.trust}/100 · {describeTrust(activeNPC.trust)}
+                                <span className="px-1.5 py-0.5 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
+                                    Trust: {describeTrust(activeNPC.trust ?? 50)}
                                 </span>
-                                <span className="px-2 py-1 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
-                                    Relationship {activeNPC.relationship}/100
+                                <span className="px-1.5 py-0.5 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
+                                    Rel: {activeNPC.relationship}/100
                                 </span>
-                                <span className="px-2 py-1 border border-slate-700 bg-slate-950/70 rounded-sm uppercase tracking-wider">
-                                    {npcAvailable(activeNPC) ? 'Available' : `Off-hours (${currentDayType} · ${currentTimeSlot})`}
+                                <span className={`px-1.5 py-0.5 border rounded-sm uppercase tracking-wider ${npcAvailable(activeNPC) ? 'border-emerald-700 text-emerald-400' : 'border-slate-700'}`}>
+                                    {npcAvailable(activeNPC) ? 'Available' : 'Off-hours'}
                                 </span>
                             </div>
                         )}
@@ -521,12 +521,12 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
 
                                     {/* Message Bubble */}
                                     <div className={`
-                                        px-4 py-3 rounded-xl text-sm shadow-md border relative group
-                                        ${isPlayer 
-                                            ? 'bg-blue-700 border-blue-500 text-white rounded-br-none ml-12' // Player style with left indent
+                                        px-4 py-3 rounded-xl text-sm shadow-md border relative group min-w-0
+                                        ${isPlayer
+                                            ? 'bg-blue-700 border-blue-500 text-white rounded-br-none'
                                             : activeTab === 'ADVISOR'
-                                                ? 'bg-amber-950/80 border-amber-800/60 text-amber-100 rounded-bl-none mr-12' // Advisor style with right indent
-                                                : 'bg-slate-800 border-slate-700 text-slate-200 rounded-bl-none mr-12' // NPC style with right indent
+                                                ? 'bg-amber-950/80 border-amber-800/60 text-amber-100 rounded-bl-none'
+                                                : 'bg-slate-800 border-slate-700 text-slate-200 rounded-bl-none'
                                         }
                                     `}>
                                         {/* Optional Name Header for NPCs */}
@@ -538,7 +538,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                                             </div>
                                         )}
                                         
-                                        <p className="leading-relaxed whitespace-pre-wrap">{renderMarkdown(msg.text)}</p>
+                                        <p className="leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">{renderMarkdown(msg.text)}</p>
 
                                         {/* Timestamp */}
                                         <div className={`text-[9px] mt-1.5 ${isPlayer ? 'text-blue-300/60' : 'text-slate-500'}`}>

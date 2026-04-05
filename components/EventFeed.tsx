@@ -81,11 +81,13 @@ const statLabels: Partial<Record<keyof StatChanges, string>> = {
   reputation: 'Rep',
   stress: 'Stress',
   energy: 'Energy',
-  analystRating: 'Analyst',
-  financialEngineering: 'Model',
+  analystRating: 'Analyst Rating',
+  financialEngineering: 'Financial Engineering',
   ethics: 'Ethics',
-  auditRisk: 'Audit',
+  auditRisk: 'Audit Risk',
   score: 'Score',
+  health: 'Health',
+  dependency: 'Dependency',
 };
 
 const positiveStats = new Set<keyof StatChanges>([
@@ -107,7 +109,8 @@ const formatCompactImpact = (key: keyof StatChanges, value: number): string => {
   if (key === 'cash') {
     return `${value > 0 ? '+' : '-'}$${Math.abs(value).toLocaleString()}`;
   }
-  return `${value > 0 ? '+' : ''}${value} ${statLabels[key] || key}`;
+  const label = statLabels[key] || (key as string).replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+  return `${value > 0 ? '+' : ''}${value} ${label}`;
 };
 
 const getChoicePressureProfile = (choice: EventChoice) => {

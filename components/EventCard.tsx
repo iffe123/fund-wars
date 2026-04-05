@@ -103,11 +103,17 @@ const checkChoiceAvailability = (
   // Check stat requirements
   if (req.stat) {
     const statValue = (playerStats as any)[req.stat.name] ?? 0;
+    const statDisplayNames: Record<string, string> = {
+      cash: 'cash', reputation: 'reputation', stress: 'stress', energy: 'energy',
+      analystRating: 'Analyst Rating', financialEngineering: 'Financial Engineering',
+      ethics: 'ethics', auditRisk: 'Audit Risk',
+    };
+    const displayName = statDisplayNames[req.stat.name] || req.stat.name.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
     if (req.stat.min !== undefined && statValue < req.stat.min) {
-      return { available: false, reason: `Requires ${req.stat.name} ${req.stat.min}+` };
+      return { available: false, reason: `Requires ${displayName} ${req.stat.min}+` };
     }
     if (req.stat.max !== undefined && statValue > req.stat.max) {
-      return { available: false, reason: `${req.stat.name} too high` };
+      return { available: false, reason: `${displayName} too high` };
     }
   }
 
@@ -187,19 +193,36 @@ const EventCard: React.FC<EventCardProps> = ({
 
   // Get source NPC if exists
   const sourceNpc = event.sourceNpcId ? npcs.find(n => n.id === event.sourceNpcId) : null;
+
+  const statDisplayNames: Record<string, string> = {
+    cash: 'Cash',
+    reputation: 'Rep',
+    stress: 'Stress',
+    energy: 'Energy',
+    analystRating: 'Analyst Rating',
+    financialEngineering: 'Financial Engineering',
+    ethics: 'Ethics',
+    auditRisk: 'Audit Risk',
+    score: 'Score',
+    health: 'Health',
+    dependency: 'Dependency',
+  };
+
+  const formatStatName = (key: string): string =>
+    statDisplayNames[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+
   const describeChoiceImpact = (choice: EventChoice): string | null => {
     const stats = choice.consequences?.stats;
     if (!stats) return null;
 
     const parts: string[] = [];
-    if (typeof stats.reputation === 'number' && stats.reputation !== 0) {
-      parts.push(`${stats.reputation > 0 ? '+' : ''}${stats.reputation} REP`);
-    }
-    if (typeof stats.stress === 'number' && stats.stress !== 0) {
-      parts.push(`${stats.stress > 0 ? '+' : ''}${stats.stress} STRESS`);
-    }
-    if (typeof stats.cash === 'number' && stats.cash !== 0) {
-      parts.push(`${stats.cash > 0 ? '+' : ''}$${Math.abs(stats.cash).toLocaleString()} CASH`);
+    for (const [key, value] of Object.entries(stats)) {
+      if (typeof value !== 'number' || value === 0) continue;
+      if (key === 'cash') {
+        parts.push(`${value > 0 ? '+' : ''}$${Math.abs(value).toLocaleString()} Cash`);
+      } else {
+        parts.push(`${value > 0 ? '+' : ''}${value} ${formatStatName(key)}`);
+      }
     }
 
     return parts.length > 0 ? parts.join(' • ') : null;
@@ -377,7 +400,7 @@ const EventCard: React.FC<EventCardProps> = ({
                       {choice.skillCheck && (
                         <span className="px-1.5 py-0.5 bg-yellow-900/50 text-yellow-400 rounded">
                           <i className="fas fa-dice mr-1"></i>
-                          {choice.skillCheck.skill}
+                          {formatStatName(choice.skillCheck.skill)}
                         </span>
                       )}
                       {choice.icon && <i className={`fas ${choice.icon}`}></i>}

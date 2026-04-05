@@ -299,7 +299,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
                 />
               </div>
               <button
-                onClick={handleConsequenceContinue}
+                onClick={(e) => { e.stopPropagation(); handleConsequenceContinue(); }}
                 disabled={isFadingOut}
                 className={`
                   mt-6 w-full py-3 px-6
@@ -308,7 +308,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
                   text-amber-400 font-mono
                   transition-all duration-200
                   flex items-center justify-center gap-2
-                  group
+                  group relative z-10 cursor-pointer
                   ${isFadingOut ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
               >
@@ -365,14 +365,14 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
           {showChoices && canAutoAdvance && !showEffects && (
             <div className="mt-8 mb-8">
               <button
-                onClick={handleContinue}
+                onClick={(e) => { e.stopPropagation(); handleContinue(); }}
                 disabled={state.isTransitioning}
                 className={`
                   w-full py-4 px-6
-                  font-mono
+                  font-mono cursor-pointer
                   transition-all duration-200
                   disabled:opacity-50 disabled:cursor-not-allowed
-                  relative overflow-hidden group
+                  relative overflow-hidden group z-10
                   ${scene.requiresAcknowledgment
                     ? 'bg-green-900/30 hover:bg-green-900/50 border-2 border-green-500 hover:border-green-400 text-green-400 animate-pulse-subtle'
                     : 'bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-green-500 text-green-400'
@@ -440,7 +440,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
           </button>
 
           <span className="uppercase tracking-wider">
-            {scene.type.replace('_', ' ')}
+            {scene.type.replace(/_/g, ' ')}
           </span>
 
           <span>FUND WARS</span>
