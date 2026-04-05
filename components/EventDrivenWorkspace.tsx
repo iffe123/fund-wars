@@ -35,15 +35,12 @@ interface EventDrivenWorkspaceProps {
   onConsultAdvisor?: () => void;
 }
 
+// Only show the stats players actually care about in consequence summaries
 const impactStatLabels: Partial<Record<keyof StatChanges, string>> = {
   cash: 'Cash',
   reputation: 'Rep',
   stress: 'Stress',
   energy: 'Energy',
-  analystRating: 'Analyst',
-  financialEngineering: 'Model',
-  ethics: 'Ethics',
-  auditRisk: 'Audit',
 };
 
 const formatStatDetail = (key: keyof StatChanges, value: number): string => {

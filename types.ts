@@ -450,27 +450,25 @@ export type ActionType =
   | 'CASUAL_INTERACTION'
   | 'STRATEGIC_INTERVENTION';
 
-// REDESIGNED AP COSTS: Most actions are FREE (0 AP)
-// AP now represents strategic FOCUS, not basic activity
+// SIMPLIFIED AP SYSTEM: 3 AP per week, every meaningful action costs 1 AP
+// This creates real tension — you can do 3 things per week, choose wisely
 export const ACTION_COSTS: Record<ActionType, number> = {
-  // FREE ACTIONS (0 AP) - Can always do these
-  ANALYZE_DEAL: 0,           // Reviewing deals is free, bidding costs AP
-  PORTFOLIO_REVIEW: 0,       // Checking portfolio is free
+  // FREE ACTIONS (0 AP) - Passive / information-only
+  PORTFOLIO_REVIEW: 0,       // Looking at your portfolio is always free
   CONSULT_ADVISOR: 0,        // Talking to NPCs/advisors is free
-  NETWORK_EVENT: 0,          // Networking is free
-  SCOUT_TALENT: 0,           // Research is free
-  CASUAL_INTERACTION: 0,     // Light touches, quick checks
   REST: 0,                   // Taking care of yourself is free
-  
-  // LOW COST ACTIONS (1 AP) - Strategic choices
+  CASUAL_INTERACTION: 0,     // Quick chats, light touches
+
+  // STANDARD ACTIONS (1 AP) - Every real action costs focus
+  ANALYZE_DEAL: 1,           // Due diligence takes real work
   SUBMIT_IOI: 1,             // Making a bid costs focus
   BOARD_MEETING: 1,          // Major meetings cost focus
+  NETWORK_EVENT: 1,          // Networking takes effort
+  SCOUT_TALENT: 1,           // Recruiting takes time
   HANDLE_EVENT: 1,           // Responding to events
   PRIORITY_RESPONSE: 1,      // Critical decisions
   DEEP_ENGAGEMENT: 1,        // Deep work with people/deals
   STRATEGIC_INTERVENTION: 1, // Hands-on portfolio management
-  
-  // MODERATE COST ACTIONS (2 AP) - Major commitments
   EXIT_PLANNING: 1,          // Planning exits
   SKILL_TRAINING: 1,         // Personal development
 };

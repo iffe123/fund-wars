@@ -73,14 +73,14 @@ export const NORMAL_STATS: PlayerStats = {
   dealAllocations: [],
   carryEligibleDeals: [],
   activeSkillInvestments: [],
-  // NEW: Time & Action System
-  // Reduced to 2 AP per week for meaningful strategic tension
+  // Time & Action System
+  // 3 AP per week — every real action costs 1 AP, so you get 3 meaningful choices
   gameTime: {
     week: 1,
     year: 1,
     quarter: 1 as const,
-    actionsRemaining: 2,
-    maxActions: 2,
+    actionsRemaining: 3,
+    maxActions: 3,
     isNightGrinder: false,
     actionsUsedThisWeek: [],
     actionsPerformedThisWeek: [],
