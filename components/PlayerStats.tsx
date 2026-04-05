@@ -169,7 +169,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
 
         {/* Level Badge */}
         <div className="px-2 py-1 rounded bg-amber-950/30 border border-amber-800/30">
-          <span className="text-amber-400 text-xs font-bold uppercase tracking-wider">L{stats.level}</span>
+          <span className="text-amber-400 text-xs font-bold uppercase tracking-wider">{stats.level}</span>
         </div>
 
         {/* Stats Info Hint (Mobile) */}
@@ -292,7 +292,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
 
           {/* Quick Stats */}
           <div className="flex items-center gap-3 text-xs uppercase tracking-widest font-bold">
-            <span className="text-slate-200" title="Your seniority level at the firm. Higher levels unlock new abilities and compensation.">L{stats.level}</span>
+            <span className="text-slate-200" title="Your seniority level at the firm. Higher levels unlock new abilities and compensation.">{stats.level}</span>
             <span className="text-blue-200 flex items-center gap-1" title="Analyst Rating — How the firm rates your analytical skills. Affects deal quality and promotions.">
               <i className="fas fa-chart-line text-[10px]"></i>
               {stats.analystRating}

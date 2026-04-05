@@ -10,11 +10,15 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { injectSpeedInsights } from '@vercel/speed-insights';
 import { inject } from '@vercel/analytics';
 
-// Initialize Vercel Speed Insights
-injectSpeedInsights();
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
+const shouldLoadVercelTelemetry =
+  typeof window !== 'undefined' &&
+  !LOCAL_HOSTNAMES.has(window.location.hostname);
 
-// Initialize Vercel Web Analytics
-inject();
+if (shouldLoadVercelTelemetry) {
+  injectSpeedInsights();
+  inject();
+}
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

@@ -70,7 +70,17 @@ type RPGEventAction =
   | { type: 'SET_WORLD_FLAG'; payload: string }
   | { type: 'CLEAR_WORLD_FLAG'; payload: string }
   | { type: 'UPDATE_ARC'; payload: { arcId: string; updates: Partial<StoryArc> } }
-  | { type: 'COMPLETE_EVENT'; payload: { eventId: string; choiceId: string; consequences: EventConsequences; arcId?: string } }
+  | {
+      type: 'COMPLETE_EVENT';
+      payload: {
+        eventId: string;
+        choiceId: string;
+        consequences: EventConsequences;
+        arcId?: string;
+        triggeredEvents?: Array<{ eventId: string; delayWeeks?: number; probability?: number }>;
+        arcProgression?: { arcId: string; newStage: number };
+      };
+    }
   | { type: 'SCHEDULE_EVENT'; payload: { eventId: string; delayWeeks: number; source: string; probability?: number } }
   | { type: 'OPEN_EVENT_MODAL' }
   | { type: 'CLOSE_EVENT_MODAL' }
@@ -189,7 +199,7 @@ const rpgEventReducer = (state: RPGEventState, action: RPGEventAction): RPGEvent
       };
 
     case 'COMPLETE_EVENT': {
-      const { eventId, choiceId, consequences, arcId } = action.payload;
+      const { eventId, choiceId, consequences, arcId, triggeredEvents = [], arcProgression } = action.payload;
       const updatedQueue = recordCompletedEvent(
         state.eventQueue,
         eventId,
@@ -206,6 +216,17 @@ const rpgEventReducer = (state: RPGEventState, action: RPGEventAction): RPGEvent
           consequences.queuesEvent.eventId,
           consequences.queuesEvent.delayWeeks,
           `choice:${choiceId}`,
+          100,
+          choiceId
+        );
+      }
+
+      for (const triggeredEvent of triggeredEvents) {
+        finalQueue = scheduleEvent(
+          finalQueue,
+          triggeredEvent.eventId,
+          triggeredEvent.delayWeeks ?? 0,
+          `trigger:${choiceId}`,
           100,
           choiceId
         );
@@ -228,6 +249,12 @@ const rpgEventReducer = (state: RPGEventState, action: RPGEventAction): RPGEvent
 
           return {
             ...arc,
+            currentStage:
+              arcProgression && arc.id === arcProgression.arcId
+                ? Math.max(arc.currentStage, arcProgression.newStage)
+                : consequences.advancesArc && arc.id === consequences.advancesArc.arcId
+                ? Math.max(arc.currentStage, consequences.advancesArc.toStage)
+                : arc.currentStage,
             playerChoices: newPlayerChoices,
             keyMoments: newKeyMoments,
           };
@@ -472,6 +499,18 @@ export const RPGEventProvider: React.FC<RPGEventProviderProps> = ({ children }) 
       state.eventQueue.currentWeek
     );
 
+    const triggeredEvents = choice.triggersEvents?.filter(trigger =>
+      result.triggeredEvents.includes(trigger.eventId)
+    ) || [];
+    const arcProgression = result.arcProgression || (
+      result.consequences.advancesArc
+        ? {
+            arcId: result.consequences.advancesArc.arcId,
+            newStage: result.consequences.advancesArc.toStage,
+          }
+        : undefined
+    );
+
     dispatch({ type: 'RECORD_CHOICE_RESULT', payload: result });
     dispatch({
       type: 'COMPLETE_EVENT',
@@ -480,6 +519,8 @@ export const RPGEventProvider: React.FC<RPGEventProviderProps> = ({ children }) 
         choiceId: choice.id,
         consequences: result.consequences,
         arcId: activeEvent.triggerArcId,
+        triggeredEvents,
+        arcProgression,
       },
     });
 
@@ -508,6 +549,7 @@ export const RPGEventProvider: React.FC<RPGEventProviderProps> = ({ children }) 
     marketVolatility: MarketVolatility
   ): StoryEvent[] => {
     const available: StoryEvent[] = [];
+    const completedEventIds = new Set(state.eventQueue.completedEvents.map(event => event.eventId));
     
     // Check all events
     for (const event of STORY_EVENTS) {
@@ -518,7 +560,8 @@ export const RPGEventProvider: React.FC<RPGEventProviderProps> = ({ children }) 
         state.storyArcs,
         state.eventQueue.currentWeek,
         state.worldFlags,
-        marketVolatility
+        marketVolatility,
+        completedEventIds
       );
 
       if (meetsRequirements) {
@@ -830,6 +873,7 @@ export const useNextPriorityEvent = (
       const eventMap = createEventMap();
       const event = eventMap.get(state.eventQueue.priorityEvent.eventId);
       if (event && event.type === 'PRIORITY') {
+        const completedEventIds = new Set(state.eventQueue.completedEvents.map(completed => completed.eventId));
         const meetsRequirements = checkEventRequirements(
           event.requirements,
           playerStats,
@@ -837,7 +881,8 @@ export const useNextPriorityEvent = (
           state.storyArcs,
           state.eventQueue.currentWeek,
           state.worldFlags,
-          marketVolatility
+          marketVolatility,
+          completedEventIds
         );
         if (meetsRequirements) {
           return event;

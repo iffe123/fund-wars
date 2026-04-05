@@ -25,9 +25,9 @@ export const STORY_ARCS: StoryArc[] = [
   // First Deal Arc
   {
     id: 'arc_first_deal',
-    title: 'The Cardboard Empire',
-    description: 'Your first deal will define your career trajectory.',
-    teaser: 'Chad just threw a CIM on your desk. Time to prove yourself.',
+    title: 'Plant Your Flag',
+    description: 'Your first live deal battle will define your career trajectory.',
+    teaser: 'Your first IOI is in. Now you need to own the room before Hunter does.',
     category: 'MAIN',
     priority: 10,
     estimatedWeeks: 4,
@@ -37,8 +37,8 @@ export const STORY_ARCS: StoryArc[] = [
     stages: [
       {
         stage: 0,
-        title: 'The Assignment',
-        description: 'Receive and analyze your first deal.',
+        title: 'Plant Your Flag',
+        description: 'Turn your first live thesis into a defining swing.',
         events: ['evt_first_deal'],
         advanceConditions: {
           completedEvents: ['evt_first_deal'],
@@ -307,126 +307,138 @@ export const STORY_EVENTS: StoryEvent[] = [
     id: 'evt_first_deal',
     type: 'PRIORITY',
     category: 'DEAL',
-    title: 'The Cardboard Empire',
-    hook: 'Chad drops a CIM on your desk. "Don\'t waste my time if it\'s garbage."',
+    title: 'Plant Your Flag',
+    hook: 'Your IOI is in. Chad wants a structure now, and Hunter is already circling your deal.',
+    requirements: {
+      requiredFlags: ['TUTORIAL_COMPLETE'],
+      blockedByFlags: ['PACKFANCY_STRUCTURED', 'FIRST_DEAL_PASSED'],
+    },
     description: `
-It's your first real deal. PackFancy Inc. — a mid-market manufacturer of artisanal cardboard boxes. 
+PackFancy is no longer a cute diligence exercise. It is your first live deal fight.
 
-The numbers look... flat. Revenue's barely moving. EBITDA margins are thin. The CEO's letter is full of buzzwords but short on substance.
+Your PackFancy IOI bought you one thing: a seat in the room. Not the room itself.
 
-But something catches your eye on page 40. A patent reference buried in the footnotes. Patent #8829. Hydrophobic coating technology.
+Chad is standing over your desk with coffee in one hand and impatience in the other.
 
-This might be more than just a box company. Or it might be nothing.
+"I need the angle. LBO? Growth? Something I can say out loud in ten minutes."
 
-The deadline for an IOI is Friday. What's your move?
+Across the floor, Hunter is already leaning into another partner's office with your model deck under his arm.
+
+If you do not define this deal right now, someone else will define it for you.
     `.trim(),
-    context: 'Your first impression matters. How you handle this will define how the partners see you.',
+    context: 'This is not analysis anymore. This is territory.',
     sourceNpcId: 'chad',
-    involvedNpcs: ['chad', 'sarah'],
+    involvedNpcs: ['chad', 'sarah', 'hunter'],
     involvedCompanies: [1],
-    stakes: 'HIGH',
+    stakes: 'CRITICAL',
     choices: [
       {
-        id: 'dig_deeper',
-        label: 'Investigate the Patent',
-        description: 'Spend extra hours digging into Patent #8829. There might be something here.',
-        alignment: 'CAUTIOUS',
-        consequences: {
-          stats: { stress: 10, analystRating: 5 },
-          npcEffects: [
-            { npcId: 'sarah', relationship: 5, memory: 'Impressed by thorough research approach' },
-          ],
-          setsFlags: ['INVESTIGATING_PATENT'],
-          queuesEvent: { eventId: 'evt_patent_discovery', delayWeeks: 0 },
-          notification: { 
-            title: 'Investigation Started', 
-            message: 'You pull the patent filings. This is going to be a long night.', 
-            type: 'info' 
-          },
-        },
-        playerLine: 'Something doesn\'t add up here. I need to look closer.',
-        epilogue: 'At 2am, surrounded by empty coffee cups and patent documents, you start to see the bigger picture...',
-      },
-      {
-        id: 'recommend_pass',
-        label: 'Recommend Pass',
-        description: 'The numbers don\'t work. Tell Chad it\'s not worth pursuing.',
-        alignment: 'CAUTIOUS',
-        consequences: {
-          stats: { stress: -5, reputation: -5 },
-          npcEffects: [
-            { npcId: 'chad', relationship: -10, memory: 'Dismissed PackFancy without thorough analysis' },
-          ],
-          setsFlags: ['DEAL_PASSED'],
-          notification: { 
-            title: 'Deal Declined', 
-            message: 'Chad grunts. "I didn\'t ask for your opinion. I asked for analysis."', 
-            type: 'warning' 
-          },
-        },
-        playerLine: 'The fundamentals don\'t support an investment at these multiples.',
-        epilogue: 'Chad gives the deal to Hunter. Two weeks later, you see the champagne photos on LinkedIn. Hunter found something you missed.',
-      },
-      {
-        id: 'aggressive_approach',
-        label: 'Go All In',
-        description: 'Trust your gut. Push for an aggressive IOI based on the growth story.',
+        id: 'full_control_lbo',
+        label: 'Go For Control',
+        description: 'Pitch PackFancy as a full-control LBO and make it your deal.',
         alignment: 'BOLD',
         skillCheck: {
           skill: 'financialEngineering',
-          threshold: 35,
+          threshold: 38,
           successConsequences: {
-            stats: { reputation: 15, cash: 5000 },
-            notification: { 
-              title: 'Model Approved', 
-              message: 'Your aggressive model impressed the partners. Bold move.', 
-              type: 'success' 
+            stats: { reputation: 12, financialEngineering: 4 },
+            npcEffects: [
+              { npcId: 'chad', relationship: 12, memory: 'Took decisive ownership of PackFancy' },
+              { npcId: 'hunter', relationship: -8, memory: 'Beat me to the narrative on PackFancy' },
+            ],
+            notification: {
+              title: 'Room Captured',
+              message: 'Chad nods before you finish. The deal suddenly sounds bigger because you made it sound inevitable.',
+              type: 'success'
             },
           },
           failureConsequences: {
-            stats: { reputation: -10 },
-            setsFlags: ['DEAL_BOTCHED'],
-            notification: { 
-              title: 'Model Rejected', 
-              message: 'The model fell apart under scrutiny. Chad is not happy.', 
-              type: 'error' 
+            stats: { reputation: -6, auditRisk: 5 },
+            npcEffects: [
+              { npcId: 'chad', relationship: -6, memory: 'Reached too far on an early deal pitch' },
+            ],
+            notification: {
+              title: 'Too Hot',
+              message: 'The ambition is obvious. So are the holes. Chad tells you to tighten the model before anyone repeats it.',
+              type: 'warning'
             },
           },
         },
         consequences: {
-          stats: { stress: 15 },
-          setsFlags: ['AGGRESSIVE_APPROACH'],
-        },
-        playerLine: 'Sometimes you have to trust your instincts. I see upside here.',
-      },
-      {
-        id: 'ask_sarah',
-        label: 'Loop in Sarah',
-        description: 'Ask Sarah to help with the analysis. Two heads are better than one.',
-        alignment: 'DIPLOMATIC',
-        consequences: {
-          stats: { stress: -5 },
-          npcEffects: [
-            { npcId: 'sarah', relationship: 10, trust: 5, memory: 'Included me from the start' },
-          ],
-          setsFlags: ['SARAH_INVOLVED'],
-          queuesEvent: { eventId: 'evt_sarah_finds_patent', delayWeeks: 0 },
-          notification: { 
-            title: 'Teamwork', 
-            message: 'Sarah\'s eyes light up. "I love a puzzle. Let\'s crack this."', 
-            type: 'info' 
+          stats: { stress: 8, analystRating: 5 },
+          companyEffects: [{
+            companyId: 1,
+            changes: { currentValuation: 95000000 },
+          }],
+          setsFlags: ['FOUND_PATENT', 'PACKFANCY_STRUCTURED', 'PACKFANCY_LBO'],
+          queuesEvent: { eventId: 'evt_hunter_credit_steal', delayWeeks: 1 },
+          notification: {
+            title: 'Flag Planted',
+            message: 'You call your shot. PackFancy is now your deal to win or lose.',
+            type: 'info'
           },
         },
-        playerLine: 'Sarah, got a minute? I could use a second set of eyes on this.',
-        immediateResponse: 'She looks up from her terminal, already curious. "Show me what you\'ve got."',
+        playerLine: 'We do this as a real buyout. Take control, push the IP hard, and make the market catch up to us.',
+        epilogue: 'For the first time, the room is reacting to you instead of past you.',
+      },
+      {
+        id: 'shape_the_growth_story',
+        label: 'Frame The Upside',
+        description: 'Pitch a cleaner growth story with the patent as the wedge, not the whole story.',
+        alignment: 'CAUTIOUS',
+        consequences: {
+          stats: { reputation: 8, analystRating: 3, stress: 2 },
+          npcEffects: [
+            { npcId: 'chad', relationship: 6, memory: 'Turned PackFancy into a disciplined growth angle' },
+            { npcId: 'sarah', relationship: 6, trust: 4, memory: 'Built on the PackFancy thesis without panicking' },
+          ],
+          companyEffects: [{
+            companyId: 1,
+            changes: { currentValuation: 82000000 },
+          }],
+          setsFlags: ['FOUND_PATENT', 'PACKFANCY_STRUCTURED', 'PACKFANCY_GROWTH'],
+          queuesEvent: { eventId: 'evt_hunter_credit_steal', delayWeeks: 1 },
+          notification: {
+            title: 'Angle Locked',
+            message: 'The story tightens immediately. Chad has something sharp enough to repeat, and that matters.',
+            type: 'success'
+          },
+        },
+        playerLine: 'We do not need a hero model. We need a thesis the partners can defend when the room pushes back.',
+        epilogue: 'You feel the shift right away: less flash, more conviction.',
+      },
+      {
+        id: 'bring_sarah_into_the_room',
+        label: 'Make It A Duo',
+        description: 'Pull Sarah in publicly and lock the thesis down before Hunter can rewrite it.',
+        alignment: 'DIPLOMATIC',
+        consequences: {
+          stats: { reputation: 6, ethics: 8, stress: 4 },
+          npcEffects: [
+            { npcId: 'sarah', relationship: 14, trust: 10, memory: 'Made me a visible ally on PackFancy' },
+            { npcId: 'chad', relationship: 4, memory: 'Built an early team around a live deal' },
+          ],
+          companyEffects: [{
+            companyId: 1,
+            changes: { currentValuation: 88000000 },
+          }],
+          setsFlags: ['FOUND_PATENT', 'PACKFANCY_STRUCTURED', 'PACKFANCY_TEAM_PLAY', 'SHARED_CREDIT'],
+          notification: {
+            title: 'Protected Edge',
+            message: 'Sarah slides into the conversation beside you. Suddenly the thesis has witnesses, not just fans.',
+            type: 'success'
+          },
+        },
+        playerLine: 'Sarah built half this edge with me. We walk this in together, or we do not walk it in at all.',
+        immediateResponse: 'Sarah is on her feet before Chad answers. Hunter finally looks annoyed.',
       },
     ],
-    expiresInWeeks: 1,
+    expiresInWeeks: 0,
     triggerArcId: 'arc_first_deal',
     arcStage: 0,
     advisorHints: {
-      machiavelli: 'Every first deal is a test. Not of the company, but of you. Show them you can find value where others see nothing.',
-      sarah: 'Page 40 has some interesting patent references. Might be worth a deeper look at the IP portfolio.',
+      machiavelli: 'The first deal is not won in the model. It is won in the story the room repeats after you leave.',
+      sarah: 'If you do not claim the angle clearly, Hunter will do it for you.',
     },
   },
 
@@ -555,8 +567,7 @@ He knows you heard. And he doesn\'t care.
     involvedCompanies: [],
     stakes: 'HIGH',
     requirements: {
-      completedEvents: ['evt_patent_discovery'],
-      requiredFlags: ['FOUND_PATENT'],
+      requiredFlags: ['FOUND_PATENT', 'PACKFANCY_STRUCTURED'],
       blockedByFlags: ['SHARED_CREDIT'], // If Sarah got credit, Hunter can't steal it
     },
     choices: [

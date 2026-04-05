@@ -13,13 +13,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useRPGEvents } from '../contexts/RPGEventContext';
 import { TerminalPanel, TerminalButton } from './TerminalUI';
-import EventFeed from './EventFeed';
-import EventCard from './EventCard';
+import EventFeed, { type DecisionPulse } from './EventFeed';
 // ConsequenceToast removed - consequences now route through central toast system
-import type { StoryEvent, EventChoice, EventConsequences } from '../types/rpgEvents';
-import type { StatChanges } from '../types';
+import type { StoryEvent, EventChoice } from '../types/rpgEvents';
+import type { StatChanges, PlayerStats, NPC } from '../types';
 import { Z_INDEX } from '../constants';
-import { STORY_EVENTS, createEventMap } from '../constants/rpgContent';
+import { createEventMap } from '../constants/rpgContent';
+import type { ChoiceResult } from '../utils/eventQueueManager';
 
 interface EventDrivenWorkspaceProps {
   tutorialStep: number;
@@ -34,6 +34,91 @@ interface EventDrivenWorkspaceProps {
   onTutorialComplete?: () => void;
   onConsultAdvisor?: () => void;
 }
+
+const impactStatLabels: Partial<Record<keyof StatChanges, string>> = {
+  cash: 'Cash',
+  reputation: 'Rep',
+  stress: 'Stress',
+  energy: 'Energy',
+  analystRating: 'Analyst',
+  financialEngineering: 'Model',
+  ethics: 'Ethics',
+  auditRisk: 'Audit',
+};
+
+const formatStatDetail = (key: keyof StatChanges, value: number): string => {
+  if (key === 'cash') {
+    return `${value > 0 ? '+' : '-'}$${Math.abs(value).toLocaleString()} ${impactStatLabels[key]}`;
+  }
+  return `${value > 0 ? '+' : ''}${value} ${impactStatLabels[key] || key}`;
+};
+
+const buildDecisionPulse = (
+  event: StoryEvent,
+  choice: EventChoice,
+  result: ChoiceResult,
+  playerStats: PlayerStats,
+  npcs: NPC[],
+  eventMap: Map<string, StoryEvent>,
+): DecisionPulse => {
+  const details: string[] = [];
+  const { consequences } = result;
+
+  if (result.skillCheckResult) {
+    details.push(
+      `${result.skillCheckResult.passed ? 'Skill check passed' : 'Skill check missed'} (${result.skillCheckResult.rolled}/${result.skillCheckResult.threshold})`
+    );
+  }
+
+  const statEntries = Object.entries(consequences.stats || {})
+    .filter(([, value]) => typeof value === 'number' && value !== 0)
+    .slice(0, 3) as Array<[keyof StatChanges, number]>;
+  for (const [key, value] of statEntries) {
+    details.push(formatStatDetail(key, value));
+  }
+
+  for (const effect of consequences.npcEffects?.slice(0, 2) || []) {
+    const npc = npcs.find(candidate => candidate.id === effect.npcId);
+    const npcChanges = [
+      typeof effect.relationship === 'number' && `${effect.relationship > 0 ? '+' : ''}${effect.relationship} relationship`,
+      typeof effect.trust === 'number' && `${effect.trust > 0 ? '+' : ''}${effect.trust} trust`,
+      typeof effect.mood === 'number' && `${effect.mood > 0 ? '+' : ''}${effect.mood} mood`,
+    ].filter(Boolean).join(' | ');
+
+    if (npcChanges) {
+      details.push(`${npc?.name || effect.npcId}: ${npcChanges}`);
+    }
+  }
+
+  for (const effect of consequences.companyEffects?.slice(0, 1) || []) {
+    const company = playerStats.portfolio.find(candidate => candidate.id === effect.companyId);
+    if (typeof effect.changes.currentValuation === 'number') {
+      details.push(
+        `${company?.name || `Company ${effect.companyId}`}: now framed at $${(effect.changes.currentValuation / 1_000_000).toFixed(1)}M`
+      );
+    }
+  }
+
+  const queuedNextBeat = consequences.queuesEvent
+    ? eventMap.get(consequences.queuesEvent.eventId)?.title
+    : undefined;
+  const triggeredNextBeat = result.triggeredEvents[0]
+    ? eventMap.get(result.triggeredEvents[0])?.title
+    : undefined;
+
+  return {
+    eventTitle: event.title,
+    choiceLabel: choice.label,
+    tone: consequences.notification?.type || 'info',
+    summary:
+      consequences.notification?.message ||
+      result.narrative.response ||
+      choice.immediateResponse ||
+      'The room shifts the moment you commit.',
+    details: details.slice(0, 4),
+    nextBeat: queuedNextBeat || triggeredNextBeat,
+  };
+};
 
 const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
   tutorialStep,
@@ -76,12 +161,17 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
 
   // Event map for lookups
   const eventMap = useMemo(() => createEventMap(), []);
+  const [decisionPulse, setDecisionPulse] = useState<DecisionPulse | null>(null);
 
   // Get available events
   const availableEvents = useMemo(() => {
     if (!playerStats) return [];
     return getAvailableEvents(playerStats, npcs, marketVolatility);
   }, [playerStats, npcs, marketVolatility, getAvailableEvents]);
+  const hasOnboardingEvent = useMemo(
+    () => availableEvents.some(event => event.isOnboarding),
+    [availableEvents]
+  );
 
   // Get current priority event from queue
   const priorityEvent = useMemo(() => {
@@ -116,10 +206,11 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
 
   // Ensure events are available on mount and when player stats change
   useEffect(() => {
-    if (playerStats && tutorialStep === 0) {
+    const shouldRefreshQueue = tutorialStep === 0 && (!hasOnboardingEvent || worldFlags.has('TUTORIAL_COMPLETE'));
+    if (playerStats && shouldRefreshQueue) {
       refreshEventQueue(playerStats, npcs, marketVolatility);
     }
-  }, [playerStats?.gameTime?.week, tutorialStep]);
+  }, [playerStats, tutorialStep, hasOnboardingEvent, worldFlags, refreshEventQueue, npcs, marketVolatility]);
 
   // Handle event choice
   const handleEventChoice = useCallback((event: StoryEvent, choice: EventChoice) => {
@@ -131,6 +222,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     // Apply consequences to game state
     const statChanges = applyConsequences(result.consequences);
     updatePlayerStats(statChanges);
+    setDecisionPulse(buildDecisionPulse(event, choice, result, playerStats, npcs, eventMap));
 
     // Show consequence via central toast
     const consequenceMsg = choice.label + (result.consequences.notification?.message ? `: ${result.consequences.notification.message}` : ': Decision made.');
@@ -185,7 +277,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     }
 
     // Notification already handled above via central toast
-  }, [playerStats, npcs, makeChoice, applyConsequences, updatePlayerStats, addLogEntry, addToast, onSwitchTab, onTutorialComplete]);
+  }, [playerStats, npcs, makeChoice, applyConsequences, updatePlayerStats, addLogEntry, addToast, onSwitchTab, onTutorialComplete, eventMap]);
 
   // Handle dismiss event (remove from queue)
   const handleDismissEvent = useCallback((eventId: string) => {
@@ -263,6 +355,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
               onDismissEvent={() => {}} // No dismissing onboarding events
               onAdvanceWeek={() => {}} // No advancing during onboarding
               onRefreshEvents={() => {}} // No refreshing during onboarding
+              decisionPulse={decisionPulse}
               className="flex-1"
             />
           </TerminalPanel>
@@ -297,6 +390,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
                 onDismissEvent={handleDismissEvent}
                 onAdvanceWeek={handleAdvanceWeek}
                 onRefreshEvents={handleRefreshEvents}
+                decisionPulse={decisionPulse}
                 className="flex-1"
               />
             </TerminalPanel>
@@ -321,6 +415,7 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
           onDismissEvent={handleDismissEvent}
           onAdvanceWeek={handleAdvanceWeek}
           onRefreshEvents={handleRefreshEvents}
+          decisionPulse={decisionPulse}
           className="flex-1"
         />
 
