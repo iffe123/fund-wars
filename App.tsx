@@ -765,7 +765,7 @@ const App: React.FC = () => {
 
             {/* Chat Panel (4th column, shown when chat is open) */}
             {isChatOpen && (
-                <div className="border-l border-slate-700 bg-slate-900 min-w-0 h-full overflow-hidden flex flex-col">
+                <div className="border-l border-slate-700 bg-slate-900 min-w-0 min-h-0 h-full overflow-hidden flex flex-col">
                     {/* Chat Panel Header */}
                     <div className="bg-slate-800 p-2 flex justify-between items-center border-b border-amber-500/30 shrink-0">
                         <div className="flex items-center space-x-2">
@@ -786,7 +786,7 @@ const App: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 min-h-0 overflow-hidden">
                         <CommsTerminal
                             key="desktop-comms-inline"
                             mode="MOBILE_EMBED"

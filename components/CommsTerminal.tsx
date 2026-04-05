@@ -325,15 +325,19 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
   // Styling logic based on mode
   // CommsTerminal should always float above content panels (z-[150] > z-[100] for tutorial panels)
   const containerClasses = mode === 'MOBILE_EMBED'
-      ? "w-full h-full flex flex-col bg-slate-900"
-      : `fixed w-[90vw] md:w-[600px] md:max-w-[calc(100vw-520px)] h-[70vh] max-h-[calc(100vh-120px)] flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-[150] border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'ring-2 ring-amber-500' : ''}`;
+      ? "w-full h-full min-h-0 flex flex-col bg-slate-900"
+      : `fixed w-[90vw] md:w-[600px] md:max-w-[calc(100vw-520px)] h-[70vh] max-h-[calc(100vh-120px)] min-h-0 flex flex-col bg-slate-900 rounded-sm shadow-[0_0_40px_rgba(0,0,0,0.8)] z-[150] border border-slate-700 overflow-hidden font-mono text-sm ${tutorialStep === 5 ? 'ring-2 ring-amber-500' : ''}`;
 
   const containerStyle = mode === 'DESKTOP_OVERLAY'
       ? { top: dragPosition.y, left: dragPosition.x }
       : undefined;
 
   return (
-    <div className={containerClasses} style={containerStyle}>
+    <div
+        className={containerClasses}
+        style={containerStyle}
+        data-testid="comms-root"
+    >
         {/* Terminal Header - Only show in Overlay mode */}
         {mode === 'DESKTOP_OVERLAY' && (
             <div
@@ -371,13 +375,16 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
             </div>
         )}
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 min-h-0 overflow-hidden" data-testid="comms-layout">
             {/* Sidebar (Contacts) */}
-            <div className={`${mode === 'MOBILE_EMBED' ? 'w-16 md:w-48' : 'w-48'} bg-slate-950 border-r border-slate-800 flex flex-col ${tutorialStep === 4 ? 'relative z-[80]' : ''}`}>
+            <div
+                className={`${mode === 'MOBILE_EMBED' ? 'w-16 md:w-48' : 'w-48'} bg-slate-950 border-r border-slate-800 flex min-h-0 flex-col ${tutorialStep === 4 ? 'relative z-[80]' : ''}`}
+                data-testid="comms-sidebar"
+            >
                 <div className="p-2 text-xs text-slate-500 uppercase tracking-wider font-bold border-b border-slate-800 bg-slate-900 hidden md:block">
                     Contacts
                 </div>
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 min-h-0 overflow-y-auto">
                     <button 
                         onClick={() => setActiveTab('ADVISOR')}
                         className={`w-full text-left p-3 flex items-center space-x-3 transition-colors border-l-4 ${activeTab === 'ADVISOR' ? 'bg-amber-900/30 border-amber-400 text-amber-300 shadow-inner' : 'border-transparent text-slate-200 hover:bg-slate-900 hover:text-white'}`}
@@ -432,9 +439,12 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col bg-slate-900 relative">
+            <div className="flex-1 min-h-0 flex flex-col bg-slate-900" data-testid="comms-chat-area">
                 {/* Chat Header Info */}
-                <div className="p-3 border-b border-slate-800 bg-slate-900/95 flex justify-between items-center backdrop-blur-sm absolute top-0 w-full z-10 min-h-[4.5rem]">
+                <div
+                    className="shrink-0 p-3 border-b border-slate-800 bg-slate-900/95 flex justify-between items-center backdrop-blur-sm min-h-[4.5rem]"
+                    data-testid="comms-header"
+                >
                     <div>
                         <span className="font-bold text-slate-200 block truncate">
                             {activeTab === 'ADVISOR' ? 'Machiavelli (Advisor)' : activeNPC?.name}
@@ -465,7 +475,12 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                 </div>
 
                 {/* Messages */}
-                <div ref={messagesContainerRef} className="flex-1 p-4 pt-20 pb-48 overflow-y-auto space-y-4 custom-scrollbar scroll-smooth" style={{ scrollPaddingBottom: '12rem' }}>
+                <div
+                    ref={messagesContainerRef}
+                    className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 custom-scrollbar scroll-smooth"
+                    style={{ WebkitOverflowScrolling: 'touch' }}
+                    data-testid="comms-messages"
+                >
                     {activeMessages.map((msg, index) => {
                         const isPlayer = msg.sender === 'player';
                         const isSystem = msg.sender === 'system';
@@ -544,7 +559,10 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                 </div>
 
                 {/* Input Area (Sticky Bottom) */}
-                <div className="p-2 md:p-3 border-t border-slate-800 bg-slate-900/95 backdrop-blur-sm absolute bottom-0 left-0 right-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                <div
+                    className="shrink-0 p-2 md:p-3 border-t border-slate-800 bg-slate-900/95 backdrop-blur-sm pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+                    data-testid="comms-composer"
+                >
                     {/* Quick Responses */}
                     <div className="flex overflow-x-auto gap-3 mb-3 pb-1 no-scrollbar">
                          {activeTab === 'ADVISOR' ? (
