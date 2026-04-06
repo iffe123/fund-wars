@@ -1,0 +1,113 @@
+// @vitest-environment jsdom
+
+import React from 'react';
+import { act } from 'react';
+import { createRoot } from 'react-dom/client';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import IntroSequence from '../components/intro/IntroSequence';
+
+interface RenderResult {
+  container: HTMLDivElement;
+  unmount: () => void;
+}
+
+const renderIntro = (onComplete: ReturnType<typeof vi.fn>, quickStart = false): RenderResult => {
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const root = createRoot(container);
+
+  act(() => {
+    root.render(<IntroSequence onComplete={onComplete} quickStart={quickStart} />);
+  });
+
+  return {
+    container,
+    unmount: () => {
+      act(() => {
+        root.unmount();
+      });
+      container.remove();
+    },
+  };
+};
+
+const clickButton = (container: HTMLElement, label: string) => {
+  const button = Array.from(container.querySelectorAll('button')).find((candidate) =>
+    candidate.textContent?.includes(label)
+  ) as HTMLButtonElement | undefined;
+
+  if (!button) {
+    throw new Error(`Button not found: ${label}`);
+  }
+
+  act(() => {
+    button.click();
+  });
+};
+
+const setInputValue = (input: HTMLInputElement, value: string) => {
+  const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  descriptor?.set?.call(input, value);
+
+  act(() => {
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+};
+
+describe('IntroSequence difficulty flow', () => {
+  beforeEach(() => {
+    (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    vi.useFakeTimers();
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+    (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
+    document.body.innerHTML = '';
+    localStorage.clear();
+  });
+
+  it('passes the selected difficulty and player name into game start', () => {
+    const onComplete = vi.fn();
+    const { container, unmount } = renderIntro(onComplete);
+
+    for (const label of ['Step Inside', 'Sit Down', 'Get Started', 'Got It', 'Understood']) {
+      clickButton(container, label);
+      act(() => {
+        vi.advanceTimersByTime(450);
+      });
+    }
+
+    clickButton(container, 'Enter Sterling Partners');
+
+    const input = container.querySelector('input[placeholder="Enter your name..."]') as HTMLInputElement;
+    setInputValue(input, 'Alex');
+
+    const hardButton = container.querySelector('[data-testid="difficulty-hard"]') as HTMLButtonElement;
+    act(() => {
+      hardButton.click();
+    });
+
+    const startButton = container.querySelector('[data-testid="intro-start"]') as HTMLButtonElement;
+    act(() => {
+      startButton.click();
+    });
+
+    expect(onComplete).toHaveBeenCalledWith(5, 'Alex', 'Hard');
+    expect(localStorage.getItem('fundwars_selected_difficulty')).toBe('Hard');
+
+    unmount();
+  });
+
+  it('uses the saved difficulty when quick start is enabled', () => {
+    localStorage.setItem('fundwars_selected_difficulty', 'Easy');
+    const onComplete = vi.fn();
+    const { unmount } = renderIntro(onComplete, true);
+
+    expect(onComplete).toHaveBeenCalledWith(5, undefined, 'Easy');
+
+    unmount();
+  });
+});

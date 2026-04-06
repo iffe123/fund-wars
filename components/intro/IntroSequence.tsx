@@ -1,10 +1,55 @@
 import React, { useState, useCallback } from 'react';
+import type { Difficulty } from '../../types';
 import IntroSlide, { SlideContent } from './IntroSlide';
 
 interface IntroSequenceProps {
-  onComplete: (stressLevel: number, playerName?: string) => void;
+  onComplete: (stressLevel: number, playerName?: string, difficulty?: Difficulty) => void;
   quickStart?: boolean;
 }
+
+const INTRO_DIFFICULTY_KEY = 'fundwars_selected_difficulty';
+
+const DIFFICULTY_OPTIONS: Array<{
+  key: Difficulty;
+  label: string;
+  subtitle: string;
+  icon: string;
+  colorClasses: string;
+  selectedClasses: string;
+}> = [
+  {
+    key: 'Easy',
+    label: 'Trust Fund Baby',
+    subtitle: 'More cash, lower stress, gentler start',
+    icon: 'fa-champagne-glasses',
+    colorClasses: 'text-emerald-400',
+    selectedClasses: 'border-emerald-500 bg-emerald-950/40 ring-1 ring-emerald-500/30',
+  },
+  {
+    key: 'Normal',
+    label: 'MBA Grad',
+    subtitle: 'Balanced, standard PE grind',
+    icon: 'fa-briefcase',
+    colorClasses: 'text-amber-400',
+    selectedClasses: 'border-amber-500 bg-amber-950/40 ring-1 ring-amber-500/30',
+  },
+  {
+    key: 'Hard',
+    label: 'State School Striver',
+    subtitle: 'Broke, unknown, and in debt',
+    icon: 'fa-fire',
+    colorClasses: 'text-red-400',
+    selectedClasses: 'border-red-500 bg-red-950/40 ring-1 ring-red-500/30',
+  },
+];
+
+const readSavedDifficulty = (): Difficulty | undefined => {
+  const saved = localStorage.getItem(INTRO_DIFFICULTY_KEY);
+  if (saved === 'Easy' || saved === 'Normal' || saved === 'Hard') {
+    return saved;
+  }
+  return undefined;
+};
 
 const INTRO_SLIDES: SlideContent[] = [
   {
@@ -13,7 +58,7 @@ const INTRO_SLIDES: SlideContent[] = [
     narrative: [
       'The elevator opens to mahogany and money.',
       'Welcome to Sterling Partners. $2.4 billion AUM. Top-quartile returns.',
-      'A place where careers are made—or destroyed in a single bad quarter.',
+      'A place where careers are made or destroyed in a single bad quarter.',
     ],
     buttonText: 'Step Inside',
     buttonVariant: 'primary',
@@ -22,7 +67,7 @@ const INTRO_SLIDES: SlideContent[] = [
     id: 'desk',
     title: 'Your Desk',
     narrative: [
-      'Your desk awaits in the analyst bullpen. Coffee\'s already getting cold.',
+      'Your desk awaits in the analyst bullpen. Coffee is already getting cold.',
       'Somewhere across the trading floor, a Managing Director is about to drop something on your desk that will define your next six months.',
     ],
     buttonText: 'Sit Down',
@@ -32,23 +77,23 @@ const INTRO_SLIDES: SlideContent[] = [
     id: 'assignment',
     title: 'The Assignment',
     narrative: [
-      '"New analyst? Good. PackFancy Inc. Packaging company. Boring as hell but the numbers might work. Run the model. Don\'t embarrass me."',
-      'He\'s already walking away.',
+      '"New analyst? Good. PackFancy Inc. Packaging company. Boring as hell but the numbers might work. Run the model. Do not embarrass me."',
+      'He is already walking away.',
     ],
     buttonText: 'Get Started',
     buttonVariant: 'secondary',
     showCharacterPortrait: true,
-    characterName: 'Chad Worthington III',
+    characterName: 'Chad Worthington',
     characterRole: 'Managing Director',
   },
   {
     id: 'your-tools',
     title: 'Your Command Center',
     narrative: [
-      'Your desk is your command center. Here\'s what you have to work with:',
-      'COMMS — Your contacts are on the left. Click any name to open a conversation. Build relationships, gather intel, call in favors.',
-      'BLOOMBERG IB — The chat terminal on the right connects you to your AI advisor, Machiavelli. He\'s ruthless, brilliant, and always available. Use him.',
-      'DESK — Your main workspace shows events, decisions, and deal flow. This is where the action happens.',
+      'Your desk is your command center. Here is what you have to work with:',
+      'COMMS - Your contacts are on the left. Click any name to open a conversation. Build relationships, gather intel, call in favors.',
+      'BLOOMBERG IB - The chat terminal on the right connects you to your AI advisor, Machiavelli. He is ruthless, brilliant, and always available. Use him.',
+      'DESK - Your main workspace shows events, decisions, and deal flow. This is where the action happens.',
     ],
     buttonText: 'Got It',
     buttonVariant: 'primary',
@@ -57,11 +102,10 @@ const INTRO_SLIDES: SlideContent[] = [
     id: 'mechanics',
     title: 'How to Survive',
     narrative: [
-      'Every major action costs AP (Action Points). You get a limited number each week. Spend them wisely — run diligence, submit offers, network, and manage stress.',
-      'STRESS builds with every hard decision and late night. Hit 100% and you burn out. Rest, socialize, or find other ways to cope.',
+      'You get 3 Action Points (AP) per week. Every real action - diligence, bidding, networking - costs 1 AP. Choose your 3 moves wisely.',
+      'STRESS builds with every hard decision. Hit 100% and you burn out. Resting and chatting are free.',
       'REPUTATION determines your standing at the firm and unlocks new opportunities. Make smart deals and keep the MDs happy.',
       'At the end of each week, click "End Week" to advance time and face new challenges.',
-      'Quick glossary: IOI = Indicative Offer (your first bid), IC = Investment Committee (partner approval meeting).',
     ],
     buttonText: 'Understood',
     buttonVariant: 'primary',
@@ -71,7 +115,7 @@ const INTRO_SLIDES: SlideContent[] = [
     title: 'Your Mission',
     narrative: [
       'You have ONE WEEK to analyze this deal before the IOI deadline.',
-      'Miss it, and Chad will find someone who won\'t.',
+      'Miss it, and Chad will find someone who will not.',
     ],
     buttonText: 'Enter Sterling Partners',
     buttonVariant: 'accent',
@@ -83,6 +127,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [skipFutureIntros, setSkipFutureIntros] = useState(false);
   const [playerName, setPlayerName] = useState('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(() => readSavedDifficulty() || 'Normal');
   const [showNameEntry, setShowNameEntry] = useState(false);
 
   const persistIntroPreference = useCallback(() => {
@@ -91,10 +136,9 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
     }
   }, [skipFutureIntros]);
 
-  // Quick start: skip all animations and go straight to game
   React.useEffect(() => {
     if (quickStart) {
-      onComplete(5);
+      onComplete(5, undefined, readSavedDifficulty());
     }
   }, [quickStart, onComplete]);
 
@@ -102,36 +146,33 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
 
   const finishIntro = useCallback(() => {
     persistIntroPreference();
-    onComplete(5, playerName.trim() || undefined);
-  }, [onComplete, persistIntroPreference, playerName]);
+    localStorage.setItem(INTRO_DIFFICULTY_KEY, selectedDifficulty);
+    onComplete(5, playerName.trim() || undefined, selectedDifficulty);
+  }, [onComplete, persistIntroPreference, playerName, selectedDifficulty]);
 
   const handleContinue = useCallback(() => {
     if (isTransitioning) return;
 
     if (currentSlide < INTRO_SLIDES.length - 1) {
-      // Transition to next slide
       setIsTransitioning(true);
       setTimeout(() => {
-        setCurrentSlide(prev => prev + 1);
+        setCurrentSlide((prev) => prev + 1);
         setIsTransitioning(false);
       }, 400);
     } else {
-      // Final slide - show name entry before completing
       setShowNameEntry(true);
     }
   }, [currentSlide, isTransitioning]);
 
   const handleSkip = useCallback(() => {
     persistIntroPreference();
-    onComplete(5, undefined);
+    onComplete(5, undefined, readSavedDifficulty());
   }, [onComplete, persistIntroPreference]);
 
   return (
     <div className="fixed inset-0 bg-slate-950 text-white overflow-hidden" style={{ zIndex: 100 }}>
-      {/* Subtle gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
 
-      {/* Subtle grid pattern */}
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
@@ -143,9 +184,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
         }}
       />
 
-      {/* Top bar with progress */}
       <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10">
-        {/* Logo / Title */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-amber-500 rounded flex items-center justify-center">
             <i className="fas fa-chart-line text-black text-sm"></i>
@@ -155,8 +194,8 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
           </span>
         </div>
 
-        {/* Skip button */}
         <button
+          type="button"
           onClick={handleSkip}
           className="text-xs text-slate-600 hover:text-slate-400 font-mono uppercase tracking-wider transition-colors"
         >
@@ -176,7 +215,6 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
         </label>
       </div>
 
-      {/* Progress dots */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
         {INTRO_SLIDES.map((_, index) => (
           <div
@@ -194,35 +232,66 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
         ))}
       </div>
 
-      {/* Name Entry Overlay */}
       {showNameEntry && (
-        <div className="absolute inset-0 flex items-center justify-center z-20">
-          <div className="max-w-md w-full mx-6">
-            <h2 className="text-2xl font-bold text-white mb-2 font-mono">One Last Thing</h2>
-            <p className="text-slate-400 mb-6 text-sm">What should we call you?</p>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') finishIntro(); }}
-              placeholder="Enter your name..."
-              maxLength={24}
-              autoFocus
-              className="w-full bg-slate-950 border-2 border-slate-600 text-white rounded px-4 py-3 text-lg font-mono focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/50 transition-all mb-4 placeholder-slate-600"
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={finishIntro}
-                className="flex-1 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold font-mono text-sm uppercase tracking-widest rounded-sm transition-all"
-              >
-                {playerName.trim() ? 'Let\'s Go' : 'Stay Anonymous'}
-              </button>
+        <div className="absolute inset-0 flex items-center justify-center z-20 bg-slate-950/80 backdrop-blur-sm">
+          <div className="max-w-lg w-full mx-6 space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2 font-mono">Before You Start</h2>
+              <p className="text-slate-400 mb-4 text-sm">What should we call you?</p>
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') finishIntro(); }}
+                placeholder="Enter your name..."
+                maxLength={24}
+                autoFocus
+                className="w-full bg-slate-950 border-2 border-slate-600 text-white rounded px-4 py-3 text-lg font-mono focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/50 transition-all placeholder-slate-600"
+              />
             </div>
+
+            <div>
+              <p className="text-slate-400 mb-3 text-sm">Choose your difficulty:</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {DIFFICULTY_OPTIONS.map((option) => {
+                  const isSelected = selectedDifficulty === option.key;
+
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      data-testid={`difficulty-${option.key.toLowerCase()}`}
+                      onClick={() => setSelectedDifficulty(option.key)}
+                      className={[
+                        'p-4 rounded-lg border-2 text-center transition-all bg-slate-900/50 hover:border-slate-500',
+                        isSelected ? option.selectedClasses : 'border-slate-700',
+                      ].join(' ')}
+                    >
+                      <i className={`fas ${option.icon} text-xl mb-2 ${isSelected ? option.colorClasses : 'text-slate-500'}`}></i>
+                      <div className={`text-sm font-bold font-mono ${isSelected ? 'text-white' : 'text-slate-300'}`}>
+                        {option.label}
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-1 leading-tight">
+                        {option.subtitle}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              data-testid="intro-start"
+              onClick={finishIntro}
+              className="w-full px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold font-mono text-sm uppercase tracking-widest rounded-sm transition-all"
+            >
+              {playerName.trim() ? 'Let\'s Go' : 'Stay Anonymous'}
+            </button>
           </div>
         </div>
       )}
 
-      {/* Slide container */}
       <div className={`
         absolute inset-0
         transition-opacity duration-400
@@ -238,7 +307,6 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
         ))}
       </div>
 
-      {/* Decorative corner elements */}
       <div className="absolute top-4 left-4 w-16 h-16 border-l border-t border-slate-800/50" />
       <div className="absolute top-4 right-4 w-16 h-16 border-r border-t border-slate-800/50" />
       <div className="absolute bottom-4 left-4 w-16 h-16 border-l border-b border-slate-800/50" />
