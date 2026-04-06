@@ -31,6 +31,7 @@ import type {
   WeeklySummary as WeeklySummaryType,
   WeekPhase,
 } from '../types/rpgEvents';
+import { formatFlagLabel, formatStatDisplayName, humanizeIdentifier } from './presentationText';
 
 // Re-export for use in context
 export type ChoiceResult = ChoiceResultType;
@@ -151,23 +152,23 @@ export const checkChoiceRequirements = (
     if (requirements.stat.min && statValue < requirements.stat.min) {
       return { 
         available: false, 
-        reason: `Requires ${requirements.stat.name} ≥ ${requirements.stat.min}` 
+        reason: `Requires ${formatStatDisplayName(requirements.stat.name)} ${requirements.stat.min}+`
       };
     }
     if (requirements.stat.max && statValue > requirements.stat.max) {
       return { 
         available: false, 
-        reason: `Requires ${requirements.stat.name} ≤ ${requirements.stat.max}` 
+        reason: `${formatStatDisplayName(requirements.stat.name)} too high`
       };
     }
   }
 
   // Flag check
   if (requirements.flag && !worldFlags.has(requirements.flag)) {
-    return { available: false, reason: 'Locked' };
+    return { available: false, reason: `Requires ${formatFlagLabel(requirements.flag)}` };
   }
   if (requirements.notFlag && worldFlags.has(requirements.notFlag)) {
-    return { available: false, reason: 'Blocked by previous choice' };
+    return { available: false, reason: `Blocked by ${formatFlagLabel(requirements.notFlag)}` };
   }
 
   // NPC relationship check
@@ -187,7 +188,7 @@ export const checkChoiceRequirements = (
     const playerLevelIndex = levelOrder.indexOf(playerStats.level);
     const requiredLevelIndex = levelOrder.indexOf(requirements.minLevel);
     if (playerLevelIndex < requiredLevelIndex) {
-      return { available: false, reason: `Requires ${requirements.minLevel} rank` };
+      return { available: false, reason: `Requires ${humanizeIdentifier(requirements.minLevel)} rank` };
     }
   }
 
@@ -695,7 +696,7 @@ export const ensureEventFlow = (
 
 /**
  * Get the next event player should see.
- * Prioritizes: PRIORITY → High-priority optional → Regular optional
+ * Prioritizes: PRIORITY â†’ High-priority optional â†’ Regular optional
  */
 export const getNextEvent = (
   queue: EventQueue,

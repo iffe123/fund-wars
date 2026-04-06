@@ -19,6 +19,7 @@ import ConsequenceAnimator from './ConsequenceAnimator';
 import StatusBar from './StatusBar';
 import ContextDrawer from './ContextDrawer';
 import { useGameLoop } from '../../hooks/useGameLoop';
+import { getCanonicalSpeakerName, normalizeStoryCopy } from '../../utils/presentationText';
 
 interface StorySceneProps {
   scene: Scene;
@@ -237,7 +238,9 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
             <div className="mb-6 flex items-center gap-4">
               <CharacterPortrait speaker={scene.speaker} />
               <div>
-                <span className="text-green-400 font-bold text-lg">{scene.speaker.name}</span>
+                <span className="text-green-400 font-bold text-lg">
+                  {getCanonicalSpeakerName(scene.speaker.id, scene.speaker.name)}
+                </span>
                 {scene.speaker.mood && scene.speaker.mood !== 'neutral' && (
                   <span className="text-gray-500 text-sm ml-2">
                     ({scene.speaker.mood})
@@ -257,7 +260,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
             `}
           >
             <TypewriterText
-              text={scene.narrative}
+              text={normalizeStoryCopy(scene.narrative)}
               speed={60}
               onComplete={handleTextComplete}
               isComplete={textComplete}
@@ -272,7 +275,7 @@ const StoryScene: React.FC<StorySceneProps> = ({ scene, onChoiceSelect }) => {
                 <span className="text-yellow-500/40 text-xs font-mono">DYNAMIC</span>
               </div>
               <p className="text-gray-400 text-sm italic">
-                {dynamicContent.narrativeAddition}
+                {normalizeStoryCopy(dynamicContent.narrativeAddition)}
               </p>
             </div>
           )}

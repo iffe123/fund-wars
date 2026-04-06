@@ -11,6 +11,12 @@ import type { Scene, Choice, ChoiceEffects } from '../types/storyEngine';
 import type { StatChanges } from '../types';
 import { STORY_SCENES } from '../content/storyContent';
 import { renderMarkdown } from '../utils/renderMarkdown';
+import {
+  formatNpcIdentifier,
+  formatStatDisplayName,
+  getCanonicalSpeakerName,
+  normalizeStoryCopy,
+} from '../utils/presentationText';
 
 interface StoryMilestoneModalProps {
   sceneId: string;
@@ -167,7 +173,7 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
               <div className="text-xs font-mono text-amber-500/60 uppercase tracking-widest">
                 Story Event
               </div>
-              <h2 className="text-xl font-bold text-slate-100">{scene.title}</h2>
+              <h2 className="text-xl font-bold text-slate-100">{normalizeStoryCopy(scene.title)}</h2>
             </div>
           </div>
           <button
@@ -187,7 +193,9 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
               <i className={`fas ${scene.speaker.avatar || 'fa-user'} text-slate-400`} />
             </div>
             <div>
-              <div className="text-sm font-bold text-slate-200">{scene.speaker.name}</div>
+              <div className="text-sm font-bold text-slate-200">
+                {getCanonicalSpeakerName(scene.speaker.id, scene.speaker.name)}
+              </div>
               {scene.speaker.mood && (
                 <div className="text-xs text-slate-500 capitalize">{scene.speaker.mood}</div>
               )}
@@ -204,7 +212,7 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
             ${textRevealed ? 'opacity-100' : 'opacity-0'}
           `}
         >
-          {scene.narrative.split('\n\n').map((paragraph, i) => (
+          {normalizeStoryCopy(scene.narrative).split('\n\n').map((paragraph, i) => (
             <p
               key={i}
               className="text-slate-300 leading-relaxed mb-3 last:mb-0"
@@ -233,20 +241,20 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
                     key={key}
                     className={typeof value === 'number' && value > 0 ? 'text-green-400' : 'text-red-400'}
                   >
-                    {key}: {typeof value === 'number' && value > 0 ? '+' : ''}{value}
+                    {typeof value === 'number' && value > 0 ? '+' : ''}{value} {formatStatDisplayName(key)}
                   </span>
                 ))}
               </div>
             )}
             {selectedChoice.effects?.relationships?.map((rel, i) => (
               <div key={i} className="text-xs font-mono text-blue-400 mt-1">
-                {rel.npcId} relationship: {rel.change > 0 ? '+' : ''}{rel.change}
+                {formatNpcIdentifier(rel.npcId)} Relationship: {rel.change > 0 ? '+' : ''}{rel.change}
                 {rel.memory && <span className="text-slate-500 ml-2">({rel.memory})</span>}
               </div>
             ))}
             {selectedChoice.narratorComment && (
               <div className="text-xs text-slate-500 italic mt-2">
-                {renderMarkdown(selectedChoice.narratorComment)}
+                {renderMarkdown(normalizeStoryCopy(selectedChoice.narratorComment))}
               </div>
             )}
           </div>
@@ -268,6 +276,7 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
               return (
                 <button
                   key={choice.id}
+                  type="button"
                   onClick={() => handleChoiceSelect(choice)}
                   className={`
                     w-full text-left p-4 border rounded
@@ -286,10 +295,12 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
                     </span>
                     <div className="flex-1">
                       <div className="text-sm text-slate-200 group-hover:text-white transition-colors">
-                        {renderMarkdown(choice.text)}
+                        {renderMarkdown(normalizeStoryCopy(choice.text))}
                       </div>
                       {choice.subtext && (
-                        <div className="text-xs text-slate-500 mt-1">{renderMarkdown(choice.subtext)}</div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          {renderMarkdown(normalizeStoryCopy(choice.subtext))}
+                        </div>
                       )}
                       {choice.style && choice.style !== 'normal' && (
                         <span className="inline-block text-[10px] uppercase tracking-wider mt-1 px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
@@ -307,8 +318,9 @@ const StoryMilestoneModal: React.FC<StoryMilestoneModalProps> = ({
         {/* No choices — just a continue button */}
         {showChoices && scene.choices.length === 0 && !selectedChoice && (
           <button
+            type="button"
             onClick={() => onComplete(null)}
-            className="w-full p-4 border border-amber-500/40 rounded text-amber-400 font-mono text-sm hover:bg-amber-500/10 transition-colors"
+            className="w-full p-4 border border-amber-500/40 rounded text-amber-400 font-mono text-sm hover:bg-amber-500/10 transition-colors relative z-10 cursor-pointer"
           >
             [ CONTINUE ]
           </button>

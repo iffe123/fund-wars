@@ -173,4 +173,16 @@ describe('CommsTerminal layout regression', () => {
 
     unmount();
   });
+
+  it('preserves full NPC identity in sidebar titles for tight layouts', () => {
+    const { container, unmount } = renderTerminal(buildMessages(4));
+
+    const chadButton = container.querySelector('button[title="Chad (MD) - Managing Director"]') as HTMLButtonElement;
+    const advisorButton = container.querySelector('button[title="Machiavelli - Advisor (AI)"]') as HTMLButtonElement;
+
+    expect(chadButton).not.toBeNull();
+    expect(advisorButton).not.toBeNull();
+
+    unmount();
+  });
 });

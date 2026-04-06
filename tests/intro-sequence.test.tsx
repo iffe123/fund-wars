@@ -110,4 +110,23 @@ describe('IntroSequence difficulty flow', () => {
 
     unmount();
   });
+
+  it('shows Chad Worthington III consistently in the assignment slide', () => {
+    const onComplete = vi.fn();
+    const { container, unmount } = renderIntro(onComplete);
+
+    clickButton(container, 'Step Inside');
+    act(() => {
+      vi.advanceTimersByTime(450);
+    });
+
+    clickButton(container, 'Sit Down');
+    act(() => {
+      vi.advanceTimersByTime(450);
+    });
+
+    expect(container.textContent).toContain('Chad Worthington III');
+
+    unmount();
+  });
 });

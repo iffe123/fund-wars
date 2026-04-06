@@ -387,12 +387,13 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                 <div className="flex-1 min-h-0 overflow-y-auto">
                     <button 
                         onClick={() => setActiveTab('ADVISOR')}
+                        title="Machiavelli - Advisor (AI)"
                         className={`w-full text-left p-3 flex items-center space-x-3 transition-colors border-l-4 ${activeTab === 'ADVISOR' ? 'bg-amber-900/30 border-amber-400 text-amber-300 shadow-inner' : 'border-transparent text-slate-200 hover:bg-slate-900 hover:text-white'}`}
                     >
                         <i className="fas fa-user-tie text-lg"></i>
-                        <div className="flex-1 truncate hidden md:block">
-                            <span className="font-bold block">Machiavelli</span>
-                            <span className="text-[10px] opacity-70">Advisor (AI)</span>
+                        <div className="flex-1 min-w-0 hidden md:block">
+                            <span className="font-bold block leading-tight">Machiavelli</span>
+                            <span className="text-[10px] opacity-70 leading-tight">Advisor (AI)</span>
                         </div>
                     </button>
                     
@@ -404,6 +405,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                         return (
                         <button
                             key={npc.id}
+                            title={`${npc.name} - ${npc.role}`}
                             onClick={() => {
                                 setActiveTab(npc.id);
                                 if (tutorialStep === 4) setTutorialStep(5);
@@ -419,9 +421,9 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                               <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-slate-950 ${isAvailable ? 'bg-emerald-400' : 'bg-slate-600'}`} title={isAvailable ? 'Available' : 'Off-hours'}></span>
                             </div>
                             <div className="flex-1 min-w-0 hidden md:block">
-                                <span className={`font-bold block truncate ${isTutorialTarget ? 'text-amber-200' : ''}`}>{npc.name}</span>
-                                <span className="text-[10px] opacity-70 block truncate">{npc.role}</span>
-                                <span className="text-[10px] text-slate-500 block">{describeMood(npc.mood ?? 50)} · {describeTrust(npc.trust ?? 50)}</span>
+                                <span className={`font-bold block leading-tight ${isTutorialTarget ? 'text-amber-200' : ''}`} title={npc.name}>{npc.name}</span>
+                                <span className="text-[10px] opacity-70 block leading-tight whitespace-normal break-words" title={npc.role}>{npc.role}</span>
+                                <span className="text-[10px] text-slate-500 block leading-tight whitespace-normal break-words" title={`Mood: ${describeMood(npc.mood ?? 50)} • Trust: ${describeTrust(npc.trust ?? 50)}`}>Mood: {describeMood(npc.mood ?? 50)} • Trust: {describeTrust(npc.trust ?? 50)}</span>
                                 <span className={`text-[9px] uppercase block ${isAvailable ? 'text-emerald-400' : 'text-slate-400'}`} title={!isAvailable && npc.schedule?.unavailableReason ? npc.schedule.unavailableReason : undefined}>
                                     {isAvailable ? 'Available' : 'Off-hours'}
                                 </span>
@@ -446,7 +448,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                     data-testid="comms-header"
                 >
                     <div>
-                        <span className="font-bold text-slate-200 block truncate">
+                        <span className="font-bold text-slate-200 block truncate" title={activeTab === 'ADVISOR' ? 'Machiavelli (Advisor)' : activeNPC?.name}>
                             {activeTab === 'ADVISOR' ? 'Machiavelli (Advisor)' : activeNPC?.name}
                         </span>
                         {activeTab !== 'ADVISOR' && activeNPC && (
@@ -538,7 +540,12 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
                                             </div>
                                         )}
                                         
-                                        <p className="leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">{renderMarkdown(msg.text)}</p>
+                                        <div
+                                            className="leading-relaxed whitespace-pre-wrap break-words max-w-full"
+                                            style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+                                        >
+                                            {renderMarkdown(msg.text)}
+                                        </div>
 
                                         {/* Timestamp */}
                                         <div className={`text-[9px] mt-1.5 ${isPlayer ? 'text-blue-300/60' : 'text-slate-500'}`}>
@@ -654,5 +661,4 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
     </div>
   );
 };
-
 export default CommsTerminal;
