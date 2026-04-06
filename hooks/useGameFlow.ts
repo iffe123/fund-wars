@@ -4,6 +4,7 @@ import type {
   StatChanges,
   Choice,
   GamePhase,
+  Difficulty,
   PortfolioCompany,
   ChatMessage,
   CompanyActiveEvent,
@@ -46,7 +47,7 @@ interface GameFlowDependencies {
 }
 
 interface UseGameFlowReturn {
-  handleIntroComplete: (stress: number) => void;
+  handleIntroComplete: (stress: number, playerName?: string, difficulty?: Difficulty) => void;
   handleStatChange: (changes: StatChanges) => void;
   handleChoice: (choice: Choice) => void;
   handleScenarioFallback: () => void;
@@ -81,9 +82,9 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
     startWeekTransition,
   } = deps;
 
-  const handleIntroComplete = useCallback((stress: number, playerName?: string) => {
-    // Init Stats with standard settings and mandatory PackFancy setup
-    const diffSettings = DIFFICULTY_SETTINGS['Normal'];
+  const handleIntroComplete = useCallback((stress: number, playerName?: string, difficulty?: Difficulty) => {
+    // Init stats with the selected difficulty, defaulting to Normal.
+    const diffSettings = DIFFICULTY_SETTINGS[difficulty || 'Normal'];
     const initialPortfolio: PortfolioCompany[] = [
       {
         id: 1,
