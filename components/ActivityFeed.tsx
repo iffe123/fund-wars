@@ -61,7 +61,7 @@ const ActivityItemComponent: React.FC<{
     <div
       className={`
         flex items-start gap-3 p-3 border-b border-slate-700/30 transition-all duration-300
-        ${isNew ? 'animate-slideIn bg-blue-900/20' : 'hover:bg-slate-800/30'}
+        ${isNew ? 'animate-slide-up bg-blue-900/20' : 'hover:bg-slate-800/30'}
       `}
     >
       <span
@@ -117,8 +117,8 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
       <div className={`flex flex-col items-center justify-center h-full text-slate-500 p-8 ${className}`}>
         <i className="fas fa-clock text-4xl mb-4 opacity-30"></i>
         <div className="text-center">
-          <div className="font-bold mb-2">NO ACTIVITY YET</div>
-          <div className="text-xs">Your actions and events will appear here</div>
+          <div className="font-bold mb-2">THE DESK IS QUIET</div>
+          <div className="text-xs">No moves on the board yet. Make one and it'll show up here.</div>
         </div>
       </div>
     );
@@ -140,27 +140,5 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     </div>
   );
 };
-
-// Add animation keyframes
-if (typeof document !== 'undefined' && !document.getElementById('activity-feed-styles')) {
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    .animate-slideIn {
-      animation: slideIn 0.3s ease-out;
-    }
-  `;
-  style.id = 'activity-feed-styles';
-  document.head.appendChild(style);
-}
 
 export default ActivityFeed;

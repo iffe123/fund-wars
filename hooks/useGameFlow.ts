@@ -138,10 +138,10 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
     setActiveTab('WORKSPACE'); // Ensure we are on the workspace tab
     setBootComplete(true);
     logEvent('game_start');
-    addLogEntry('INIT: Career Sequence Started. Role: Analyst.');
+    addLogEntry('You signed the offer letter. No turning back now.');
     appendChatMessage({
       sender: 'system',
-      text: `[SYSTEM_LOG] Player accepted offer. Starting stress: ${diffSettings.initialStats.stress + stress}`,
+      text: `Welcome to Sterling Partners. Your starting stress level is ${diffSettings.initialStats.stress + stress}. This is normal. Everything is normal.`,
     });
     playSfx('BOOT');
   }, [
@@ -197,8 +197,8 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
           loanBalanceChange: (finalChanges.loanBalanceChange || 0) + loanSize,
           loanRate: 0.22,
         };
-        addToast(`Auto-bridge loan wired: $${loanSize.toLocaleString()}`, 'info');
-        addLogEntry('Emergency loan drawn to cover negative cash.');
+        addToast(`Emergency loan activated: $${loanSize.toLocaleString()}. The bank is very understanding. For now.`, 'info');
+        addLogEntry(`Emergency bridge loan: $${loanSize.toLocaleString()}. Interest starts immediately.`);
       }
     }
 
@@ -209,13 +209,13 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
 
   const handleChoice = useCallback((choice: Choice) => {
     handleStatChange(choice.outcome.statChanges);
-    addToast('ACTION_EXECUTED: ' + choice.text, 'success');
-    addLogEntry(`CHOICE: ${choice.text}`);
+    addToast(choice.text, 'success');
+    addLogEntry(`Decision made: ${choice.text}`);
 
     // Narrative Bridge: Inject choice into Chat History
     appendChatMessage({
       sender: 'system',
-      text: `[SYSTEM_LOG] Player chose: "${choice.text}". Outcome: ${choice.outcome.description}`,
+      text: `You chose: "${choice.text}." ${choice.outcome.description}`,
     });
 
     playSfx('KEYPRESS');
@@ -226,8 +226,8 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
   }, [handleStatChange, addToast, addLogEntry, appendChatMessage, playSfx, setGamePhase]);
 
   const handleScenarioFallback = useCallback(() => {
-    addToast('No actionable intel. Returning to desk.', 'info');
-    addLogEntry('Scenario Cleared: contained no decisions.');
+    addToast('Nothing here. Back to the desk.', 'info');
+    addLogEntry('Scenario reviewed. No action required.');
     setGamePhase('LIFE_MANAGEMENT');
     setActiveTab('WORKSPACE');
   }, [addToast, addLogEntry, setGamePhase, setActiveTab]);
@@ -242,18 +242,18 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
       const weeklyInterest = Math.round((playerStats.loanBalance * activeRate) / 52);
       if (weeklyInterest > 0) {
         updatePlayerStats({ stress: +3 });
-        addToast(`Interest Accrued: $${weeklyInterest.toLocaleString()}`, 'error');
-        addLogEntry(`Loan interest compounded at ${(activeRate * 100).toFixed(1)}% APR`);
+        addToast(`Your lender says hello: $${weeklyInterest.toLocaleString()} in interest.`, 'error');
+        addLogEntry(`Loan interest: $${weeklyInterest.toLocaleString()} at ${(activeRate * 100).toFixed(1)}% APR. Compound math is nobody's friend.`);
       }
     }
     advanceTime();
     generateNewDeals(); // Generate new competitive deals
     playSfx('KEYPRESS');
-    addToast('TIME_ADVANCED: WEEK_CYCLE_COMPLETE', 'success');
-    appendChatMessage({ sender: 'system', text: '[SYSTEM_LOG] Time advanced 1 week.' });
+    addToast('Another week in the books.', 'success');
+    appendChatMessage({ sender: 'system', text: 'The week blurs past. Onto the next one.' });
 
     if (activeDeals.length > 0) {
-      addToast(`${activeDeals.length} DEAL${activeDeals.length > 1 ? 'S' : ''} IN PIPELINE`, 'info');
+      addToast(`${activeDeals.length} deal${activeDeals.length > 1 ? 's' : ''} waiting for your attention.`, 'info');
     }
 
     // Trigger week transition animation
