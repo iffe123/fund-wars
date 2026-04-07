@@ -14,12 +14,22 @@ import { useGame } from '../contexts/GameContext';
 import { useRPGEvents } from '../contexts/RPGEventContext';
 import { TerminalPanel, TerminalButton } from './TerminalUI';
 import EventFeed, { type DecisionPulse } from './EventFeed';
-// ConsequenceToast removed - consequences now route through central toast system
 import type { StoryEvent, EventChoice } from '../types/rpgEvents';
 import type { StatChanges, PlayerStats, NPC } from '../types';
 import { Z_INDEX } from '../constants';
 import { createEventMap } from '../constants/rpgContent';
 import type { ChoiceResult } from '../utils/eventQueueManager';
+import {
+  updateVoiceActivation,
+  getSceneInterjections,
+} from '../services/innerMonologueService';
+import { buildCompactGameState } from '../services/blueprintAIService';
+import type { VoiceInterjection, InnerVoiceId } from '../types/aiBlueprint';
+import {
+  getVoiceColor,
+  getVoiceBgColor,
+  getVoiceIcon,
+} from '../services/innerMonologueService';
 
 interface EventDrivenWorkspaceProps {
   tutorialStep: number;
@@ -150,6 +160,10 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     updatePlayerStats,
     addActivity,
     useAction,
+    blueprintAI,
+    addVoiceInterjection,
+    dismissInterjection,
+    suppressVoice: suppressVoiceAction,
   } = useGame();
 
   const {
@@ -168,11 +182,69 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
     dismissEvent,
   } = useRPGEvents();
 
-  // Consequence display now uses central toast system
-
   // Event map for lookups
   const eventMap = useMemo(() => createEventMap(), []);
   const [decisionPulse, setDecisionPulse] = useState<DecisionPulse | null>(null);
+  const [activeInterjections, setActiveInterjections] = useState<VoiceInterjection[]>([]);
+
+  // Inner Monologue: get current voice state from blueprint AI
+  const innerMonologueState = blueprintAI?.innerMonologue;
+
+  // Trigger inner voice interjections after a choice
+  const triggerInnerVoices = useCallback(async (
+    event: StoryEvent,
+    choice: EventChoice,
+  ) => {
+    if (!playerStats || !innerMonologueState) return;
+
+    // Map event category to trigger type
+    const categoryTriggerMap: Record<string, string> = {
+      DEAL: 'deal_opportunity',
+      NPC: 'rival_activity',
+      CRISIS: 'red_flag_found',
+      OPPORTUNITY: 'high_return_deal',
+      PERSONAL: 'general',
+      CAREER: 'promotion_event',
+      MARKET: 'general',
+      OPERATIONS: 'management_change',
+    };
+    const trigger = (categoryTriggerMap[event.category] || 'general') as any;
+    const context = `${event.title}: Player chose "${choice.label}". ${event.hook}`;
+
+    // Update voice activation based on current stats
+    const updatedState = updateVoiceActivation(
+      innerMonologueState,
+      playerStats,
+      playerStats.gameTime?.week ?? 0,
+    );
+
+    const gameState = buildCompactGameState(playerStats, marketVolatility);
+
+    try {
+      const interjections = await getSceneInterjections(
+        updatedState,
+        trigger,
+        context,
+        gameState,
+      );
+      if (interjections.length > 0) {
+        setActiveInterjections(interjections);
+        // Also persist to reducer
+        for (const ij of interjections) {
+          addVoiceInterjection(ij);
+        }
+      }
+    } catch {
+      // Offline fallbacks are handled inside getSceneInterjections
+    }
+  }, [playerStats, innerMonologueState, marketVolatility, addVoiceInterjection]);
+
+  // Auto-dismiss interjections after 12 seconds
+  useEffect(() => {
+    if (activeInterjections.length === 0) return;
+    const timer = setTimeout(() => setActiveInterjections([]), 12000);
+    return () => clearTimeout(timer);
+  }, [activeInterjections]);
 
   // Get available events
   const availableEvents = useMemo(() => {
@@ -198,20 +270,43 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
       .filter((e): e is StoryEvent => e !== undefined);
   }, [rpgState.eventQueue.optionalEvents, eventMap]);
 
-  // Background messages (stable based on week, not random per render)
+  // Background messages — SQI-flavored ambient status
   const backgroundMessages = useMemo(() => {
     const messages: string[] = [];
     const week = playerStats?.gameTime?.week ?? 0;
+
+    // Company flavor text (rotates deterministically by week)
+    const companyLines = [
+      (name: string) => `${name}: EBITDA still positive. The analysts celebrate with instant coffee.`,
+      (name: string) => `${name}: Management sent a PowerPoint. It has 47 slides and no conclusions.`,
+      (name: string) => `${name}: Quarterly board call tomorrow. Someone will say "synergies."`,
+      (name: string) => `${name}: Operations humming. Nobody's quit this week, which counts as a win.`,
+      (name: string) => `${name}: The CFO used the phrase "cautiously optimistic." That's never a good sign.`,
+      (name: string) => `${name}: Revenue flat. The optimists call it "stability." The realists call it "stalling."`,
+    ];
     if (playerStats?.portfolio?.length) {
       const idx = week % playerStats.portfolio.length;
       const company = playerStats.portfolio[idx];
-      messages.push(`${company.name}: Operations running normally`);
+      const lineIdx = week % companyLines.length;
+      messages.push(companyLines[lineIdx](company.name));
     }
+
+    // NPC flavor text (rotates deterministically)
+    const npcLines = [
+      (name: string) => `${name} is updating a spreadsheet nobody asked for`,
+      (name: string) => `${name} just sent a "quick follow-up" email. It's not quick.`,
+      (name: string) => `${name} is in a meeting that could have been a Slack message`,
+      (name: string) => `${name} booked a conference room for a "strategic alignment session"`,
+      (name: string) => `${name} is reviewing your last deal memo. They have opinions.`,
+      (name: string) => `${name} just CC'd the entire floor on a reply-all. Classic.`,
+    ];
     if (npcs.length > 0) {
       const idx = week % npcs.length;
       const npc = npcs[idx];
-      messages.push(`${npc.name} is working on something`);
+      const lineIdx = (week + 3) % npcLines.length;
+      messages.push(npcLines[lineIdx](npc.name));
     }
+
     return messages;
   }, [playerStats?.portfolio, playerStats?.gameTime?.week, npcs]);
 
@@ -292,8 +387,11 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
       onTutorialComplete();
     }
 
-    // Notification already handled above via central toast
-  }, [playerStats, npcs, makeChoice, applyConsequences, updatePlayerStats, addLogEntry, addToast, onSwitchTab, onTutorialComplete, eventMap]);
+    // Trigger inner voice reactions (non-blocking, async)
+    if (!event.isOnboarding) {
+      triggerInnerVoices(event, choice);
+    }
+  }, [playerStats, npcs, makeChoice, applyConsequences, updatePlayerStats, addLogEntry, addToast, onSwitchTab, onTutorialComplete, eventMap, triggerInnerVoices]);
 
   // Handle dismiss event (remove from queue)
   const handleDismissEvent = useCallback((eventId: string) => {
@@ -313,6 +411,18 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
       sentiment: 'neutral',
     });
   }, [advanceWeek, onAdvanceTime, addActivity, playerStats?.gameTime?.week]);
+
+  // Inner Monologue handlers
+  const handleDismissInterjection = useCallback((voiceId: InnerVoiceId) => {
+    setActiveInterjections(prev => prev.filter(ij => ij.voiceId !== voiceId));
+    dismissInterjection(voiceId);
+  }, [dismissInterjection]);
+
+  const handleSuppressVoice = useCallback((voiceId: InnerVoiceId) => {
+    setActiveInterjections(prev => prev.filter(ij => ij.voiceId !== voiceId));
+    suppressVoiceAction(voiceId);
+    addToast(`Suppressed inner voice: ${voiceId.toUpperCase()}. The cost is stress.`, 'info');
+  }, [suppressVoiceAction, addToast]);
 
   // Handle refresh events
   const handleRefreshEvents = useCallback(() => {
@@ -372,6 +482,9 @@ const EventDrivenWorkspace: React.FC<EventDrivenWorkspaceProps> = ({
               onAdvanceWeek={() => {}} // No advancing during onboarding
               onRefreshEvents={() => {}} // No refreshing during onboarding
               decisionPulse={decisionPulse}
+              activeInterjections={activeInterjections}
+              onDismissInterjection={handleDismissInterjection}
+              onSuppressVoice={handleSuppressVoice}
               className="flex-1"
             />
           </TerminalPanel>
