@@ -435,7 +435,7 @@ const App: React.FC = () => {
                           handleStatChange(action.outcome.statChanges);
                           addToast(action.outcome.logMessage, 'info');
                           addLogEntry(action.outcome.logMessage);
-                          appendChatMessage({ sender: 'system', text: `[SYSTEM_LOG] Portfolio Action: ${action.text}` });
+                          appendChatMessage({ sender: 'system', text: `[SYSTEM_LOG] Portfolio action taken: ${action.text}` });
                       }}
                       onBack={() => {
                           setActiveTab('WORKSPACE');
