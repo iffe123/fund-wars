@@ -61,27 +61,27 @@ interface EventFeedProps {
 const phaseDescriptions: Record<WeekPhase, { title: string; description: string; icon: string }> = {
   MORNING_BRIEFING: {
     title: 'Morning Briefing',
-    description: 'A new week begins. Check what needs your attention.',
+    description: 'Coffee is cold. The inbox is not. Let\u2019s see what fresh chaos Monday brought.',
     icon: 'fa-sun',
   },
   PRIORITY_EVENT: {
     title: 'Priority Event',
-    description: 'Something urgent requires your immediate attention.',
+    description: 'Something landed on your desk that won\u2019t wait. Handle it or it handles you.',
     icon: 'fa-exclamation-circle',
   },
   OPTIONAL_PHASE: {
     title: 'Your Move',
-    description: 'Choose how to spend your time this week.',
+    description: 'The floor is yours. Spend your action points wisely \u2014 or don\u2019t. Nobody\u2019s watching. (Everyone is watching.)',
     icon: 'fa-chess',
   },
   FALLOUT: {
     title: 'Consequences',
-    description: 'Your decisions are having an impact.',
+    description: 'Remember that thing you did? The universe remembers too.',
     icon: 'fa-ripple',
   },
   WEEK_END: {
     title: 'Week Complete',
-    description: 'Time to advance to the next week.',
+    description: 'Another week survived. Advance to discover what you\u2019ve set in motion.',
     icon: 'fa-calendar-check',
   },
 };
