@@ -7,6 +7,7 @@ import {
 import { COMPETITIVE_DEALS } from '../constants';
 import { hydrateCompetitiveDeal } from '../utils/gameUtils';
 import type { ActivityItem } from '../components/ActivityFeed';
+import type { VoiceInterjection, InnerVoiceId } from '../types/aiBlueprint';
 
 interface GameActions {
   setGamePhase: (phase: any) => void;
@@ -33,6 +34,11 @@ interface GameActions {
   useAction: (costOrActionType: number | ActionType, targetId?: string) => boolean;
   endWeek: () => void;
   toggleNightGrinder: () => void;
+  // Inner Monologue
+  addVoiceInterjection: (interjection: VoiceInterjection) => void;
+  dismissInterjection: (voiceId: InnerVoiceId) => void;
+  suppressVoice: (voiceId: InnerVoiceId) => void;
+  unsuppressVoice: (voiceId: InnerVoiceId) => void;
 }
 
 const GameActionsContext = createContext<GameActions | undefined>(undefined);
@@ -254,6 +260,22 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
     dispatch({ type: 'TOGGLE_NIGHT_GRINDER' });
   }, [dispatch]);
 
+  const addVoiceInterjection = useCallback((interjection: VoiceInterjection) => {
+    dispatch({ type: 'ADD_VOICE_INTERJECTION', payload: interjection });
+  }, [dispatch]);
+
+  const dismissInterjection = useCallback((voiceId: InnerVoiceId) => {
+    dispatch({ type: 'DISMISS_INTERJECTION', payload: voiceId });
+  }, [dispatch]);
+
+  const suppressVoiceAction = useCallback((voiceId: InnerVoiceId) => {
+    dispatch({ type: 'SUPPRESS_VOICE', payload: voiceId });
+  }, [dispatch]);
+
+  const unsuppressVoiceAction = useCallback((voiceId: InnerVoiceId) => {
+    dispatch({ type: 'UNSUPPRESS_VOICE', payload: voiceId });
+  }, [dispatch]);
+
   return (
     <GameActionsContext.Provider     value={{
       setGamePhase,
@@ -276,7 +298,11 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
       generateNewDeals,
       useAction,
       endWeek,
-      toggleNightGrinder
+      toggleNightGrinder,
+      addVoiceInterjection,
+      dismissInterjection,
+      suppressVoice: suppressVoiceAction,
+      unsuppressVoice: unsuppressVoiceAction,
     }}>
       {children}
     </GameActionsContext.Provider>

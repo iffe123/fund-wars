@@ -1,5 +1,7 @@
 node_modules/
 dist/
+.playwright-cli/
+output/
 
 # Environment variables (API keys - NEVER commit these!)
 .env

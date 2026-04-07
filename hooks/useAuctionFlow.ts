@@ -98,10 +98,10 @@ export const useAuctionFlow = (deps: AuctionFlowDependencies): UseAuctionFlowRet
     }
 
     if (result.won) {
-      addToast(`DEAL CLOSED: ${result.deal.companyName}`, 'success');
+      addToast(`${result.deal.companyName} is yours. Time to prove the thesis.`, 'success');
       playSfx('SUCCESS');
     } else {
-      addToast(`DEAL LOST to ${result.winnerName}`, 'error');
+      addToast(`${result.winnerName} took ${result.deal.companyName}. That one stings.`, 'error');
       playSfx('ERROR');
     }
   }, [
@@ -118,7 +118,7 @@ export const useAuctionFlow = (deps: AuctionFlowDependencies): UseAuctionFlowRet
 
   const handleDismissDeal = useCallback((dealId: number) => {
     removeDeal(dealId);
-    addToast('DEAL DISMISSED', 'info');
+    addToast('Deal passed. Someone else can overpay.', 'info');
     playSfx('KEYPRESS');
   }, [removeDeal, addToast, playSfx]);
 

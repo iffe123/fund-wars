@@ -44,6 +44,8 @@ export const useGame = () => {
     return {
         ...state,
         ...actions,
+        // Blueprint AI state (Inner Monologue, etc.)
+        blueprintAI: state.blueprintAI,
         // RPG Event System
         rpgEventState: rpgEvents.state,
         currentEvent: rpgEvents.currentEvent,

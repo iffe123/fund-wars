@@ -125,7 +125,7 @@ export const useChatHandlers = (deps: ChatHandlersDependencies): UseChatHandlers
         addToast(`${targetNPC.name} responded`, 'info');
       } catch (e) {
         console.error('NPC Chat Error', e);
-        addToast('COMMS_ERROR: Signal Lost', 'error');
+        addToast('Message failed to send. They might be in a meeting.', 'error');
       }
     }
   }, [

@@ -11,6 +11,12 @@
 import React, { useMemo, useCallback, useState } from 'react';
 import type { StoryEvent, EventChoice, WeekPhase } from '../types/rpgEvents';
 import type { PlayerStats, NPC, StatChanges } from '../types';
+import type { VoiceInterjection, InnerVoiceId } from '../types/aiBlueprint';
+import {
+  getVoiceColor,
+  getVoiceBgColor,
+  getVoiceIcon,
+} from '../services/innerMonologueService';
 import EventCard from './EventCard';
 import { TerminalButton } from './TerminalUI';
 
@@ -45,33 +51,37 @@ interface EventFeedProps {
   // Optional
   className?: string;
   decisionPulse?: DecisionPulse | null;
+  // Inner Monologue
+  activeInterjections?: VoiceInterjection[];
+  onDismissInterjection?: (voiceId: InnerVoiceId) => void;
+  onSuppressVoice?: (voiceId: InnerVoiceId) => void;
 }
 
 // Phase descriptions for the UI
 const phaseDescriptions: Record<WeekPhase, { title: string; description: string; icon: string }> = {
   MORNING_BRIEFING: {
     title: 'Morning Briefing',
-    description: 'A new week begins. Check what needs your attention.',
+    description: 'Coffee is cold. The inbox is not. Let\u2019s see what fresh chaos Monday brought.',
     icon: 'fa-sun',
   },
   PRIORITY_EVENT: {
     title: 'Priority Event',
-    description: 'Something urgent requires your immediate attention.',
+    description: 'Something landed on your desk that won\u2019t wait. Handle it or it handles you.',
     icon: 'fa-exclamation-circle',
   },
   OPTIONAL_PHASE: {
     title: 'Your Move',
-    description: 'Choose how to spend your time this week.',
+    description: 'The floor is yours. Spend your action points wisely \u2014 or don\u2019t. Nobody\u2019s watching. (Everyone is watching.)',
     icon: 'fa-chess',
   },
   FALLOUT: {
     title: 'Consequences',
-    description: 'Your decisions are having an impact.',
+    description: 'Remember that thing you did? The universe remembers too.',
     icon: 'fa-ripple',
   },
   WEEK_END: {
     title: 'Week Complete',
-    description: 'Time to advance to the next week.',
+    description: 'Another week survived. Advance to discover what you\u2019ve set in motion.',
     icon: 'fa-calendar-check',
   },
 };
@@ -187,6 +197,9 @@ const EventFeed: React.FC<EventFeedProps> = ({
   onConsultAdvisor,
   className = '',
   decisionPulse = null,
+  activeInterjections = [],
+  onDismissInterjection,
+  onSuppressVoice,
 }) => {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(
     priorityEvent?.id || optionalEvents[0]?.id || null
@@ -352,6 +365,49 @@ const EventFeed: React.FC<EventFeedProps> = ({
         </div>
       )}
 
+      {/* Inner Voice Interjections */}
+      {activeInterjections.length > 0 && (
+        <div className="px-4 pt-3 space-y-2">
+          {activeInterjections.map((ij) => (
+            <div
+              key={`voice-${ij.voiceId}-${ij.tick}`}
+              className={`rounded-lg border p-3 ${getVoiceBgColor(ij.voiceId)} animate-fade-in`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <i className={`fas ${getVoiceIcon(ij.voiceId)} ${getVoiceColor(ij.voiceId)} text-sm`}></i>
+                  <span className={`text-[10px] uppercase tracking-[0.2em] font-bold ${getVoiceColor(ij.voiceId)}`}>
+                    {ij.voiceId}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {onSuppressVoice && (
+                    <button
+                      onClick={() => onSuppressVoice(ij.voiceId)}
+                      className="text-[10px] text-slate-500 hover:text-red-400 transition-colors px-1"
+                      title={`Suppress ${ij.voiceId} (costs stress)`}
+                    >
+                      <i className="fas fa-volume-xmark"></i>
+                    </button>
+                  )}
+                  {onDismissInterjection && (
+                    <button
+                      onClick={() => onDismissInterjection(ij.voiceId)}
+                      className="text-slate-500 hover:text-white transition-colors px-1"
+                    >
+                      <i className="fas fa-times text-xs"></i>
+                    </button>
+                  )}
+                </div>
+              </div>
+              <p className={`mt-1.5 text-sm italic ${getVoiceColor(ij.voiceId)} opacity-90`}>
+                &ldquo;{ij.text}&rdquo;
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Event List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* Priority Event - Must handle first */}
@@ -428,9 +484,9 @@ const EventFeed: React.FC<EventFeedProps> = ({
             <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
               <i className="fas fa-inbox text-2xl text-slate-600"></i>
             </div>
-            <p className="text-slate-400 font-medium mb-2">No pending events</p>
+            <p className="text-slate-400 font-medium mb-2">The inbox is empty</p>
             <p className="text-sm text-slate-500 mb-4">
-              The office is quiet. Time to advance the week?
+              Suspiciously quiet. Either nothing is happening, or everything is happening behind your back. Advance the week to find out which.
             </p>
             <TerminalButton
               label="Generate Events"

@@ -49,7 +49,7 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
           <i className="fas fa-inbox text-4xl mb-4"></i>
           <div className="text-center">
             <div className="font-bold mb-2">NO ACTIVE DEALS</div>
-            <div className="text-xs">The market is quiet. Advance time to see new opportunities.</div>
+            <div className="text-xs">The bankers are on vacation. Or hiding something. Advance the week and see what crawls out.</div>
           </div>
         </div>
       </TerminalPanel>

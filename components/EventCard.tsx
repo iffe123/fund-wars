@@ -287,7 +287,7 @@ const EventCard: React.FC<EventCardProps> = ({
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="mt-4 space-y-4 animate-fadeIn">
+        <div className="mt-4 space-y-4 animate-fade-in">
           {/* Full Description */}
           <div className="text-sm text-slate-300 whitespace-pre-line border-l-2 border-slate-700 pl-3">
             {renderMarkdown(event.description)}
@@ -445,9 +445,9 @@ const EventCard: React.FC<EventCardProps> = ({
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div className="bg-slate-900 border border-slate-700 p-6 rounded-lg max-w-md">
-            <h4 className="text-lg font-bold text-white mb-2">Confirm Decision</h4>
+            <h4 className="text-lg font-bold text-white mb-2">Point of No Return</h4>
             <p className="text-slate-400 mb-4">
-              Are you sure? This choice may have significant consequences.
+              This one sticks. No take-backs, no "strategic pivots," no pretending it was someone else's idea.
             </p>
             <div className="flex gap-3">
               <button
@@ -469,21 +469,5 @@ const EventCard: React.FC<EventCardProps> = ({
     </div>
   );
 };
-
-// Animation styles
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-fadeIn {
-    animation: fadeIn 0.25s ease-out;
-  }
-`;
-if (!document.getElementById('event-card-styles')) {
-  style.id = 'event-card-styles';
-  document.head.appendChild(style);
-}
 
 export default EventCard;
