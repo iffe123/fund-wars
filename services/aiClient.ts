@@ -74,7 +74,7 @@ export const callAI = async (options: AICallOptions): Promise<string> => {
     return data.text;
   } catch (err: unknown) {
     if (err instanceof DOMException && err.name === 'AbortError') {
-      throw new Error('AI request timed out. Please try again.');
+      throw new Error(`AI request timed out. Please try again. (${err})`);
     }
     throw err;
   } finally {

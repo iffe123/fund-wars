@@ -42,6 +42,5 @@ export const useMarketCycle = () => {
             dispatch({ type: 'SET_MARKET_VOLATILITY', payload: nextCycle });
         }
     // Only re-run when the week number actually changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentWeek, gamePhase]);
 };

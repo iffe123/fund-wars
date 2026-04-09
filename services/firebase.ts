@@ -5,10 +5,8 @@ import { getAnalytics, Analytics } from "firebase/analytics";
 
 // Helper to access env vars in Vite safely
 const getEnv = (key: string) => {
-  // @ts-ignore
   if (typeof import.meta !== 'undefined' && import.meta.env) {
-    // @ts-ignore
-    return import.meta.env[key];
+    return (import.meta.env as Record<string, string | undefined>)[key];
   }
   return undefined;
 };

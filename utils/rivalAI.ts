@@ -666,13 +666,14 @@ export function calculateTacticalMoveEffects(
         factionReputation: { RIVALS: -2 },
       };
 
-    case 'PSYCHOLOGICAL_WARFARE':
+    case 'PSYCHOLOGICAL_WARFARE': {
       const tactic = PSYCHOLOGICAL_TACTICS[Math.floor(Math.random() * PSYCHOLOGICAL_TACTICS.length)];
       return {
         stress: Math.round(tactic.magnitude * intensityMultiplier),
         reputation: tactic.effect === 'reputation' ? Math.round(tactic.magnitude * intensityMultiplier) : 0,
         auditRisk: tactic.effect === 'auditRisk' ? Math.round(tactic.magnitude * intensityMultiplier) : 0,
       };
+    }
 
     case 'SABOTAGE':
       return {

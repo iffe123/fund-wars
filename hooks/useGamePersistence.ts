@@ -68,7 +68,7 @@ export const useGamePersistence = () => {
         };
 
         loadGame();
-    }, [currentUser, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [currentUser, dispatch]);
 
     // Save Game
     const saveGame = useCallback(async () => {

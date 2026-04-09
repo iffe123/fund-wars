@@ -90,7 +90,7 @@ export const advancePhase = (
   const eventMap = createEventMap();
   
   switch (flowState.currentPhase) {
-    case 'MORNING_BRIEFING':
+    case 'MORNING_BRIEFING': {
       // Generate fresh events for the week
       const refreshedQueue = processWeeklyQueue(
         flowState.eventQueue,
@@ -107,6 +107,7 @@ export const advancePhase = (
         currentPhase: 'PRIORITY_EVENT',
         eventQueue: refreshedQueue,
       };
+    }
 
     case 'PRIORITY_EVENT':
       return {
