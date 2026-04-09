@@ -7,50 +7,6 @@ interface IntroSequenceProps {
   quickStart?: boolean;
 }
 
-const INTRO_DIFFICULTY_KEY = 'fundwars_selected_difficulty';
-
-const DIFFICULTY_OPTIONS: Array<{
-  key: Difficulty;
-  label: string;
-  subtitle: string;
-  icon: string;
-  colorClasses: string;
-  selectedClasses: string;
-}> = [
-  {
-    key: 'Easy',
-    label: 'Trust Fund Baby',
-    subtitle: 'More cash, lower stress, gentler start',
-    icon: 'fa-champagne-glasses',
-    colorClasses: 'text-emerald-400',
-    selectedClasses: 'border-emerald-500 bg-emerald-950/40 ring-1 ring-emerald-500/30',
-  },
-  {
-    key: 'Normal',
-    label: 'MBA Grad',
-    subtitle: 'Balanced, standard PE grind',
-    icon: 'fa-briefcase',
-    colorClasses: 'text-amber-400',
-    selectedClasses: 'border-amber-500 bg-amber-950/40 ring-1 ring-amber-500/30',
-  },
-  {
-    key: 'Hard',
-    label: 'State School Striver',
-    subtitle: 'Broke, unknown, and in debt',
-    icon: 'fa-fire',
-    colorClasses: 'text-red-400',
-    selectedClasses: 'border-red-500 bg-red-950/40 ring-1 ring-red-500/30',
-  },
-];
-
-const readSavedDifficulty = (): Difficulty | undefined => {
-  const saved = localStorage.getItem(INTRO_DIFFICULTY_KEY);
-  if (saved === 'Easy' || saved === 'Normal' || saved === 'Hard') {
-    return saved;
-  }
-  return undefined;
-};
-
 const INTRO_SLIDES: SlideContent[] = [
   {
     id: 'elevator',
@@ -127,7 +83,6 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [skipFutureIntros, setSkipFutureIntros] = useState(false);
   const [playerName, setPlayerName] = useState('');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(() => readSavedDifficulty() || 'Normal');
   const [showNameEntry, setShowNameEntry] = useState(false);
 
   const persistIntroPreference = useCallback(() => {
@@ -138,7 +93,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
 
   React.useEffect(() => {
     if (quickStart) {
-      onComplete(5, undefined, readSavedDifficulty());
+      onComplete(5, undefined, 'Normal');
     }
   }, [quickStart, onComplete]);
 
@@ -146,9 +101,8 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
 
   const finishIntro = useCallback(() => {
     persistIntroPreference();
-    localStorage.setItem(INTRO_DIFFICULTY_KEY, selectedDifficulty);
-    onComplete(5, playerName.trim() || undefined, selectedDifficulty);
-  }, [onComplete, persistIntroPreference, playerName, selectedDifficulty]);
+    onComplete(5, playerName.trim() || undefined, 'Normal');
+  }, [onComplete, persistIntroPreference, playerName]);
 
   const handleContinue = useCallback(() => {
     if (isTransitioning) return;
@@ -165,9 +119,8 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
   }, [currentSlide, isTransitioning]);
 
   const handleSkip = useCallback(() => {
-    persistIntroPreference();
-    onComplete(5, undefined, readSavedDifficulty());
-  }, [onComplete, persistIntroPreference]);
+    setShowNameEntry(true);
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-slate-950 text-white overflow-hidden" style={{ zIndex: 100 }}>
@@ -248,36 +201,6 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
                 autoFocus
                 className="w-full bg-slate-950 border-2 border-slate-600 text-white rounded px-4 py-3 text-lg font-mono focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/50 transition-all placeholder-slate-600"
               />
-            </div>
-
-            <div>
-              <p className="text-slate-400 mb-3 text-sm">Choose your difficulty:</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {DIFFICULTY_OPTIONS.map((option) => {
-                  const isSelected = selectedDifficulty === option.key;
-
-                  return (
-                    <button
-                      key={option.key}
-                      type="button"
-                      data-testid={`difficulty-${option.key.toLowerCase()}`}
-                      onClick={() => setSelectedDifficulty(option.key)}
-                      className={[
-                        'p-4 rounded-lg border-2 text-center transition-all bg-slate-900/50 hover:border-slate-500',
-                        isSelected ? option.selectedClasses : 'border-slate-700',
-                      ].join(' ')}
-                    >
-                      <i className={`fas ${option.icon} text-xl mb-2 ${isSelected ? option.colorClasses : 'text-slate-500'}`}></i>
-                      <div className={`text-sm font-bold font-mono ${isSelected ? 'text-white' : 'text-slate-300'}`}>
-                        {option.label}
-                      </div>
-                      <div className="text-[10px] text-slate-500 mt-1 leading-tight">
-                        {option.subtitle}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
 
             <button

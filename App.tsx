@@ -129,11 +129,11 @@ const App: React.FC = () => {
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
   const [dynamicNews, setDynamicNews] = useState<import('./types').NewsEvent[]>([]);
-  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024);
   const [seenActivityCount, setSeenActivityCount] = useState(0);
 
   useEffect(() => {
-    const handler = () => setIsDesktop(window.innerWidth >= 768);
+    const handler = () => setIsDesktop(window.innerWidth >= 1024);
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
   }, []);

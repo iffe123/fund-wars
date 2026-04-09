@@ -39,7 +39,8 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
     });
   };
 
-  const canAfford = (deal: CompetitiveDeal) => playerStats.cash >= deal.askingPrice * 0.8;
+  const dryPowder = playerStats.fundFinances?.dryPowder ?? 50_000_000;
+  const canAfford = (deal: CompetitiveDeal) => dryPowder >= deal.askingPrice * 0.8;
   const isPortfolioFull = playerStats.portfolio.length >= MAX_PORTFOLIO_SIZE;
 
   if (deals.length === 0) {
@@ -70,7 +71,7 @@ const DealMarket: React.FC<DealMarketProps> = ({ deals, playerStats, onSelectDea
           </span>
           <span className="text-xs text-amber-400">
             <i className="fas fa-coins mr-1"></i>
-            CASH: ${(playerStats.cash / 1000000).toFixed(1)}M
+            CASH: ${(dryPowder / 1000000).toFixed(1)}M
           </span>
         </div>
       </div>

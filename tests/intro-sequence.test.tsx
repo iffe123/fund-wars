@@ -69,7 +69,7 @@ describe('IntroSequence difficulty flow', () => {
     localStorage.clear();
   });
 
-  it('passes the selected difficulty and player name into game start', () => {
+  it('passes player name into game start with Normal difficulty', () => {
     const onComplete = vi.fn();
     const { container, unmount } = renderIntro(onComplete);
 
@@ -85,28 +85,21 @@ describe('IntroSequence difficulty flow', () => {
     const input = container.querySelector('input[placeholder="Enter your name..."]') as HTMLInputElement;
     setInputValue(input, 'Alex');
 
-    const hardButton = container.querySelector('[data-testid="difficulty-hard"]') as HTMLButtonElement;
-    act(() => {
-      hardButton.click();
-    });
-
     const startButton = container.querySelector('[data-testid="intro-start"]') as HTMLButtonElement;
     act(() => {
       startButton.click();
     });
 
-    expect(onComplete).toHaveBeenCalledWith(5, 'Alex', 'Hard');
-    expect(localStorage.getItem('fundwars_selected_difficulty')).toBe('Hard');
+    expect(onComplete).toHaveBeenCalledWith(5, 'Alex', 'Normal');
 
     unmount();
   });
 
-  it('uses the saved difficulty when quick start is enabled', () => {
-    localStorage.setItem('fundwars_selected_difficulty', 'Easy');
+  it('uses Normal difficulty when quick start is enabled', () => {
     const onComplete = vi.fn();
     const { unmount } = renderIntro(onComplete, true);
 
-    expect(onComplete).toHaveBeenCalledWith(5, undefined, 'Easy');
+    expect(onComplete).toHaveBeenCalledWith(5, undefined, 'Normal');
 
     unmount();
   });

@@ -80,8 +80,9 @@ const buildDecisionPulse = (
   const { consequences } = result;
 
   if (result.skillCheckResult) {
-    const skillName = result.skillCheckResult.skill
-      ? (impactStatLabels[result.skillCheckResult.skill as keyof StatChanges] || result.skillCheckResult.skill.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim())
+    const skillRaw = (result.skillCheckResult as Record<string, unknown>).skill as string | undefined;
+    const skillName = skillRaw
+      ? (impactStatLabels[skillRaw as keyof StatChanges] || skillRaw.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase()).trim())
       : 'Skill';
     details.push(
       result.skillCheckResult.passed

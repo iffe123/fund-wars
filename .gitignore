@@ -2,6 +2,8 @@ node_modules/
 dist/
 .playwright-cli/
 output/
+fund-wars/
+qa-run-*/
 
 # Environment variables (API keys - NEVER commit these!)
 .env
