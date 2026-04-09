@@ -1,9 +1,11 @@
 node_modules/
 dist/
 .playwright-cli/
+.playwright-mcp/
 output/
 fund-wars/
 qa-run-*/
+.claude/settings.local.json
 
 # Environment variables (API keys - NEVER commit these!)
 .env

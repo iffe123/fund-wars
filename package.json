@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint .",
-    "check-conflicts": "rg '<<<<<<' || true",
+    "check-conflicts": "node scripts/check-conflicts.mjs",
     "test:e2e": "node scripts/e2e-smoke.mjs"
   },
   "dependencies": {
