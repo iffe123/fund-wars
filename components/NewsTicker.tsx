@@ -1,13 +1,16 @@
 import React from 'react';
 import type { NewsEvent } from '../types';
+import type { WeeklyNewspaper } from '../types/aiBlueprint';
 import { isGeminiApiConfigured } from '../services/geminiService';
 
 interface NewsTickerProps {
   events: NewsEvent[];
   systemLogs?: string[];
+  newspaper?: WeeklyNewspaper | null;
+  onMarkNewspaperRead?: () => void;
 }
 
-const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [] }) => {
+const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [], newspaper, onMarkNewspaperRead }) => {
   const aiOn = isGeminiApiConfigured();
   const getTimeAgo = (index: number) => {
     const minutes = [2, 7, 15, 28, 45][index] || 60;
@@ -126,6 +129,47 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [] }) => {
             })}
           </div>
         </div>
+
+        {/* The Deal Sheet — Weekly Newspaper */}
+        {newspaper && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <i className="fas fa-newspaper text-amber-500/70 text-[10px]"></i>
+              <span className="text-[10px] text-amber-500/70 uppercase tracking-widest font-bold">The Deal Sheet</span>
+              {!newspaper.isRead && (
+                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500 text-black font-bold uppercase">New</span>
+              )}
+            </div>
+
+            <div
+              className={`rounded-lg border p-3 space-y-3 transition-all ${newspaper.isRead ? 'border-slate-700/50 bg-slate-900/30' : 'border-amber-700/50 bg-amber-950/20'}`}
+              onClick={() => { if (!newspaper.isRead && onMarkNewspaperRead) onMarkNewspaperRead(); }}
+            >
+              <div className="text-[8px] text-slate-500 uppercase tracking-[0.3em] text-center border-b border-slate-700/50 pb-1.5">
+                {newspaper.masthead}
+              </div>
+
+              <div>
+                <div className="text-xs font-bold text-amber-300 uppercase leading-tight">{newspaper.leadStory.headline}</div>
+                <div className="text-[9px] text-slate-500 mt-0.5">{newspaper.leadStory.byline}</div>
+                <div className="text-[11px] text-slate-300 mt-1.5 leading-relaxed">{newspaper.leadStory.body}</div>
+              </div>
+
+              {newspaper.gossipSection && (
+                <div className="border-t border-slate-700/50 pt-2">
+                  <div className="text-[10px] text-purple-400 font-bold italic">{newspaper.gossipSection.headline}</div>
+                  <div className="text-[11px] text-slate-400 mt-1 leading-relaxed italic">{newspaper.gossipSection.body}</div>
+                </div>
+              )}
+
+              {newspaper.corrections.length > 0 && (
+                <div className="text-[9px] text-slate-600 italic border-t border-slate-800/50 pt-1.5">
+                  Corrections: {newspaper.corrections[0]}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Analyst Note */}
         <div className="mt-4">

@@ -8,6 +8,7 @@ import { COMPETITIVE_DEALS } from '../constants';
 import { hydrateCompetitiveDeal } from '../utils/gameUtils';
 import type { ActivityItem } from '../components/ActivityFeed';
 import type { VoiceInterjection, InnerVoiceId } from '../types/aiBlueprint';
+import { generateWeeklyNewspaper, buildCompactGameState } from '../services/blueprintAIService';
 
 interface GameActions {
   setGamePhase: (phase: any) => void;
@@ -39,6 +40,8 @@ interface GameActions {
   dismissInterjection: (voiceId: InnerVoiceId) => void;
   suppressVoice: (voiceId: InnerVoiceId) => void;
   unsuppressVoice: (voiceId: InnerVoiceId) => void;
+  // Newspaper
+  markNewspaperRead: () => void;
 }
 
 const GameActionsContext = createContext<GameActions | undefined>(undefined);
@@ -239,6 +242,16 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
     dispatch({ type: 'END_WEEK' });
     dispatch({ type: 'ADVANCE_TIME' });
 
+    // Generate weekly newspaper (async, non-blocking)
+    const ps = state.playerStats;
+    if (ps) {
+      const compactState = buildCompactGameState(ps, state.marketVolatility ?? 'NORMAL');
+      const recentEvents = (state.actionLog ?? []).slice(-5);
+      generateWeeklyNewspaper(compactState, ps, state.npcs ?? [], recentEvents, state.blueprintAI?.newspaper)
+        .then(paper => dispatch({ type: 'SET_NEWSPAPER', payload: paper }))
+        .catch(() => { /* offline fallback already handled inside service */ });
+    }
+
     // Add activity for new week using pre-computed values (avoids stale closure)
     setTimeout(() => {
       dispatch({
@@ -276,6 +289,10 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
     dispatch({ type: 'UNSUPPRESS_VOICE', payload: voiceId });
   }, [dispatch]);
 
+  const markNewspaperRead = useCallback(() => {
+    dispatch({ type: 'MARK_NEWSPAPER_READ' });
+  }, [dispatch]);
+
   return (
     <GameActionsContext.Provider     value={{
       setGamePhase,
@@ -303,6 +320,7 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
       dismissInterjection,
       suppressVoice: suppressVoiceAction,
       unsuppressVoice: unsuppressVoiceAction,
+      markNewspaperRead,
     }}>
       {children}
     </GameActionsContext.Provider>

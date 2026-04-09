@@ -116,6 +116,9 @@ const App: React.FC = () => {
     dismissWarning, handleWarningAction, setActiveDrama, setActiveCompanyEvent, handleEventDecision,
     // Time & Action System
     useAction,
+    // Blueprint AI
+    blueprintAI,
+    markNewspaperRead,
   } = useGame();
   
   const { loading: authLoading } = useAuth();
@@ -760,7 +763,7 @@ const App: React.FC = () => {
             
             {/* Right Panel (News) */}
             <div className="border-l border-slate-700 bg-black">
-                 <NewsTicker events={[...dynamicNews, ...NEWS_EVENTS]} systemLogs={actionLog} />
+                 <NewsTicker events={[...dynamicNews, ...NEWS_EVENTS]} systemLogs={actionLog} newspaper={blueprintAI?.newspaper} onMarkNewspaperRead={markNewspaperRead} />
             </div>
 
             {/* Chat Panel (4th column, shown when chat is open) */}
@@ -833,7 +836,7 @@ const App: React.FC = () => {
 
             {activeMobileTab === 'NEWS' && (
                 <div className="flex-1 overflow-y-auto overflow-x-hidden animate-fade-in" style={{ WebkitOverflowScrolling: 'touch' }}>
-                     <NewsTicker events={[...dynamicNews, ...NEWS_EVENTS]} systemLogs={actionLog} />
+                     <NewsTicker events={[...dynamicNews, ...NEWS_EVENTS]} systemLogs={actionLog} newspaper={blueprintAI?.newspaper} onMarkNewspaperRead={markNewspaperRead} />
                 </div>
             )}
 
