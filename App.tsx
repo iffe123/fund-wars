@@ -631,7 +631,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="h-[100dvh] w-screen bg-black text-slate-200 flex flex-col overflow-hidden font-terminal">
+    <div className="h-[100dvh] w-screen app-shell-grid text-slate-200 flex flex-col overflow-hidden font-terminal">
         {/* Modal Stack: Only one modal shown at a time, prioritized */}
         {activeModal === 'GAME_END' && playerStats && (
             <GameEndModal
@@ -661,7 +661,7 @@ const App: React.FC = () => {
             </button>
         )}
         {/* Mobile Status Bar / Safe Area Top */}
-        <div className="pt-[env(safe-area-inset-top)] bg-slate-900 border-b border-slate-700 md:pt-0">
+        <div className="pt-[env(safe-area-inset-top)] bg-[#070b10]/95 border-b border-slate-700/70 lg:pt-0">
              {playerStats && (
                 <PlayerStatsDisplay
                     stats={playerStats}
@@ -673,9 +673,9 @@ const App: React.FC = () => {
         </div>
         
         {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
-        <div className={`hidden md:grid flex-1 overflow-hidden relative ${isChatOpen ? 'grid-cols-[minmax(200px,250px)_1fr_minmax(200px,250px)_minmax(380px,480px)]' : 'grid-cols-[minmax(200px,250px)_1fr_minmax(200px,250px)]'}`} style={{ isolation: 'isolate' }}>
+        <div className={`hidden lg:grid flex-1 min-h-0 overflow-hidden relative gap-2 p-2 ${isChatOpen ? 'grid-cols-[minmax(210px,260px)_minmax(420px,1fr)_minmax(220px,280px)_minmax(380px,480px)]' : 'grid-cols-[minmax(210px,260px)_minmax(420px,1fr)_minmax(220px,280px)]'}`} style={{ isolation: 'isolate' }}>
             {/* Left Panel (Comms) */}
-            <div className="border-r border-slate-700 bg-black min-w-0 shrink-0">
+            <div className="rounded-lg border border-slate-700/70 bg-black/80 min-w-0 shrink-0 overflow-hidden">
                 <NpcListPanel
                   npcs={npcs}
                   selectedNpcId={selectedNpcId}
@@ -684,10 +684,10 @@ const App: React.FC = () => {
             </div>
 
             {/* Center Column (Workspace) */}
-            <div className="bg-black relative flex flex-col">
+            <div className="rounded-lg border border-slate-700/70 bg-black/70 relative flex flex-col overflow-hidden min-w-0">
                 {/* Desktop Tab Bar */}
-                <div className="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-                    <div className="flex border border-slate-700 rounded-lg overflow-hidden bg-black">
+                <div className="p-3 bg-[#070b10]/95 border-b border-slate-800 flex items-center justify-between gap-3">
+                    <div className="grid grid-cols-4 h-10 border border-slate-700 rounded-lg overflow-hidden bg-black min-w-[360px]">
                         {(['WORKSPACE', 'ASSETS', 'FOUNDER', 'DEALS'] as const).map((tab) => {
                             const tabLabels = {
                                 'WORKSPACE': 'DESK',
@@ -710,7 +710,8 @@ const App: React.FC = () => {
                                     }}
                                     data-tutorial={tutorialAttr}
                                     title={isDisabled ? 'Unlocks when you reach $1M in personal funds' : undefined}
-                                    className={`px-3 py-2 text-xs font-bold uppercase transition-colors shrink-0 ${
+                                    aria-current={activeTab === tab ? 'page' : undefined}
+                                    className={`terminal-focus px-3 py-2 text-xs font-bold uppercase transition-colors shrink-0 border-r border-slate-800 last:border-r-0 ${
                                         activeTab === tab
                                             ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-black'
                                             : isDisabled
@@ -744,7 +745,7 @@ const App: React.FC = () => {
                       }}
                       aria-label={unseenActivityCount > 0 ? `Activity feed, ${unseenActivityCount} unread` : 'Activity feed'}
                       className={`
-                        px-3 py-2 rounded-lg border text-xs font-bold uppercase
+                        terminal-focus px-3 py-2 rounded-lg border text-xs font-bold uppercase
                         inline-flex items-center gap-1.5 whitespace-nowrap
                         transition-all duration-200
                         ${showActivityFeed
@@ -766,13 +767,13 @@ const App: React.FC = () => {
             </div>
             
             {/* Right Panel (News) */}
-            <div className="border-l border-slate-700 bg-black">
+            <div className="rounded-lg border border-slate-700/70 bg-black/80 overflow-hidden min-w-0">
                  <NewsTicker events={[...dynamicNews, ...NEWS_EVENTS]} systemLogs={actionLog} newspaper={blueprintAI?.newspaper} onMarkNewspaperRead={markNewspaperRead} activeGossip={blueprintAI?.reputationWeb?.activeGossip} />
             </div>
 
             {/* Chat Panel (4th column, shown when chat is open) */}
             {isChatOpen && (
-                <div className="border-l border-slate-700 bg-slate-900 min-w-0 min-h-0 h-full overflow-hidden flex flex-col">
+                <div className="rounded-lg border border-slate-700/70 bg-slate-950/95 min-w-0 min-h-0 h-full overflow-hidden flex flex-col">
                     {/* Chat Panel Header */}
                     <div className="bg-slate-800 p-2 flex justify-between items-center border-b border-amber-500/30 shrink-0">
                         <div className="flex items-center space-x-2">
@@ -814,7 +815,7 @@ const App: React.FC = () => {
         </div>
 
         {/* MOBILE LAYOUT (View Switcher) */}
-        <div className="md:hidden flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative">
+        <div className="lg:hidden flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative bg-[#05070a]">
             {activeMobileTab === 'COMMS' && (
                 <CommsTerminal
                     key="mobile-comms"
@@ -833,7 +834,7 @@ const App: React.FC = () => {
             )}
             
             {activeMobileTab === 'DESK' && (
-                <div className="flex-1 overflow-y-auto overflow-x-hidden relative bg-black animate-fade-in" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <div className="flex-1 overflow-y-auto overflow-x-hidden relative bg-transparent animate-fade-in" style={{ WebkitOverflowScrolling: 'touch' }}>
                     {!isDesktop && renderCenterPanel()}
                 </div>
             )}
@@ -924,7 +925,7 @@ const App: React.FC = () => {
         </div>
         
         {/* DESKTOP BOTTOM BAR: CMD LINE + Save Indicator */}
-        <div className="hidden md:flex h-8 bg-slate-900 border-t border-slate-700 items-center px-2 text-xs font-mono text-green-500 justify-between">
+        <div className="hidden lg:flex h-8 bg-slate-900 border-t border-slate-700 items-center px-2 text-xs font-mono text-green-500 justify-between">
             <div className="flex items-center">
                 <span className="mr-2">{">"}</span>
                 <span className="animate-pulse">_</span>
@@ -939,7 +940,7 @@ const App: React.FC = () => {
         {!isChatOpen && (
             <button
                 onClick={handleChatOpen}
-                className="hidden md:flex fixed bottom-6 right-6 bg-amber-500 text-black font-mono text-sm py-3 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-40 items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-amber-400 rounded-md"
+                className="hidden lg:flex fixed bottom-6 right-6 bg-amber-500 text-black font-mono text-sm py-3 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-40 items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-amber-400 rounded-md"
             >
                 <div className="relative">
                     <i className="fas fa-terminal animate-pulse"></i>

@@ -263,20 +263,20 @@ const EventFeed: React.FC<EventFeedProps> = ({
   }, [priorityEvent, nextOptionalEventId]);
 
   return (
-    <div className={`flex flex-col h-full bg-black ${className}`}>
+    <div className={`flex flex-col h-full bg-transparent ${className}`}>
       {/* Phase Header */}
-      <div className="border-b border-slate-800 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-amber-400">
+      <div className="border-b border-slate-800/80 p-4 md:p-5 bg-[#070b10]/80">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700/70 flex items-center justify-center text-amber-400 shrink-0">
               <i className={`fas ${phaseInfo.icon}`}></i>
             </div>
-            <div>
+            <div className="min-w-0">
               <h2 className="font-bold text-white">{phaseInfo.title}</h2>
-              <p className="text-xs text-slate-500">{phaseInfo.description}</p>
+              <p className="text-xs text-slate-500 leading-relaxed">{phaseInfo.description}</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="flex items-center justify-between lg:block lg:text-right gap-3 rounded-lg border border-slate-800 bg-black/30 px-3 py-2 shrink-0">
             <div className="text-xs text-slate-500">
               Week {playerStats.gameTime?.week ?? 1}, Year {playerStats.gameTime?.year ?? 1}
             </div>
@@ -285,12 +285,12 @@ const EventFeed: React.FC<EventFeedProps> = ({
             </div>
           </div>
         </div>
-        <div className="mt-3 text-[11px] text-slate-500 flex items-center gap-2">
+        <div className="mt-3 text-[11px] text-slate-500 flex items-start gap-2 leading-relaxed">
           <i className="fas fa-chevron-down text-slate-600"></i>
           <span>Tip: Click the chevron on any event card to collapse old events and keep new options visible.</span>
         </div>
         {spotlightEvent && spotlightProfile && (
-          <div className="mt-4 rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-3">
+          <div className="mt-4 rounded-lg border border-cyan-900/50 bg-[#08111a]/90 p-3 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.25em] text-slate-500">This Week&apos;s Edge</div>
@@ -330,7 +330,7 @@ const EventFeed: React.FC<EventFeedProps> = ({
       {decisionPulse && (
         <div className="px-4 pt-4">
           <div className={`
-            rounded-lg border p-3
+            rounded-lg border p-3 bg-black/30
             ${decisionPulse.tone === 'success' ? 'border-emerald-800/70 bg-emerald-950/20' : ''}
             ${decisionPulse.tone === 'warning' ? 'border-amber-800/70 bg-amber-950/20' : ''}
             ${decisionPulse.tone === 'error' ? 'border-red-800/70 bg-red-950/20' : ''}
@@ -409,7 +409,7 @@ const EventFeed: React.FC<EventFeedProps> = ({
       )}
 
       {/* Event List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* Priority Event - Must handle first */}
         {priorityEvent && (
           <div className="relative">
@@ -462,7 +462,7 @@ const EventFeed: React.FC<EventFeedProps> = ({
 
         {/* Background Messages */}
         {backgroundMessages.length > 0 && (
-          <div className="mt-6 space-y-2">
+          <div className="mt-6 space-y-2 rounded-lg border border-slate-800/70 bg-black/30 p-3">
             <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">
               Background Activity
             </div>
@@ -480,8 +480,8 @@ const EventFeed: React.FC<EventFeedProps> = ({
 
         {/* No Events State */}
         {!hasEvents && backgroundMessages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
+          <div className="flex flex-col items-center justify-center h-64 text-center rounded-lg border border-slate-800/80 bg-black/30 p-6">
+            <div className="w-16 h-16 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center mb-4">
               <i className="fas fa-inbox text-2xl text-slate-600"></i>
             </div>
             <p className="text-slate-400 font-medium mb-2">The inbox is empty</p>
@@ -498,9 +498,9 @@ const EventFeed: React.FC<EventFeedProps> = ({
       </div>
 
       {/* Footer Actions */}
-      <div className="border-t border-slate-800 p-4 space-y-3">
+      <div className="border-t border-slate-800/80 bg-[#070b10]/90 p-4 space-y-3">
         {/* Quick Stats */}
-        <div className="flex items-center justify-between text-xs text-slate-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
           <span>
             <i className="fas fa-bolt mr-1 text-yellow-500"></i>
             Energy: {playerStats.energy ?? 100}

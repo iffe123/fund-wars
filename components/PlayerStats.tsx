@@ -1,7 +1,6 @@
 import React, { memo, useMemo, useState, useCallback } from 'react';
 import type { PlayerStats, MarketVolatility } from '../types';
-import { PlayerLevel } from '../types';
-import { MARKET_VOLATILITY_STYLES, LEVEL_RANKS } from '../constants';
+import { MARKET_VOLATILITY_STYLES } from '../constants';
 import { STRESS_THRESHOLDS } from '../constants/difficulty';
 import { useGame } from '../contexts/GameContext';
 import TimeActionBar from './TimeActionBar';
@@ -22,12 +21,6 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [focusedStatId, setFocusedStatId] = useState<string | null>(null);
 
-  // Handle individual stat click
-  const handleStatClick = useCallback((statId: string) => {
-    setFocusedStatId(statId);
-    setShowStatsModal(true);
-  }, []);
-
   // Handle general stats click (fallback to showing modal without focus)
   const handleGeneralStatsClick = useCallback(() => {
     if (onStatsClick) {
@@ -40,7 +33,6 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
 
   // Memoize computed values
   const mktStyle = useMemo(() => MARKET_VOLATILITY_STYLES[marketVolatility], [marketVolatility]);
-  const factions = stats.factionReputation;
   const isPanic = marketVolatility === 'PANIC';
 
   const formatMoney = useMemo(() => (val: number) => {
@@ -48,21 +40,6 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
     if (val >= 1000) return `$${(val / 1000).toFixed(0)}k`;
     return `$${val}`;
   }, []);
-
-  // Calculate net worth (bank balance + portfolio value - debt)
-  const portfolioValue = stats.portfolio.reduce((sum, c) => sum + (c.currentValuation * (c.ownershipPercentage / 100)), 0);
-  const bankBalance = stats.personalFinances?.bankBalance ?? stats.cash;
-  const netWorth = bankBalance + portfolioValue + stats.totalRealizedGains - stats.loanBalance;
-
-  // Win condition progress
-  const isPartner = LEVEL_RANKS[stats.level] >= LEVEL_RANKS[PlayerLevel.PARTNER];
-  const hasMillionDollars = netWorth >= 1000000;
-  const canUnlockFounder = stats.reputation >= 50;
-
-  // Progress percentages
-  const levelProgress = Math.min(100, (LEVEL_RANKS[stats.level] / LEVEL_RANKS[PlayerLevel.PARTNER]) * 100);
-  const wealthProgress = Math.min(100, (netWorth / 1000000) * 100);
-  const founderProgress = Math.min(100, (stats.reputation / 50) * 100);
 
   // Stress level indicator
   const getStressColor = (stress: number) => {
@@ -117,11 +94,17 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
       {/* Stats Header */}
       <div
         onClick={handleGeneralStatsClick}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleGeneralStatsClick();
+          }
+        }}
         className={`
           h-16 bg-gradient-to-b from-slate-800 to-slate-900
           border-b border-slate-600 flex items-center px-4 justify-between shrink-0
           ${isPanic ? 'animate-pulse bg-red-950/20 border-red-900/50' : ''}
-          cursor-pointer hover:bg-slate-700/50 transition-colors active:bg-slate-700
+          cursor-pointer hover:bg-slate-700/50 transition-colors active:bg-slate-700 terminal-focus
         `}
         role="button"
         tabIndex={0}

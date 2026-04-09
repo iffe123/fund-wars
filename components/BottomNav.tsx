@@ -14,7 +14,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, unreadCom
     { id: 'COMMS', icon: 'fa-comments', label: 'COMMS', activeColor: 'text-blue-400' },
     { id: 'DESK', icon: 'fa-briefcase', label: 'DESK', activeColor: 'text-emerald-400' },
     { id: 'NEWS', icon: 'fa-newspaper', label: 'NEWS', activeColor: 'text-amber-400' },
-    { id: 'MENU', icon: 'fa-terminal', label: 'SYSTEM', activeColor: 'text-purple-400' },
+    { id: 'MENU', icon: 'fa-terminal', label: 'SYSTEM', activeColor: 'text-cyan-300' },
   ];
 
   const handleTabClick = (id: 'COMMS' | 'DESK' | 'NEWS' | 'MENU') => {
@@ -23,7 +23,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, unreadCom
   };
 
   return (
-    <div className="md:hidden bg-gradient-to-t from-black via-slate-900/95 to-slate-900/90 border-t border-slate-700/50 flex justify-around items-stretch shrink-0 z-50 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm">
+    <div className="lg:hidden min-h-[72px] bg-[#05070a]/95 border-t border-slate-700/70 flex justify-around items-stretch shrink-0 z-50 pb-[env(safe-area-inset-bottom)] backdrop-blur-md shadow-[0_-12px_30px_rgba(0,0,0,0.35)]">
       {navItems.map((item) => {
         const isActive = activeTab === item.id;
 
@@ -31,10 +31,11 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, unreadCom
           <button
             key={item.id}
             onClick={() => handleTabClick(item.id)}
+            aria-current={isActive ? 'page' : undefined}
+            aria-label={`Open ${item.label}`}
             className={`
-              flex flex-col items-center justify-center w-full py-2 relative
+              terminal-focus flex flex-col items-center justify-center w-full min-h-[68px] py-2 relative
               transition-all duration-200 ease-out
-              ${isActive ? 'scale-105' : 'scale-100'}
             `}
           >
             {/* Active indicator bar */}
@@ -46,10 +47,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, unreadCom
 
             {/* Icon container */}
             <div className={`
-              relative w-10 h-10 rounded-xl flex items-center justify-center mb-0.5
+              relative w-10 h-10 rounded-lg flex items-center justify-center mb-0.5
               transition-all duration-200
               ${isActive
-                ? `bg-gradient-to-b from-slate-700/80 to-slate-800/80 shadow-lg border border-slate-600/50`
+                ? `bg-gradient-to-b from-slate-700/80 to-slate-950/90 shadow-lg border border-slate-500/60`
                 : 'bg-transparent'
               }
             `}>
@@ -68,7 +69,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, unreadCom
               {/* Glow effect for active tab */}
               {isActive && (
                 <div className={`
-                  absolute inset-0 rounded-xl blur-md opacity-20
+                  absolute inset-0 rounded-lg blur-md opacity-20
                   ${item.activeColor.replace('text-', 'bg-')}
                 `} />
               )}

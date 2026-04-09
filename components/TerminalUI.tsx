@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useHaptic } from '../hooks/useHaptic';
 
 // --- BUTTONS ---
@@ -188,7 +188,7 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({
   ...restProps
 }) => {
   const variantStyles = {
-    default: "border border-slate-700/80 bg-black/90",
+    default: "border terminal-surface",
     elevated: "card-elevated",
     glass: "card-glass"
   };
@@ -199,8 +199,9 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({
       style={style}
       {...restProps}
     >
-      <div className="bg-gradient-to-r from-slate-800/90 to-slate-800/70 px-4 py-2 flex justify-between items-center border-b border-slate-700/60 shrink-0">
+      <div className="terminal-header px-4 py-2.5 flex justify-between items-center border-b border-slate-700/60 shrink-0">
         <div className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/80 shadow-[0_0_8px_rgba(52,211,153,0.7)]" aria-hidden="true" />
           {headerIcon && <i className={`fas ${headerIcon} text-amber-500/80 text-xs`}></i>}
           <span className="text-[11px] uppercase tracking-widest text-slate-400 font-bold">
             {formatPanelTitle(title)}

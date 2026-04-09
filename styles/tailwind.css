@@ -133,3 +133,34 @@
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
+
+.app-shell-grid {
+  background-color: #05070a;
+  background-image:
+    linear-gradient(rgba(20, 184, 166, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 184, 166, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(245, 158, 11, 0.08), transparent 18rem);
+  background-size: 44px 44px, 44px 44px, 100% 100%;
+}
+
+.terminal-surface {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(2, 6, 12, 0.94)),
+    #05070a;
+  border-color: rgba(71, 85, 105, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 36px rgba(0, 0, 0, 0.32);
+}
+
+.terminal-header {
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.92)),
+    #0b1018;
+}
+
+.terminal-focus {
+  outline: none;
+}
+
+.terminal-focus:focus-visible {
+  box-shadow: 0 0 0 2px #05070a, 0 0 0 4px rgba(34, 211, 238, 0.8);
+}

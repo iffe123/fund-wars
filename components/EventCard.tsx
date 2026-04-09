@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import type { StoryEvent, EventChoice, EventConsequences } from '../types/rpgEvents';
+import type { StoryEvent, EventChoice } from '../types/rpgEvents';
 import type { PlayerStats, NPC } from '../types';
 
 /**
@@ -231,21 +231,23 @@ const EventCard: React.FC<EventCardProps> = ({
   return (
     <div
       className={`
-        border rounded-lg bg-slate-900/80 backdrop-blur-sm transition-all duration-300
+        border rounded-lg bg-[#090d13]/95 backdrop-blur-sm transition-all duration-300
         ${style.border} ${style.glow}
         ${isExpanded ? 'p-4' : 'p-3'}
         ${className}
       `}
     >
       {/* Header */}
-      <div
-        className="flex items-start gap-3 cursor-pointer"
+      <button
+        type="button"
+        className="terminal-focus flex w-full items-start gap-3 text-left"
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
       >
         {/* Category Icon */}
         <div className={`
-          w-10 h-10 rounded-full flex items-center justify-center shrink-0
-          ${event.type === 'PRIORITY' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700 text-slate-400'}
+          w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border
+          ${event.type === 'PRIORITY' ? 'bg-amber-500/20 text-amber-400 border-amber-700/50' : 'bg-slate-800 text-slate-400 border-slate-700/70'}
         `}>
           <i className={`fas ${categoryIcon}`}></i>
         </div>
@@ -275,15 +277,13 @@ const EventCard: React.FC<EventCardProps> = ({
         </div>
 
         {/* Expand/Collapse */}
-        <button
-          className="text-slate-500 hover:text-white transition-colors p-1"
-          onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-          aria-label={isExpanded ? 'Collapse event details' : 'Expand event details'}
-          title={isExpanded ? 'Collapse event details' : 'Expand event details'}
+        <span
+          className="text-slate-500 p-1 shrink-0"
+          aria-hidden="true"
         >
           <i className={`fas ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
-        </button>
-      </div>
+        </span>
+      </button>
 
       {/* Expanded Content */}
       {isExpanded && (
@@ -389,13 +389,13 @@ const EventCard: React.FC<EventCardProps> = ({
                   onClick={() => available && handleChoiceClick(choice)}
                   disabled={!available}
                   className={`
-                    w-full text-left p-3 rounded border transition-all
+                    terminal-focus w-full text-left min-h-[88px] p-3 rounded-lg border transition-all
                     ${available ? alignStyle : 'border-slate-800 opacity-50 cursor-not-allowed'}
                     ${selectedChoice === choice.id ? 'ring-2 ring-white' : ''}
                   `}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{choice.label}</span>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="font-medium break-words">{choice.label}</span>
                     <div className="flex items-center gap-2 text-xs">
                       {choice.skillCheck && (
                         <span className="px-1.5 py-0.5 bg-yellow-900/50 text-yellow-400 rounded">
@@ -408,7 +408,7 @@ const EventCard: React.FC<EventCardProps> = ({
                   </div>
                   <p className="text-xs text-slate-400 mt-1">{choice.description}</p>
                   {impactPreview && (
-                    <p className="text-[11px] text-cyan-300/80 mt-1">
+                    <p className="text-[11px] text-cyan-300/80 mt-2 rounded border border-cyan-900/40 bg-cyan-950/10 px-2 py-1">
                       <i className="fas fa-chart-line mr-1"></i>
                       Potential impact: {impactPreview}
                     </p>
@@ -452,13 +452,13 @@ const EventCard: React.FC<EventCardProps> = ({
             <div className="flex gap-3">
               <button
                 onClick={handleConfirm}
-                className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold"
+                className="terminal-focus flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold"
               >
                 Confirm
               </button>
               <button
                 onClick={handleCancel}
-                className="flex-1 px-4 py-2 border border-slate-600 hover:border-slate-500 text-slate-300 rounded"
+                className="terminal-focus flex-1 px-4 py-2 border border-slate-600 hover:border-slate-500 text-slate-300 rounded"
               >
                 Cancel
               </button>
