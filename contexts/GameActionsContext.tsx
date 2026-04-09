@@ -8,7 +8,7 @@ import { COMPETITIVE_DEALS } from '../constants';
 import { hydrateCompetitiveDeal } from '../utils/gameUtils';
 import type { ActivityItem } from '../components/ActivityFeed';
 import type { VoiceInterjection, InnerVoiceId } from '../types/aiBlueprint';
-import { generateWeeklyNewspaper, buildCompactGameState, updateMachiavelliState } from '../services/blueprintAIService';
+import { generateWeeklyNewspaper, buildCompactGameState, updateMachiavelliState, createGossipEvent, processGossipTick } from '../services/blueprintAIService';
 
 interface GameActions {
   setGamePhase: (phase: any) => void;
@@ -255,6 +255,18 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
       if (state.blueprintAI?.machiavelliState) {
         const updatedMach = updateMachiavelliState(state.blueprintAI.machiavelliState, nextWeek, ps);
         dispatch({ type: 'SET_MACHIAVELLI', payload: updatedMach });
+      }
+
+      // Generate gossip from recent NPC interactions and process existing gossip
+      const npcs = state.npcs ?? [];
+      if (npcs.length > 0) {
+        const lastEvent = recentEvents[recentEvents.length - 1];
+        if (lastEvent) {
+          const sourceNpc = npcs[Math.floor(Math.random() * Math.min(npcs.length, 5))];
+          const gossip = createGossipEvent(lastEvent, sourceNpc.id, npcs, nextWeek);
+          dispatch({ type: 'ADD_GOSSIP', payload: gossip });
+        }
+        dispatch({ type: 'PROCESS_GOSSIP_TICK' });
       }
     }
 

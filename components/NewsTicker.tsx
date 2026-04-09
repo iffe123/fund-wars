@@ -1,6 +1,6 @@
 import React from 'react';
 import type { NewsEvent } from '../types';
-import type { WeeklyNewspaper } from '../types/aiBlueprint';
+import type { WeeklyNewspaper, GossipEvent } from '../types/aiBlueprint';
 import { isGeminiApiConfigured } from '../services/geminiService';
 
 interface NewsTickerProps {
@@ -8,9 +8,10 @@ interface NewsTickerProps {
   systemLogs?: string[];
   newspaper?: WeeklyNewspaper | null;
   onMarkNewspaperRead?: () => void;
+  activeGossip?: GossipEvent[];
 }
 
-const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [], newspaper, onMarkNewspaperRead }) => {
+const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [], newspaper, onMarkNewspaperRead, activeGossip = [] }) => {
   const aiOn = isGeminiApiConfigured();
   const getTimeAgo = (index: number) => {
     const minutes = [2, 7, 15, 28, 45][index] || 60;
@@ -167,6 +168,32 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [], newspa
                   Corrections: {newspaper.corrections[0]}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Gossip Feed */}
+        {activeGossip.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <i className="fas fa-ear-listen text-purple-500/70 text-[10px]"></i>
+              <span className="text-[10px] text-purple-500/70 uppercase tracking-widest font-bold">Overheard</span>
+              <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-purple-900/50 text-purple-300">{activeGossip.length}</span>
+            </div>
+            <div className="space-y-2">
+              {activeGossip.slice(0, 3).map((gossip) => (
+                <div
+                  key={gossip.id}
+                  className="border-l-2 border-purple-700/50 pl-3 py-1.5 rounded-r bg-purple-950/10"
+                >
+                  <div className="text-[11px] text-purple-200/80 italic leading-relaxed">
+                    &ldquo;{gossip.currentVersion}&rdquo;
+                  </div>
+                  <div className="text-[9px] text-slate-500 mt-1">
+                    via {gossip.reachedNpcs.length} contact{gossip.reachedNpcs.length > 1 ? 's' : ''}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
