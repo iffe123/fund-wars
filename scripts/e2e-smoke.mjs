@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -42,7 +42,13 @@ devServer.stderr.on('data', appendLog);
 
 const cleanup = () => {
   if (!devServer.killed) {
-    devServer.kill();
+    if (process.platform === 'win32') {
+      spawnSync('taskkill.exe', ['/pid', String(devServer.pid), '/t', '/f'], {
+        stdio: 'ignore',
+      });
+    } else {
+      devServer.kill();
+    }
   }
 };
 
@@ -61,7 +67,15 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function waitForApp() {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
-      const response = await fetch(url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      let response;
+      try {
+        response = await fetch(url, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
       if (response.ok) {
         return response.text();
       }
