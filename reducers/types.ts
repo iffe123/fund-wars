@@ -73,6 +73,7 @@ export type GameAction =
   | { type: 'UNSUPPRESS_VOICE'; payload: import('../types/aiBlueprint').InnerVoiceId }
   | { type: 'SET_NEWSPAPER'; payload: import('../types/aiBlueprint').WeeklyNewspaper }
   | { type: 'MARK_NEWSPAPER_READ'; payload?: void }
+  | { type: 'SET_MACHIAVELLI'; payload: import('../types/aiBlueprint').MachiavelliState }
   | { type: 'ADD_CRISIS'; payload: import('../types/aiBlueprint').CrisisEvent }
   | { type: 'RESOLVE_CRISIS'; payload: { crisisId: string; responseId: string } }
   | { type: 'ADD_GOSSIP'; payload: import('../types/aiBlueprint').GossipEvent }

@@ -1153,6 +1153,15 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 },
             };
 
+        case 'SET_MACHIAVELLI':
+            return {
+                ...state,
+                blueprintAI: {
+                    ...state.blueprintAI,
+                    machiavelliState: action.payload,
+                },
+            };
+
         case 'ADD_CRISIS':
             return {
                 ...state,

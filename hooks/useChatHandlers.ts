@@ -15,6 +15,7 @@ interface ChatHandlersDependencies {
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   sendNpcMessage: (npcId: string, message: string, sender?: 'player' | 'npc', senderName?: string) => void;
   updatePlayerStats: (changes: StatChanges) => void;
+  machiavelliAddendum?: string;
 }
 
 interface UseChatHandlersReturn {
@@ -39,6 +40,7 @@ export const useChatHandlers = (deps: ChatHandlersDependencies): UseChatHandlers
     addToast,
     sendNpcMessage,
     updatePlayerStats,
+    machiavelliAddendum,
   } = deps;
 
   const [selectedNpcId, setSelectedNpcId] = useState<string>('advisor');
@@ -61,7 +63,7 @@ export const useChatHandlers = (deps: ChatHandlersDependencies): UseChatHandlers
     setIsAdvisorLoading(true);
 
     try {
-      const response = await getAdvisorResponse(msg, chatHistory, playerStats, activeScenario);
+      const response = await getAdvisorResponse(msg, chatHistory, playerStats, activeScenario, machiavelliAddendum);
       setChatHistory(prev => [...prev, { sender: 'advisor', text: response }]);
       playSfx('NOTIFICATION');
     } catch (error) {
@@ -74,7 +76,7 @@ export const useChatHandlers = (deps: ChatHandlersDependencies): UseChatHandlers
     } finally {
       setIsAdvisorLoading(false);
     }
-  }, [chatHistory, playerStats, activeScenario, playSfx, addToast]);
+  }, [chatHistory, playerStats, activeScenario, machiavelliAddendum, playSfx, addToast]);
 
   const handleSendMessageToNPC = useCallback(async (npcId: string, msg: string) => {
     // 1. Add Player Message to UI Immediately

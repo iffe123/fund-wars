@@ -8,7 +8,7 @@ import { COMPETITIVE_DEALS } from '../constants';
 import { hydrateCompetitiveDeal } from '../utils/gameUtils';
 import type { ActivityItem } from '../components/ActivityFeed';
 import type { VoiceInterjection, InnerVoiceId } from '../types/aiBlueprint';
-import { generateWeeklyNewspaper, buildCompactGameState } from '../services/blueprintAIService';
+import { generateWeeklyNewspaper, buildCompactGameState, updateMachiavelliState } from '../services/blueprintAIService';
 
 interface GameActions {
   setGamePhase: (phase: any) => void;
@@ -250,6 +250,12 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
       generateWeeklyNewspaper(compactState, ps, state.npcs ?? [], recentEvents, state.blueprintAI?.newspaper)
         .then(paper => dispatch({ type: 'SET_NEWSPAPER', payload: paper }))
         .catch(() => { /* offline fallback already handled inside service */ });
+
+      // Update Machiavelli's dynamic loyalty/blind-spots
+      if (state.blueprintAI?.machiavelliState) {
+        const updatedMach = updateMachiavelliState(state.blueprintAI.machiavelliState, nextWeek, ps);
+        dispatch({ type: 'SET_MACHIAVELLI', payload: updatedMach });
+      }
     }
 
     // Add activity for new week using pre-computed values (avoids stale closure)

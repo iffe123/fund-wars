@@ -463,7 +463,8 @@ export const getAdvisorResponse = async (
   newPrompt: string,
   history: ChatMessage[],
   playerStats?: PlayerStats | null,
-  currentScenario?: Scenario | null
+  currentScenario?: Scenario | null,
+  machiavelliAddendum?: string,
 ): Promise<string> => {
   if (!isAIConfigured()) {
     return getOfflineAdvisorResponse(newPrompt, playerStats, currentScenario);
@@ -471,6 +472,10 @@ export const getAdvisorResponse = async (
 
   try {
     let currentSystemInstruction = advisorSystemInstruction;
+
+    if (machiavelliAddendum) {
+      currentSystemInstruction += machiavelliAddendum;
+    }
 
     if (playerStats) {
       currentSystemInstruction += `\n\nCURRENT PLAYER STATUS (Use this to tailor your insults/advice):\nLevel: ${playerStats.level}\nCash: $${playerStats.cash.toLocaleString()}\nReputation: ${playerStats.reputation}\nFaction Reputation -> MDs: ${playerStats.factionReputation.MANAGING_DIRECTORS}, LPs: ${playerStats.factionReputation.LIMITED_PARTNERS}, Regulators: ${playerStats.factionReputation.REGULATORS}, Analysts: ${playerStats.factionReputation.ANALYSTS}, Rivals: ${playerStats.factionReputation.RIVALS}\nStress: ${playerStats.stress}%\nAnalyst Rating: ${playerStats.analystRating}\nPortfolio Count: ${playerStats.portfolio.length}`;
