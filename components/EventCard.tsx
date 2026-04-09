@@ -253,7 +253,7 @@ const EventCard: React.FC<EventCardProps> = ({
         {/* Title and Hook */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-bold text-white truncate">{event.title}</h3>
+            <h3 className="font-bold text-white break-words">{event.title}</h3>
             {event.type === 'PRIORITY' && (
               <span className={`text-[10px] px-2 py-0.5 rounded-full ${style.badge}`}>
                 PRIORITY
