@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import type { ChoiceEffects } from '../../types/storyEngine';
+import { formatStatDisplayName } from '../../utils/presentationText';
 
 interface ConsequenceAnimatorProps {
   /** The effects to animate */
@@ -61,7 +62,13 @@ const ConsequenceAnimator: React.FC<ConsequenceAnimatorProps> = ({
           politics: { pos: 'You learn to play the game', neg: 'Office politics confuse you', icon: 'fa-chess', label: 'POL' },
         };
 
-        const label = statLabels[stat] || { pos: `${stat} increased`, neg: `${stat} decreased`, icon: 'fa-chart-line', label: stat.toUpperCase().slice(0, 4) };
+        const displayName = formatStatDisplayName(stat);
+        const label = statLabels[stat] || {
+          pos: `${displayName} increased`,
+          neg: `${displayName} decreased`,
+          icon: 'fa-chart-line',
+          label: displayName,
+        };
 
         lines.push({
           id: `stat-${stat}`,
