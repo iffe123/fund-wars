@@ -97,7 +97,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete }) => {
                 <i className="fas fa-user-tie text-3xl text-slate-500"></i>
              </div>
              <div>
-                <h3 className="text-2xl font-bold text-slate-800">Chad (MD)</h3>
+                <h3 className="text-2xl font-bold text-slate-800">Chad Worthington III</h3>
                 <p className="text-slate-500 text-sm uppercase tracking-wide">Managing Director</p>
              </div>
           </div>
