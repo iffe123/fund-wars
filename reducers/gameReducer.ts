@@ -22,9 +22,8 @@ import { generateCompanyEvent } from '../constants/companyEvents';
 import {
     hydrateNpc, hydrateRivalFund, hydrateCompetitiveDeal
 } from '../utils/gameUtils';
-import { createDefaultBlueprintAIState } from '../services/blueprintAIService';
+import { createDefaultBlueprintAIState, processGossipTick } from '../services/blueprintAIService';
 import { suppressVoice, unsuppressVoice } from '../services/innerMonologueService';
-import { processGossipTick } from '../services/blueprintAIService';
 import { WEEKLY_DECAY, STRESS_THRESHOLDS, REPUTATION_THRESHOLDS } from '../constants/difficulty';
 
 // Helper: Calculate Annual Bonus

@@ -8,7 +8,7 @@ import { COMPETITIVE_DEALS } from '../constants';
 import { hydrateCompetitiveDeal } from '../utils/gameUtils';
 import type { ActivityItem } from '../components/ActivityFeed';
 import type { VoiceInterjection, InnerVoiceId } from '../types/aiBlueprint';
-import { generateWeeklyNewspaper, buildCompactGameState, updateMachiavelliState, createGossipEvent, processGossipTick } from '../services/blueprintAIService';
+import { generateWeeklyNewspaper, buildCompactGameState, updateMachiavelliState, createGossipEvent } from '../services/blueprintAIService';
 
 interface GameActions {
   setGamePhase: (phase: any) => void;
