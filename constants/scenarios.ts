@@ -1690,6 +1690,282 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
   },
+  {
+    id: 31,
+    title: "The Whistleblower's Envelope",
+    description: "An anonymous envelope appears on your desk: photocopies of internal emails suggesting one of your portfolio companies has been inflating revenue. No return address. The numbers look damning. The question isn't whether it's true — it's what you do with it.",
+    requiresPortfolio: true,
+    triggerTags: ['ethical', 'fraud'],
+    choices: [
+      {
+        text: "Investigate quietly through internal audit",
+        description: "Contain it. Find out if it's real before anyone else does.",
+        sarcasticGuidance: "Cover your bases. This is how grown-ups handle it.",
+        outcome: {
+          description: "Your quiet investigation confirms the worst. You restate numbers and take a write-down. Painful, but survivable. The LPs notice the adjustment.",
+          statChanges: { reputation: -5, stress: +15, ethics: +10, auditRisk: -10, score: +400 },
+        },
+      },
+      {
+        text: "Report to the SEC immediately",
+        description: "Full disclosure. Protect yourself legally.",
+        sarcasticGuidance: "Become the hero nobody in PE wanted.",
+        outcome: {
+          description: "You file the report. The company is decimated. You're hailed as a whistleblower by the press and hated by every PE shop on Wall Street. Your name becomes a warning.",
+          statChanges: { reputation: -15, ethics: +30, auditRisk: -25, stress: +20, score: +600, setsFlags: ['WHISTLEBLOWER'], factionReputation: { REGULATORS: 20, RIVALS: -20, MANAGING_DIRECTORS: -15 } },
+        },
+      },
+      {
+        text: "Destroy the envelope",
+        description: "What envelope? You never saw it.",
+        sarcasticGuidance: "The mafia move. Hope nobody has copies.",
+        outcome: {
+          description: "The envelope is shredded. The problem disappears — for now. But someone sent it, and that someone might send another.",
+          statChanges: { ethics: -25, auditRisk: +20, stress: +10, setsFlags: ['DESTROYED_EVIDENCE'] },
+        },
+      },
+    ],
+  },
+  {
+    id: 32,
+    title: "The Conference Circuit",
+    description: "The annual PE conference is this week. Three days of networking, panel discussions, and overpriced canapés. Chad wants a 'strong showing.' Your calendar is already triple-booked. How do you play it?",
+    triggerTags: ['networking', 'social'],
+    choices: [
+      {
+        text: "Full LP schmooze mode",
+        description: "Dinner with LPs, breakfast with LPs, coffee with LPs.",
+        sarcasticGuidance: "Smile until your face hurts. Laugh at their jokes. Pretend to care about their grandchildren.",
+        outcome: {
+          description: "You work the room like a politician. Three LPs express interest in your next fund. Your liver files a complaint.",
+          statChanges: { stress: +15, energy: -20, reputation: +10, score: +300, factionReputation: { LIMITED_PARTNERS: 15, MANAGING_DIRECTORS: 5, ANALYSTS: 0, REGULATORS: 0, RIVALS: 0 } },
+        },
+      },
+      {
+        text: "Hunt for deal flow",
+        description: "Skip the panels. Corner bankers in hallways.",
+        sarcasticGuidance: "Go where the proprietary deals live: the bathroom line.",
+        outcome: {
+          description: "Two bankers promise to show you their next process. One of them actually will.",
+          statChanges: { stress: +10, reputation: +5, score: +250, analystRating: +5 },
+        },
+      },
+      {
+        text: "Attend panels and actually learn",
+        description: "Take notes. Be a student of the game.",
+        sarcasticGuidance: "The losers move. Nobody ever made MD by taking notes.",
+        outcome: {
+          description: "You pick up two genuinely useful frameworks. Your thinking sharpens. Nobody at the firm notices or cares.",
+          statChanges: { financialEngineering: +5, analystRating: +8, score: +200 },
+        },
+      },
+      {
+        text: "Skip it and catch up on work",
+        description: "Real value is made at your desk, not at a cocktail bar.",
+        sarcasticGuidance: "Your career thanks you. Your reputation won't.",
+        outcome: {
+          description: "You get through your backlog. Chad asks where you were. You don't have a good answer.",
+          statChanges: { stress: -5, analystRating: +5, reputation: -10, factionReputation: { MANAGING_DIRECTORS: -10, ANALYSTS: 0, REGULATORS: 0, LIMITED_PARTNERS: -5, RIVALS: 0 } },
+        },
+      },
+    ],
+  },
+  {
+    id: 33,
+    title: "The Burnout Warning",
+    description: "Your doctor looks grim. 'Your cortisol levels are in territory I usually see in ER patients. Your blood pressure is a ticking bomb. You need to make changes. Now.' She doesn't blink.",
+    minStress: 60,
+    triggerTags: ['health', 'personal'],
+    choices: [
+      {
+        text: "Take a real sabbatical",
+        description: "Two weeks completely off. No email. No calls.",
+        sarcasticGuidance: "Career suicide or self-preservation? Only time will tell.",
+        outcome: {
+          description: "You disappear for two weeks. You come back human again. Chad calls it 'concerning.' Your portfolio somehow survived.",
+          statChanges: { stress: -40, health: +20, energy: +30, reputation: -10, score: +300 },
+        },
+      },
+      {
+        text: "Start therapy",
+        description: "Talk to a professional. Process this properly.",
+        sarcasticGuidance: "Working through trauma, PE edition.",
+        outcome: {
+          description: "Weekly sessions help you see the firm's dysfunction clearly. Clarity is expensive — both in money and in illusions lost.",
+          statChanges: { stress: -20, health: +10, cash: -2000, ethics: +5, score: +250 },
+        },
+      },
+      {
+        text: "Pop pills and push through",
+        description: "A prescription for anxiety. Another for sleep. Maybe something for focus.",
+        sarcasticGuidance: "The Wall Street special. What could go wrong?",
+        outcome: {
+          description: "You stabilize chemically. Your performance holds. Your sense of self gets a little fuzzy.",
+          statChanges: { stress: -15, dependency: +20, energy: +10, analystRating: +5 },
+        },
+      },
+      {
+        text: "Ignore the doctor",
+        description: "She doesn't understand the stakes. Nobody does.",
+        sarcasticGuidance: "The graveyard is full of people who thought they were indispensable.",
+        outcome: {
+          description: "You walk out of her office. The cortisol doesn't care what you decide.",
+          statChanges: { stress: +10, health: -15, setsFlags: ['IGNORED_HEALTH_WARNING'] },
+        },
+      },
+    ],
+  },
+  {
+    id: 34,
+    title: "The Activist Investor",
+    description: "A well-known activist investor just published a scathing letter about one of your portfolio companies. The stock — wait, it's private. But LPs are reading the letter anyway. He wants board seats, a CEO change, and a sale process. Public campaign incoming.",
+    requiresPortfolio: true,
+    triggerTags: ['crisis', 'governance'],
+    choices: [
+      {
+        text: "Fight him publicly",
+        description: "Hire PR firms. Counter-narrative. Dig in.",
+        sarcasticGuidance: "Mutually assured destruction, PE edition.",
+        outcome: {
+          description: "The fight gets ugly. Legal fees pile up. The press loves the drama. Ultimately, you hold the board — but you bled for it.",
+          statChanges: { stress: +25, cash: -50000, reputation: +5, score: +400 },
+        },
+      },
+      {
+        text: "Negotiate a deal",
+        description: "Give him a board seat. Keep control of the process.",
+        sarcasticGuidance: "Feed the dragon so it doesn't eat the village.",
+        outcome: {
+          description: "You carve out a role for him. He stops writing letters. The company focuses on operations again. Nobody's happy, but nobody's bleeding.",
+          statChanges: { stress: +10, reputation: -5, score: +300 },
+        },
+      },
+      {
+        text: "Use him as your exit catalyst",
+        description: "Agree publicly. Run a sale process. Cash out.",
+        sarcasticGuidance: "Outsource the dirty work to the activist. Take the profits.",
+        outcome: {
+          description: "You ride his pressure into a strategic sale. The activist takes credit. You take the carry. Everyone gets what they wanted.",
+          statChanges: { reputation: +10, financialEngineering: +8, score: +600 },
+        },
+      },
+    ],
+  },
+  {
+    id: 35,
+    title: "The Talent War",
+    description: "Your best analyst just got an offer from a rival mega-fund. 30% raise, better title, faster track. She's in your office now, trying not to cry. 'I don't want to leave, but…' What do you do?",
+    triggerTags: ['talent', 'retention'],
+    choices: [
+      {
+        text: "Match the offer",
+        description: "Whatever it takes. She's worth it.",
+        sarcasticGuidance: "Set the precedent. Every other analyst will hear about this within 48 hours.",
+        outcome: {
+          description: "She stays. Loyalty secured. But now the whole analyst pool knows the number you'll pay under duress.",
+          statChanges: { cash: -30000, factionReputation: { ANALYSTS: 15, MANAGING_DIRECTORS: -5, REGULATORS: 0, LIMITED_PARTNERS: 0, RIVALS: 0 }, score: +300 },
+        },
+      },
+      {
+        text: "Counter with equity, not salary",
+        description: "Small promotion. Carry allocation. Skin in the game.",
+        sarcasticGuidance: "Align her incentives with yours. The carrot that can never be eaten.",
+        outcome: {
+          description: "She accepts. Equity makes her loyal in a way cash never could. Chad nods — you handled it like a Partner.",
+          statChanges: { reputation: +10, factionReputation: { ANALYSTS: 20, MANAGING_DIRECTORS: 10, REGULATORS: 0, LIMITED_PARTNERS: 0, RIVALS: 0 }, score: +500 },
+        },
+      },
+      {
+        text: "Let her go gracefully",
+        description: "Write a glowing reference. Wish her well.",
+        sarcasticGuidance: "The noble loss. Your network just grew.",
+        outcome: {
+          description: "She leaves grateful. Two years later, when she's a VP at the rival fund, she sends you proprietary deal flow as thanks.",
+          statChanges: { reputation: +5, stress: +5, score: +200, factionReputation: { ANALYSTS: 10, MANAGING_DIRECTORS: 0, REGULATORS: 0, LIMITED_PARTNERS: 0, RIVALS: 10 } },
+        },
+      },
+      {
+        text: "Guilt-trip her into staying",
+        description: "Remind her of all you've done for her.",
+        sarcasticGuidance: "The classic manipulator move. It even works, sometimes.",
+        outcome: {
+          description: "She stays — but something between you is broken. She leaves six months later without warning. You get nothing.",
+          statChanges: { ethics: -15, factionReputation: { ANALYSTS: -20, MANAGING_DIRECTORS: 0, REGULATORS: 0, LIMITED_PARTNERS: 0, RIVALS: 0 }, score: -100 },
+        },
+      },
+    ],
+  },
+  {
+    id: 36,
+    title: "The ESG Mandate",
+    description: "Your largest LP just sent a 40-page ESG compliance requirement. Every portfolio company must report carbon footprint, diversity metrics, and 'stakeholder impact' quarterly. This is either a genuine transformation opportunity or the world's most expensive PR exercise.",
+    minReputation: 20,
+    triggerTags: ['esg', 'governance'],
+    choices: [
+      {
+        text: "Embrace genuine ESG transformation",
+        description: "Hire a Chief Sustainability Officer. Rebuild processes.",
+        sarcasticGuidance: "Become the change. And the consultants' revenue stream.",
+        outcome: {
+          description: "You invest real money in real change. LPs love it. Some portfolio CEOs hate it. Over time, your deals benefit from a reputation for clean operations.",
+          statChanges: { cash: -40000, reputation: +15, ethics: +15, score: +500, factionReputation: { LIMITED_PARTNERS: 20, ANALYSTS: 5, REGULATORS: 10, MANAGING_DIRECTORS: 0, RIVALS: 0 } },
+        },
+      },
+      {
+        text: "Greenwash efficiently",
+        description: "Hire a consultant to produce beautiful reports.",
+        sarcasticGuidance: "The PE way: make it look compliant, never actually be compliant.",
+        outcome: {
+          description: "The reports are gorgeous. The actual operations haven't changed. LPs tick their boxes. Eventually someone will dig into the numbers.",
+          statChanges: { cash: -10000, ethics: -10, auditRisk: +15, score: +150 },
+        },
+      },
+      {
+        text: "Push back hard on the LP",
+        description: "Argue ESG reduces returns. Threaten to decline their commitment.",
+        sarcasticGuidance: "The old-school move. Hope they don't have alternatives.",
+        outcome: {
+          description: "The LP is offended. They halve their next commitment. Other LPs take note.",
+          statChanges: { reputation: -15, factionReputation: { LIMITED_PARTNERS: -20, MANAGING_DIRECTORS: 0, ANALYSTS: 0, REGULATORS: 0, RIVALS: 0 }, score: -200 },
+        },
+      },
+    ],
+  },
+  {
+    id: 37,
+    title: "The Podcast Invitation",
+    description: "A wildly popular finance podcast just invited you on. 'We want your real story — the wins, the losses, the human side of PE.' It's either a massive personal-brand boost or a very public minefield.",
+    triggerTags: ['media', 'public'],
+    choices: [
+      {
+        text: "Go on and be genuinely honest",
+        description: "Talk about the pressure, the ethics, the real trade-offs.",
+        sarcasticGuidance: "Authenticity in a world of talking points. Bold move.",
+        outcome: {
+          description: "Your honesty goes viral. LPs are intrigued. Some partners at your firm are furious. You become a minor celebrity in finance Twitter.",
+          statChanges: { reputation: +20, stress: +10, score: +600, factionReputation: { MANAGING_DIRECTORS: -10, LIMITED_PARTNERS: 10, ANALYSTS: 15, REGULATORS: 5, RIVALS: 0 }, setsFlags: ['PODCAST_FAMOUS'] },
+        },
+      },
+      {
+        text: "Go on with prepared talking points",
+        description: "Legal reviewed every line. Stay on message.",
+        sarcasticGuidance: "Safe, boring, forgettable. The corporate dream.",
+        outcome: {
+          description: "The interview is professional and dull. It gets 40,000 downloads and no one remembers a word you said. Chad approves.",
+          statChanges: { reputation: +5, score: +150 },
+        },
+      },
+      {
+        text: "Decline politely",
+        description: "Not worth the risk. Stay out of the spotlight.",
+        sarcasticGuidance: "The timeless advice: say nothing, get nothing.",
+        outcome: {
+          description: "You pass. They interview your rival instead. He trends on Twitter for a week.",
+          statChanges: { reputation: -5, score: -50, factionReputation: { MANAGING_DIRECTORS: 5, LIMITED_PARTNERS: 0, ANALYSTS: 0, REGULATORS: 0, RIVALS: 0 } },
+        },
+      },
+    ],
+  },
 ];
 
 export const PORTFOLIO_ACTIONS: PortfolioAction[] = [
@@ -1770,6 +2046,83 @@ export const NEWS_EVENTS = [
       statChanges: { stress: 5, portfolioImpact: { valuationChangePercentage: -0.05, applicableDealTypes: [DealType.LBO] } }
     }
   },
+  {
+    id: 2,
+    headline: "Major PE fund collapses after leveraging 15x on a dog food subscription startup.",
+    effect: {
+      description: "Turns out 'recurring revenue' from artisanal kibble wasn't the safe bet they pitched to LPs. The fund's 200-page deck somehow never mentioned that dogs don't read retention emails.",
+      statChanges: { stress: 3, portfolioImpact: { valuationChangePercentage: -0.03 } }
+    }
+  },
+  {
+    id: 3,
+    headline: "Congress proposes bill to eliminate carried interest tax loophole.",
+    effect: {
+      description: "Every PE partner in America just had a simultaneous panic attack. The 'sweat equity' argument is getting harder to make from a yacht in Monaco.",
+      statChanges: { stress: 10 }
+    }
+  },
+  {
+    id: 4,
+    headline: "Record M&A volume as cheap debt fuels buyout frenzy.",
+    effect: {
+      description: "Banks are handing out leverage like Halloween candy. Every deal gets done, every model works, and nobody remembers what 'discipline' means. Enjoy it while it lasts.",
+      statChanges: { portfolioImpact: { valuationChangePercentage: 0.05, applicableDealTypes: [DealType.LBO] } }
+    }
+  },
+  {
+    id: 5,
+    headline: "AI startup valuations hit all-time highs despite zero revenue.",
+    effect: {
+      description: "A company with 3 employees and a ChatGPT wrapper just raised at a $2B valuation. The VC partners who funded it called it 'the next platform shift.' They also funded the last 47 'next platform shifts.'",
+      statChanges: { portfolioImpact: { valuationChangePercentage: 0.08, applicableDealTypes: [DealType.VENTURE_CAPITAL] } }
+    }
+  },
+  {
+    id: 6,
+    headline: "Chinese regulators block three major cross-border acquisitions.",
+    effect: {
+      description: "Geopolitical risk is back on the menu. Those 'synergy assumptions' in your cross-border deal model just became creative fiction.",
+      statChanges: { stress: 5 }
+    }
+  },
+  {
+    id: 7,
+    headline: "WeWork-style collapse of co-working giant sends shockwaves through growth equity.",
+    effect: {
+      description: "Another 'community-adjusted EBITDA' darling bites the dust. Growth equity partners everywhere are quietly deleting their LinkedIn endorsements of the founder.",
+      statChanges: { portfolioImpact: { valuationChangePercentage: -0.06, applicableDealTypes: [DealType.GROWTH_EQUITY] } }
+    }
+  },
+  {
+    id: 8,
+    headline: "S&P 500 hits new all-time high; PE exits accelerate.",
+    effect: {
+      description: "The exit window is wide open. Every fund is rushing to sell before the music stops. IRRs look great when you cherry-pick the exit timing.",
+      statChanges: { stress: -5, portfolioImpact: { valuationChangePercentage: 0.04 } }
+    }
+  },
+  {
+    id: 9,
+    headline: "Credit Suisse-style bank crisis raises counterparty risk fears.",
+    effect: {
+      description: "Your prime broker's stock is down 40% and their CEO just said 'the bank is strong' on live TV. Time to check which deals have exposure to banks that are definitely, absolutely, 100% fine.",
+      statChanges: { stress: 8, portfolioImpact: { valuationChangePercentage: -0.05, applicableDealTypes: [DealType.LBO] } }
+    }
+  },
+  {
+    id: 10,
+    headline: "Warren Buffett calls PE 'a giant fee collection machine.' Markets shrug.",
+    effect: null
+  },
+  {
+    id: 11,
+    headline: "Inflation data comes in hot. Fed signals higher for longer.",
+    effect: {
+      description: "The 'transitory' narrative is dead and buried. Discount rates are going up, which means your DCF models are going down. Time to update those 'base case' assumptions that were really best case all along.",
+      statChanges: { stress: 3, portfolioImpact: { valuationChangePercentage: -0.04, applicableDealTypes: [DealType.LBO] } }
+    }
+  },
 ];
 
 export const PREDEFINED_QUESTIONS: string[] = [
@@ -1780,7 +2133,15 @@ export const PREDEFINED_QUESTIONS: string[] = [
   "What's the angle here?",
   "Roast my strategy and fix it",
   "Ask me one investment-committee trap question",
-  "Test my financial knowledge"
+  "Test my financial knowledge",
+  "How do I manage my stress better?",
+  "What should I prioritize this week?",
+  "Give me a rapid-fire PE trivia question",
+  "How do I improve my relationship with Chad?",
+  "What's the best sector to specialize in?",
+  "How do I prepare for my next promotion?",
+  "Analyze my portfolio and give honest feedback",
+  "What are the biggest risks in my current position?",
 ];
 
 export const QUIZ_QUESTIONS: QuizQuestion[] = [
@@ -1866,7 +2227,72 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     options: ["It decreases", "It increases", "It stays the same", "It becomes negative"],
     correctIndex: 1,
     explanation: "Leverage increases financial risk, which increases the volatility of equity returns relative to the market, thus increasing Equity Beta."
-  }
+  },
+  // --- New: Advanced Technical Questions ---
+  {
+    id: 11,
+    category: 'MODELING',
+    question: "Enterprise Value is negative. What does this mean?",
+    options: ["The company is worthless", "Cash exceeds market cap plus debt", "There's an error in the model", "The company should be liquidated immediately"],
+    correctIndex: 1,
+    explanation: "A negative EV means the company has more cash than its market cap plus net debt. It's theoretically 'free' — you buy the company and the cash you get exceeds what you paid."
+  },
+  {
+    id: 12,
+    category: 'DEAL_STRUCTURE',
+    question: "What is a 'roll-up' strategy in PE?",
+    options: ["Combining multiple companies in the same industry under one platform", "Rolling over debt to extend maturity", "Converting preferred shares to common", "A type of exit strategy"],
+    correctIndex: 0,
+    explanation: "A roll-up (or 'buy-and-build') acquires multiple smaller companies in a fragmented industry, consolidating them into a single larger platform to capture synergies and multiple expansion."
+  },
+  {
+    id: 13,
+    category: 'DUE_DILIGENCE',
+    question: "During DD, you find the company has 90% gross margins but 5% EBITDA margins. What's likely happening?",
+    options: ["They have massive R&D spending", "Revenue recognition fraud", "Extremely high SG&A and operating expenses", "The company is highly leveraged"],
+    correctIndex: 2,
+    explanation: "High gross margins with low EBITDA margins indicate the company is spending heavily on sales, marketing, G&A, or R&D. This could be growth investment or operational inefficiency — your job is to figure out which."
+  },
+  {
+    id: 14,
+    category: 'DEAL_STRUCTURE',
+    question: "What is a 'MAC clause' and why does it matter in M&A?",
+    options: ["Material Adverse Change — lets buyer walk away if target deteriorates significantly", "Maximum Acquisition Cost — caps the purchase price", "Mutual Agreement to Close — confirms both parties agree", "Market Adjusted Capital — adjusts price for market moves"],
+    correctIndex: 0,
+    explanation: "A Material Adverse Change (MAC) clause protects the buyer. If the target company suffers a significant negative event between signing and closing, the buyer can terminate the deal without penalty."
+  },
+  {
+    id: 15,
+    category: 'MODELING',
+    question: "In an LBO, which of these MOST improves IRR?",
+    options: ["Higher exit multiple", "Faster debt paydown", "Earlier exit timing", "Higher revenue growth"],
+    correctIndex: 2,
+    explanation: "IRR is extremely sensitive to time. Returning money faster dramatically boosts IRR. A 2x in 2 years = ~41% IRR, while a 2x in 5 years = ~15% IRR. Time is the IRR's greatest enemy."
+  },
+  {
+    id: 16,
+    category: 'GENERAL',
+    question: "What is 'dry powder' in PE context?",
+    options: ["The fund's management fees", "Uninvested capital committed by LPs", "Cash distributions to investors", "Emergency reserve funds"],
+    correctIndex: 1,
+    explanation: "Dry powder refers to committed but uninvested capital that GPs have available to deploy. High industry dry powder means lots of money chasing deals, which typically inflates valuations."
+  },
+  {
+    id: 17,
+    category: 'DUE_DILIGENCE',
+    question: "You discover a company's revenue has grown 50% YoY, but cash collections are flat. Red flag?",
+    options: ["No, revenue growth is all that matters", "Yes, they might be stuffing the channel or booking phantom revenue", "No, cash always lags revenue", "Only if AR exceeds 90 days"],
+    correctIndex: 1,
+    explanation: "Revenue growth without corresponding cash collection is a classic fraud indicator. It could mean channel stuffing, bill-and-hold schemes, or aggressive revenue recognition. Always check the quality of earnings."
+  },
+  {
+    id: 18,
+    category: 'DEAL_STRUCTURE',
+    question: "What is a 'waterfall' in PE fund economics?",
+    options: ["The order in which investment profits are distributed between LPs and GPs", "The declining fee structure over fund life", "The cascade of debt tranches in an LBO", "The order of priority in bankruptcy"],
+    correctIndex: 0,
+    explanation: "The distribution waterfall defines how profits flow: typically first to LPs for return of capital, then preferred return (hurdle rate), then GP catch-up, then a split (usually 80/20 LP/GP) on remaining profits."
+  },
 ];
 
 export const BLACK_BOX_FILE = {

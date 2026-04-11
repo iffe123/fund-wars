@@ -341,6 +341,242 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     condition: (stats: PlayerStats) => stats.playerFlags['ALL_NIGHTER'] === true,
     reward: { analystRating: 5, stress: 10, score: 500 },
   },
+
+  // ==================== PORTFOLIO MASTERY ACHIEVEMENTS ====================
+  {
+    id: 'turnaround_artist',
+    name: 'Turnaround Artist',
+    description: 'Exit a company at 2x+ after it had a critical event during your ownership.',
+    icon: 'fa-arrow-rotate-right',
+    category: 'DEALS',
+    condition: (stats: PlayerStats) =>
+      stats.completedExits?.some(e => e.multiple >= 2 && e.hadCriticalEvent) ?? false,
+    reward: { reputation: 15, financialEngineering: 5, score: 5000 },
+  },
+  {
+    id: 'five_bagger',
+    name: 'Five Bagger',
+    description: 'Exit an investment at 5x or more. Legendary returns.',
+    icon: 'fa-rocket',
+    category: 'DEALS',
+    condition: (stats: PlayerStats) => stats.completedExits?.some(e => e.multiple >= 5) ?? false,
+    reward: { reputation: 30, score: 15000 },
+  },
+  {
+    id: 'portfolio_empire',
+    name: 'Portfolio Empire',
+    description: 'Own 5 or more companies simultaneously.',
+    icon: 'fa-city',
+    category: 'DEALS',
+    condition: (stats: PlayerStats) => stats.portfolio.length >= 5,
+    reward: { reputation: 15, analystRating: 10, score: 5000 },
+  },
+  {
+    id: 'sector_titan',
+    name: 'Industry Titan',
+    description: 'Own 3+ companies in the same sector. You dominate the industry.',
+    icon: 'fa-chess-king',
+    category: 'DEALS',
+    condition: (stats: PlayerStats) => {
+      const sectorCounts: Record<string, number> = {};
+      stats.portfolio.forEach(c => {
+        if (c.sector) sectorCounts[c.sector] = (sectorCounts[c.sector] || 0) + 1;
+      });
+      return Object.values(sectorCounts).some(count => count >= 3);
+    },
+    reward: { reputation: 20, score: 4000 },
+  },
+  {
+    id: 'billion_portfolio',
+    name: 'Billion Dollar Portfolio',
+    description: 'Total portfolio value exceeds $1 billion.',
+    icon: 'fa-building-columns',
+    category: 'WEALTH',
+    condition: (stats: PlayerStats) => {
+      const totalValue = stats.portfolio.reduce((sum, c) => sum + c.currentValuation, 0);
+      return totalValue >= 1000000000;
+    },
+    reward: { score: 25000 },
+  },
+
+  // ==================== SOCIAL & POLITICAL ACHIEVEMENTS ====================
+  {
+    id: 'networker',
+    name: 'Master Networker',
+    description: 'Have 60+ relationship with 5 or more NPCs simultaneously.',
+    icon: 'fa-people-group',
+    category: 'RELATIONSHIPS',
+    condition: (_stats: PlayerStats, npcs: NPC[]) => {
+      return npcs.filter(n => n.relationship >= 60).length >= 5;
+    },
+    reward: { reputation: 10, score: 3000 },
+  },
+  {
+    id: 'everyones_enemy',
+    name: "Everyone's Enemy",
+    description: 'Have relationship below 30 with 3 or more NPCs. You burn bridges.',
+    icon: 'fa-fire-flame-curved',
+    category: 'RELATIONSHIPS',
+    isSecret: true,
+    condition: (_stats: PlayerStats, npcs: NPC[]) => {
+      return npcs.filter(n => n.relationship < 30 && !n.isRival).length >= 3;
+    },
+    reward: { stress: 15, score: 500 },
+  },
+  {
+    id: 'family_first',
+    name: 'Family First',
+    description: 'Maintain 70+ relationship with all family NPCs.',
+    icon: 'fa-house-heart',
+    category: 'RELATIONSHIPS',
+    condition: (_stats: PlayerStats, npcs: NPC[]) => {
+      const familyNpcs = npcs.filter(n => n.relationshipType === 'FAMILY');
+      return familyNpcs.length > 0 && familyNpcs.every(n => n.relationship >= 70);
+    },
+    reward: { stress: -20, health: 10, score: 2000 },
+  },
+  {
+    id: 'puppet_master',
+    name: 'Puppet Master',
+    description: 'Have 80+ relationship with both Chad and the Managing Directors faction.',
+    icon: 'fa-masks-theater',
+    category: 'RELATIONSHIPS',
+    isSecret: true,
+    condition: (stats: PlayerStats, npcs: NPC[]) => {
+      const chad = npcs.find(n => n.id === 'chad');
+      return chad ? chad.relationship >= 80 && stats.factionReputation.MANAGING_DIRECTORS >= 80 : false;
+    },
+    reward: { reputation: 15, score: 5000 },
+  },
+
+  // ==================== FINANCIAL PROWESS ACHIEVEMENTS ====================
+  {
+    id: 'debt_free',
+    name: 'Debt Free',
+    description: 'Pay off all outstanding personal loans.',
+    icon: 'fa-circle-check',
+    category: 'WEALTH',
+    condition: (stats: PlayerStats) =>
+      stats.playerFlags['HAD_LOAN'] === true && (stats.personalFinances?.outstandingLoans ?? stats.loanBalance ?? 0) === 0,
+    reward: { stress: -10, score: 1500 },
+  },
+  {
+    id: 'master_of_universe',
+    name: 'Master of the Universe',
+    description: 'Reach the highest lifestyle tier.',
+    icon: 'fa-champagne-glasses',
+    category: 'WEALTH',
+    condition: (stats: PlayerStats) => stats.personalFinances?.lifestyleLevel === 'MASTER_OF_UNIVERSE',
+    reward: { score: 10000 },
+  },
+  {
+    id: 'carry_king',
+    name: 'Carry King',
+    description: 'Receive $10M or more in total carried interest.',
+    icon: 'fa-crown',
+    category: 'WEALTH',
+    condition: (stats: PlayerStats) => (stats.personalFinances?.carryReceived ?? 0) >= 10000000,
+    reward: { reputation: 10, score: 8000 },
+  },
+  {
+    id: 'bonus_season',
+    name: 'Bonus Season',
+    description: 'Receive a bonus of $500K or more in a single year.',
+    icon: 'fa-gift',
+    category: 'WEALTH',
+    condition: (stats: PlayerStats) => (stats.personalFinances?.bonusYTD ?? 0) >= 500000,
+    reward: { score: 2000 },
+  },
+
+  // ==================== SURVIVAL & RESILIENCE ACHIEVEMENTS ====================
+  {
+    id: 'comeback_kid',
+    name: 'Comeback Kid',
+    description: 'Reach Partner level after having had reputation below 15.',
+    icon: 'fa-medal',
+    category: 'CAREER',
+    condition: (stats: PlayerStats) =>
+      (stats.level === PlayerLevel.PARTNER || stats.level === PlayerLevel.FOUNDER) &&
+      stats.playerFlags['HAD_LOW_REPUTATION'] === true,
+    reward: { score: 10000 },
+  },
+  {
+    id: 'zen_master',
+    name: 'Zen Master',
+    description: 'Maintain stress below 15 for 10 consecutive weeks while holding 2+ portfolio companies.',
+    icon: 'fa-om',
+    category: 'SPECIAL',
+    isSecret: true,
+    condition: (stats: PlayerStats) =>
+      stats.playerFlags['ZEN_STREAK'] === true && stats.portfolio.length >= 2,
+    reward: { health: 20, energy: 20, score: 3000 },
+  },
+  {
+    id: 'phoenix_rising',
+    name: 'Phoenix Rising',
+    description: 'Win a deal during PANIC market conditions and exit it at 2x+.',
+    icon: 'fa-feather-pointed',
+    category: 'SPECIAL',
+    isSecret: true,
+    condition: (stats: PlayerStats) =>
+      stats.completedExits?.some(e => e.boughtDuringPanic && e.multiple >= 2) ?? false,
+    reward: { reputation: 25, financialEngineering: 10, score: 10000 },
+  },
+  {
+    id: 'health_crisis_survivor',
+    name: 'Health Crisis Survivor',
+    description: 'Recover from health below 20 back to 80+.',
+    icon: 'fa-heart-circle-check',
+    category: 'SPECIAL',
+    isSecret: true,
+    condition: (stats: PlayerStats) =>
+      stats.health >= 80 && stats.playerFlags['HAD_HEALTH_CRISIS'] === true,
+    reward: { stress: -15, score: 2500 },
+  },
+
+  // ==================== STRATEGIC MASTERY ACHIEVEMENTS ====================
+  {
+    id: 'model_master',
+    name: 'Model Master',
+    description: 'Complete 10 financial modeling challenges successfully.',
+    icon: 'fa-calculator',
+    category: 'CAREER',
+    condition: (stats: PlayerStats) => stats.playerFlags['MODELING_CHALLENGES_10'] === true,
+    reward: { financialEngineering: 15, analystRating: 10, score: 3000 },
+  },
+  {
+    id: 'speed_runner',
+    name: 'Speed Runner',
+    description: 'Reach Partner level before Week 52.',
+    icon: 'fa-gauge-high',
+    category: 'CAREER',
+    isSecret: true,
+    condition: (stats: PlayerStats) =>
+      (stats.level === PlayerLevel.PARTNER || stats.level === PlayerLevel.FOUNDER) &&
+      stats.gameTime.week <= 52,
+    reward: { score: 20000 },
+  },
+  {
+    id: 'political_survivor',
+    name: 'Political Survivor',
+    description: 'Navigate 5 NPC dramas without losing any key relationships.',
+    icon: 'fa-shield',
+    category: 'SPECIAL',
+    condition: (stats: PlayerStats) => stats.playerFlags['DRAMAS_SURVIVED_5'] === true,
+    reward: { reputation: 10, score: 3500 },
+  },
+  {
+    id: 'exit_artist',
+    name: 'Exit Artist',
+    description: 'Complete 3 different types of exits (IPO, Strategic, Secondary, etc.).',
+    icon: 'fa-signs-post',
+    category: 'DEALS',
+    condition: (stats: PlayerStats) => {
+      const exitTypes = new Set(stats.completedExits?.map(e => e.exitType) ?? []);
+      return exitTypes.size >= 3;
+    },
+    reward: { financialEngineering: 10, reputation: 10, score: 5000 },
+  },
 ];
 
 export const getAchievementById = (id: string): AchievementDefinition | undefined => {

@@ -212,15 +212,43 @@ export const calculateExitValue = (
   }
 
   // Company performance adjustments
-  if (revenueGrowth > 0.20) {
+  if (revenueGrowth > 0.30) {
+    multiple *= 1.25; // Exceptional growth rewarded more
+  } else if (revenueGrowth > 0.20) {
     multiple *= 1.15;
+  } else if (revenueGrowth > 0.10) {
+    multiple *= 1.05; // Moderate growth gives small bump
+  } else if (revenueGrowth < -0.10) {
+    multiple *= 0.75; // Severe decline heavily penalized
   } else if (revenueGrowth < 0) {
     multiple *= 0.85;
   }
 
+  // CEO performance bonus
+  const ceoPerf = company.ceoPerformance ?? 50;
+  if (ceoPerf >= 80) {
+    multiple *= 1.08; // Strong leadership premium
+  } else if (ceoPerf < 30) {
+    multiple *= 0.92; // Leadership discount
+  }
+
+  // Board alignment bonus
+  const boardAlign = company.boardAlignment ?? 50;
+  if (boardAlign >= 75) {
+    multiple *= 1.05; // Clean governance premium
+  }
+
+  // Sector expertise bonus - specialist knowledge improves exit execution
+  const sectorExpertise = playerStats.sectorExpertise?.find(s => s.sector === company.sector);
+  if (sectorExpertise && sectorExpertise.level >= 50) {
+    multiple *= 1.06; // Deep sector knowledge improves pricing
+  }
+
   // High debt penalty (with division-by-zero protection)
   const debtToValuation = debt / currentValuation;
-  if (debtToValuation > 0.7) {
+  if (debtToValuation > 0.8) {
+    multiple *= 0.85; // Extremely over-leveraged
+  } else if (debtToValuation > 0.7) {
     multiple *= 0.9;
   }
 

@@ -247,6 +247,139 @@ export const MODELING_CHALLENGES: ModelingChallenge[] = [
     reward: { financialEngineering: 8, score: 800, reputation: 5 },
     penalty: { analystRating: -8, stress: 15 },
   },
+  // ==================== ADVANCED CHALLENGES ====================
+  {
+    id: 'irr_leveraged',
+    type: 'IRR_CALCULATION',
+    difficulty: 'HARD',
+    question: 'Calculate the levered equity IRR.',
+    context: 'You buy a company for $200M using $120M debt and $80M equity. After 4 years, you sell for $300M and have paid down $40M of debt. What is the approximate equity IRR?',
+    data: {
+      purchasePrice: 200000000,
+      debt: 120000000,
+      equity: 80000000,
+      salePrice: 300000000,
+      debtPaydown: 40000000,
+      holdingPeriod: 4,
+    },
+    correctAnswer: 30, // Equity return: (300-80) / 80 = 2.75x on equity in 4 years ≈ 29%
+    tolerance: 0.15,
+    explanation: 'Exit equity = $300M - ($120M - $40M) = $220M. Equity MOIC = $220M / $80M = 2.75x. IRR = 2.75^(1/4) - 1 ≈ 29%. Leverage magnifies returns.',
+    timeLimit: 120,
+    reward: { financialEngineering: 8, score: 800, reputation: 5 },
+    penalty: { analystRating: -8, stress: 12 },
+  },
+  {
+    id: 'moic_basic',
+    type: 'IRR_CALCULATION',
+    difficulty: 'EASY',
+    question: 'Calculate the MOIC (Multiple on Invested Capital).',
+    context: 'You invested $25M equity and received $75M back at exit. What is the MOIC?',
+    data: {
+      investment: 25000000,
+      exitProceeds: 75000000,
+    },
+    correctAnswer: 3.0,
+    tolerance: 0.05,
+    explanation: 'MOIC = Exit Proceeds / Investment = $75M / $25M = 3.0x',
+    timeLimit: 20,
+    reward: { financialEngineering: 1, score: 100 },
+    penalty: { analystRating: -2 },
+  },
+  {
+    id: 'valuation_dcf_terminal',
+    type: 'VALUATION',
+    difficulty: 'HARD',
+    question: 'Calculate the terminal value using the perpetuity growth method.',
+    context: 'Year 5 Free Cash Flow: $20M. WACC: 10%. Terminal growth rate: 3%. What is the terminal value at end of Year 5?',
+    data: {
+      fcf_year5: 20000000,
+      wacc: 0.10,
+      terminalGrowth: 0.03,
+    },
+    correctAnswer: 294, // TV = FCF × (1+g) / (WACC - g) = 20 × 1.03 / 0.07 = 294.3
+    tolerance: 0.05,
+    explanation: 'Terminal Value = FCF₅ × (1+g) / (WACC - g) = $20M × 1.03 / (0.10 - 0.03) = $20.6M / 0.07 = ~$294M',
+    timeLimit: 90,
+    reward: { financialEngineering: 7, score: 700, reputation: 4 },
+    penalty: { analystRating: -7, stress: 10 },
+  },
+  {
+    id: 'leverage_ltv',
+    type: 'LEVERAGE_ANALYSIS',
+    difficulty: 'MEDIUM',
+    question: 'Calculate the Loan-to-Value ratio.',
+    context: 'Enterprise Value: $400M. Total Debt: $260M. Cash on balance sheet: $20M. What is the net LTV?',
+    data: {
+      enterpriseValue: 400000000,
+      totalDebt: 260000000,
+      cash: 20000000,
+    },
+    correctAnswer: 60, // Net Debt = 260-20 = 240. LTV = 240/400 = 60%
+    tolerance: 0.05,
+    explanation: 'Net Debt = $260M - $20M = $240M. LTV = Net Debt / EV = $240M / $400M = 60%',
+    timeLimit: 45,
+    reward: { financialEngineering: 4, score: 350 },
+    penalty: { analystRating: -4, stress: 5 },
+  },
+  {
+    id: 'sensitivity_revenue_growth',
+    type: 'SENSITIVITY',
+    difficulty: 'HARD',
+    question: 'Calculate value creation from revenue growth + margin expansion.',
+    context: 'Entry: $100M revenue at 20% EBITDA margin (8x multiple). After 5 years: revenue grows to $150M, margins improve to 25%. Same 8x exit multiple. What is the exit EV?',
+    data: {
+      entryRevenue: 100000000,
+      entryMargin: 0.20,
+      exitRevenue: 150000000,
+      exitMargin: 0.25,
+      exitMultiple: 8,
+    },
+    correctAnswer: 300, // Exit EBITDA = 150 × 0.25 = 37.5M. Exit EV = 37.5 × 8 = $300M
+    tolerance: 0.05,
+    explanation: 'Exit EBITDA = $150M × 25% = $37.5M. Exit EV = $37.5M × 8x = $300M. Entry EV was $100M × 20% × 8x = $160M. Value created: $140M.',
+    timeLimit: 90,
+    reward: { financialEngineering: 7, score: 650, reputation: 4 },
+    penalty: { analystRating: -6, stress: 10 },
+  },
+  {
+    id: 'debt_paydown_schedule',
+    type: 'DEBT_CAPACITY',
+    difficulty: 'MEDIUM',
+    question: 'Calculate remaining debt after 3 years of mandatory amortization.',
+    context: 'Initial debt: $200M. Mandatory amortization: 5% of original balance per year. No optional prepayment. What is the remaining debt after 3 years?',
+    data: {
+      initialDebt: 200000000,
+      amortizationRate: 0.05,
+      years: 3,
+    },
+    correctAnswer: 170, // 200 - (200 × 0.05 × 3) = 200 - 30 = 170
+    tolerance: 0.05,
+    explanation: 'Annual amortization = $200M × 5% = $10M/year. After 3 years: $200M - $30M = $170M remaining.',
+    timeLimit: 45,
+    reward: { financialEngineering: 4, score: 300 },
+    penalty: { analystRating: -3 },
+  },
+  {
+    id: 'valuation_sum_of_parts',
+    type: 'VALUATION',
+    difficulty: 'HARD',
+    question: 'Calculate the Sum-of-the-Parts valuation.',
+    context: 'Conglomerate with 3 divisions. Division A: $30M EBITDA at 10x. Division B: $20M EBITDA at 7x. Division C: $10M EBITDA at 12x. Corporate overhead: $8M/year. Net debt: $150M. What is the equity value?',
+    data: {
+      divA_ebitda: 30, divA_multiple: 10,
+      divB_ebitda: 20, divB_multiple: 7,
+      divC_ebitda: 10, divC_multiple: 12,
+      corpOverhead: 8,
+      netDebt: 150,
+    },
+    correctAnswer: 410, // (300 + 140 + 120) - 150 = 410. Overhead not applied to multiple
+    tolerance: 0.10,
+    explanation: 'Division A: $300M + Division B: $140M + Division C: $120M = $560M gross EV. Less net debt $150M = $410M equity value. (Note: corporate overhead reduces EBITDA for multiple but is already netted.)',
+    timeLimit: 120,
+    reward: { financialEngineering: 10, score: 1000, reputation: 5 },
+    penalty: { analystRating: -8, stress: 15 },
+  },
 ];
 
 export const getRandomChallenge = (difficulty?: ModelingChallenge['difficulty']): ModelingChallenge => {
@@ -277,6 +410,11 @@ export const CHALLENGE_INTRO_LINES = [
   "Quick math check. Your bonus depends on it.",
   "Chad wants to know if you can actually do the work.",
   "Sarah needs help and you're up. Don't embarrass yourself.",
+  "The IC partner is staring at you. Run these numbers. Now.",
+  "An LP just asked you this over dinner. Clock's ticking.",
+  "Your associate sent this model at 3am. Does it check out?",
+  "Quick — the banker needs an answer in 30 seconds.",
+  "The CEO wants to know if you actually understand the business.",
 ];
 
 export const CHALLENGE_SUCCESS_LINES = [
@@ -285,6 +423,11 @@ export const CHALLENGE_SUCCESS_LINES = [
   "That's the answer. The model doesn't care about your feelings.",
   "Right. Now do it 100 more times this week.",
   "Acceptable. You've earned another day of employment.",
+  "Sharp. The IC would have passed you through.",
+  "Clean answer. Your analyst rating ticks up a notch.",
+  "Nailed it. Even Chad would be impressed. Almost.",
+  "Correct. The LP nods approvingly. You've bought yourself credibility.",
+  "Perfect execution under pressure. That's the PE way.",
 ];
 
 export const CHALLENGE_FAILURE_LINES = [
@@ -294,4 +437,9 @@ export const CHALLENGE_FAILURE_LINES = [
   "Wrong answer. Chad is very disappointed.",
   "Error. Your model would have blown up a $500M deal.",
   "Incorrect. The client would have fired us.",
+  "That answer just cost the fund $50M in imaginary money.",
+  "The LP overheard your answer. They're reconsidering their commitment.",
+  "Yikes. Sarah could have done this in her sleep.",
+  "The banker is now questioning whether to take your calls.",
+  "Wrong. Hunter is smirking. He got it right.",
 ];
