@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useState, useCallback } from 'react';
+import React, { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import type { PlayerStats, MarketVolatility } from '../types';
 import { MARKET_VOLATILITY_STYLES } from '../constants';
 import { STRESS_THRESHOLDS } from '../constants/difficulty';
@@ -20,6 +20,43 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
   // Modal state for stats explainer
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [focusedStatId, setFocusedStatId] = useState<string | null>(null);
+
+  // Track previous values for flash animations
+  const prevCashRef = useRef(stats.personalFinances?.bankBalance ?? stats.cash);
+  const prevReputationRef = useRef(stats.reputation);
+  const prevStressRef = useRef(stats.stress);
+  const [cashFlash, setCashFlash] = useState<'up' | 'down' | null>(null);
+  const [repFlash, setRepFlash] = useState<'up' | 'down' | null>(null);
+  const [stressFlash, setStressFlash] = useState<'up' | 'down' | null>(null);
+
+  // Detect stat changes and trigger flash animations
+  useEffect(() => {
+    const currentCash = stats.personalFinances?.bankBalance ?? stats.cash;
+    if (currentCash !== prevCashRef.current) {
+      setCashFlash(currentCash > prevCashRef.current ? 'up' : 'down');
+      prevCashRef.current = currentCash;
+      const timer = setTimeout(() => setCashFlash(null), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [stats.personalFinances?.bankBalance, stats.cash]);
+
+  useEffect(() => {
+    if (stats.reputation !== prevReputationRef.current) {
+      setRepFlash(stats.reputation > prevReputationRef.current ? 'up' : 'down');
+      prevReputationRef.current = stats.reputation;
+      const timer = setTimeout(() => setRepFlash(null), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [stats.reputation]);
+
+  useEffect(() => {
+    if (stats.stress !== prevStressRef.current) {
+      setStressFlash(stats.stress > prevStressRef.current ? 'up' : 'down');
+      prevStressRef.current = stats.stress;
+      const timer = setTimeout(() => setStressFlash(null), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [stats.stress]);
 
   // Handle general stats click (fallback to showing modal without focus)
   const handleGeneralStatsClick = useCallback(() => {
@@ -188,9 +225,16 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           </div>
 
           {/* Bank Balance */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-700/40" title="Your bank account. Earn through salary, bonuses, and carry.">
-            <i className="fas fa-wallet text-emerald-400 text-sm"></i>
-            <span className="text-emerald-300 font-bold tabular-nums text-sm">${(stats.personalFinances?.bankBalance ?? stats.cash).toLocaleString()}</span>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all duration-300 ${
+            cashFlash === 'up' ? 'bg-emerald-900/60 border-emerald-500/60 scale-105' :
+            cashFlash === 'down' ? 'bg-red-900/40 border-red-600/50 scale-105' :
+            'bg-emerald-950/40 border-emerald-700/40'
+          }`} title="Your bank account. Earn through salary, bonuses, and carry.">
+            <i className={`fas fa-wallet text-sm ${cashFlash === 'down' ? 'text-red-400' : 'text-emerald-400'}`}></i>
+            <span className={`font-bold tabular-nums text-sm ${cashFlash === 'up' ? 'text-emerald-200' : cashFlash === 'down' ? 'text-red-300' : 'text-emerald-300'}`}>${(stats.personalFinances?.bankBalance ?? stats.cash).toLocaleString()}</span>
+            {cashFlash && (
+              <i className={`fas ${cashFlash === 'up' ? 'fa-arrow-up text-emerald-400' : 'fa-arrow-down text-red-400'} text-[10px] animate-bounce`}></i>
+            )}
           </div>
 
           {/* Dry Powder (fund capital) */}
@@ -213,23 +257,37 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         {/* Center - Stress & Reputation (the two things you manage) */}
         <div className="flex items-center gap-3">
           {/* Stress */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-600/40" title="Stress — builds from overwork. At 100% you burn out.">
-            <i className={`fas fa-brain ${getStressColor(stats.stress)} text-sm`}></i>
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-300 ${
+            stressFlash === 'up' ? 'bg-red-900/40 border-red-600/50 scale-105' :
+            stressFlash === 'down' ? 'bg-emerald-900/40 border-emerald-600/50 scale-105' :
+            'bg-slate-800/50 border-slate-600/40'
+          }`} title="Stress — builds from overwork. At 100% you burn out.">
+            <i className={`fas fa-brain ${getStressColor(stats.stress)} text-sm ${stressFlash === 'up' ? 'animate-pulse' : ''}`}></i>
             <div className="w-24 h-2.5 bg-slate-700 rounded-full overflow-hidden">
               <div
-                className={`h-full ${getStressBarColor(stats.stress)} transition-all duration-300`}
+                className={`h-full ${getStressBarColor(stats.stress)} transition-all duration-500`}
                 style={{ width: `${Math.min(100, stats.stress)}%` }}
               />
             </div>
             <span className={`font-bold tabular-nums text-sm ${getStressColor(stats.stress)}`}>
               {stats.stress}%
             </span>
+            {stressFlash && (
+              <i className={`fas ${stressFlash === 'up' ? 'fa-arrow-up text-red-400' : 'fa-arrow-down text-emerald-400'} text-[10px] animate-bounce`}></i>
+            )}
           </div>
 
           {/* Reputation */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-950/40 border border-blue-700/40" title="Your standing in the industry. Higher = better deals and contacts.">
-            <i className="fas fa-star text-blue-400 text-sm"></i>
-            <span className="font-bold text-blue-200 tabular-nums text-sm">{stats.reputation}</span>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all duration-300 ${
+            repFlash === 'up' ? 'bg-blue-900/60 border-blue-500/60 scale-105' :
+            repFlash === 'down' ? 'bg-red-900/40 border-red-600/50 scale-105' :
+            'bg-blue-950/40 border-blue-700/40'
+          }`} title="Your standing in the industry. Higher = better deals and contacts.">
+            <i className={`fas fa-star text-sm ${repFlash === 'up' ? 'text-yellow-400' : repFlash === 'down' ? 'text-red-400' : 'text-blue-400'}`}></i>
+            <span className={`font-bold tabular-nums text-sm ${repFlash === 'up' ? 'text-yellow-200' : repFlash === 'down' ? 'text-red-300' : 'text-blue-200'}`}>{stats.reputation}</span>
+            {repFlash && (
+              <i className={`fas ${repFlash === 'up' ? 'fa-arrow-up text-emerald-400' : 'fa-arrow-down text-red-400'} text-[10px] animate-bounce`}></i>
+            )}
           </div>
         </div>
 

@@ -5,7 +5,6 @@
  */
 
 import type { DifficultySettings, Difficulty } from '../types';
-import { PlayerLevel } from '../types';
 import { NORMAL_STATS } from './player';
 
 export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
@@ -108,4 +107,95 @@ export const WEEKLY_DECAY = {
   reputation: -1,           // Reputation fades without wins
   stress: 2,                // Stress builds naturally (reduced from 3 to give more breathing room)
   relationshipDecay: -2,    // NPC relationships cool off
+};
+
+// Level-aware weekly stress - senior roles face more pressure
+export const LEVEL_STRESS_MODIFIER: Record<string, number> = {
+  'Associate': 0,
+  'Senior Associate': 1,
+  'Vice President': 2,
+  'Principal': 3,
+  'Partner': 4,
+  'Founder': 5,
+};
+
+// Portfolio size stress - more companies = more juggling
+export const PORTFOLIO_STRESS_BRACKETS = [
+  { minCompanies: 0, stressPerWeek: 0 },
+  { minCompanies: 2, stressPerWeek: 1 },
+  { minCompanies: 4, stressPerWeek: 2 },
+  { minCompanies: 6, stressPerWeek: 4 },
+];
+
+// Promotion thresholds - what you need to level up
+export const PROMOTION_REQUIREMENTS: Record<string, {
+  minReputation: number;
+  minDealsCompleted: number;
+  minWeeksAtLevel: number;
+  minAnalystRating: number;
+  minFinancialEngineering?: number;
+  minFactionRep?: Partial<Record<string, number>>;
+}> = {
+  'Senior Associate': {
+    minReputation: 20,
+    minDealsCompleted: 1,
+    minWeeksAtLevel: 8,
+    minAnalystRating: 40,
+  },
+  'Vice President': {
+    minReputation: 35,
+    minDealsCompleted: 3,
+    minWeeksAtLevel: 16,
+    minAnalystRating: 55,
+    minFinancialEngineering: 25,
+  },
+  'Principal': {
+    minReputation: 50,
+    minDealsCompleted: 6,
+    minWeeksAtLevel: 20,
+    minAnalystRating: 65,
+    minFinancialEngineering: 40,
+    minFactionRep: { MANAGING_DIRECTORS: 50 },
+  },
+  'Partner': {
+    minReputation: 65,
+    minDealsCompleted: 10,
+    minWeeksAtLevel: 26,
+    minAnalystRating: 75,
+    minFinancialEngineering: 55,
+    minFactionRep: { MANAGING_DIRECTORS: 60, LIMITED_PARTNERS: 50 },
+  },
+  'Founder': {
+    minReputation: 80,
+    minDealsCompleted: 15,
+    minWeeksAtLevel: 30,
+    minAnalystRating: 80,
+    minFinancialEngineering: 65,
+    minFactionRep: { LIMITED_PARTNERS: 70 },
+  },
+};
+
+// Market event probabilities per tick
+export const MARKET_EVENT_PROBABILITIES = {
+  NORMAL_TO_BULL: 0.05,
+  NORMAL_TO_CRUNCH: 0.04,
+  NORMAL_TO_PANIC: 0.01,
+  BULL_TO_NORMAL: 0.08,
+  BULL_TO_PANIC: 0.03,
+  CRUNCH_TO_NORMAL: 0.06,
+  CRUNCH_TO_PANIC: 0.05,
+  PANIC_TO_CRUNCH: 0.10,
+  PANIC_TO_NORMAL: 0.03,
+};
+
+// Score multipliers for various activities
+export const SCORE_MULTIPLIERS = {
+  dealClosed: 500,
+  exitCompleted: 1000,
+  achievementUnlocked: 250,
+  promotionEarned: 2000,
+  weekSurvived: 10,
+  modelingChallengeCorrect: 150,
+  dramaResolved: 200,
+  companyEventHandled: 150,
 };

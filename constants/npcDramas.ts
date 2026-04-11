@@ -876,6 +876,423 @@ export const NPC_DRAMA_TEMPLATES: DramaGenerator[] = [
       ],
     };
   },
+
+  // The Promotion Race - Sarah vs Hunter for VP
+  (npcs, currentWeek) => {
+    const sarah = npcs.find(n => n.id === 'sarah');
+    const hunter = npcs.find(n => n.id === 'hunter');
+    const chad = npcs.find(n => n.id === 'chad');
+    if (!sarah || !hunter || !chad) return null;
+    if (sarah.relationship <= 45 || hunter.relationship <= 45) return null;
+
+    return {
+      id: 'promotion_race',
+      title: 'The Promotion Race',
+      description: `Chad pulls you into his office and shuts the door. "We have one VP slot open. Sarah and Hunter are both in the running. I trust your judgment—who should get it?" This is a career-defining recommendation. Both of them will find out what you said.`,
+      involvedNpcs: ['sarah', 'hunter', 'chad'],
+      playerMustChooseSide: true,
+      urgency: 'HIGH',
+      expiresWeek: currentWeek + 2,
+      choices: [
+        {
+          text: 'Recommend Sarah',
+          description: 'She has the analytical chops and deserves recognition.',
+          outcome: {
+            description: 'Sarah gets the promotion. She tears up in your office. Hunter finds out you recommended her and goes cold.',
+            statChanges: {
+              npcRelationshipUpdate: { npcId: 'sarah', change: 30, trustChange: 20, memory: 'Championed me for VP' },
+              npcRelationshipUpdate2: { npcId: 'hunter', change: -25, trustChange: -15, memory: 'Passed me over for Sarah' },
+              reputation: 5,
+            },
+          },
+        },
+        {
+          text: 'Recommend Hunter',
+          description: 'He has the client relationships and deal origination skills.',
+          outcome: {
+            description: 'Hunter gets VP. He buys you a bottle of Macallan 25. Sarah quietly updates her LinkedIn.',
+            statChanges: {
+              npcRelationshipUpdate: { npcId: 'hunter', change: 30, trustChange: 20, memory: 'Got me the VP title' },
+              npcRelationshipUpdate2: { npcId: 'sarah', change: -25, trustChange: -15, memory: 'Recommended Hunter over me' },
+              reputation: 5,
+            },
+          },
+        },
+        {
+          text: 'Suggest both deserve it',
+          description: 'Tell Chad to create two VP slots.',
+          outcome: {
+            description: 'Chad rolls his eyes. "This isn\'t a participation trophy factory." He promotes Hunter anyway. Sarah blames you for being wishy-washy.',
+            statChanges: {
+              npcRelationshipUpdate: { npcId: 'sarah', change: -15, memory: 'Couldn\'t even advocate for me directly' },
+              npcRelationshipUpdate2: { npcId: 'hunter', change: 10, memory: 'At least didn\'t block my promotion' },
+              reputation: -5,
+            },
+          },
+        },
+        {
+          text: 'Suggest yourself instead',
+          description: 'Why not you? Seize the moment.',
+          outcome: {
+            description: 'Chad laughs. "I like the ambition." He promotes you instead. Both Sarah and Hunter are furious. You\'ve made two enemies and one very surprised HR department.',
+            statChanges: {
+              npcRelationshipUpdate: { npcId: 'sarah', change: -20, memory: 'Stole the promotion from under us' },
+              npcRelationshipUpdate2: { npcId: 'hunter', change: -20, memory: 'Backstabbed us both for the VP slot' },
+              reputation: 15,
+              score: 500,
+              stress: 10,
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // Dad's Retirement Crisis
+  (npcs, currentWeek) => {
+    const dad = npcs.find(n => n.id === 'dad');
+    if (!dad) return null;
+    if (dad.relationship <= 30) return null;
+
+    return {
+      id: 'dad_retirement_crisis',
+      title: 'Dad\'s Retirement Crisis',
+      description: `Dad calls, voice shaking. "Remember those stocks you told me to look at? I put... I put most of my retirement in them. They're down 60%." He followed your offhand advice to the letter and bet the farm. Mom doesn't know yet.`,
+      involvedNpcs: ['dad'],
+      playerMustChooseSide: true,
+      urgency: 'HIGH',
+      expiresWeek: currentWeek + 2,
+      choices: [
+        {
+          text: 'Bail him out ($50K)',
+          description: 'Write a check. Cover the losses. It\'s your fault.',
+          outcome: {
+            description: 'You wire $50K to Dad\'s account. He cries on the phone. "I\'ll pay you back." You both know he won\'t. But family is family.',
+            statChanges: {
+              cash: -50000,
+              stress: -10,
+              ethics: 10,
+              npcRelationshipUpdate: { npcId: 'dad', change: 35, trustChange: 25, memory: 'Bailed me out when I lost everything' },
+            },
+          },
+        },
+        {
+          text: 'Help restructure his portfolio',
+          description: 'Use your skills to rebuild his retirement savings properly.',
+          outcome: {
+            description: 'You spend a weekend going through his accounts. You move him into index funds and bonds. It\'ll take years to recover, but there\'s a plan now.',
+            statChanges: {
+              energy: -20,
+              stress: 5,
+              npcRelationshipUpdate: { npcId: 'dad', change: 20, trustChange: 15, memory: 'Helped me rebuild after the crash' },
+            },
+          },
+        },
+        {
+          text: 'Tough love',
+          description: 'You never told him to bet everything. He made his own choices.',
+          outcome: {
+            description: '"I never said go all in, Dad." The silence on the line is deafening. "You sound just like those Wall Street guys on TV." He hangs up.',
+            statChanges: {
+              stress: 15,
+              npcRelationshipUpdate: { npcId: 'dad', change: -30, trustChange: -20, memory: 'Blamed me for my own losses then walked away' },
+            },
+          },
+        },
+        {
+          text: 'Apologize and distance yourself',
+          description: 'Say sorry but explain you can\'t give family financial advice anymore.',
+          outcome: {
+            description: 'Dad understands intellectually, but emotionally he\'s devastated. The calls become less frequent. The Sunday dinners stop.',
+            statChanges: {
+              stress: 10,
+              npcRelationshipUpdate: { npcId: 'dad', change: -15, trustChange: -10, memory: 'Apologized but then disappeared from our lives' },
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // The Leak Investigation
+  (npcs, currentWeek) => {
+    const chad = npcs.find(n => n.id === 'chad');
+    const hunter = npcs.find(n => n.id === 'hunter');
+    const sarah = npcs.find(n => n.id === 'sarah');
+    const smith = npcs.find(n => n.id === 'agent_smith');
+    if (!chad || !hunter || !sarah || !smith) return null;
+    if (chad.relationship <= 40) return null;
+
+    return {
+      id: 'leak_investigation',
+      title: 'The Leak Investigation',
+      description: `Confidential details about your fund's biggest pending acquisition just appeared in the Wall Street Journal. Chad is apoplectic. "Someone in this office talked to a reporter. I want to know who." He suspects Hunter or Sarah. Agent Smith's office has already called.`,
+      involvedNpcs: ['chad', 'hunter', 'sarah', 'agent_smith'],
+      playerMustChooseSide: true,
+      urgency: 'HIGH',
+      expiresWeek: currentWeek + 1,
+      choices: [
+        {
+          text: 'Defend Hunter',
+          description: 'Vouch for Hunter\'s loyalty. Point out he has the most to lose.',
+          outcome: {
+            description: 'You go to bat for Hunter. Chad redirects the investigation. Hunter is grateful—but if it was him, you\'ve just covered for a leaker.',
+            statChanges: {
+              npcRelationshipUpdate: { npcId: 'hunter', change: 25, trustChange: 15, memory: 'Defended me during the leak investigation' },
+              npcRelationshipUpdate2: { npcId: 'sarah', change: -10, memory: 'Defended Hunter but not me' },
+              auditRisk: 10,
+            },
+          },
+        },
+        {
+          text: 'Deflect suspicion to Sarah',
+          description: 'Mention that Sarah had access to the documents and has been stressed lately.',
+          outcome: {
+            description: 'Chad turns his attention to Sarah. She\'s put on administrative leave pending investigation. If she\'s innocent, you\'ve just destroyed a colleague.',
+            statChanges: {
+              ethics: -20,
+              npcRelationshipUpdate: { npcId: 'sarah', change: -40, trustChange: -30, memory: 'Threw me under the bus in the leak investigation' },
+              npcRelationshipUpdate2: { npcId: 'chad', change: 15, memory: 'Helped identify the leak suspect' },
+            },
+          },
+        },
+        {
+          text: 'Conduct your own investigation',
+          description: 'Go through email logs, check who accessed the data room, find the real source.',
+          outcome: {
+            description: 'You spend three sleepless nights digging. You find that the leak came from an outside advisor, not anyone internal. Chad is impressed. Agent Smith takes note of your thoroughness.',
+            statChanges: {
+              energy: -25,
+              stress: 15,
+              reputation: 15,
+              npcRelationshipUpdate: { npcId: 'chad', change: 20, trustChange: 15, memory: 'Found the real leaker when everyone else was pointing fingers' },
+              npcRelationshipUpdate2: { npcId: 'agent_smith', change: 10, memory: 'Conducted a credible internal investigation' },
+              auditRisk: -10,
+            },
+          },
+        },
+        {
+          text: 'Stay silent',
+          description: 'Don\'t point fingers. Let the process play out.',
+          outcome: {
+            description: 'Chad takes your silence as indifference. "I expected more from you." The investigation drags on for weeks, poisoning the office atmosphere.',
+            statChanges: {
+              stress: 20,
+              npcRelationshipUpdate: { npcId: 'chad', change: -15, memory: 'Didn\'t help when the firm was under threat' },
+              reputation: -5,
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // Hans's Ultimatum
+  (npcs, currentWeek) => {
+    const hans = npcs.find(n => n.id === 'hans');
+    if (!hans) return null;
+    if (hans.relationship <= 40) return null;
+
+    return {
+      id: 'hans_ultimatum',
+      title: 'Hans\'s Ultimatum',
+      description: `Hans Gruber requests an emergency video call. His face fills the screen, stone-cold. "I've reviewed the fund's performance attribution. Three of your portfolio companies are dragging returns below our hurdle rate. Either you remove the underperformers from the portfolio, or we pull our $200M commitment. You have two weeks."`,
+      involvedNpcs: ['hans'],
+      playerMustChooseSide: true,
+      urgency: 'HIGH',
+      expiresWeek: currentWeek + 2,
+      choices: [
+        {
+          text: 'Comply and fire underperformers',
+          description: 'Do what Hans says. Cut the dead weight from the portfolio.',
+          outcome: {
+            description: 'You execute a brutal restructuring. Three management teams are let go. Hans is satisfied. Your reputation as a ruthless operator grows.',
+            statChanges: {
+              ethics: -15,
+              stress: 10,
+              reputation: 10,
+              npcRelationshipUpdate: { npcId: 'hans', change: 25, trustChange: 20, memory: 'Made the tough calls when I demanded it' },
+              factionReputation: { LIMITED_PARTNERS: 10, MANAGING_DIRECTORS: 5, ANALYSTS: -5, REGULATORS: 0, RIVALS: 0 },
+            },
+          },
+        },
+        {
+          text: 'Push back diplomatically',
+          description: 'Present a turnaround plan. Ask for more time.',
+          outcome: {
+            description: 'You fly to Zurich and present a 90-day turnaround plan with milestones. Hans is skeptical but agrees to wait. "Ninety days. Not ninety-one."',
+            statChanges: {
+              energy: -20,
+              cash: -5000,
+              npcRelationshipUpdate: { npcId: 'hans', change: 5, memory: 'Pushed back with a plan, not just words' },
+            },
+          },
+        },
+        {
+          text: 'Find a compromise',
+          description: 'Replace management at the weakest company, keep the other two.',
+          outcome: {
+            description: 'You sacrifice one portfolio company CEO as a show of action. Hans accepts the middle ground. "Progress, not perfection. For now."',
+            statChanges: {
+              ethics: -5,
+              npcRelationshipUpdate: { npcId: 'hans', change: 15, trustChange: 10, memory: 'Found a reasonable middle ground' },
+              reputation: 5,
+            },
+          },
+        },
+        {
+          text: 'Call his bluff',
+          description: 'Tell Hans you won\'t be dictated to. If he wants out, show him the door.',
+          outcome: {
+            description: 'Hans goes quiet. "Nobody has ever spoken to me like that." He pulls $200M. Other LPs hear about it and start asking questions. The fundraise just got a lot harder.',
+            statChanges: {
+              stress: 30,
+              reputation: -15,
+              npcRelationshipUpdate: { npcId: 'hans', change: -40, trustChange: -30, memory: 'Called my bluff and lost' },
+              factionReputation: { LIMITED_PARTNERS: -20, MANAGING_DIRECTORS: -10, ANALYSTS: 0, REGULATORS: 0, RIVALS: 5 },
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // The Office Romance Scandal
+  (npcs, currentWeek) => {
+    const hunter = npcs.find(n => n.id === 'hunter');
+    if (!hunter) return null;
+
+    return {
+      id: 'office_romance_scandal',
+      title: 'The Office Romance Scandal',
+      description: `The office is buzzing. Hunter was caught in the conference room after hours with a junior analyst. HR has photos from the security cameras. Hunter corners you in the hallway. "It's not what it looks like. Okay, it's exactly what it looks like. But I need you to keep this quiet. Please."`,
+      involvedNpcs: ['hunter'],
+      playerMustChooseSide: true,
+      urgency: 'MEDIUM',
+      expiresWeek: currentWeek + 2,
+      choices: [
+        {
+          text: 'Cover for Hunter',
+          description: 'Tell HR you saw nothing. Help Hunter manage the situation.',
+          outcome: {
+            description: 'You corroborate Hunter\'s story about "late-night deal prep." HR drops the investigation. Hunter owes you—big time. But lying to HR has its own risks.',
+            statChanges: {
+              ethics: -15,
+              auditRisk: 10,
+              npcRelationshipUpdate: { npcId: 'hunter', change: 30, trustChange: 25, memory: 'Covered for me when I needed it most' },
+            },
+          },
+        },
+        {
+          text: 'Report to HR',
+          description: 'Follow protocol. This is a clear policy violation.',
+          outcome: {
+            description: 'You report what you know. Hunter is put on probation. The analyst is transferred. Hunter won\'t even look at you in the hallway anymore.',
+            statChanges: {
+              ethics: 15,
+              reputation: 5,
+              npcRelationshipUpdate: { npcId: 'hunter', change: -35, trustChange: -25, memory: 'Reported me to HR like a boy scout' },
+            },
+          },
+        },
+        {
+          text: 'Use it as leverage',
+          description: 'You won\'t say anything... but Hunter will owe you a favor.',
+          outcome: {
+            description: 'Hunter\'s eyes narrow. "You\'re playing a dangerous game." But he agrees. You now have a chit to cash in when the time is right.',
+            statChanges: {
+              ethics: -25,
+              npcRelationshipUpdate: { npcId: 'hunter', change: -10, trustChange: -15, memory: 'Blackmailed me over the analyst situation' },
+              setsFlags: ['HUNTER_OWES_FAVOR'],
+            },
+          },
+        },
+        {
+          text: 'Stay out of it',
+          description: 'Not your problem. You didn\'t see anything.',
+          outcome: {
+            description: 'HR finds out anyway through other means. Hunter is reprimanded. He assumes you stayed quiet and gives you a grateful nod. The analyst quietly resigns.',
+            statChanges: {
+              npcRelationshipUpdate: { npcId: 'hunter', change: 5, memory: 'Stayed out of the drama' },
+              stress: 5,
+            },
+          },
+        },
+      ],
+    };
+  },
+
+  // Agent Smith's Audit
+  (npcs, currentWeek) => {
+    const smith = npcs.find(n => n.id === 'agent_smith');
+    if (!smith) return null;
+
+    return {
+      id: 'smith_audit',
+      title: 'Agent Smith\'s Audit',
+      description: `Your inbox pings at 6:47 AM. It's an official SEC notice: a surprise examination of your fund's compliance program. Agent Smith is personally overseeing it. He's requesting documents on every deal you've touched in the last 18 months. The walls feel like they're closing in.`,
+      involvedNpcs: ['agent_smith'],
+      playerMustChooseSide: true,
+      urgency: 'HIGH',
+      expiresWeek: currentWeek + 1,
+      choices: [
+        {
+          text: 'Cooperate fully',
+          description: 'Open the books. Give them everything they ask for and more.',
+          outcome: {
+            description: 'You spend a week pulling documents and answering questions. Smith seems almost disappointed at how clean things look. "Thorough records. Unusual for this industry."',
+            statChanges: {
+              energy: -25,
+              stress: 10,
+              auditRisk: -25,
+              ethics: 15,
+              npcRelationshipUpdate: { npcId: 'agent_smith', change: 20, trustChange: 20, memory: 'Full cooperation during the audit' },
+            },
+          },
+        },
+        {
+          text: 'Hire top lawyers',
+          description: 'Bring in the best securities defense attorneys. Respond to the letter of the law, nothing more.',
+          outcome: {
+            description: 'Your lawyers slow-walk every request. Smith is annoyed but can\'t force anything beyond the subpoena scope. It costs a fortune, but nothing incriminating surfaces.',
+            statChanges: {
+              cash: -30000,
+              stress: 20,
+              auditRisk: -10,
+              npcRelationshipUpdate: { npcId: 'agent_smith', change: -15, memory: 'Lawyered up hard during the audit' },
+            },
+          },
+        },
+        {
+          text: 'Destroy potentially problematic documents',
+          description: 'There are some emails that could be misinterpreted. Better to be safe.',
+          outcome: {
+            description: 'You delete emails and shred memos late at night. If they find out, it\'s obstruction. But if they don\'t, you\'re clean. Your hands won\'t stop shaking.',
+            statChanges: {
+              ethics: -40,
+              auditRisk: -5,
+              stress: 30,
+              setsFlags: ['DESTROYED_EVIDENCE'],
+            },
+          },
+        },
+        {
+          text: 'Preemptively disclose minor issues',
+          description: 'Get ahead of it. Admit to small compliance gaps before they find bigger ones.',
+          outcome: {
+            description: 'You voluntarily disclose a few minor reporting errors. Smith raises an eyebrow. "Interesting strategy." The audit wraps up quickly. You get a fine, but nothing career-ending.',
+            statChanges: {
+              cash: -15000,
+              ethics: 10,
+              auditRisk: -20,
+              stress: 5,
+              npcRelationshipUpdate: { npcId: 'agent_smith', change: 15, trustChange: 10, memory: 'Self-reported issues before we found them' },
+            },
+          },
+        },
+      ],
+    };
+  },
 ];
 
 /**

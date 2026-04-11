@@ -945,6 +945,10 @@ export interface ExitResult {
   multiple: number;
   profit: number;
   holdingPeriodMonths: number;
+  carryAmount?: number;
+  sector?: IndustrySector;
+  hadCriticalEvent?: boolean;     // True if company had a critical event during ownership
+  boughtDuringPanic?: boolean;    // True if acquired during PANIC market conditions
 }
 
 // ==================== FINANCIAL MODELING CHALLENGES ====================

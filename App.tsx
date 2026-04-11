@@ -291,6 +291,48 @@ const App: React.FC = () => {
 
   // Legacy tutorial effects removed - now using RPG event-driven onboarding
 
+  // --- KEYBOARD SHORTCUTS ---
+  useEffect(() => {
+    if (!bootComplete || !playerStats) return;
+
+    const handleKeyboardShortcuts = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
+      // Number keys 1-5 switch tabs (desktop)
+      if (e.key === '1') { setActiveMobileTab('WORKSPACE'); setActiveTab('workspace'); }
+      if (e.key === '2') { setActiveMobileTab('ASSETS'); setActiveTab('assets'); }
+      if (e.key === '3') { setActiveMobileTab('DEALS'); setActiveTab('deals'); }
+      if (e.key === '4') { setActiveMobileTab('RIVALS'); setActiveTab('rivals'); }
+      if (e.key === '5' && founderUnlocked) { setActiveMobileTab('FOUNDER'); setActiveTab('founder'); }
+
+      // 'a' for Activity Feed toggle
+      if (e.key === 'a' && !e.ctrlKey && !e.metaKey) {
+        setShowActivityFeed(prev => !prev);
+      }
+
+      // 'p' for Portfolio dashboard toggle
+      if (e.key === 'p' && !e.ctrlKey && !e.metaKey) {
+        setShowPortfolioDashboard(prev => !prev);
+      }
+
+      // 's' for Stats modal
+      if (e.key === 's' && !e.ctrlKey && !e.metaKey) {
+        handleStatsClick();
+      }
+
+      // Escape closes modals (handled individually, but also catch-all)
+      if (e.key === 'Escape') {
+        setShowActivityFeed(false);
+        setShowPortfolioDashboard(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyboardShortcuts);
+    return () => window.removeEventListener('keydown', handleKeyboardShortcuts);
+  }, [bootComplete, playerStats, founderUnlocked, setActiveMobileTab, setActiveTab, setShowActivityFeed, setShowPortfolioDashboard, handleStatsClick]);
+
   const currentScenario = activeScenario || SCENARIOS?.[0] || { id: 0, title: 'Loading...', description: '', choices: [], structureOptions: [] };
   const scenarioChoices = (currentScenario.choices && currentScenario.choices.length > 0)
     ? currentScenario.choices
