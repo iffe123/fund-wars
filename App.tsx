@@ -291,6 +291,11 @@ const App: React.FC = () => {
 
   // Legacy tutorial effects removed - now using RPG event-driven onboarding
 
+  // Derived: whether Founder Mode is unlocked (must be declared before any hook that reads it)
+  const founderUnlocked = playerStats
+    ? (playerStats.personalFinances?.bankBalance ?? playerStats.cash ?? 0) >= 1_000_000
+    : false;
+
   // --- KEYBOARD SHORTCUTS ---
   useEffect(() => {
     if (!bootComplete || !playerStats) return;
@@ -345,9 +350,6 @@ const App: React.FC = () => {
             }))
           )
         : []);
-  const founderUnlocked = playerStats
-    ? (playerStats.personalFinances?.bankBalance ?? playerStats.cash ?? 0) >= 1_000_000
-    : false;
 
   // Dev-only or explicit reset via query param
   useEffect(() => {
