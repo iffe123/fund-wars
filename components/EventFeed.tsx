@@ -243,11 +243,11 @@ const EventFeed: React.FC<EventFeedProps> = ({
 
     return {
       pressure: getPressureLabel(spotlightEvent),
-      reward: rewardCandidate && rewardCandidate.profile.rewardScore > 0
-        ? `${rewardCandidate.choice.label}: ${rewardCandidate.profile.rewardText}`
+      reward: rewardCandidate && rewardCandidate.profile.rewardScore > 0 && rewardCandidate.profile.rewardText
+        ? rewardCandidate.profile.rewardText
         : 'Find a new edge before the room cools off.',
-      risk: riskCandidate && riskCandidate.profile.riskScore > 0
-        ? `${riskCandidate.choice.label}: ${riskCandidate.profile.riskText}`
+      risk: riskCandidate && riskCandidate.profile.riskScore > 0 && riskCandidate.profile.riskText
+        ? riskCandidate.profile.riskText
         : 'Letting this drift costs momentum.',
     };
   }, [spotlightEvent]);

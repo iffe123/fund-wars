@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import type { Difficulty } from '../../types';
 import IntroSlide, { SlideContent } from './IntroSlide';
+import { Z_INDEX } from '../../constants/zIndex';
 
 interface IntroSequenceProps {
   onComplete: (stressLevel: number, playerName?: string, difficulty?: Difficulty) => void;
@@ -123,7 +124,7 @@ const IntroSequence: React.FC<IntroSequenceProps> = ({ onComplete, quickStart = 
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-slate-950 text-white overflow-hidden" style={{ zIndex: 100 }}>
+    <div className="fixed inset-0 bg-slate-950 text-white overflow-hidden" style={{ zIndex: Z_INDEX.tutorialOverlay }}>
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
 
       <div

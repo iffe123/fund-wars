@@ -8,6 +8,19 @@ interface WeekTransitionProps {
   quarter: number;
 }
 
+const WEEK_TRANSITION_CSS = `
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .animate-slideUp { animation: slideUp 0.5s ease-out; }
+  .animate-fadeIn { animation: fadeIn 0.7s ease-out 0.3s both; }
+`;
+
 const WeekTransition: React.FC<WeekTransitionProps> = ({
   isActive,
   currentWeek,
@@ -15,6 +28,22 @@ const WeekTransition: React.FC<WeekTransitionProps> = ({
   quarter,
 }) => {
   const [phase, setPhase] = useState<'entering' | 'showing' | 'exiting'>('entering');
+
+  // Inject transition styles on mount, clean up on unmount
+  useEffect(() => {
+    const styleId = 'week-transition-styles';
+    let style = document.getElementById(styleId) as HTMLStyleElement | null;
+    if (!style) {
+      style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = WEEK_TRANSITION_CSS;
+      document.head.appendChild(style);
+    }
+    return () => {
+      const existing = document.getElementById(styleId);
+      if (existing) existing.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isActive) return;
@@ -74,41 +103,5 @@ const WeekTransition: React.FC<WeekTransitionProps> = ({
     </div>
   );
 };
-
-// Add animation keyframes
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideUp {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  
-  .animate-slideUp {
-    animation: slideUp 0.5s ease-out;
-  }
-  
-  .animate-fadeIn {
-    animation: fadeIn 0.7s ease-out 0.3s both;
-  }
-`;
-if (!document.getElementById('week-transition-styles')) {
-  style.id = 'week-transition-styles';
-  document.head.appendChild(style);
-}
 
 export default WeekTransition;

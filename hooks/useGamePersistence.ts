@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -6,6 +6,8 @@ import { logEvent } from '../services/analytics';
 import { useGameState, useGameDispatch } from '../contexts/GameStateContext';
 import { hydrateGameState } from '../utils/persistence';
 import { initialState } from '../reducers/gameReducer';
+
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
 
 export const useGamePersistence = () => {
     const { currentUser } = useAuth();
@@ -16,6 +18,8 @@ export const useGamePersistence = () => {
         npcs, tutorialStep, actionLog, rivalFunds, activeDeals
     } = state;
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+    const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
     // Load Game
     useEffect(() => {
@@ -106,13 +110,30 @@ export const useGamePersistence = () => {
             lastSaved: new Date().toISOString()
         };
 
-        try {
-            await setDoc(doc(db!, 'users', currentUser.uid, 'savegame', 'primary'), gameStateToSave, { merge: true });
-            setLastSaved(new Date());
-            console.log("[CLOUD_SAVE] Game saved successfully.");
-        } catch (error) {
-            console.error("Error saving game:", error);
+        setSaveStatus('saving');
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+
+        const retryDelays = [0, 2000, 4000]; // immediate, then 2s, then 4s
+        let lastError: unknown;
+
+        for (let attempt = 0; attempt < retryDelays.length; attempt++) {
+            if (attempt > 0) {
+                await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
+            }
+            try {
+                await setDoc(doc(db!, 'users', currentUser.uid, 'savegame', 'primary'), gameStateToSave, { merge: true });
+                setLastSaved(new Date());
+                setSaveStatus('saved');
+                savedTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2000);
+                return;
+            } catch (error) {
+                lastError = error;
+            }
         }
+
+        // All retries exhausted
+        console.error("Error saving game after retries:", lastError);
+        setSaveStatus('failed');
     }, [currentUser, playerStats, gamePhase, activeScenario, marketVolatility, npcs, tutorialStep, actionLog, rivalFunds, activeDeals]);
 
     // Auto-save effect
@@ -123,5 +144,5 @@ export const useGamePersistence = () => {
         }
     }, [playerStats, gamePhase, saveGame]);
 
-    return { lastSaved };
+    return { lastSaved, saveStatus };
 };

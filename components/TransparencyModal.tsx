@@ -3,6 +3,7 @@ import type { MarketVolatility, PlayerStats } from '../types';
 import { COMPENSATION_BY_LEVEL, DEFAULT_FACTION_REPUTATION, MARKET_VOLATILITY_STYLES } from '../constants';
 import { isGeminiApiConfigured } from '../services/geminiService';
 import { TerminalButton, TerminalPanel } from './TerminalUI';
+import { Z_INDEX } from '../constants/zIndex';
 
 interface TransparencyModalProps {
   isOpen: boolean;
@@ -58,7 +59,7 @@ const TransparencyModal: React.FC<TransparencyModalProps> = ({ isOpen, stats, ma
   const mkt = MARKET_VOLATILITY_STYLES[marketVolatility];
 
   return (
-    <div className="fixed inset-0 z-[250] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: Z_INDEX.modal }}>
       <div className="w-full max-w-3xl max-h-[90vh] overflow-hidden">
         <TerminalPanel
           title="TRANSPARENCY // RULES_ENGINE"

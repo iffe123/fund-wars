@@ -2,6 +2,7 @@ import React, { memo, useMemo } from 'react';
 import type { PlayerStats, StatChanges, CompetitiveDeal, LifeAction } from '../types';
 import { TerminalPanel, TerminalButton } from './TerminalUI';
 import { LIFE_ACTIONS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS } from '../constants';
+import { Z_INDEX } from '../constants/zIndex';
 import { useGame } from '../contexts/GameContext';
 
 interface WorkspacePanelProps {
@@ -136,7 +137,8 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
   return (
     <TerminalPanel
       title="WORKSPACE_HOME"
-      className={`h-full flex flex-col p-4 bg-black ${isTutorialActive ? 'relative z-[100]' : ''}`}
+      className={`h-full flex flex-col p-4 bg-black ${isTutorialActive ? 'relative' : ''}`}
+      style={isTutorialActive ? { zIndex: Z_INDEX.tutorialOverlay } : undefined}
     >
       {/* Hide Life Actions during Tutorial Step 1 to prevent pushing content down */}
       {tutorialStep !== 1 && (
@@ -180,7 +182,7 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
       <div className="flex-1 border-t border-slate-800 pt-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-xs font-bold text-slate-500">PENDING_TASKS</span>
-          <div className={tutorialStep === 1 ? 'relative z-[100]' : ''}>
+          <div className={tutorialStep === 1 ? 'relative' : ''} style={tutorialStep === 1 ? { zIndex: Z_INDEX.tutorialOverlay } : undefined}>
             <TerminalButton
               label="MANAGE_ASSETS"
               icon="fa-briefcase"

@@ -49,6 +49,7 @@ import StoryMilestoneModal from './components/StoryMilestoneModal';
 import CompanyEventModal from './components/CompanyEventModal';
 import NPCDramaModal from './components/NPCDramaModal';
 import { useStoryMilestones } from './hooks/useStoryMilestones';
+import { PanelErrorBoundary } from './components/PanelErrorBoundary';
 
 declare global {
   interface Window {
@@ -480,6 +481,7 @@ const App: React.FC = () => {
                 title="ASSET_MANAGER"
                 className="h-full"
               >
+                  <PanelErrorBoundary panelName="PortfolioView" fallbackMessage="Portfolio data failed to load">
                   <PortfolioView
                       playerStats={playerStats}
                       onAction={(id, action) => {
@@ -520,10 +522,11 @@ const App: React.FC = () => {
                           addLogEntry(`Discussing ${company.name} with ${advisorType === 'sarah' ? 'Sarah' : 'Machiavelli'}`);
                       }}
                   />
+                  </PanelErrorBoundary>
               </TerminalPanel>
           )
       }
-      
+
       // 2. Founder Mode
       if (activeTab === 'FOUNDER' && playerStats) {
           return (
@@ -544,6 +547,7 @@ const App: React.FC = () => {
                       }}
                   />
               </TerminalPanel>
+
           )
       }
 
@@ -583,6 +587,7 @@ const App: React.FC = () => {
       // 5. Event-Driven Workspace - The core gameplay experience
       // Events drive everything: narrative-first, systems-second
       return (
+          <PanelErrorBoundary panelName="EventDrivenWorkspace" fallbackMessage="Workspace failed to load">
           <EventDrivenWorkspace
             tutorialStep={0}
             onManageAssets={() => {
@@ -628,6 +633,7 @@ const App: React.FC = () => {
               addLogEntry('CONSULTING: Machiavelli AI for strategic advice.');
             }}
           />
+          </PanelErrorBoundary>
       );
   };
 
@@ -839,6 +845,7 @@ const App: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex-1 min-h-0 overflow-hidden">
+                        <PanelErrorBoundary panelName="CommsTerminal" fallbackMessage="Chat failed to load">
                         <CommsTerminal
                             key="desktop-comms-inline"
                             mode="MOBILE_EMBED"
@@ -853,6 +860,7 @@ const App: React.FC = () => {
                             onClose={handleChatClose}
                             onBackToPortfolio={handleChatBackToPortfolio}
                         />
+                        </PanelErrorBoundary>
                     </div>
                 </div>
             )}

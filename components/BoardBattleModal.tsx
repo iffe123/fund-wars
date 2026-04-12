@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { TerminalButton } from './TerminalUI';
+import { Z_INDEX } from '../constants/zIndex';
 
 interface BoardBattleModalProps {
   companyName: string;
@@ -48,7 +49,7 @@ const BoardBattleModal: React.FC<BoardBattleModalProps> = ({ companyName, ceoNam
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60] p-4 font-mono">
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 font-mono" style={{ zIndex: Z_INDEX.modal }}>
         <div className="w-full max-w-2xl border border-slate-600 bg-slate-900 shadow-2xl flex flex-col h-[60vh]">
             <div className="bg-slate-800 p-3 border-b border-slate-700 flex justify-between items-center">
                 <span className="font-bold text-slate-200">EMERGENCY BOARD MEETING // {companyName.toUpperCase()}</span>
