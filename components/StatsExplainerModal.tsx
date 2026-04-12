@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import type { PlayerStats, MarketVolatility } from '../types';
 import { MARKET_VOLATILITY_STYLES } from '../constants';
+import { formatCurrency } from '../utils/formatCurrency';
 
 interface StatsExplainerModalProps {
   stats: PlayerStats;
@@ -20,7 +21,7 @@ const STAT_EXPLANATIONS = [
     borderColor: 'border-emerald-800/50',
     description: 'Your operating capital. Used for deals, actions, and survival.',
     tip: 'Running low? Take a bridge loan or win an auction.',
-    getValue: (stats: PlayerStats) => `$${stats.cash.toLocaleString()}`,
+    getValue: (stats: PlayerStats) => formatCurrency(stats.cash),
     getStatus: (stats: PlayerStats) =>
       stats.cash < 5000 ? 'critical' : stats.cash < 20000 ? 'warning' : 'healthy',
   },
@@ -34,7 +35,7 @@ const STAT_EXPLANATIONS = [
     description: 'Borrowed money. High interest eats your returns every week.',
     tip: 'Pay it down when you can. Interest compounds fast.',
     getValue: (stats: PlayerStats) => stats.loanBalance > 0
-      ? `$${stats.loanBalance.toLocaleString()} @ ${(stats.loanRate * 100).toFixed(1)}%`
+      ? `${formatCurrency(stats.loanBalance)} @ ${(stats.loanRate * 100).toFixed(1)}%`
       : 'None',
     getStatus: (stats: PlayerStats) =>
       stats.loanBalance > 100000 ? 'critical' : stats.loanBalance > 0 ? 'warning' : 'healthy',

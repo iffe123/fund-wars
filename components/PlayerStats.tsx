@@ -2,6 +2,7 @@ import React, { memo, useMemo, useState, useCallback, useRef, useEffect } from '
 import type { PlayerStats, MarketVolatility } from '../types';
 import { MARKET_VOLATILITY_STYLES } from '../constants';
 import { STRESS_THRESHOLDS } from '../constants/difficulty';
+import { formatCurrency } from '../utils/formatCurrency';
 import { useGame } from '../contexts/GameContext';
 import TimeActionBar from './TimeActionBar';
 import StatsExplainerModal from './StatsExplainerModal';
@@ -72,11 +73,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
   const mktStyle = useMemo(() => MARKET_VOLATILITY_STYLES[marketVolatility], [marketVolatility]);
   const isPanic = marketVolatility === 'PANIC';
 
-  const formatMoney = useMemo(() => (val: number) => {
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
-    if (val >= 1000) return `$${(val / 1000).toFixed(0)}k`;
-    return `$${val}`;
-  }, []);
+  const formatMoney = formatCurrency;
 
   // Stress level indicator
   const getStressColor = (stress: number) => {
@@ -231,7 +228,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
             'bg-emerald-950/40 border-emerald-700/40'
           }`} title="Your bank account. Earn through salary, bonuses, and carry.">
             <i className={`fas fa-wallet text-sm ${cashFlash === 'down' ? 'text-red-400' : 'text-emerald-400'}`}></i>
-            <span className={`font-bold tabular-nums text-sm ${cashFlash === 'up' ? 'text-emerald-200' : cashFlash === 'down' ? 'text-red-300' : 'text-emerald-300'}`}>${(stats.personalFinances?.bankBalance ?? stats.cash).toLocaleString()}</span>
+            <span className={`font-bold tabular-nums text-sm ${cashFlash === 'up' ? 'text-emerald-200' : cashFlash === 'down' ? 'text-red-300' : 'text-emerald-300'}`}>{formatCurrency(stats.personalFinances?.bankBalance ?? stats.cash)}</span>
             {cashFlash && (
               <i className={`fas ${cashFlash === 'up' ? 'fa-arrow-up text-emerald-400' : 'fa-arrow-down text-red-400'} text-[10px] animate-bounce`}></i>
             )}

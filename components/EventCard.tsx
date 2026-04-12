@@ -8,6 +8,7 @@
 import React, { useState, useCallback } from 'react';
 import type { StoryEvent, EventChoice } from '../types/rpgEvents';
 import type { PlayerStats, NPC } from '../types';
+import { formatCurrency } from '../utils/formatCurrency';
 
 /**
  * Render inline markdown (***bold italic***, **bold**, *italic*) to React nodes
@@ -219,7 +220,7 @@ const EventCard: React.FC<EventCardProps> = ({
     for (const [key, value] of Object.entries(stats)) {
       if (typeof value !== 'number' || value === 0) continue;
       if (key === 'cash') {
-        parts.push(`${value > 0 ? '+' : ''}$${Math.abs(value).toLocaleString()} Cash`);
+        parts.push(`${value > 0 ? '+' : '-'}${formatCurrency(Math.abs(value))} Cash`);
       } else {
         parts.push(`${value > 0 ? '+' : ''}${value} ${formatStatName(key)}`);
       }

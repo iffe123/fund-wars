@@ -7,7 +7,6 @@
 
 import React, { useState, createContext, useContext, useCallback } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
-import { AudioProvider } from './contexts/AudioContext';
 import { GameProvider } from './contexts/GameContext';
 import App from './App';
 import StoryApp from './StoryApp';
@@ -38,11 +37,9 @@ const HybridApp: React.FC = () => {
     <GameModeContext.Provider value={{ gameMode, setGameMode: handleSetGameMode }}>
       {gameMode === 'SIMULATION' ? (
         <AuthProvider>
-          <AudioProvider>
-            <GameProvider>
-              <App />
-            </GameProvider>
-          </AudioProvider>
+          <GameProvider>
+            <App />
+          </GameProvider>
         </AuthProvider>
       ) : (
         <StoryApp />

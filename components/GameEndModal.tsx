@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import type { GamePhase, PlayerStats } from '../types';
+import { Z_INDEX } from '../constants';
 import { TerminalButton, StatCard } from './TerminalUI';
 
 interface GameEndModalProps {
@@ -60,7 +61,7 @@ const GameEndModal: React.FC<GameEndModalProps> = ({ phase, stats, actionLog, on
   if (!copy) return null;
 
   return (
-    <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: Z_INDEX.modal }}>
       <div className="w-full max-w-2xl border border-slate-700 bg-slate-900 shadow-2xl rounded-lg overflow-hidden">
         <div
           className={`px-4 py-3 border-b border-slate-700 flex items-center justify-between ${

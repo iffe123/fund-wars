@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Z_INDEX } from '../constants';
 
 interface WeekTransitionProps {
@@ -8,6 +8,19 @@ interface WeekTransitionProps {
   quarter: number;
 }
 
+const WEEK_TRANSITION_STYLES = `
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .animate-slideUp { animation: slideUp 0.5s ease-out; }
+  .animate-fadeIn { animation: fadeIn 0.7s ease-out 0.3s both; }
+`;
+
 const WeekTransition: React.FC<WeekTransitionProps> = ({
   isActive,
   currentWeek,
@@ -15,13 +28,28 @@ const WeekTransition: React.FC<WeekTransitionProps> = ({
   quarter,
 }) => {
   const [phase, setPhase] = useState<'entering' | 'showing' | 'exiting'>('entering');
+  const styleRef = useRef<HTMLStyleElement | null>(null);
+
+  // Inject keyframe styles when component mounts, clean up on unmount
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.id = 'week-transition-styles';
+    style.textContent = WEEK_TRANSITION_STYLES;
+    document.head.appendChild(style);
+    styleRef.current = style;
+    return () => {
+      if (styleRef.current && styleRef.current.parentNode) {
+        styleRef.current.parentNode.removeChild(styleRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!isActive) return;
 
     // Phase 1: Enter (fade in)
     setPhase('entering');
-    
+
     // Phase 2: Show briefly
     const showTimer = setTimeout(() => {
       setPhase('showing');
@@ -74,41 +102,5 @@ const WeekTransition: React.FC<WeekTransitionProps> = ({
     </div>
   );
 };
-
-// Add animation keyframes
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideUp {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  
-  .animate-slideUp {
-    animation: slideUp 0.5s ease-out;
-  }
-  
-  .animate-fadeIn {
-    animation: fadeIn 0.7s ease-out 0.3s both;
-  }
-`;
-if (!document.getElementById('week-transition-styles')) {
-  style.id = 'week-transition-styles';
-  document.head.appendChild(style);
-}
 
 export default WeekTransition;

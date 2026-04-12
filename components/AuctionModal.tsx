@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { Z_INDEX } from '../constants';
 import { TerminalButton, TerminalPanel } from './TerminalUI';
 import { useHaptic } from '../hooks/useHaptic';
 
@@ -94,7 +95,7 @@ const AuctionModal: React.FC<AuctionModalProps> = ({ companyName, initialBid, ri
   }, [turn, isOver, handleLoss]);
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm p-4" style={{ zIndex: Z_INDEX.modal }}>
         <div className="w-full max-w-lg border-2 border-red-500 bg-slate-900 shadow-[0_0_50px_rgba(239,68,68,0.4)]">
             <div className="bg-red-500 text-black px-3 py-2 font-bold flex justify-between items-center animate-pulse">
                 <span><i className="fas fa-gavel mr-2"></i>LIVE AUCTION IN PROGRESS</span>

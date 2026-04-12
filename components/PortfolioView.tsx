@@ -9,7 +9,8 @@ import BoardBattleModal from './BoardBattleModal';
 import ExitStrategyModal from './ExitStrategyModal';
 import LeverageModelModal from './LeverageModelModal';
 import { ICMeetingScreen, type ICVerdict } from '../features/investment-committee';
-import { calculatePortfolioAnalytics, formatMoney as formatMoneyUtil } from '../utils/scenarioGating';
+import { calculatePortfolioAnalytics } from '../utils/scenarioGating';
+import { formatCurrency } from '../utils/formatCurrency';
 import { getCompanyStatus } from '../utils/worldEngine';
 
 interface PortfolioViewProps {
@@ -58,7 +59,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   const isMarketPanic = marketVolatility === 'PANIC' || marketVolatility === 'CREDIT_CRUNCH';
 
   // Memoize formatting functions
-  const formatMoney = useCallback((val: number) => `$${(val / 1000000).toFixed(1)}M`, []);
+  const formatMoney = formatCurrency;
   const formatPercent = useCallback((val: number) => `${(val * 100).toFixed(1)}%`, []);
 
   // Helper: Get company's deal phase (with backward compatibility)
@@ -1047,7 +1048,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                       <div className="text-right">
                         <span className={`font-bold ${selectedAnalytics.unrealizedGainLoss >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                           {selectedAnalytics.unrealizedGainLoss >= 0 ? '+' : ''}
-                          {formatMoneyUtil(selectedAnalytics.unrealizedGainLoss)}
+                          {formatCurrency(selectedAnalytics.unrealizedGainLoss)}
                         </span>
                         <span className={`text-xs ml-2 ${selectedAnalytics.unrealizedGainLoss >= 0 ? 'text-emerald-500/70' : 'text-red-500/70'}`}>
                           ({selectedAnalytics.unrealizedGainLossPercent >= 0 ? '+' : ''}
@@ -1107,7 +1108,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                       </div>
                       {selectedAnalytics.highestBid && (
                         <p className="text-[10px] text-slate-500 mt-2">
-                          Highest indication: {formatMoneyUtil(selectedAnalytics.highestBid)}
+                          Highest indication: {formatCurrency(selectedAnalytics.highestBid)}
                         </p>
                       )}
                     </div>

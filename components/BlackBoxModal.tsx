@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BLACK_BOX_FILE } from '../constants';
+import { BLACK_BOX_FILE, Z_INDEX } from '../constants';
 import { TerminalButton } from './TerminalUI';
 
 interface BlackBoxModalProps {
@@ -10,7 +10,7 @@ interface BlackBoxModalProps {
 
 const BlackBoxModal: React.FC<BlackBoxModalProps> = ({ onClose, onResolve }) => {
   return (
-    <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center font-mono p-8">
+    <div className="fixed inset-0 bg-black flex items-center justify-center font-mono p-8" style={{ zIndex: Z_INDEX.modal }}>
         <div className="max-w-3xl w-full border border-green-500/30 p-8 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-green-500 animate-pulse"></div>
             
