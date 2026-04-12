@@ -304,6 +304,14 @@
         color: var(--terminal-bg);
       }
 
+      /* Mobile Typography - ensure readability on small screens */
+      @media (max-width: 768px) {
+        .font-mono {
+          font-size: max(13px, 0.8125rem);
+          line-height: 1.6;
+        }
+      }
+
       /* Safe Area Utility Classes */
       .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
       .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }

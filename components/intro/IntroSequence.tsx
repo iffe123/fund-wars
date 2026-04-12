@@ -11,23 +11,12 @@ interface IntroSequenceProps {
 const INTRO_SLIDES: SlideContent[] = [
   {
     id: 'elevator',
-    title: 'The Elevator',
+    title: 'Sterling Partners',
     narrative: [
-      'The elevator opens to mahogany and money.',
-      'Welcome to Sterling Partners. $2.4 billion AUM. Top-quartile returns.',
-      'A place where careers are made or destroyed in a single bad quarter.',
+      'The elevator opens to mahogany and money. $2.4 billion AUM. Top-quartile returns.',
+      'You are the new analyst. Your first deal just landed on your desk.',
     ],
     buttonText: 'Step Inside',
-    buttonVariant: 'primary',
-  },
-  {
-    id: 'desk',
-    title: 'Your Desk',
-    narrative: [
-      'Your desk awaits in the analyst bullpen. Coffee is already getting cold.',
-      'Somewhere across the trading floor, a Managing Director is about to drop something on your desk that will define your next six months.',
-    ],
-    buttonText: 'Sit Down',
     buttonVariant: 'primary',
   },
   {
@@ -44,35 +33,11 @@ const INTRO_SLIDES: SlideContent[] = [
     characterRole: 'Managing Director',
   },
   {
-    id: 'your-tools',
-    title: 'Your Command Center',
-    narrative: [
-      'Your desk is your command center. Here is what you have to work with:',
-      'COMMS - Your contacts are on the left. Click any name to open a conversation. Build relationships, gather intel, call in favors.',
-      'BLOOMBERG IB - The chat terminal on the right connects you to your AI advisor, Machiavelli. He is ruthless, brilliant, and always available. Use him.',
-      'DESK - Your main workspace shows events, decisions, and deal flow. This is where the action happens.',
-    ],
-    buttonText: 'Got It',
-    buttonVariant: 'primary',
-  },
-  {
-    id: 'mechanics',
-    title: 'How to Survive',
-    narrative: [
-      'You get 3 Action Points (AP) per week. Every real action - diligence, bidding, networking - costs 1 AP. Choose your 3 moves wisely.',
-      'STRESS builds with every hard decision. Hit 100% and you burn out. Resting and chatting are free.',
-      'REPUTATION determines your standing at the firm and unlocks new opportunities. Make smart deals and keep the MDs happy.',
-      'At the end of each week, click "End Week" to advance time and face new challenges.',
-    ],
-    buttonText: 'Understood',
-    buttonVariant: 'primary',
-  },
-  {
     id: 'mission',
     title: 'Your Mission',
     narrative: [
-      'You have ONE WEEK to analyze this deal before the IOI deadline.',
-      'Miss it, and Chad will find someone who will not.',
+      'You have ONE WEEK to analyze this deal before the IOI deadline. Miss it, and Chad will find someone who will not.',
+      '3 Action Points per week. Every move counts. Use COMMS to network, DESK for deals, and your AI advisor Machiavelli for strategy.',
     ],
     buttonText: 'Enter Sterling Partners',
     buttonVariant: 'accent',
