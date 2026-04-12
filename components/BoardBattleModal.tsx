@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
+import { Z_INDEX } from '../constants';
 import { TerminalButton } from './TerminalUI';
-import { Z_INDEX } from '../constants/zIndex';
 
 interface BoardBattleModalProps {
   companyName: string;

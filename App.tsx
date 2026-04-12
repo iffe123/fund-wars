@@ -124,7 +124,7 @@ const App: React.FC = () => {
   } = useGame();
   
   const { loading: authLoading } = useAuth();
-  const { playSfx, playAmbience } = useAudio();
+  const { playSfx } = useAudio();
   const { toasts, removeToast: removeEnhancedToast, toast, clearToasts } = useEnhancedToast();
   const { isTransitioning: isWeekTransitioning, startTransition: startWeekTransition } = useWeekTransition();
   const { visibleMilestone, dismissMilestone } = useStoryMilestones();
@@ -379,12 +379,7 @@ const App: React.FC = () => {
       }
   }, []);
 
-  // Kill the boot ticking/ambience once the main UI is live
-  useEffect(() => {
-      if (bootComplete) {
-          playAmbience(false);
-      }
-  }, [bootComplete, playAmbience]);
+  // (Ambience removed — no audio to stop)
 
   // Ensure the market is live when ready (onboarding complete handled by RPG events)
   useEffect(() => {

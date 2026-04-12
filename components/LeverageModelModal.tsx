@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { PortfolioCompany, LeverageModel } from '../types';
+import { formatCurrency } from '../utils/formatCurrency';
 
 interface LeverageModelModalProps {
   company: PortfolioCompany;
@@ -116,11 +117,7 @@ const LeverageModelModal: React.FC<LeverageModelModalProps> = ({
 
   const attractiveness = getAttractivenessLabel(modelOutput.model.projectedIRR);
 
-  const formatCurrency = (val: number) => {
-    if (val >= 1000000000) return `$${(val / 1000000000).toFixed(2)}B`;
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
-    return `$${val.toLocaleString()}`;
-  };
+  // Using centralized formatCurrency from utils
 
   const handleApplyToBid = () => {
     onApplyModel(modelOutput.model, modelOutput.entryEV);

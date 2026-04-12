@@ -1,9 +1,8 @@
 import React, { useMemo } from 'react';
 import type { MarketVolatility, PlayerStats } from '../types';
-import { COMPENSATION_BY_LEVEL, DEFAULT_FACTION_REPUTATION, MARKET_VOLATILITY_STYLES } from '../constants';
+import { COMPENSATION_BY_LEVEL, DEFAULT_FACTION_REPUTATION, MARKET_VOLATILITY_STYLES, Z_INDEX } from '../constants';
 import { isGeminiApiConfigured } from '../services/geminiService';
 import { TerminalButton, TerminalPanel } from './TerminalUI';
-import { Z_INDEX } from '../constants/zIndex';
 
 interface TransparencyModalProps {
   isOpen: boolean;

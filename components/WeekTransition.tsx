@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Z_INDEX } from '../constants';
 
 interface WeekTransitionProps {
@@ -8,7 +8,7 @@ interface WeekTransitionProps {
   quarter: number;
 }
 
-const WEEK_TRANSITION_CSS = `
+const WEEK_TRANSITION_STYLES = `
   @keyframes slideUp {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
@@ -28,20 +28,19 @@ const WeekTransition: React.FC<WeekTransitionProps> = ({
   quarter,
 }) => {
   const [phase, setPhase] = useState<'entering' | 'showing' | 'exiting'>('entering');
+  const styleRef = useRef<HTMLStyleElement | null>(null);
 
-  // Inject transition styles on mount, clean up on unmount
+  // Inject keyframe styles when component mounts, clean up on unmount
   useEffect(() => {
-    const styleId = 'week-transition-styles';
-    let style = document.getElementById(styleId) as HTMLStyleElement | null;
-    if (!style) {
-      style = document.createElement('style');
-      style.id = styleId;
-      style.textContent = WEEK_TRANSITION_CSS;
-      document.head.appendChild(style);
-    }
+    const style = document.createElement('style');
+    style.id = 'week-transition-styles';
+    style.textContent = WEEK_TRANSITION_STYLES;
+    document.head.appendChild(style);
+    styleRef.current = style;
     return () => {
-      const existing = document.getElementById(styleId);
-      if (existing) existing.remove();
+      if (styleRef.current && styleRef.current.parentNode) {
+        styleRef.current.parentNode.removeChild(styleRef.current);
+      }
     };
   }, []);
 
@@ -50,7 +49,7 @@ const WeekTransition: React.FC<WeekTransitionProps> = ({
 
     // Phase 1: Enter (fade in)
     setPhase('entering');
-    
+
     // Phase 2: Show briefly
     const showTimer = setTimeout(() => {
       setPhase('showing');

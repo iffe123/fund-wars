@@ -2,8 +2,8 @@ import React, { memo, useMemo, useState, useCallback, useRef, useEffect } from '
 import type { PlayerStats, MarketVolatility } from '../types';
 import { MARKET_VOLATILITY_STYLES } from '../constants';
 import { STRESS_THRESHOLDS } from '../constants/difficulty';
+import { formatCurrency } from '../utils/formatCurrency';
 import { useGame } from '../contexts/GameContext';
-import { formatCurrency } from '../utils/formatters';
 import TimeActionBar from './TimeActionBar';
 import StatsExplainerModal from './StatsExplainerModal';
 
@@ -73,7 +73,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
   const mktStyle = useMemo(() => MARKET_VOLATILITY_STYLES[marketVolatility], [marketVolatility]);
   const isPanic = marketVolatility === 'PANIC';
 
-  const formatMoney = useMemo(() => (val: number) => formatCurrency(val, true), []);
+  const formatMoney = formatCurrency;
 
   // Stress level indicator
   const getStressColor = (stress: number) => {
