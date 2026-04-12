@@ -179,6 +179,15 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
       const defaultX = Math.max(16, window.innerWidth - 640);
       const defaultY = Math.max(16, window.innerHeight - 520);
       setDragPosition({ x: defaultX, y: defaultY });
+
+      const handleResize = () => {
+        setDragPosition(prev => ({
+          x: Math.min(prev.x, window.innerWidth - 280),
+          y: Math.min(prev.y, window.innerHeight - 200),
+        }));
+      };
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
   }, [mode]);
 
   const handleDragMove = (clientX: number, clientY: number) => {
