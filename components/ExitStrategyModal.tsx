@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { PortfolioCompany, PlayerStats, MarketVolatility, ExitType, ExitResult, StatChanges } from '../types';
+import { formatCurrency } from '../utils/formatCurrency';
 import {
   EXIT_OPTIONS,
   getAvailableExits,
@@ -44,11 +45,7 @@ const ExitStrategyModal: React.FC<ExitStrategyModalProps> = ({
     return calculateExitValue(company, selectedOption, playerStats, marketVolatility);
   }, [selectedOption, company, playerStats, marketVolatility]);
 
-  const formatCurrency = (val: number) => {
-    if (val >= 1000000000) return `$${(val / 1000000000).toFixed(2)}B`;
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
-    return `$${val.toLocaleString()}`;
-  };
+  // Using centralized formatCurrency from utils
 
   const handleExecuteExit = (exitType: ExitType) => {
     const option = EXIT_OPTIONS.find(e => e.type === exitType);

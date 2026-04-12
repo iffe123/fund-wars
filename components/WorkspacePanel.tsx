@@ -1,8 +1,8 @@
 import React, { memo, useMemo } from 'react';
 import type { PlayerStats, StatChanges, CompetitiveDeal, LifeAction } from '../types';
 import { TerminalPanel, TerminalButton } from './TerminalUI';
-import { LIFE_ACTIONS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS } from '../constants';
-import { Z_INDEX } from '../constants/zIndex';
+import { LIFE_ACTIONS, COMPENSATION_BY_LEVEL, AFFORDABILITY_THRESHOLDS, Z_INDEX } from '../constants';
+import { formatCurrency } from '../utils/formatCurrency';
 import { useGame } from '../contexts/GameContext';
 
 interface WorkspacePanelProps {
@@ -74,7 +74,7 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
         return;
       }
       if (currentLoanBalance + 50000 > loanLimit) {
-        addToast(`Loan would exceed your $${loanLimit.toLocaleString()} limit.`, 'error');
+        addToast(`Loan would exceed your ${formatCurrency(loanLimit)} limit.`, 'error');
         return;
       }
       // Deduct AP cost
@@ -105,14 +105,14 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
         return;
       }
       updatePlayerStats({ cash: -payment, loanBalanceChange: -payment, stress: -2, score: +25 });
-      addToast(`Debt payment sent: $${payment.toLocaleString()}`, 'success');
+      addToast(`Debt payment sent: ${formatCurrency(payment)}`, 'success');
       addLogEntry('Paid down high-interest debt.');
       return;
     }
 
     // Affordability check for all actions
     if (actionCost > 0 && !canAfford) {
-      addToast(`Can't afford this. Need $${actionCost.toLocaleString()}`, 'error');
+      addToast(`Can't afford this. Need ${formatCurrency(actionCost)}`, 'error');
       return;
     }
 
@@ -124,7 +124,7 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
 
     // Warning for expensive actions (but still allow)
     if (feelsExpensive && actionCost > 0) {
-      addToast(`Splurging $${actionCost.toLocaleString()} on ${action.text}`, 'info');
+      addToast(`Splurging ${formatCurrency(actionCost)} on ${action.text}`, 'info');
     }
 
     onStatChange(action.outcome.statChanges);
@@ -168,7 +168,7 @@ const WorkspacePanel: React.FC<WorkspacePanelProps> = memo(({
                 </span>
                 {actionCost > 0 && (
                   <span className={`text-[8px] ${!canAfford ? 'text-red-500' : feelsExpensive ? 'text-amber-500' : 'text-slate-400'}`}>
-                    ${actionCost.toLocaleString()}
+                    {formatCurrency(actionCost)}
                   </span>
                 )}
                 {loanLocked && <span className="text-[8px] text-red-500">LOCKED</span>}

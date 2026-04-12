@@ -1,8 +1,7 @@
 
 import React from 'react';
-import { BLACK_BOX_FILE } from '../constants';
+import { BLACK_BOX_FILE, Z_INDEX } from '../constants';
 import { TerminalButton } from './TerminalUI';
-import { Z_INDEX } from '../constants/zIndex';
 
 interface BlackBoxModalProps {
   onClose: () => void;

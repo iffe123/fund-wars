@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import type { GamePhase, PlayerStats } from '../types';
+import { Z_INDEX } from '../constants';
 import { TerminalButton, StatCard } from './TerminalUI';
-import { Z_INDEX } from '../constants/zIndex';
 
 interface GameEndModalProps {
   phase: GamePhase;

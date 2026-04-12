@@ -5,7 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   esbuild: {
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+    drop: ['debugger'],
+    pure: ['console.log', 'console.info', 'console.debug'],
   },
   build: {
     outDir: 'dist',
@@ -16,7 +17,6 @@ export default defineConfig({
           if (!id.includes('node_modules')) return undefined;
           // No external AI SDK - using direct fetch to Anthropic API
           if (id.includes('firebase')) return 'firebase';
-          if (id.includes('howler')) return 'howler';
           if (id.includes('react')) return 'react';
           return 'vendor';
         },

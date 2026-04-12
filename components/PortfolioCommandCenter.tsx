@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
+import { Z_INDEX } from '../constants';
+import { formatCurrency as formatMoney } from '../utils/formatCurrency';
 import { TerminalButton, TerminalPanel } from './TerminalUI';
 import type { PortfolioCompany, CompanyStatus } from '../types';
-import { Z_INDEX } from '../constants/zIndex';
-import { formatCurrency } from '../utils/formatters';
 
 interface CommandAction {
   label: string;
@@ -19,9 +19,6 @@ interface PortfolioCommandCenterProps {
   onClose: () => void;
   onJumpToAssets: () => void;
 }
-
-// Helper to format money values
-const formatMoney = (value: number): string => formatCurrency(value, true);
 
 // KPI Component
 const KPI: React.FC<{

@@ -7,7 +7,6 @@
 
 import React, { useState, createContext, useContext, useCallback } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
-import { AudioProvider } from './contexts/AudioContext';
 import { GameProvider } from './contexts/GameContext';
 import App from './App';
 const StoryApp = React.lazy(() => import('./StoryApp'));
@@ -46,11 +45,9 @@ const HybridApp: React.FC = () => {
     <GameModeContext.Provider value={{ gameMode, setGameMode: handleSetGameMode }}>
       {gameMode === 'SIMULATION' ? (
         <AuthProvider>
-          <AudioProvider>
-            <GameProvider>
-              <App />
-            </GameProvider>
-          </AudioProvider>
+          <GameProvider>
+            <App />
+          </GameProvider>
         </AuthProvider>
       ) : (
         <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#030303] text-amber-400 font-mono">Loading story mode...</div>}>

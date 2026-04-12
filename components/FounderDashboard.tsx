@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import type { PlayerStats, NPC } from '../types';
-import { formatCurrency as formatCurrencyUtil } from '../utils/formatters';
+import { formatCurrency } from '../utils/formatCurrency';
 
 interface FounderDashboardProps {
   playerStats: PlayerStats;
@@ -13,7 +13,7 @@ interface FounderDashboardProps {
 const FounderDashboard: React.FC<FounderDashboardProps> = ({ playerStats, npcs, onRecruit, onOpenChat }) => {
   const [showRecruitModal, setShowRecruitModal] = useState(false);
 
-  const formatCurrency = (val: number) => formatCurrencyUtil(val, true);
+  // Using centralized formatCurrency from utils
 
   const aumProgress = Math.min((playerStats.aum / 1000000000) * 100, 100);
 
