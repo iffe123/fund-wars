@@ -59,7 +59,7 @@ const TransparencyModal: React.FC<TransparencyModalProps> = ({ isOpen, stats, ma
   const mkt = MARKET_VOLATILITY_STYLES[marketVolatility];
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: Z_INDEX.modal }}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: Z_INDEX.modal }} role="dialog" aria-modal="true" aria-label="Transparency and Rules">
       <div className="w-full max-w-3xl max-h-[90vh] overflow-hidden">
         <TerminalPanel
           title="TRANSPARENCY // RULES_ENGINE"

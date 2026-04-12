@@ -215,7 +215,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: Z_INDEX.modal }}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: Z_INDEX.modal }} role="dialog" aria-modal="true" aria-label="Portfolio Command Center">
       <div className="w-full max-w-6xl">
         <TerminalPanel title="PORTFOLIO_COMMAND_CENTER" className="h-auto">
           <div className="p-4 space-y-4">

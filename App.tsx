@@ -982,7 +982,7 @@ const App: React.FC = () => {
                 <span className="mr-2">{">"}</span>
                 <span className="animate-pulse">_</span>
             </div>
-            <div className="flex items-center gap-2 text-slate-500 text-[10px]">
+            <div className="flex items-center gap-2 text-slate-500 text-[10px]" aria-live="polite">
                 <i className="fas fa-cloud-arrow-up text-emerald-600"></i>
                 <span>Auto-saved</span>
             </div>
