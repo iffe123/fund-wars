@@ -4,14 +4,25 @@ import { analytics } from "./firebase";
 type AnalyticsEvent =
   | 'tutorial_start'
   | 'tutorial_complete'
+  | 'deal_started'
+  | 'deal_completed'
+  | 'deal_rejected'
   | 'deal_signed'
+  | 'npc_chat_opened'
+  | 'npc_message_sent'
+  | 'week_advanced'
   | 'game_start'
+  | 'game_ended'
   | 'game_over'
   | 'game_reset'
   | 'user_stuck'
   | 'login_success'
   | 'app_init'
-  | 'scenario_triggered';
+  | 'scenario_triggered'
+  | 'error_boundary_triggered'
+  | 'ai_request'
+  | 'ai_fallback_used'
+  | 'ai_timeout';
 
 interface EventParams {
   [key: string]: string | number | boolean;

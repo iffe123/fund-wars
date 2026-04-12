@@ -10,7 +10,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { AudioProvider } from './contexts/AudioContext';
 import { GameProvider } from './contexts/GameContext';
 import App from './App';
-import StoryApp from './StoryApp';
+const StoryApp = React.lazy(() => import('./StoryApp'));
+import SplashScreen from './components/SplashScreen';
 
 type GameMode = 'SIMULATION' | 'STORY_CLASSIC';
 
@@ -29,10 +30,17 @@ export const useGameMode = () => {
 
 const HybridApp: React.FC = () => {
   const [gameMode, setGameMode] = useState<GameMode>('SIMULATION');
+  const [showSplash, setShowSplash] = useState(true);
 
   const handleSetGameMode = useCallback((mode: GameMode) => {
     setGameMode(mode);
   }, []);
+
+  const hasSave = typeof window !== 'undefined' && !!localStorage.getItem('fundwars_skip_intro');
+
+  if (showSplash) {
+    return <SplashScreen onStart={() => setShowSplash(false)} hasSave={hasSave} onContinue={hasSave ? () => setShowSplash(false) : undefined} />;
+  }
 
   return (
     <GameModeContext.Provider value={{ gameMode, setGameMode: handleSetGameMode }}>
@@ -45,7 +53,9 @@ const HybridApp: React.FC = () => {
           </AudioProvider>
         </AuthProvider>
       ) : (
-        <StoryApp />
+        <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#030303] text-amber-400 font-mono">Loading story mode...</div>}>
+          <StoryApp />
+        </React.Suspense>
       )}
     </GameModeContext.Provider>
   );
