@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Primary Meta Tags -->
     <title>Fund Wars - PE/VC Career Simulator</title>
@@ -13,7 +13,7 @@
 
     <!-- PWA Configuration -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#f59e0b">
+    <meta name="theme-color" content="#030303">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Fund Wars">
@@ -75,6 +75,10 @@
         --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
         --safe-area-inset-left: env(safe-area-inset-left, 0px);
         --safe-area-inset-right: env(safe-area-inset-right, 0px);
+      }
+
+      * {
+        touch-action: manipulation;
       }
 
       body {
@@ -298,6 +302,14 @@
       ::selection {
         background: var(--terminal-accent);
         color: var(--terminal-bg);
+      }
+
+      /* Mobile Typography - ensure readability on small screens */
+      @media (max-width: 768px) {
+        .font-mono {
+          font-size: max(13px, 0.8125rem);
+          line-height: 1.6;
+        }
       }
 
       /* Safe Area Utility Classes */

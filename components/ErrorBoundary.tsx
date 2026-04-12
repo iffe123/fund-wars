@@ -10,10 +10,10 @@ interface State {
   errorInfo: ErrorInfo | null;
 }
 
-class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundary extends Component<Props, State & { rebootAttempts: number }> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false, error: null, errorInfo: null, rebootAttempts: 0 };
   }
 
   static getDerivedStateFromError(error: Error): State {
@@ -26,7 +26,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
+    this.setState(prev => ({ hasError: false, error: null, errorInfo: null, rebootAttempts: prev.rebootAttempts + 1 }));
     window.location.reload();
   };
 
@@ -74,8 +74,20 @@ class ErrorBoundary extends Component<Props, State> {
               </button>
             </div>
 
+            {this.state.rebootAttempts >= 2 && (
+              <p className="text-gray-500 font-mono text-xs mt-4">
+                This appears to be a bug, not corrupted data.
+                <a
+                  href={`mailto:support@fundwars.app?subject=Bug%20Report&body=Error:%20${encodeURIComponent(this.state.error?.message || 'Unknown')}`}
+                  className="text-amber-400 underline ml-1"
+                >
+                  Report this issue
+                </a>
+              </p>
+            )}
+
             <div className="text-slate-400 text-xs mt-6">
-              If this error persists, try clearing your browser cache or using Guest Mode.
+              If this error persists, try clearing your browser cache and try again later.
             </div>
           </div>
         </div>

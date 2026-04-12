@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TerminalButton, TerminalPanel } from './TerminalUI';
 import { useHaptic } from '../hooks/useHaptic';
 import type { CompetitiveDeal, RivalFund, StatChanges, PortfolioCompany, VendettaPhase } from '../types';
+import { Z_INDEX } from '../constants/zIndex';
 import { DealType } from '../types';
 import { RIVAL_FUNDS, RIVAL_BID_STRATEGIES, HUNTER_WIN_TAUNTS, HUNTER_LOSS_REACTIONS, RIVAL_TAUNTS } from '../constants';
 import { getVendettaPhase, VENDETTA_BEHAVIORS } from '../utils/rivalAI';
@@ -474,7 +475,7 @@ const CompetitiveAuctionModal: React.FC<CompetitiveAuctionModalProps> = ({
   const highestVendetta = rivals.reduce((max, r) => Math.max(max, r.fund.vendetta ?? 0), 0);
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-sm p-2 md:p-4">
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center backdrop-blur-sm p-2 md:p-4" style={{ zIndex: Z_INDEX.modal }} role="dialog" aria-modal="true" aria-label="Competitive Auction">
       <div className="w-full max-w-2xl border-2 border-red-500 bg-slate-900 shadow-[0_0_50px_rgba(239,68,68,0.4)] max-h-[95vh] overflow-y-auto">
         
         <div className="bg-red-500 text-black px-3 py-2 font-bold flex justify-between items-center sticky top-0 z-10">

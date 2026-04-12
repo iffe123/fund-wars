@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { TerminalButton, TerminalPanel } from './TerminalUI';
 import type { PortfolioCompany, CompanyStatus } from '../types';
+import { Z_INDEX } from '../constants/zIndex';
+import { formatCurrency } from '../utils/formatters';
 
 interface CommandAction {
   label: string;
@@ -19,12 +21,7 @@ interface PortfolioCommandCenterProps {
 }
 
 // Helper to format money values
-const formatMoney = (value: number): string => {
-  if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
-  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-  if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
-  return `$${value.toFixed(0)}`;
-};
+const formatMoney = (value: number): string => formatCurrency(value, true);
 
 // KPI Component
 const KPI: React.FC<{
@@ -218,7 +215,7 @@ const PortfolioCommandCenter: React.FC<PortfolioCommandCenterProps> = ({ isOpen,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: Z_INDEX.modal }} role="dialog" aria-modal="true" aria-label="Portfolio Command Center">
       <div className="w-full max-w-6xl">
         <TerminalPanel title="PORTFOLIO_COMMAND_CENTER" className="h-auto">
           <div className="p-4 space-y-4">

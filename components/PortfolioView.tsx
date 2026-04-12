@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
 import type { PortfolioCompany, PortfolioAction, PlayerStats, CompanyStatus, DealPhase, LeverageModel, ManagementActionType } from '../types';
 import { MARKET_VOLATILITY_STYLES } from '../constants';
+import { formatCurrency } from '../utils/formatters';
 import { TerminalButton, TerminalPanel, AsciiProgress, Badge } from './TerminalUI';
 import { useGame } from '../contexts/GameContext';
 import AuctionModal from './AuctionModal';
@@ -58,7 +59,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
   const isMarketPanic = marketVolatility === 'PANIC' || marketVolatility === 'CREDIT_CRUNCH';
 
   // Memoize formatting functions
-  const formatMoney = useCallback((val: number) => `$${(val / 1000000).toFixed(1)}M`, []);
+  const formatMoney = useCallback((val: number) => formatCurrency(val, true), []);
   const formatPercent = useCallback((val: number) => `${(val * 100).toFixed(1)}%`, []);
 
   // Helper: Get company's deal phase (with backward compatibility)

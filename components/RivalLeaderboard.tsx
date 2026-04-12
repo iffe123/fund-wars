@@ -165,6 +165,20 @@ const RivalLeaderboard: React.FC<RivalLeaderboardProps> = ({ rivalFunds, playerS
     return `$${size.toFixed(0)}`;
   };
 
+  const hasCompletedDeal = playerStats.portfolio.length > 0 || (playerStats.completedExits?.length ?? 0) > 0;
+
+  if (!hasCompletedDeal) {
+    return (
+      <TerminalPanel title="FUND_RANKINGS" className={className}>
+        <div className="flex items-center justify-center h-full min-h-[200px]">
+          <p className="text-gray-500 font-mono text-sm text-center py-8 px-4">
+            Complete your first deal to see fund rankings.
+          </p>
+        </div>
+      </TerminalPanel>
+    );
+  }
+
   return (
     <TerminalPanel title="FUND_RANKINGS" className={className}>
       <div className="p-2">
