@@ -97,6 +97,18 @@
         -webkit-touch-callout: none;
       }
 
+      /* Belt-and-braces: force Share Tech Mono on the whole React tree.
+         Tailwind v4's preflight sets html to var(--default-font-family)
+         which resolves to the sans stack; while body has its own mono
+         rule, some browser/cascade-layer edge cases can still show sans
+         on unclassed descendants. Declaring mono directly on #root and
+         its descendants closes that gap without touching any component
+         classes. Elements with an explicit font-family class (font-mono,
+         font-terminal, font-sans, etc.) still override normally. */
+      #root {
+        font-family: 'Share Tech Mono', monospace;
+      }
+
       /* Terminal Scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
