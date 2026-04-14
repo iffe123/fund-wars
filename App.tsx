@@ -298,6 +298,7 @@ const App: React.FC = () => {
     : false;
 
   // --- KEYBOARD SHORTCUTS ---
+  const hasPriorityEvent = !!rpgState.eventQueue.priorityEvent;
   useEffect(() => {
     if (!bootComplete || !playerStats) return;
 
@@ -306,12 +307,15 @@ const App: React.FC = () => {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
 
-      // Number keys 1-5 switch tabs (desktop)
-      if (e.key === '1') { setActiveMobileTab('WORKSPACE'); setActiveTab('workspace'); }
-      if (e.key === '2') { setActiveMobileTab('ASSETS'); setActiveTab('assets'); }
-      if (e.key === '3') { setActiveMobileTab('DEALS'); setActiveTab('deals'); }
-      if (e.key === '4') { setActiveMobileTab('RIVALS'); setActiveTab('rivals'); }
-      if (e.key === '5' && founderUnlocked) { setActiveMobileTab('FOUNDER'); setActiveTab('founder'); }
+      // Number keys 1-5 switch tabs — but when a priority event is on screen,
+      // digits belong to its choice hotkeys (handled by EventCard). Yield.
+      if (!hasPriorityEvent) {
+        if (e.key === '1') { setActiveMobileTab('WORKSPACE'); setActiveTab('workspace'); }
+        if (e.key === '2') { setActiveMobileTab('ASSETS'); setActiveTab('assets'); }
+        if (e.key === '3') { setActiveMobileTab('DEALS'); setActiveTab('deals'); }
+        if (e.key === '4') { setActiveMobileTab('RIVALS'); setActiveTab('rivals'); }
+        if (e.key === '5' && founderUnlocked) { setActiveMobileTab('FOUNDER'); setActiveTab('founder'); }
+      }
 
       // 'a' for Activity Feed toggle
       if (e.key === 'a' && !e.ctrlKey && !e.metaKey) {
@@ -337,7 +341,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyboardShortcuts);
     return () => window.removeEventListener('keydown', handleKeyboardShortcuts);
-  }, [bootComplete, playerStats, founderUnlocked, setActiveMobileTab, setActiveTab, setShowActivityFeed, setShowPortfolioDashboard, handleStatsClick]);
+  }, [bootComplete, playerStats, hasPriorityEvent, founderUnlocked, setActiveMobileTab, setActiveTab, setShowActivityFeed, setShowPortfolioDashboard, handleStatsClick]);
 
   const currentScenario = activeScenario || SCENARIOS?.[0] || { id: 0, title: 'Loading...', description: '', choices: [], structureOptions: [] };
   const scenarioChoices = (currentScenario.choices && currentScenario.choices.length > 0)

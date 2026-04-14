@@ -5,7 +5,7 @@
  * This is the core building block of the event-driven RPG experience.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import type { StoryEvent, EventChoice } from '../types/rpgEvents';
 import type { PlayerStats, NPC } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -169,6 +169,25 @@ const EventCard: React.FC<EventCardProps> = ({
   const style = stakeStyles[event.stakes] || stakeStyles.LOW;
   const categoryIcon = categoryIcons[event.category] || 'fa-circle-info';
 
+  // Only priority events consume digit keys, and only while the card is
+  // expanded and we're not on the confirm modal. Bound to the first nine
+  // AVAILABLE choices (blocked choices are skipped, matching their grey state).
+  const keyboardChoices = useMemo(() => {
+    if (event.type !== 'PRIORITY') return [] as EventChoice[];
+    return event.choices
+      .filter(c => checkChoiceAvailability(c, playerStats, npcs, worldFlags).available)
+      .slice(0, 9);
+  }, [event.type, event.choices, playerStats, npcs, worldFlags]);
+
+  const choiceHotkey = useCallback(
+    (choiceId: string): string | null => {
+      if (event.type !== 'PRIORITY') return null;
+      const idx = keyboardChoices.findIndex(c => c.id === choiceId);
+      return idx >= 0 ? String(idx + 1) : null;
+    },
+    [event.type, keyboardChoices]
+  );
+
   const handleChoiceClick = useCallback((choice: EventChoice) => {
     if (choice.requiresConfirmation) {
       setSelectedChoice(choice.id);
@@ -191,6 +210,41 @@ const EventCard: React.FC<EventCardProps> = ({
     setShowConfirm(false);
     setSelectedChoice(null);
   }, []);
+
+  // Keyboard hotkeys — only while a priority event card is expanded.
+  // Digits map to the Nth available choice; Esc cancels the confirm modal.
+  useEffect(() => {
+    if (event.type !== 'PRIORITY' || !isExpanded) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (showConfirm) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleConfirm();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          handleCancel();
+        }
+        return;
+      }
+
+      const digit = parseInt(e.key, 10);
+      if (!Number.isNaN(digit) && digit >= 1 && digit <= keyboardChoices.length) {
+        const choice = keyboardChoices[digit - 1];
+        if (choice) {
+          e.preventDefault();
+          handleChoiceClick(choice);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [event.type, isExpanded, showConfirm, keyboardChoices, handleChoiceClick, handleConfirm, handleCancel]);
 
   // Get source NPC if exists
   const sourceNpc = event.sourceNpcId ? npcs.find(n => n.id === event.sourceNpcId) : null;
@@ -383,6 +437,7 @@ const EventCard: React.FC<EventCardProps> = ({
               const alignment = choice.alignment || 'NEUTRAL';
               const alignStyle = alignmentStyles[alignment];
               const impactPreview = describeChoiceImpact(choice);
+              const hotkey = available ? choiceHotkey(choice.id) : null;
 
               return (
                 <button
@@ -396,7 +451,17 @@ const EventCard: React.FC<EventCardProps> = ({
                   `}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="font-medium break-words">{choice.label}</span>
+                    <span className="font-medium break-words flex items-baseline gap-2">
+                      {hotkey && (
+                        <span
+                          aria-hidden="true"
+                          className="px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded text-[10px] tabular-nums shrink-0"
+                        >
+                          {hotkey}
+                        </span>
+                      )}
+                      <span>{choice.label}</span>
+                    </span>
                     <div className="flex items-center gap-2 text-xs">
                       {choice.skillCheck && (
                         <span className="px-1.5 py-0.5 bg-yellow-900/50 text-yellow-400 rounded">
