@@ -7,6 +7,7 @@
   --color-terminal-bg-card: var(--terminal-bg-card);
   --color-terminal-text: var(--terminal-text);
   --color-terminal-text-muted: var(--terminal-text-muted);
+  --color-terminal-text-subtle: var(--terminal-text-subtle);
   --color-terminal-border: var(--terminal-border);
   --color-terminal-border-highlight: var(--terminal-border-highlight);
   --color-terminal-accent: var(--terminal-accent);
@@ -18,6 +19,7 @@
 
   /* Font Family */
   --font-terminal: 'Share Tech Mono', monospace;
+  --font-prose: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
   /* Custom Animations */
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
@@ -163,4 +165,44 @@
 
 .terminal-focus:focus-visible {
   box-shadow: 0 0 0 2px #05070a, 0 0 0 4px rgba(34, 211, 238, 0.8);
+}
+
+/* Choice-button affordance used by the active decision card.
+   Gives the "this is the thing you click" CTAs real raised-button feedback. */
+.choice-btn {
+  position: relative;
+  transition: transform 120ms ease, border-color 160ms ease,
+              background-color 160ms ease, box-shadow 160ms ease;
+  cursor: pointer;
+}
+.choice-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+.choice-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.choice-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.choice-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #05070a, 0 0 0 4px rgba(34, 211, 238, 0.9);
+}
+
+/* Ambient text — for news ticker, background activity, and other chatter
+   that should read as atmosphere instead of competing with the CTA. */
+.ambient-text {
+  color: var(--terminal-text-subtle);
+  opacity: 0.85;
+}
+.ambient-text:hover {
+  opacity: 1;
 }

@@ -101,31 +101,38 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         />
       )}
 
-      {/* Stress Warning Banner */}
-      {stats.stress >= STRESS_THRESHOLDS.WARNING && (
-        <div
-          className={`
-            px-4 py-2 flex items-center gap-3 text-xs font-mono uppercase tracking-wider border-b
-            ${stats.stress >= STRESS_THRESHOLDS.CRITICAL
-              ? 'bg-red-950/60 border-red-800/50 text-red-300 animate-pulse'
-              : 'bg-amber-950/40 border-amber-800/40 text-amber-300'
-            }
-          `}
-          role="alert"
-        >
-          <i className={`fas ${stats.stress >= STRESS_THRESHOLDS.CRITICAL ? 'fa-triangle-exclamation' : 'fa-brain'} text-sm`}></i>
-          <span className="font-bold">
-            {stats.stress >= STRESS_THRESHOLDS.BREAKDOWN
-              ? 'BURNOUT IMMINENT — Take time off or face breakdown!'
-              : stats.stress >= STRESS_THRESHOLDS.CRITICAL
-              ? 'CRITICAL STRESS — Performance penalties active. Manage your wellbeing.'
-              : 'HIGH STRESS WARNING — Consider lifestyle actions to reduce stress.'}
-          </span>
-          <span className="ml-auto tabular-nums font-bold">{stats.stress}%</span>
-        </div>
-      )}
+      {/* Stress Warning Banner — escalates from subtle strip to full-width urgent alert */}
+      {stats.stress >= STRESS_THRESHOLDS.WARNING && (() => {
+        const isBreakdown = stats.stress >= STRESS_THRESHOLDS.BREAKDOWN;
+        const isCritical = stats.stress >= STRESS_THRESHOLDS.CRITICAL;
+        return (
+          <div
+            className={`
+              flex items-center gap-3 border-b-2
+              ${isBreakdown
+                ? 'burnout-alert px-4 py-3 border-red-400 text-red-50'
+                : isCritical
+                ? 'px-4 py-2.5 bg-red-950/70 border-red-700 text-red-100'
+                : 'px-4 py-2 bg-amber-950/50 border-amber-700 text-amber-100'
+              }
+            `}
+            role="alert"
+            aria-live={isCritical ? 'assertive' : 'polite'}
+          >
+            <i className={`fas ${isCritical ? 'fa-triangle-exclamation' : 'fa-brain'} text-base shrink-0 ${isBreakdown ? 'animate-pulse' : ''}`}></i>
+            <span className={`font-bold font-prose leading-snug ${isBreakdown ? 'text-sm md:text-base' : 'text-[13px] uppercase tracking-wider'}`}>
+              {isBreakdown
+                ? 'Burnout imminent — take time off or face a breakdown.'
+                : isCritical
+                ? 'Critical Stress — performance penalties active. Manage your wellbeing.'
+                : 'High Stress Warning — consider lifestyle actions to reduce stress.'}
+            </span>
+            <span className="ml-auto tabular-nums font-bold font-mono text-sm">{stats.stress}%</span>
+          </div>
+        );
+      })()}
 
-      {/* Stats Header */}
+      {/* Stats Header — canonical home for every status number in the app */}
       <div
         onClick={handleGeneralStatsClick}
         onKeyDown={(event) => {
@@ -137,8 +144,8 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
         className={`
           h-16 bg-gradient-to-b from-slate-800 to-slate-900
           border-b border-slate-600 flex items-center px-4 justify-between shrink-0
-          ${isPanic ? 'animate-pulse bg-red-950/20 border-red-900/50' : ''}
-          cursor-pointer hover:bg-slate-700/50 transition-colors active:bg-slate-700 terminal-focus
+          ${isPanic ? 'animate-pulse bg-red-950/30 border-red-800' : ''}
+          cursor-pointer hover:bg-slate-700/60 transition-colors active:bg-slate-700 terminal-focus
         `}
         role="button"
         tabIndex={0}
@@ -149,12 +156,12 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
       <div className="flex md:hidden items-center w-full justify-between gap-3">
         {/* Bank Balance */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-emerald-950/50 border border-emerald-800/50 flex items-center justify-center">
-            <i className="fas fa-wallet text-emerald-400 text-sm"></i>
+          <div className="w-8 h-8 rounded-lg bg-emerald-950/60 border border-emerald-700 flex items-center justify-center">
+            <i className="fas fa-wallet text-emerald-300 text-sm"></i>
           </div>
           <div className="flex flex-col">
-            <span className="text-[11px] text-slate-400 uppercase tracking-wider font-bold">Bank</span>
-            <span className="text-emerald-400 font-bold text-sm tabular-nums">{formatMoney(stats.personalFinances?.bankBalance ?? stats.cash)}</span>
+            <span className="text-[11px] text-slate-200 uppercase tracking-wider font-bold">Bank</span>
+            <span className="text-emerald-300 font-bold text-sm tabular-nums">{formatMoney(stats.personalFinances?.bankBalance ?? stats.cash)}</span>
           </div>
         </div>
 
@@ -214,53 +221,68 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
 
       {/* DESKTOP VIEW (>= 768px) — Simplified: only core metrics that matter */}
       <div className="hidden md:flex items-center gap-3 text-xs font-mono w-full justify-between">
-        {/* Left - Identity & Cash */}
-        <div className="flex items-center gap-3">
+        {/* Left - Identity & Money (grouped: all cash-related in one cluster) */}
+        <div className="flex items-center gap-2">
           {/* Level Badge */}
-          <div className="px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-800/40">
-            <span className="text-amber-300 text-xs font-bold uppercase tracking-wider">{stats.level}</span>
+          <div className="px-3 py-1.5 rounded-lg bg-amber-950/50 border border-amber-700">
+            <span className="text-amber-200 text-xs font-bold uppercase tracking-wider">{stats.level}</span>
           </div>
+
+          <span className="w-px h-6 bg-slate-700" aria-hidden="true" />
 
           {/* Bank Balance */}
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all duration-300 ${
-            cashFlash === 'up' ? 'bg-emerald-900/60 border-emerald-500/60 scale-105' :
-            cashFlash === 'down' ? 'bg-red-900/40 border-red-600/50 scale-105' :
-            'bg-emerald-950/40 border-emerald-700/40'
-          }`} title="Your bank account. Earn through salary, bonuses, and carry.">
-            <i className={`fas fa-wallet text-sm ${cashFlash === 'down' ? 'text-red-400' : 'text-emerald-400'}`}></i>
-            <span className={`font-bold tabular-nums text-sm ${cashFlash === 'up' ? 'text-emerald-200' : cashFlash === 'down' ? 'text-red-300' : 'text-emerald-300'}`}>{formatCurrency(stats.personalFinances?.bankBalance ?? stats.cash)}</span>
+            cashFlash === 'up' ? 'bg-emerald-900/70 border-emerald-400 scale-105' :
+            cashFlash === 'down' ? 'bg-red-900/60 border-red-400 scale-105' :
+            'bg-emerald-950/50 border-emerald-700'
+          }`} title="Your personal bank account. Earned through salary, bonuses, and carry.">
+            <i className={`fas fa-wallet text-sm ${cashFlash === 'down' ? 'text-red-300' : 'text-emerald-300'}`}></i>
+            <span className="sr-only">Bank balance:</span>
+            <span className={`font-bold tabular-nums text-sm ${cashFlash === 'up' ? 'text-emerald-100' : cashFlash === 'down' ? 'text-red-100' : 'text-emerald-100'}`}>{formatCurrency(stats.personalFinances?.bankBalance ?? stats.cash)}</span>
             {cashFlash && (
-              <i className={`fas ${cashFlash === 'up' ? 'fa-arrow-up text-emerald-400' : 'fa-arrow-down text-red-400'} text-[10px] animate-bounce`}></i>
+              <i className={`fas ${cashFlash === 'up' ? 'fa-arrow-up text-emerald-300' : 'fa-arrow-down text-red-300'} text-[10px] animate-bounce`} aria-hidden="true"></i>
             )}
           </div>
 
           {/* Dry Powder (fund capital) */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/40 border border-cyan-700/30" title="Fund capital available for new deals.">
-            <i className="fas fa-briefcase text-cyan-400 text-sm"></i>
-            <span className="text-cyan-200 font-bold tabular-nums text-sm">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/50 border border-cyan-700" title="Fund capital available for new deals.">
+            <i className="fas fa-briefcase text-cyan-300 text-sm"></i>
+            <span className="sr-only">Dry powder:</span>
+            <span className="text-cyan-100 font-bold tabular-nums text-sm">
               {formatMoney(stats.fundFinances?.dryPowder || 50000000)}
             </span>
           </div>
 
           {/* Debt warning - only show if in debt */}
           {stats.loanBalance > 0 && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-950/40 border border-red-800/40" title="Outstanding debt — pay this off to avoid interest charges.">
-              <i className="fas fa-skull text-red-400 text-xs"></i>
-              <span className="text-red-300 font-bold tabular-nums text-sm">-{formatMoney(stats.loanBalance)}</span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-950/60 border border-red-700" title="Outstanding debt — pay this off to avoid interest charges.">
+              <i className="fas fa-skull text-red-300 text-xs"></i>
+              <span className="sr-only">Debt:</span>
+              <span className="text-red-100 font-bold tabular-nums text-sm">-{formatMoney(stats.loanBalance)}</span>
             </div>
           )}
         </div>
 
-        {/* Center - Stress & Reputation (the two things you manage) */}
-        <div className="flex items-center gap-3">
+        {/* Center - Wellbeing cluster (stress + reputation, the levers you manage) */}
+        <div className="flex items-center gap-2">
           {/* Stress */}
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-300 ${
-            stressFlash === 'up' ? 'bg-red-900/40 border-red-600/50 scale-105' :
-            stressFlash === 'down' ? 'bg-emerald-900/40 border-emerald-600/50 scale-105' :
-            'bg-slate-800/50 border-slate-600/40'
-          }`} title="Stress — builds from overwork. At 100% you burn out.">
-            <i className={`fas fa-brain ${getStressColor(stats.stress)} text-sm ${stressFlash === 'up' ? 'animate-pulse' : ''}`}></i>
-            <div className="w-24 h-2.5 bg-slate-700 rounded-full overflow-hidden">
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-300 ${
+              stressFlash === 'up' ? 'bg-red-900/60 border-red-400 scale-105' :
+              stressFlash === 'down' ? 'bg-emerald-900/60 border-emerald-400 scale-105' :
+              'bg-slate-800/60 border-slate-600'
+            }`}
+            title="Stress — builds from overwork. At 100% you burn out."
+            aria-label={`Stress: ${stats.stress}%`}
+          >
+            <i className={`fas fa-brain ${getStressColor(stats.stress)} text-sm ${stressFlash === 'up' ? 'animate-pulse' : ''}`} aria-hidden="true"></i>
+            <div
+              className="w-24 h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700"
+              role="progressbar"
+              aria-valuenow={stats.stress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
               <div
                 className={`h-full ${getStressBarColor(stats.stress)} transition-all duration-500`}
                 style={{ width: `${Math.min(100, stats.stress)}%` }}
@@ -270,35 +292,42 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
               {stats.stress}%
             </span>
             {stressFlash && (
-              <i className={`fas ${stressFlash === 'up' ? 'fa-arrow-up text-red-400' : 'fa-arrow-down text-emerald-400'} text-[10px] animate-bounce`}></i>
+              <i className={`fas ${stressFlash === 'up' ? 'fa-arrow-up text-red-300' : 'fa-arrow-down text-emerald-300'} text-[10px] animate-bounce`} aria-hidden="true"></i>
             )}
           </div>
 
           {/* Reputation */}
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all duration-300 ${
-            repFlash === 'up' ? 'bg-blue-900/60 border-blue-500/60 scale-105' :
-            repFlash === 'down' ? 'bg-red-900/40 border-red-600/50 scale-105' :
-            'bg-blue-950/40 border-blue-700/40'
-          }`} title="Your standing in the industry. Higher = better deals and contacts.">
-            <i className={`fas fa-star text-sm ${repFlash === 'up' ? 'text-yellow-400' : repFlash === 'down' ? 'text-red-400' : 'text-blue-400'}`}></i>
-            <span className={`font-bold tabular-nums text-sm ${repFlash === 'up' ? 'text-yellow-200' : repFlash === 'down' ? 'text-red-300' : 'text-blue-200'}`}>{stats.reputation}</span>
+          <div
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all duration-300 ${
+              repFlash === 'up' ? 'bg-blue-900/70 border-blue-400 scale-105' :
+              repFlash === 'down' ? 'bg-red-900/60 border-red-400 scale-105' :
+              'bg-blue-950/50 border-blue-700'
+            }`}
+            title="Your standing in the industry. Higher = better deals and contacts."
+            aria-label={`Reputation: ${stats.reputation}`}
+          >
+            <i className={`fas fa-star text-sm ${repFlash === 'up' ? 'text-amber-300' : repFlash === 'down' ? 'text-red-300' : 'text-blue-300'}`} aria-hidden="true"></i>
+            <span className={`font-bold tabular-nums text-sm ${repFlash === 'up' ? 'text-amber-100' : repFlash === 'down' ? 'text-red-100' : 'text-blue-100'}`}>{stats.reputation}</span>
             {repFlash && (
-              <i className={`fas ${repFlash === 'up' ? 'fa-arrow-up text-emerald-400' : 'fa-arrow-down text-red-400'} text-[10px] animate-bounce`}></i>
+              <i className={`fas ${repFlash === 'up' ? 'fa-arrow-up text-emerald-300' : 'fa-arrow-down text-red-300'} text-[10px] animate-bounce`} aria-hidden="true"></i>
             )}
           </div>
         </div>
 
         {/* Right - Market & Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* Market Status */}
-          <div className={`
-            flex items-center gap-2 px-3 py-1.5 rounded-lg border
-            ${marketVolatility === 'NORMAL' ? 'bg-slate-800/40 border-slate-600/40' : ''}
-            ${marketVolatility === 'BULL_RUN' ? 'bg-emerald-950/40 border-emerald-700/40' : ''}
-            ${marketVolatility === 'CREDIT_CRUNCH' ? 'bg-red-950/40 border-red-700/40' : ''}
-            ${marketVolatility === 'PANIC' ? 'bg-amber-950/40 border-amber-700/40 animate-pulse' : ''}
-          `}>
-            <i className={`fas ${mktStyle.icon} ${mktStyle.color} ${marketVolatility !== 'NORMAL' ? 'animate-pulse' : ''}`}></i>
+          <div
+            className={`
+              flex items-center gap-2 px-3 py-1.5 rounded-lg border
+              ${marketVolatility === 'NORMAL' ? 'bg-slate-800/60 border-slate-600' : ''}
+              ${marketVolatility === 'BULL_RUN' ? 'bg-emerald-950/50 border-emerald-700' : ''}
+              ${marketVolatility === 'CREDIT_CRUNCH' ? 'bg-red-950/50 border-red-700' : ''}
+              ${marketVolatility === 'PANIC' ? 'bg-amber-950/50 border-amber-700 animate-pulse' : ''}
+            `}
+            aria-label={`Market: ${marketVolatility.replace('_', ' ')}`}
+          >
+            <i className={`fas ${mktStyle.icon} ${mktStyle.color} ${marketVolatility !== 'NORMAL' ? 'animate-pulse' : ''}`} aria-hidden="true"></i>
             <span className={`text-xs uppercase tracking-widest font-bold ${mktStyle.color}`}>
               {marketVolatility.replace('_', ' ')}
             </span>
@@ -306,9 +335,13 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
 
           {/* Audit Risk - only show when dangerous (>30%) */}
           {stats.auditRisk > 30 && (
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${stats.auditRisk >= 50 ? 'bg-red-950/40 border-red-800/40 animate-pulse' : 'bg-amber-950/30 border-amber-800/30'}`} title="Audit Risk — regulators are watching you.">
-              <i className={`fas fa-magnifying-glass ${stats.auditRisk >= 50 ? 'text-red-400' : 'text-amber-400'} text-xs`}></i>
-              <span className={`text-xs font-bold ${stats.auditRisk >= 50 ? 'text-red-300' : 'text-amber-300'}`}>{stats.auditRisk}%</span>
+            <div
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${stats.auditRisk >= 50 ? 'bg-red-950/60 border-red-700 animate-pulse' : 'bg-amber-950/50 border-amber-700'}`}
+              title="Audit Risk — regulators are watching you."
+              aria-label={`Audit risk: ${stats.auditRisk}%`}
+            >
+              <i className={`fas fa-magnifying-glass ${stats.auditRisk >= 50 ? 'text-red-300' : 'text-amber-300'} text-xs`} aria-hidden="true"></i>
+              <span className={`text-xs font-bold ${stats.auditRisk >= 50 ? 'text-red-100' : 'text-amber-100'}`}>{stats.auditRisk}%</span>
             </div>
           )}
 
@@ -319,12 +352,12 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
                 e.stopPropagation();
                 onOpenTransparency();
               }}
-              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/40 border border-slate-600/40 hover:bg-slate-700/40 transition-colors"
+              className="terminal-focus flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/60 border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-colors"
               title="View all stats & rules"
               aria-label="Open transparency & rules"
             >
-              <i className="fas fa-eye text-slate-300 text-[11px]"></i>
-              <span className="text-[11px] uppercase tracking-widest font-bold text-slate-300">More</span>
+              <i className="fas fa-eye text-slate-200 text-[11px]" aria-hidden="true"></i>
+              <span className="text-[11px] uppercase tracking-widest font-bold text-slate-100">More</span>
             </button>
           )}
         </div>
