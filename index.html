@@ -40,34 +40,53 @@
     <meta http-equiv="Permissions-Policy" content="identity-credentials-get=*">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <!--
+      Terminal mono for labels/numbers/UI chrome; Inter as the humanist prose
+      partner for event narration, advisor dialogue, and longer copy.
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
       :root {
-        /* Core Terminal Colors - IMPROVED CONTRAST */
+        /* Core Terminal Colors - WCAG AA tuned.
+           Body text (#e6ebf2) on app bg (#0a0f14) ≈ 13.3:1.
+           Muted text (#b8c1cc) on app bg (#0a0f14) ≈ 8.0:1  (was 4.4:1).
+           Subtle text (#94a3b8) on app bg ≈ 5.6:1 (reserved for ambient).
+        */
         --terminal-bg: #0a0f14;
         --terminal-bg-elevated: #121a24;
         --terminal-bg-card: #1a2332;
-        --terminal-text: #f0f4f8;
-        --terminal-text-muted: #9ca3af;
-        --terminal-border: #374151;
-        --terminal-border-highlight: #6b7280;
+        --terminal-text: #e6ebf2;
+        --terminal-text-muted: #b8c1cc;
+        --terminal-text-subtle: #94a3b8;
+        --terminal-border: #4b5563;
+        --terminal-border-highlight: #94a3b8;
 
-        /* Accent Colors */
-        --terminal-accent: #f59e0b;
-        --terminal-accent-glow: rgba(245, 158, 11, 0.4);
-        --terminal-green: #10b981;
-        --terminal-green-glow: rgba(16, 185, 129, 0.3);
-        --terminal-red: #ef4444;
-        --terminal-red-glow: rgba(239, 68, 68, 0.3);
-        --terminal-blue: #3b82f6;
-        --terminal-blue-glow: rgba(59, 130, 246, 0.3);
-        --terminal-purple: #a855f7;
-        --terminal-cyan: #06b6d4;
+        /* Semantic color grammar — each color is a signal, not decoration.
+           Cyan   -> neutral info / system chrome
+           Amber  -> warning / advisor / pay-attention
+           Green  -> positive outcomes / gains / success
+           Red    -> negative outcomes / threats / stress
+           Purple -> Machiavelli character ONLY
+        */
+        --terminal-accent: #fbbf24;          /* amber — warnings/advisor */
+        --terminal-accent-glow: rgba(251, 191, 36, 0.45);
+        --terminal-green: #34d399;           /* lifted from #10b981 for readability */
+        --terminal-green-glow: rgba(52, 211, 153, 0.35);
+        --terminal-red: #f87171;             /* lifted from #ef4444 for readability */
+        --terminal-red-glow: rgba(248, 113, 113, 0.35);
+        --terminal-blue: #60a5fa;
+        --terminal-blue-glow: rgba(96, 165, 250, 0.3);
+        --terminal-purple: #c084fc;          /* Machiavelli */
+        --terminal-cyan: #22d3ee;
+
+        /* Typography */
+        --font-mono: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+        --font-prose: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
         /* Gradient Presets */
-        --gradient-gold: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        --gradient-gold: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+        --gradient-success: linear-gradient(135deg, #34d399 0%, #059669 100%);
+        --gradient-danger: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
         --gradient-dark: linear-gradient(180deg, #0d1117 0%, #030303 100%);
 
         /* Safe Area Insets for notched devices */
@@ -82,7 +101,7 @@
       }
 
       body {
-        font-family: 'Share Tech Mono', monospace;
+        font-family: var(--font-mono);
         font-size: 16px;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
@@ -95,6 +114,18 @@
         overscroll-behavior-y: none; /* Prevent pull-to-refresh but allow scroll */
         -webkit-tap-highlight-color: transparent;
         -webkit-touch-callout: none;
+      }
+
+      /* Prose class for longer-form text (event narration, advisor dialogue).
+         Mixed case, humanist sans, 1.5 line-height for readability. */
+      .font-prose {
+        font-family: var(--font-prose);
+        letter-spacing: 0;
+        line-height: 1.55;
+      }
+      .font-mono,
+      .font-terminal {
+        font-family: var(--font-mono);
       }
 
       /* Terminal Scrollbar */
@@ -243,10 +274,17 @@
         transform: translateY(1px);
       }
 
-      /* Focus Styles */
-      .focus-ring:focus {
+      /* Focus Styles — always visible on keyboard nav, subtle on mouse click.
+         Used by .terminal-focus and is the app-wide default for buttons/links. */
+      .focus-ring:focus-visible,
+      *:focus-visible {
         outline: none;
-        box-shadow: 0 0 0 2px var(--terminal-bg), 0 0 0 4px var(--terminal-accent);
+        box-shadow: 0 0 0 2px var(--terminal-bg), 0 0 0 4px var(--terminal-cyan);
+      }
+      button:focus-visible,
+      a:focus-visible,
+      [role="button"]:focus-visible {
+        outline: none;
       }
 
       /* Gradient Borders */
@@ -309,6 +347,64 @@
         .font-mono {
           font-size: max(13px, 0.8125rem);
           line-height: 1.6;
+        }
+      }
+
+      /* Active-decision spotlight — used on the dominant event card so the
+         player's eye has somewhere to land. Subtle, not a seizure. */
+      @keyframes spotlight-pulse {
+        0%, 100% {
+          box-shadow:
+            0 0 0 1px rgba(251, 191, 36, 0.35),
+            0 0 22px rgba(251, 191, 36, 0.18),
+            0 20px 40px rgba(0, 0, 0, 0.45);
+        }
+        50% {
+          box-shadow:
+            0 0 0 1px rgba(251, 191, 36, 0.6),
+            0 0 32px rgba(251, 191, 36, 0.32),
+            0 22px 44px rgba(0, 0, 0, 0.5);
+        }
+      }
+      .spotlight-glow {
+        animation: spotlight-pulse 3.2s ease-in-out infinite;
+      }
+
+      /* Burnout alert banner — full-width urgency. */
+      @keyframes burnout-flash {
+        0%, 100% { background-color: rgba(248, 113, 113, 0.18); }
+        50%      { background-color: rgba(248, 113, 113, 0.32); }
+      }
+      .burnout-alert {
+        animation: burnout-flash 1.6s ease-in-out infinite;
+      }
+
+      /* Respect OS-level reduced motion — disables non-essential motion
+         (pulse/glow/shimmer/bounce) while keeping layout transitions snappy. */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+          scroll-behavior: auto !important;
+        }
+        .spotlight-glow,
+        .burnout-alert {
+          animation: none !important;
+        }
+        .animate-pulse,
+        .animate-pulse-glow,
+        .animate-bounce,
+        .animate-float,
+        .animate-border-glow,
+        .shimmer-bg {
+          animation: none !important;
+        }
+        .scanline,
+        .vignette {
+          display: none !important;
         }
       }
 

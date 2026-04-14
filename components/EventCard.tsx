@@ -41,29 +41,32 @@ interface EventCardProps {
   onDismiss?: () => void;
   onConsultAdvisor?: () => void;
   expanded?: boolean;
+  /** When true, this card is the dominant "active decision" on the page. */
+  isSpotlight?: boolean;
   className?: string;
 }
 
-// Urgency styling based on event stakes
+// Urgency styling based on event stakes.
+// Color grammar: red = threat/critical, amber = warning/high, cyan = neutral info, slate = ambient.
 const stakeStyles: Record<string, { border: string; badge: string; glow: string }> = {
   CRITICAL: {
-    border: 'border-red-500',
+    border: 'border-red-400/80',
     badge: 'bg-red-500 text-white',
-    glow: 'shadow-[0_0_15px_rgba(239,68,68,0.3)]',
+    glow: 'shadow-[0_0_18px_rgba(248,113,113,0.35)]',
   },
   HIGH: {
-    border: 'border-amber-500',
-    badge: 'bg-amber-500 text-black',
-    glow: 'shadow-[0_0_12px_rgba(245,158,11,0.25)]',
+    border: 'border-amber-400/80',
+    badge: 'bg-amber-400 text-black',
+    glow: 'shadow-[0_0_14px_rgba(251,191,36,0.30)]',
   },
   MEDIUM: {
-    border: 'border-blue-500',
-    badge: 'bg-blue-500 text-white',
+    border: 'border-cyan-500/70',
+    badge: 'bg-cyan-500 text-black',
     glow: '',
   },
   LOW: {
     border: 'border-slate-600',
-    badge: 'bg-slate-600 text-slate-200',
+    badge: 'bg-slate-600 text-slate-100',
     glow: '',
   },
 };
@@ -80,14 +83,16 @@ const categoryIcons: Record<string, string> = {
   OPERATIONS: 'fa-cogs',
 };
 
-// Choice alignment styling
+// Choice alignment styling — choice buttons should *look* clickable.
+// Each alignment combines a raised elevated bg, a colored border, and a
+// left accent bar so intent + affordance read instantly.
 const alignmentStyles: Record<string, string> = {
-  RUTHLESS: 'border-red-700 hover:bg-red-900/30 text-red-400',
-  DIPLOMATIC: 'border-blue-700 hover:bg-blue-900/30 text-blue-400',
-  CAUTIOUS: 'border-slate-500 hover:bg-slate-700/30 text-slate-300',
-  BOLD: 'border-amber-600 hover:bg-amber-900/30 text-amber-400',
-  ETHICAL: 'border-emerald-600 hover:bg-emerald-900/30 text-emerald-400',
-  NEUTRAL: 'border-slate-600 hover:bg-slate-800/30 text-slate-300',
+  RUTHLESS:   'border-red-500/60 bg-red-950/25 hover:bg-red-900/40 hover:border-red-400 text-red-200',
+  DIPLOMATIC: 'border-blue-500/60 bg-blue-950/25 hover:bg-blue-900/40 hover:border-blue-400 text-blue-200',
+  CAUTIOUS:   'border-slate-500/70 bg-slate-800/60 hover:bg-slate-700/70 hover:border-slate-400 text-slate-100',
+  BOLD:       'border-amber-500/70 bg-amber-950/25 hover:bg-amber-900/40 hover:border-amber-400 text-amber-200',
+  ETHICAL:    'border-emerald-500/60 bg-emerald-950/25 hover:bg-emerald-900/40 hover:border-emerald-400 text-emerald-200',
+  NEUTRAL:    'border-slate-500/70 bg-slate-800/60 hover:bg-slate-700/70 hover:border-slate-400 text-slate-100',
 };
 
 // Check if a choice is available
@@ -157,6 +162,7 @@ const EventCard: React.FC<EventCardProps> = ({
   onDismiss,
   onConsultAdvisor,
   expanded = false,
+  isSpotlight = false,
   className = '',
 }) => {
   const [isExpanded, setIsExpanded] = useState(expanded);
@@ -232,9 +238,10 @@ const EventCard: React.FC<EventCardProps> = ({
   return (
     <div
       className={`
-        border rounded-lg bg-[#090d13]/95 backdrop-blur-sm transition-all duration-300
+        border-2 rounded-lg bg-[#090d13]/95 backdrop-blur-sm transition-all duration-300
         ${style.border} ${style.glow}
-        ${isExpanded ? 'p-4' : 'p-3'}
+        ${isExpanded ? 'p-4 md:p-5' : 'p-3 md:p-4'}
+        ${isSpotlight ? 'spotlight-glow' : ''}
         ${className}
       `}
     >
@@ -247,30 +254,38 @@ const EventCard: React.FC<EventCardProps> = ({
       >
         {/* Category Icon */}
         <div className={`
-          w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border
-          ${event.type === 'PRIORITY' ? 'bg-amber-500/20 text-amber-400 border-amber-700/50' : 'bg-slate-800 text-slate-400 border-slate-700/70'}
+          rounded-lg flex items-center justify-center shrink-0 border
+          ${isSpotlight ? 'w-12 h-12 text-lg' : 'w-10 h-10'}
+          ${event.type === 'PRIORITY' ? 'bg-amber-500/20 text-amber-300 border-amber-500/60' : 'bg-slate-800 text-slate-300 border-slate-600'}
         `}>
           <i className={`fas ${categoryIcon}`}></i>
         </div>
 
         {/* Title and Hook */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-bold text-white break-words">{event.title}</h3>
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <h3 className={`
+              font-prose font-bold text-white break-words
+              ${isSpotlight ? 'text-xl md:text-2xl leading-tight' : 'text-base md:text-lg leading-snug'}
+            `}>
+              {event.title}
+            </h3>
             {event.type === 'PRIORITY' && (
-              <span className={`text-[10px] px-2 py-0.5 rounded-full ${style.badge}`}>
-                PRIORITY
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${style.badge}`}>
+                Priority
               </span>
             )}
             {event.expiresInWeeks !== undefined && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-900/50 text-red-300">
-                {event.expiresInWeeks === 0 ? 'URGENT' : `${event.expiresInWeeks}w`}
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-900/60 text-red-200 font-bold uppercase tracking-wider">
+                {event.expiresInWeeks === 0 ? 'Urgent' : `${event.expiresInWeeks}w left`}
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-400 italic">{renderMarkdown(event.hook)}</p>
+          <p className={`font-prose italic text-slate-300 ${isSpotlight ? 'text-base leading-relaxed' : 'text-sm leading-relaxed'}`}>
+            {renderMarkdown(event.hook)}
+          </p>
           {sourceNpc && (
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-400 mt-1.5 font-mono">
               <i className="fas fa-user mr-1"></i>
               {sourceNpc.name}
             </p>
@@ -279,7 +294,7 @@ const EventCard: React.FC<EventCardProps> = ({
 
         {/* Expand/Collapse */}
         <span
-          className="text-slate-500 p-1 shrink-0"
+          className="text-slate-400 p-1 shrink-0"
           aria-hidden="true"
         >
           <i className={`fas ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
@@ -289,70 +304,66 @@ const EventCard: React.FC<EventCardProps> = ({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="mt-4 space-y-4 animate-fade-in">
-          {/* Full Description */}
-          <div className="text-sm text-slate-300 whitespace-pre-line border-l-2 border-slate-700 pl-3">
+          {/* Full Description — prose font, relaxed line-height for readability */}
+          <div className="font-prose text-[15px] leading-relaxed text-slate-200 whitespace-pre-line border-l-2 border-amber-500/60 pl-4">
             {renderMarkdown(event.description)}
           </div>
 
           {/* Context if exists */}
           {event.context && (
-            <div className="text-xs text-slate-500 italic bg-slate-800/50 p-2 rounded">
-              <i className="fas fa-lightbulb mr-2 text-amber-500"></i>
+            <div className="font-prose text-sm leading-relaxed text-slate-300 italic bg-slate-800/60 p-3 rounded border border-slate-700">
+              <i className="fas fa-lightbulb mr-2 text-amber-400"></i>
               {event.context}
             </div>
           )}
 
-          {/* Machiavelli AI Advisor Panel — hide from priority/onboarding/story events (BUG A fix) */}
+          {/* Machiavelli AI Advisor Panel — dark slate bg with purple accent, NOT purple-on-purple */}
           {onConsultAdvisor && !event.isOnboarding && event.type !== 'PRIORITY' && (event.advisorHints?.machiavelli || event.stakes === 'HIGH' || event.stakes === 'CRITICAL') && (
-            <div className={`rounded-lg border overflow-hidden transition-all ${
-              event.stakes === 'HIGH' || event.stakes === 'CRITICAL'
-                ? 'border-purple-500/60 bg-gradient-to-br from-purple-900/30 to-slate-900/50'
-                : 'border-purple-700/40 bg-purple-900/20'
-            }`}>
+            <div className="rounded-lg border border-purple-500/50 bg-slate-950/70 overflow-hidden transition-all">
               {/* Advisor Header - Always Visible */}
               <button
                 onClick={() => setAdvisorExpanded(!advisorExpanded)}
-                className="w-full p-3 flex items-center justify-between hover:bg-purple-900/20 transition-colors"
+                className="w-full p-3 flex items-center justify-between hover:bg-slate-900/70 transition-colors terminal-focus"
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-purple-800/50 flex items-center justify-center border border-purple-500/50">
-                    <i className="fas fa-user-secret text-purple-400 text-sm"></i>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-purple-600/30 flex items-center justify-center border border-purple-400/60">
+                    <i className="fas fa-user-secret text-purple-200 text-sm"></i>
                   </div>
                   <div className="text-left">
-                    <div className="text-purple-400 font-bold text-xs tracking-wide">
+                    <div className="text-purple-200 font-bold text-xs tracking-wide">
                       MACHIAVELLI AI
                     </div>
-                    <div className="text-purple-300/60 text-[10px]">
-                      {event.advisorHints?.machiavelli ? 'Strategic insight available' : 'High-stakes - advice recommended'}
+                    <div className="text-slate-300 text-[11px]">
+                      {event.advisorHints?.machiavelli ? 'Strategic insight available' : 'High-stakes — advice recommended'}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {(event.stakes === 'HIGH' || event.stakes === 'CRITICAL') && (
-                    <span className="px-1.5 py-0.5 bg-purple-600/50 text-purple-200 text-[10px] rounded animate-pulse">
+                    <span className="px-2 py-0.5 bg-purple-600/50 text-purple-100 text-[10px] rounded font-bold uppercase tracking-wider animate-pulse">
                       Consult
                     </span>
                   )}
-                  <i className={`fas fa-chevron-${advisorExpanded ? 'up' : 'down'} text-purple-400 text-xs`}></i>
+                  <i className={`fas fa-chevron-${advisorExpanded ? 'up' : 'down'} text-purple-300 text-xs`}></i>
                 </div>
               </button>
 
               {/* Advisor Content - Expandable */}
               {advisorExpanded && (
-                <div className="px-3 pb-3 border-t border-purple-500/20">
+                <div className="px-3 pb-3 border-t border-purple-500/25 animate-fade-in">
                   {event.advisorHints?.machiavelli && (
-                    <p className="text-purple-200 text-xs italic mt-2 leading-relaxed">
-                      "{event.advisorHints.machiavelli}"
+                    <p className="font-prose text-purple-100 text-sm italic mt-3 leading-relaxed">
+                      &ldquo;{event.advisorHints.machiavelli}&rdquo;
                     </p>
                   )}
                   {event.advisorHints?.sarah && (
-                    <div className="mt-2 pt-2 border-t border-purple-500/20">
-                      <span className="text-blue-400 text-[10px] font-bold">Sarah:</span>{' '}
-                      <span className="text-blue-300/80 text-xs italic">"{event.advisorHints.sarah}"</span>
+                    <div className="mt-2 pt-2 border-t border-slate-800">
+                      <span className="text-blue-300 text-[11px] font-bold">Sarah:</span>{' '}
+                      <span className="font-prose text-blue-100 text-sm italic">&ldquo;{event.advisorHints.sarah}&rdquo;</span>
                     </div>
                   )}
                   {!event.advisorHints?.machiavelli && (
-                    <p className="text-purple-300/60 text-xs mt-2">
+                    <p className="text-slate-300 text-sm mt-2">
                       This is a {event.stakes.toLowerCase()}-stakes decision. Consider getting advice.
                     </p>
                   )}
@@ -362,7 +373,7 @@ const EventCard: React.FC<EventCardProps> = ({
                         e.stopPropagation();
                         onConsultAdvisor();
                       }}
-                      className="mt-2 w-full py-1.5 px-3 bg-purple-700/40 hover:bg-purple-600/40 text-purple-200 text-xs font-medium rounded border border-purple-500/40 transition-colors flex items-center justify-center gap-1.5"
+                      className="choice-btn mt-3 w-full py-2 px-3 bg-purple-700/50 hover:bg-purple-600/60 text-purple-50 text-xs font-bold uppercase tracking-wider rounded border-2 border-purple-400/60 flex items-center justify-center gap-2"
                     >
                       <i className="fas fa-comment-dots"></i>
                       Ask Machiavelli
@@ -373,10 +384,11 @@ const EventCard: React.FC<EventCardProps> = ({
             </div>
           )}
 
-          {/* Choices */}
-          <div className="space-y-2">
-            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Your Options
+          {/* Choices — CTAs; each one is a raised, clickable affordance */}
+          <div className="space-y-3">
+            <div className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.18em] flex items-center gap-2">
+              <span className="h-px w-4 bg-amber-400/70" aria-hidden="true" />
+              Your Move
             </div>
             {event.choices.map((choice) => {
               const { available, reason } = checkChoiceAvailability(choice, playerStats, npcs, worldFlags);
@@ -390,38 +402,42 @@ const EventCard: React.FC<EventCardProps> = ({
                   onClick={() => available && handleChoiceClick(choice)}
                   disabled={!available}
                   className={`
-                    terminal-focus w-full text-left min-h-[88px] p-3 rounded-lg border transition-all
-                    ${available ? alignStyle : 'border-slate-800 opacity-50 cursor-not-allowed'}
-                    ${selectedChoice === choice.id ? 'ring-2 ring-white' : ''}
+                    choice-btn w-full text-left min-h-[88px] p-4 rounded-lg border-2
+                    ${available ? alignStyle : 'border-slate-800 bg-slate-900/40 opacity-50 cursor-not-allowed'}
+                    ${selectedChoice === choice.id ? 'ring-2 ring-cyan-300' : ''}
                   `}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="font-medium break-words">{choice.label}</span>
-                    <div className="flex items-center gap-2 text-xs">
+                    <span className={`font-prose font-semibold break-words ${isSpotlight ? 'text-base md:text-lg' : 'text-sm md:text-base'}`}>
+                      {choice.label}
+                    </span>
+                    <div className="flex items-center gap-2 text-xs shrink-0">
                       {choice.skillCheck && (
-                        <span className="px-1.5 py-0.5 bg-yellow-900/50 text-yellow-400 rounded">
+                        <span className="px-2 py-0.5 bg-amber-900/60 text-amber-200 rounded font-mono uppercase tracking-wider text-[10px]">
                           <i className="fas fa-dice mr-1"></i>
                           {formatStatName(choice.skillCheck.skill)}
                         </span>
                       )}
-                      {choice.icon && <i className={`fas ${choice.icon}`}></i>}
+                      {choice.icon && <i className={`fas ${choice.icon} text-base`} aria-hidden="true"></i>}
                     </div>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">{choice.description}</p>
+                  <p className="font-prose text-[13px] leading-relaxed text-slate-300 mt-1.5">
+                    {choice.description}
+                  </p>
                   {impactPreview && (
-                    <p className="text-[11px] text-cyan-300/80 mt-2 rounded border border-cyan-900/40 bg-cyan-950/10 px-2 py-1">
+                    <p className="text-[11px] text-cyan-200 mt-2.5 rounded border border-cyan-800/60 bg-cyan-950/30 px-2 py-1 font-mono">
                       <i className="fas fa-chart-line mr-1"></i>
                       Potential impact: {impactPreview}
                     </p>
                   )}
                   {!available && reason && (
-                    <p className="text-xs text-red-500 mt-1">
+                    <p className="text-xs text-red-300 mt-2 font-mono">
                       <i className="fas fa-lock mr-1"></i>{reason}
                     </p>
                   )}
                   {choice.playerLine && available && (
-                    <p className="text-xs text-slate-500 mt-2 italic">
-                      "{choice.playerLine}"
+                    <p className="font-prose text-[13px] text-slate-400 mt-2.5 italic">
+                      &ldquo;{choice.playerLine}&rdquo;
                     </p>
                   )}
                 </button>
@@ -444,22 +460,22 @@ const EventCard: React.FC<EventCardProps> = ({
 
       {/* Confirmation Modal */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-slate-900 border border-slate-700 p-6 rounded-lg max-w-md">
-            <h4 className="text-lg font-bold text-white mb-2">Point of No Return</h4>
-            <p className="text-slate-400 mb-4">
-              This one sticks. No take-backs, no "strategic pivots," no pretending it was someone else's idea.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in">
+          <div className="bg-slate-900 border-2 border-amber-500/60 p-6 rounded-lg max-w-md shadow-[0_0_40px_rgba(251,191,36,0.25)]">
+            <h4 className="font-prose text-xl font-bold text-white mb-2">Point of No Return</h4>
+            <p className="font-prose text-slate-200 leading-relaxed mb-5">
+              This one sticks. No take-backs, no &ldquo;strategic pivots,&rdquo; no pretending it was someone else&rsquo;s idea.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={handleConfirm}
-                className="terminal-focus flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold"
+                className="choice-btn flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-black rounded font-bold uppercase tracking-widest text-sm border-2 border-amber-400"
               >
                 Confirm
               </button>
               <button
                 onClick={handleCancel}
-                className="terminal-focus flex-1 px-4 py-2 border border-slate-600 hover:border-slate-500 text-slate-300 rounded"
+                className="choice-btn flex-1 px-4 py-2.5 border-2 border-slate-500 hover:border-slate-400 text-slate-100 rounded font-bold uppercase tracking-widest text-sm"
               >
                 Cancel
               </button>
