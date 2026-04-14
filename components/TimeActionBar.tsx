@@ -56,9 +56,12 @@ const TimeActionBar: React.FC<TimeActionBarProps> = memo(({
 
           {/* Actions Remaining */}
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
+            <div
+              className="flex items-center gap-2"
+              title={`${Math.max(0, maxActions - Math.floor(actionsRemaining))} of ${maxActions} actions used this week`}
+            >
               <i className="fas fa-bolt text-amber-500 text-sm"></i>
-              <span className="text-xs text-slate-400 uppercase tracking-wider">Actions</span>
+              <span className="text-xs text-slate-400 uppercase tracking-wider">Actions Left</span>
               <span className="text-sm font-bold text-white tabular-nums">
                 {Math.floor(actionsRemaining)}/{maxActions}
               </span>

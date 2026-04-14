@@ -260,6 +260,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
             'bg-slate-800/50 border-slate-600/40'
           }`} title="Stress — builds from overwork. At 100% you burn out.">
             <i className={`fas fa-brain ${getStressColor(stats.stress)} text-sm ${stressFlash === 'up' ? 'animate-pulse' : ''}`}></i>
+            <span className="text-xs text-slate-400 uppercase tracking-wider">Stress</span>
             <div className="w-24 h-2.5 bg-slate-700 rounded-full overflow-hidden">
               <div
                 className={`h-full ${getStressBarColor(stats.stress)} transition-all duration-500`}
