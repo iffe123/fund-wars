@@ -8,7 +8,7 @@
  * rather than choosing from disconnected activity menus.
  */
 
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import type { StoryEvent, EventChoice, WeekPhase } from '../types/rpgEvents';
 import type { PlayerStats, NPC, StatChanges } from '../types';
 import type { VoiceInterjection, InnerVoiceId } from '../types/aiBlueprint';
@@ -204,6 +204,16 @@ const EventFeed: React.FC<EventFeedProps> = ({
   const [expandedEventId, setExpandedEventId] = useState<string | null>(
     priorityEvent?.id || optionalEvents[0]?.id || null
   );
+  // Background activity collapses by default when a decision is pending so it
+  // stays ambient instead of competing with the active card. Independent
+  // toggle — doesn't change visual treatment, just whether the block is open.
+  const [backgroundExpanded, setBackgroundExpanded] = useState<boolean>(!priorityEvent);
+  const hasPriority = !!priorityEvent;
+  useEffect(() => {
+    // Resync whenever a priority event arrives or clears. Preserves manual
+    // toggles within a given priority state (doesn't override per render).
+    setBackgroundExpanded(!hasPriority);
+  }, [hasPriority]);
 
   // Get phase info
   const phaseInfo = phaseDescriptions[currentPhase] || phaseDescriptions.OPTIONAL_PHASE;
@@ -327,8 +337,34 @@ const EventFeed: React.FC<EventFeedProps> = ({
         )}
       </div>
 
-      {decisionPulse && (
-        <div className="px-4 pt-4">
+      {/* Event List.
+          Ordering rule: whenever a priority event is on screen it ALWAYS
+          renders first — above the decision pulse, inner voices, optional
+          events, and background activity. The post-decision pulse and inner
+          voices are reactive content; they were previously rendered above
+          the scroll area, which pushed the active decision down. */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {/* Priority Event - Must handle first */}
+        {priorityEvent && (
+          <div className="relative">
+            <div className="absolute -left-2 top-0 bottom-0 w-1 bg-amber-500 rounded-full"></div>
+            <EventCard
+              event={priorityEvent}
+              playerStats={playerStats}
+              npcs={npcs}
+              worldFlags={worldFlags}
+              onChoice={(choice) => handleChoice(priorityEvent, choice)}
+              onConsultAdvisor={onConsultAdvisor}
+              expanded={expandedEventId === priorityEvent.id}
+              className="ml-2"
+            />
+          </div>
+        )}
+
+        {/* Decision Pulse — reactive feedback about the LAST decision.
+            Lives beneath the priority event so it doesn't push the active
+            decision below the fold. */}
+        {decisionPulse && (
           <div className={`
             rounded-lg border p-3 bg-black/30
             ${decisionPulse.tone === 'success' ? 'border-emerald-800/70 bg-emerald-950/20' : ''}
@@ -362,68 +398,49 @@ const EventFeed: React.FC<EventFeedProps> = ({
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Inner Voice Interjections */}
-      {activeInterjections.length > 0 && (
-        <div className="px-4 pt-3 space-y-2">
-          {activeInterjections.map((ij) => (
-            <div
-              key={`voice-${ij.voiceId}-${ij.tick}`}
-              className={`rounded-lg border p-3 ${getVoiceBgColor(ij.voiceId)} animate-fade-in`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <i className={`fas ${getVoiceIcon(ij.voiceId)} ${getVoiceColor(ij.voiceId)} text-sm`}></i>
-                  <span className={`text-[10px] uppercase tracking-[0.2em] font-bold ${getVoiceColor(ij.voiceId)}`}>
-                    {ij.voiceId}
-                  </span>
+        {/* Inner Voice Interjections — also reactive; sit below the decision
+            so the priority event header is always the first thing visible. */}
+        {activeInterjections.length > 0 && (
+          <div className="space-y-2">
+            {activeInterjections.map((ij) => (
+              <div
+                key={`voice-${ij.voiceId}-${ij.tick}`}
+                className={`rounded-lg border p-3 ${getVoiceBgColor(ij.voiceId)} animate-fade-in`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <i className={`fas ${getVoiceIcon(ij.voiceId)} ${getVoiceColor(ij.voiceId)} text-sm`}></i>
+                    <span className={`text-[10px] uppercase tracking-[0.2em] font-bold ${getVoiceColor(ij.voiceId)}`}>
+                      {ij.voiceId}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {onSuppressVoice && (
+                      <button
+                        onClick={() => onSuppressVoice(ij.voiceId)}
+                        className="text-[10px] text-slate-500 hover:text-red-400 transition-colors px-1"
+                        title={`Suppress ${ij.voiceId} (costs stress)`}
+                      >
+                        <i className="fas fa-volume-xmark"></i>
+                      </button>
+                    )}
+                    {onDismissInterjection && (
+                      <button
+                        onClick={() => onDismissInterjection(ij.voiceId)}
+                        className="text-slate-500 hover:text-white transition-colors px-1"
+                      >
+                        <i className="fas fa-times text-xs"></i>
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {onSuppressVoice && (
-                    <button
-                      onClick={() => onSuppressVoice(ij.voiceId)}
-                      className="text-[10px] text-slate-500 hover:text-red-400 transition-colors px-1"
-                      title={`Suppress ${ij.voiceId} (costs stress)`}
-                    >
-                      <i className="fas fa-volume-xmark"></i>
-                    </button>
-                  )}
-                  {onDismissInterjection && (
-                    <button
-                      onClick={() => onDismissInterjection(ij.voiceId)}
-                      className="text-slate-500 hover:text-white transition-colors px-1"
-                    >
-                      <i className="fas fa-times text-xs"></i>
-                    </button>
-                  )}
-                </div>
+                <p className={`mt-1.5 text-sm italic ${getVoiceColor(ij.voiceId)} opacity-90`}>
+                  &ldquo;{ij.text}&rdquo;
+                </p>
               </div>
-              <p className={`mt-1.5 text-sm italic ${getVoiceColor(ij.voiceId)} opacity-90`}>
-                &ldquo;{ij.text}&rdquo;
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Event List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-        {/* Priority Event - Must handle first */}
-        {priorityEvent && (
-          <div className="relative">
-            <div className="absolute -left-2 top-0 bottom-0 w-1 bg-amber-500 rounded-full"></div>
-            <EventCard
-              event={priorityEvent}
-              playerStats={playerStats}
-              npcs={npcs}
-              worldFlags={worldFlags}
-              onChoice={(choice) => handleChoice(priorityEvent, choice)}
-              onConsultAdvisor={onConsultAdvisor}
-              expanded={expandedEventId === priorityEvent.id}
-              className="ml-2"
-            />
+            ))}
           </div>
         )}
 
@@ -460,21 +477,40 @@ const EventFeed: React.FC<EventFeedProps> = ({
           </div>
         )}
 
-        {/* Background Messages */}
+        {/* Background Messages — folded while a decision is pending so the
+            active card stays dominant; expandable on request. */}
         {backgroundMessages.length > 0 && (
           <div className="mt-6 space-y-2 rounded-lg border border-slate-800/70 bg-black/30 p-3">
-            <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-              Background Activity
-            </div>
-            {backgroundMessages.map((msg, i) => (
-              <div
-                key={i}
-                className="text-xs text-slate-500 flex items-center gap-2 py-1"
-              >
-                <i className="fas fa-circle text-[6px] text-slate-700"></i>
-                {msg}
+            <button
+              type="button"
+              onClick={() => setBackgroundExpanded(prev => !prev)}
+              className="w-full flex items-center justify-between text-xs font-bold text-slate-600 uppercase tracking-wider hover:text-slate-400 transition-colors"
+              aria-expanded={backgroundExpanded}
+              aria-controls="event-feed-background-activity"
+            >
+              <span>
+                Background Activity
+                {!backgroundExpanded && backgroundMessages.length > 0 && (
+                  <span className="ml-2 text-slate-500 normal-case tracking-normal font-normal">
+                    ({backgroundMessages.length} muted while decision pending)
+                  </span>
+                )}
+              </span>
+              <i className={`fas ${backgroundExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-[10px]`} aria-hidden="true"></i>
+            </button>
+            {backgroundExpanded && (
+              <div id="event-feed-background-activity">
+                {backgroundMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className="text-xs text-slate-500 flex items-center gap-2 py-1"
+                  >
+                    <i className="fas fa-circle text-[6px] text-slate-700"></i>
+                    {msg}
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 
