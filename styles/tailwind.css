@@ -16,8 +16,14 @@
   --color-terminal-purple: var(--terminal-purple);
   --color-terminal-cyan: var(--terminal-cyan);
 
-  /* Font Family */
+  /* Font Family.
+     The app uses the Tailwind `font-mono` utility in 148+ places expecting
+     Share Tech Mono. Tailwind v4 defaults --font-mono to the OS mono stack
+     (ui-monospace / SF Mono / Menlo / Consolas), which renders a generic
+     system monospace and breaks the Bloomberg terminal look. Pin --font-mono
+     to the terminal face so every `font-mono` class matches `font-terminal`. */
   --font-terminal: 'Share Tech Mono', monospace;
+  --font-mono: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Custom Animations */
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
