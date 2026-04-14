@@ -25,16 +25,15 @@ export const TerminalButton: React.FC<TerminalButtonProps> = ({
   const [isPressed, setIsPressed] = useState(false);
 
   const sizeStyles = {
-    sm: "py-1.5 px-3 text-[11px]",
-    md: "py-2 px-4 text-[13px]",
+    sm: "py-1.5 px-3 text-[10px]",
+    md: "py-2 px-4 text-xs",
     lg: "py-3 px-6 text-sm"
   };
 
   const baseStyles = `
     btn-terminal uppercase tracking-widest font-bold border rounded
     transition-all duration-150 flex items-center justify-center gap-2
-    focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black
-    min-h-[38px]
+    focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-black
   `;
 
   const variants = {
@@ -200,11 +199,11 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({
       style={style}
       {...restProps}
     >
-      <div className="terminal-header px-4 py-2.5 flex justify-between items-center border-b border-slate-700 shrink-0">
+      <div className="terminal-header px-4 py-2.5 flex justify-between items-center border-b border-slate-700/60 shrink-0">
         <div className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/80 shadow-[0_0_8px_rgba(52,211,153,0.7)]" aria-hidden="true" />
-          {headerIcon && <i className={`fas ${headerIcon} text-amber-400 text-xs`}></i>}
-          <span className="text-[11px] uppercase tracking-[0.18em] text-slate-300 font-bold">
+          {headerIcon && <i className={`fas ${headerIcon} text-amber-500/80 text-xs`}></i>}
+          <span className="text-[11px] uppercase tracking-widest text-slate-400 font-bold">
             {formatPanelTitle(title)}
           </span>
         </div>

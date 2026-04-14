@@ -443,25 +443,12 @@ const App: React.FC = () => {
 
   // IB_CHAT open/close state for desktop layout integration
   const [isChatOpen, setIsChatOpen] = useState(false);
-  // Track how many advisor messages the player has seen so we can show a
-  // notification dot on the collapsed Machiavelli rail.
-  const [seenAdvisorCount, setSeenAdvisorCount] = useState(chatHistory.length);
-  const unseenAdvisorCount = Math.max(0, chatHistory.length - seenAdvisorCount);
-
   const handleChatClose = useCallback(() => {
       setIsChatOpen(false);
   }, []);
   const handleChatOpen = useCallback(() => {
       setIsChatOpen(true);
-      setSeenAdvisorCount(chatHistory.length);
-  }, [chatHistory.length]);
-
-  // When drawer is open, track newly-incoming messages as seen immediately.
-  useEffect(() => {
-    if (isChatOpen) {
-      setSeenAdvisorCount(chatHistory.length);
-    }
-  }, [isChatOpen, chatHistory.length]);
+  }, []);
 
   // Wrapper for warning action that also calls the context action
   const handleWarningWithContext = useCallback((warning: typeof activeWarnings[0]) => {
@@ -730,19 +717,10 @@ const App: React.FC = () => {
              )}
         </div>
         
-        {/* DESKTOP GRID LAYOUT (Hidden on Mobile).
-            Machiavelli rail is always present — 56px collapsed, ~440px when open —
-            so the advisor never eats ~20% of real estate when idle. */}
-        <div
-            className={`hidden lg:grid flex-1 min-h-0 overflow-hidden relative gap-2 p-2 ${
-              isChatOpen
-                ? 'grid-cols-[minmax(210px,260px)_minmax(420px,1fr)_minmax(220px,280px)_minmax(380px,480px)]'
-                : 'grid-cols-[minmax(210px,260px)_minmax(420px,1fr)_minmax(220px,280px)_56px]'
-            }`}
-            style={{ isolation: 'isolate' }}
-        >
+        {/* DESKTOP GRID LAYOUT (Hidden on Mobile) */}
+        <div className={`hidden lg:grid flex-1 min-h-0 overflow-hidden relative gap-2 p-2 ${isChatOpen ? 'grid-cols-[minmax(210px,260px)_minmax(420px,1fr)_minmax(220px,280px)_minmax(380px,480px)]' : 'grid-cols-[minmax(210px,260px)_minmax(420px,1fr)_minmax(220px,280px)]'}`} style={{ isolation: 'isolate' }}>
             {/* Left Panel (Comms) */}
-            <div className="rounded-lg border border-slate-700 bg-black/80 min-w-0 shrink-0 overflow-hidden">
+            <div className="rounded-lg border border-slate-700/70 bg-black/80 min-w-0 shrink-0 overflow-hidden">
                 <NpcListPanel
                   npcs={npcs}
                   selectedNpcId={selectedNpcId}
@@ -812,19 +790,19 @@ const App: React.FC = () => {
                       }}
                       aria-label={unseenActivityCount > 0 ? `Activity feed, ${unseenActivityCount} unread` : 'Activity feed'}
                       className={`
-                        terminal-focus px-3 py-2 rounded-lg border-2 text-xs font-bold uppercase
+                        terminal-focus px-3 py-2 rounded-lg border text-xs font-bold uppercase
                         inline-flex items-center gap-1.5 whitespace-nowrap
                         transition-all duration-200
                         ${showActivityFeed
-                          ? 'bg-cyan-900/60 border-cyan-400 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.35)]'
-                          : 'bg-slate-800/60 border-slate-600 text-slate-200 hover:bg-slate-700 hover:border-slate-500'
+                          ? 'bg-blue-900/50 border-blue-500/60 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.3)]'
+                          : 'bg-slate-800/50 border-slate-600/50 text-slate-400 hover:bg-slate-700/50 hover:border-slate-500'
                         }
                       `}
                     >
-                      <i className="fas fa-list-ul mr-1" aria-hidden="true"></i>
+                      <i className="fas fa-list-ul mr-1"></i>
                       <span>Activity</span>
                       {unseenActivityCount > 0 && (
-                        <span aria-hidden="true" className="px-1.5 py-0.5 bg-cyan-400 text-black text-[10px] font-bold rounded-full">
+                        <span aria-hidden="true" className="px-1.5 py-0.5 bg-blue-500 text-white text-[10px] rounded-full">
                           {unseenActivityCount > 99 ? '99+' : unseenActivityCount}
                         </span>
                       )}
@@ -834,69 +812,30 @@ const App: React.FC = () => {
             </div>
             
             {/* Right Panel (News) */}
-            <div className="rounded-lg border border-slate-700 bg-black/80 overflow-hidden min-w-0">
+            <div className="rounded-lg border border-slate-700/70 bg-black/80 overflow-hidden min-w-0">
                  <NewsTicker events={[...dynamicNews, ...NEWS_EVENTS]} systemLogs={actionLog} newspaper={blueprintAI?.newspaper} onMarkNewspaperRead={markNewspaperRead} activeGossip={blueprintAI?.reputationWeb?.activeGossip} />
             </div>
 
-            {/* Machiavelli Rail — always present on desktop; narrow when closed,
-                full chat column when open. No more "chat eats 20% when idle". */}
-            {!isChatOpen ? (
-                <button
-                    onClick={handleChatOpen}
-                    className="terminal-focus rounded-lg border border-purple-500/50 bg-slate-950/90 hover:bg-slate-900 hover:border-purple-400 min-w-0 h-full overflow-hidden flex flex-col items-center justify-between py-3 transition-colors group"
-                    aria-label={unseenAdvisorCount > 0 ? `Open Machiavelli advisor, ${unseenAdvisorCount} new message${unseenAdvisorCount > 1 ? 's' : ''}` : 'Open Machiavelli advisor'}
-                    title="Open Machiavelli advisor"
-                >
-                    {/* Top: avatar with notification dot */}
-                    <div className="relative">
-                        <div className="w-10 h-10 rounded-full bg-purple-600/30 border border-purple-400/60 flex items-center justify-center group-hover:bg-purple-600/40 transition-colors">
-                            <i className="fas fa-user-secret text-purple-200" aria-hidden="true"></i>
-                        </div>
-                        {unseenAdvisorCount > 0 && (
-                            <span
-                                className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-amber-400 text-black text-[10px] font-bold flex items-center justify-center animate-pulse"
-                                aria-hidden="true"
-                            >
-                                {unseenAdvisorCount > 9 ? '9+' : unseenAdvisorCount}
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Middle: vertical label */}
-                    <div
-                        className="text-purple-200 font-bold uppercase tracking-[0.3em] text-[10px] px-1"
-                        style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
-                    >
-                        Machiavelli
-                    </div>
-
-                    {/* Bottom: expand glyph */}
-                    <i className="fas fa-chevron-left text-purple-300 text-xs group-hover:text-purple-100 transition-colors" aria-hidden="true"></i>
-                </button>
-            ) : (
-                <div className="rounded-lg border border-purple-500/50 bg-slate-950/95 min-w-0 min-h-0 h-full overflow-hidden flex flex-col">
+            {/* Chat Panel (4th column, shown when chat is open) */}
+            {isChatOpen && (
+                <div className="rounded-lg border border-slate-700/70 bg-slate-950/95 min-w-0 min-h-0 h-full overflow-hidden flex flex-col">
                     {/* Chat Panel Header */}
-                    <div className="bg-slate-900 p-2 flex justify-between items-center border-b border-purple-500/40 shrink-0">
+                    <div className="bg-slate-800 p-2 flex justify-between items-center border-b border-amber-500/30 shrink-0">
                         <div className="flex items-center space-x-2">
-                            <div className="w-6 h-6 rounded-full bg-purple-600/30 border border-purple-400/60 flex items-center justify-center shrink-0">
-                                <i className="fas fa-user-secret text-purple-200 text-xs" aria-hidden="true"></i>
-                            </div>
-                            <span className="text-purple-100 font-bold tracking-widest text-sm">MACHIAVELLI</span>
+                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span className="text-amber-500 font-bold ml-2 tracking-widest text-sm">BLOOMBERG_IB</span>
                         </div>
                         <div className="flex items-center space-x-2">
                             <button
                                 onClick={handleChatBackToPortfolio}
-                                className="terminal-focus text-black bg-amber-300 hover:bg-amber-200 font-bold px-3 py-1 rounded-sm uppercase text-[10px] tracking-widest"
+                                className="text-slate-800 bg-amber-300 hover:bg-amber-200 font-bold px-3 py-1 rounded-sm uppercase text-[10px] tracking-widest"
                             >
                                 Portfolio
                             </button>
-                            <button
-                                onClick={handleChatClose}
-                                className="terminal-focus text-slate-300 hover:text-purple-200 p-1"
-                                title="Collapse advisor rail"
-                                aria-label="Collapse advisor rail"
-                            >
-                                <i className="fas fa-chevron-right" aria-hidden="true"></i>
+                            <button onClick={handleChatClose} className="text-slate-500 hover:text-amber-500" title="Minimize chat">
+                                <i className="fas fa-minus"></i>
                             </button>
                         </div>
                     </div>
@@ -1044,8 +983,18 @@ const App: React.FC = () => {
             </div>
         </div>
 
-        {/* Desktop Machiavelli access now lives in the always-present collapsed
-            rail within the grid, so a floating launcher would be redundant. */}
+        {/* DESKTOP CHAT LAUNCHER BUTTON (only shows when chat is closed) */}
+        {!isChatOpen && (
+            <button
+                onClick={handleChatOpen}
+                className="hidden lg:flex fixed bottom-6 right-6 bg-amber-500 text-black font-mono text-sm py-3 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-40 items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-amber-400 rounded-md"
+            >
+                <div className="relative">
+                    <i className="fas fa-terminal animate-pulse"></i>
+                </div>
+                <span className="font-bold tracking-widest">IB_CHAT // CONNECT</span>
+            </button>
+        )}
 
         <PortfolioCommandCenter
             isOpen={showPortfolioDashboard}
