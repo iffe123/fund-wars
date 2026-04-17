@@ -285,11 +285,13 @@ const EventFeed: React.FC<EventFeedProps> = ({
             </div>
           </div>
         </div>
-        <div className="mt-3 text-[11px] text-slate-500 flex items-start gap-2 leading-relaxed">
-          <i className="fas fa-chevron-down text-slate-600"></i>
-          <span>Tip: Click the chevron on any event card to collapse old events and keep new options visible.</span>
-        </div>
-        {spotlightEvent && spotlightProfile && (
+        {!priorityEvent && (
+          <div className="mt-3 text-[11px] text-slate-500 flex items-start gap-2 leading-relaxed">
+            <i className="fas fa-chevron-down text-slate-600"></i>
+            <span>Tip: Click the chevron on any event card to collapse old events and keep new options visible.</span>
+          </div>
+        )}
+        {!priorityEvent && spotlightEvent && spotlightProfile && (
           <div className="mt-4 rounded-lg border border-cyan-900/50 bg-[#08111a]/90 p-3 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -460,8 +462,8 @@ const EventFeed: React.FC<EventFeedProps> = ({
           </div>
         )}
 
-        {/* Background Messages */}
-        {backgroundMessages.length > 0 && (
+        {/* Background Messages — hidden while a priority event is pending so focus stays on the decision */}
+        {!priorityEvent && backgroundMessages.length > 0 && (
           <div className="mt-6 space-y-2 rounded-lg border border-slate-800/70 bg-black/30 p-3">
             <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">
               Background Activity

@@ -306,10 +306,13 @@ const App: React.FC = () => {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
 
-      // Number keys 1-5 switch tabs (desktop)
-      if (e.key === '1') { setActiveMobileTab('WORKSPACE'); setActiveTab('workspace'); }
-      if (e.key === '2') { setActiveMobileTab('ASSETS'); setActiveTab('assets'); }
-      if (e.key === '3') { setActiveMobileTab('DEALS'); setActiveTab('deals'); }
+      // When an event card is expanded, 1/2/3 belong to the card's choices.
+      const eventActive = document.body.dataset.eventActive === 'true';
+
+      // Number keys 1-5 switch tabs (desktop) — 1/2/3 yield to an active card.
+      if (e.key === '1' && !eventActive) { setActiveMobileTab('WORKSPACE'); setActiveTab('workspace'); }
+      if (e.key === '2' && !eventActive) { setActiveMobileTab('ASSETS'); setActiveTab('assets'); }
+      if (e.key === '3' && !eventActive) { setActiveMobileTab('DEALS'); setActiveTab('deals'); }
       if (e.key === '4') { setActiveMobileTab('RIVALS'); setActiveTab('rivals'); }
       if (e.key === '5' && founderUnlocked) { setActiveMobileTab('FOUNDER'); setActiveTab('founder'); }
 

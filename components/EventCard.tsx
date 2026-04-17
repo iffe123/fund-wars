@@ -5,7 +5,7 @@
  * This is the core building block of the event-driven RPG experience.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import type { StoryEvent, EventChoice } from '../types/rpgEvents';
 import type { PlayerStats, NPC } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -177,6 +177,40 @@ const EventCard: React.FC<EventCardProps> = ({
       onChoice(choice);
     }
   }, [onChoice]);
+
+  // Keyboard shortcuts (1/2/3) fire the matching choice when the card is
+  // expanded. While active, the App-level tab shortcuts yield via
+  // document.body.dataset.eventActive.
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    document.body.dataset.eventActive = 'true';
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (showConfirm) return;
+
+      const index = ['1', '2', '3', '4', '5'].indexOf(e.key);
+      if (index === -1) return;
+
+      const choice = event.choices[index];
+      if (!choice) return;
+
+      const { available } = checkChoiceAvailability(choice, playerStats, npcs, worldFlags);
+      if (!available) return;
+
+      e.preventDefault();
+      handleChoiceClick(choice);
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+      delete document.body.dataset.eventActive;
+    };
+  }, [isExpanded, event.choices, playerStats, npcs, worldFlags, handleChoiceClick, showConfirm]);
 
   const handleConfirm = useCallback(() => {
     const choice = event.choices.find(c => c.id === selectedChoice);
@@ -378,11 +412,12 @@ const EventCard: React.FC<EventCardProps> = ({
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Your Options
             </div>
-            {event.choices.map((choice) => {
+            {event.choices.map((choice, choiceIndex) => {
               const { available, reason } = checkChoiceAvailability(choice, playerStats, npcs, worldFlags);
               const alignment = choice.alignment || 'NEUTRAL';
               const alignStyle = alignmentStyles[alignment];
               const impactPreview = describeChoiceImpact(choice);
+              const hotkey = choiceIndex < 5 ? `${choiceIndex + 1}` : null;
 
               return (
                 <button
@@ -396,7 +431,17 @@ const EventCard: React.FC<EventCardProps> = ({
                   `}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="font-medium break-words">{choice.label}</span>
+                    <span className="font-medium break-words">
+                      {hotkey && (
+                        <span
+                          aria-hidden="true"
+                          className="mr-2 text-[10px] uppercase tracking-wider opacity-70"
+                        >
+                          [{hotkey}]
+                        </span>
+                      )}
+                      {choice.label}
+                    </span>
                     <div className="flex items-center gap-2 text-xs">
                       {choice.skillCheck && (
                         <span className="px-1.5 py-0.5 bg-yellow-900/50 text-yellow-400 rounded">
