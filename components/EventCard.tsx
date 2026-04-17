@@ -5,10 +5,27 @@
  * This is the core building block of the event-driven RPG experience.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { StoryEvent, EventChoice } from '../types/rpgEvents';
 import type { PlayerStats, NPC } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
+import { STRESS_THRESHOLDS } from '../constants/difficulty';
+
+// Classify a choice's burnout risk against current stress. Returns:
+//   'fatal'   → choice would push stress past BREAKDOWN (disable)
+//   'risky'   → burnout imminent and choice raises stress further
+//   'safe'    → otherwise
+const classifyBurnoutRisk = (
+  choice: EventChoice,
+  playerStats: PlayerStats,
+): 'fatal' | 'risky' | 'safe' => {
+  const stressDelta = choice.consequences?.stats?.stress;
+  if (typeof stressDelta !== 'number' || stressDelta <= 0) return 'safe';
+  const projected = (playerStats.stress ?? 0) + stressDelta;
+  if (projected >= STRESS_THRESHOLDS.BREAKDOWN) return 'fatal';
+  if ((playerStats.stress ?? 0) >= STRESS_THRESHOLDS.WARNING) return 'risky';
+  return 'safe';
+};
 
 /**
  * Render inline markdown (***bold italic***, **bold**, *italic*) to React nodes
@@ -165,18 +182,37 @@ const EventCard: React.FC<EventCardProps> = ({
   const [advisorExpanded, setAdvisorExpanded] = useState(
     event.stakes === 'HIGH' || event.stakes === 'CRITICAL'
   );
+  // Tracks repeated risky-choice clicks while burnout is imminent, so we can
+  // surface in-fiction terminal chatter on the third attempt (counted per
+  // choice id).
+  const riskyClickCountsRef = useRef<Record<string, number>>({});
+  const [burnoutChatter, setBurnoutChatter] = useState<string | null>(null);
 
   const style = stakeStyles[event.stakes] || stakeStyles.LOW;
   const categoryIcon = categoryIcons[event.category] || 'fa-circle-info';
 
   const handleChoiceClick = useCallback((choice: EventChoice) => {
+    const risk = classifyBurnoutRisk(choice, playerStats);
+
+    // Repeated risky clicks while burnout is imminent: surface in-fiction
+    // terminal chatter on the 3rd attempt instead of a modal.
+    if (risk === 'risky') {
+      const count = (riskyClickCountsRef.current[choice.id] ?? 0) + 1;
+      riskyClickCountsRef.current[choice.id] = count;
+      if (count >= 3) {
+        setBurnoutChatter('SYSTEM: You are running on fumes. Pick your battles.');
+      } else if (count === 2) {
+        setBurnoutChatter('SYSTEM: Risky move. Your stress is already in the red.');
+      }
+    }
+
     if (choice.requiresConfirmation) {
       setSelectedChoice(choice.id);
       setShowConfirm(true);
     } else {
       onChoice(choice);
     }
-  }, [onChoice]);
+  }, [onChoice, playerStats]);
 
   // Keyboard shortcuts (1/2/3) fire the matching choice when the card is
   // expanded. While active, the App-level tab shortcuts yield via
@@ -337,7 +373,7 @@ const EventCard: React.FC<EventCardProps> = ({
           )}
 
           {/* Machiavelli AI Advisor Panel — hide from priority/onboarding/story events (BUG A fix) */}
-          {onConsultAdvisor && !event.isOnboarding && event.type !== 'PRIORITY' && (event.advisorHints?.machiavelli || event.stakes === 'HIGH' || event.stakes === 'CRITICAL') && (
+          {onConsultAdvisor && !event.isOnboarding && event.type !== 'PRIORITY' && (event.advisorHints?.machiavelli || event.stakes === 'HIGH' || event.stakes === 'CRITICAL' || (playerStats.stress ?? 0) >= STRESS_THRESHOLDS.WARNING) && (
             <div className={`rounded-lg border overflow-hidden transition-all ${
               event.stakes === 'HIGH' || event.stakes === 'CRITICAL'
                 ? 'border-purple-500/60 bg-gradient-to-br from-purple-900/30 to-slate-900/50'
@@ -374,6 +410,11 @@ const EventCard: React.FC<EventCardProps> = ({
               {/* Advisor Content - Expandable */}
               {advisorExpanded && (
                 <div className="px-3 pb-3 border-t border-purple-500/20">
+                  {(playerStats.stress ?? 0) >= STRESS_THRESHOLDS.WARNING && (
+                    <p className="text-purple-200 text-xs italic mt-2 leading-relaxed">
+                      "You are fraying. A tired mind makes enemies cheaply. Sleep before you sign."
+                    </p>
+                  )}
                   {event.advisorHints?.machiavelli && (
                     <p className="text-purple-200 text-xs italic mt-2 leading-relaxed">
                       "{event.advisorHints.machiavelli}"
@@ -413,7 +454,12 @@ const EventCard: React.FC<EventCardProps> = ({
               Your Options
             </div>
             {event.choices.map((choice, choiceIndex) => {
-              const { available, reason } = checkChoiceAvailability(choice, playerStats, npcs, worldFlags);
+              const baseAvailability = checkChoiceAvailability(choice, playerStats, npcs, worldFlags);
+              const burnoutRisk = classifyBurnoutRisk(choice, playerStats);
+              const available = baseAvailability.available && burnoutRisk !== 'fatal';
+              const reason = burnoutRisk === 'fatal'
+                ? 'Burnout: this choice would push stress past breakdown.'
+                : baseAvailability.reason;
               const alignment = choice.alignment || 'NEUTRAL';
               const alignStyle = alignmentStyles[alignment];
               const impactPreview = describeChoiceImpact(choice);
@@ -443,6 +489,11 @@ const EventCard: React.FC<EventCardProps> = ({
                       {choice.label}
                     </span>
                     <div className="flex items-center gap-2 text-xs">
+                      {burnoutRisk !== 'safe' && (
+                        <span className="px-1.5 py-0.5 bg-amber-950/50 border border-amber-800/50 text-amber-300 rounded text-[10px] uppercase tracking-wider">
+                          [RISK]
+                        </span>
+                      )}
                       {choice.skillCheck && (
                         <span className="px-1.5 py-0.5 bg-yellow-900/50 text-yellow-400 rounded">
                           <i className="fas fa-dice mr-1"></i>
@@ -472,6 +523,15 @@ const EventCard: React.FC<EventCardProps> = ({
                 </button>
               );
             })}
+            {burnoutChatter && (
+              <p
+                className="mt-2 text-[11px] text-amber-300/80 font-mono uppercase tracking-wider"
+                role="status"
+                aria-live="polite"
+              >
+                &gt; {burnoutChatter}
+              </p>
+            )}
           </div>
 
           {/* Dismiss button for optional events */}
