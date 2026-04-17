@@ -282,21 +282,75 @@ const EventCard: React.FC<EventCardProps> = ({
   const formatStatName = (key: string): string =>
     statDisplayNames[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
 
-  const describeChoiceImpact = (choice: EventChoice): string | null => {
-    const stats = choice.consequences?.stats;
-    if (!stats) return null;
+  // Canonical display order for stat deltas so every preview reads left-to-right
+  // in the same rhythm. Anything not listed here is appended in definition order.
+  const STAT_ORDER: readonly string[] = [
+    'cash',
+    'reputation',
+    'stress',
+    'energy',
+    'health',
+    'ethics',
+    'analystRating',
+    'financialEngineering',
+    'auditRisk',
+    'score',
+    'dependency',
+  ];
 
+  const orderStatKeys = (keys: string[]): string[] => {
+    const indexed = keys.map(k => ({ key: k, idx: STAT_ORDER.indexOf(k) }));
+    indexed.sort((a, b) => {
+      if (a.idx === -1 && b.idx === -1) return a.key.localeCompare(b.key);
+      if (a.idx === -1) return 1;
+      if (b.idx === -1) return -1;
+      return a.idx - b.idx;
+    });
+    return indexed.map(i => i.key);
+  };
+
+  const describeChoiceImpact = (choice: EventChoice): string | null => {
     const parts: string[] = [];
-    for (const [key, value] of Object.entries(stats)) {
-      if (typeof value !== 'number' || value === 0) continue;
-      if (key === 'cash') {
-        parts.push(`${value > 0 ? '+' : '-'}${formatCurrency(Math.abs(value))} Cash`);
-      } else {
-        parts.push(`${value > 0 ? '+' : ''}${value} ${formatStatName(key)}`);
+    const stats = choice.consequences?.stats;
+
+    if (stats) {
+      const nonZeroKeys = Object.keys(stats).filter(k => {
+        const v = (stats as Record<string, unknown>)[k];
+        return typeof v === 'number' && v !== 0;
+      });
+      for (const key of orderStatKeys(nonZeroKeys)) {
+        const value = (stats as Record<string, number>)[key];
+        if (key === 'cash') {
+          parts.push(`${value > 0 ? '+' : '-'}${formatCurrency(Math.abs(value))} Cash`);
+        } else {
+          parts.push(`${value > 0 ? '+' : ''}${value} ${formatStatName(key)}`);
+        }
       }
     }
 
-    return parts.length > 0 ? parts.join(' • ') : null;
+    // NPC relationship / trust / mood deltas — attribute to the named person.
+    const npcEffects = choice.consequences?.npcEffects;
+    if (npcEffects && npcEffects.length > 0) {
+      for (const effect of npcEffects) {
+        const npc = npcs.find(n => n.id === effect.npcId);
+        const name = npc?.name || effect.npcId;
+        if (typeof effect.trust === 'number' && effect.trust !== 0) {
+          parts.push(`${name}: ${effect.trust > 0 ? '+' : ''}${effect.trust}% trust`);
+        }
+        if (typeof effect.relationship === 'number' && effect.relationship !== 0) {
+          parts.push(`${name}: ${effect.relationship > 0 ? '+' : ''}${effect.relationship} relationship`);
+        }
+        if (typeof effect.mood === 'number' && effect.mood !== 0) {
+          parts.push(`${name}: ${effect.mood > 0 ? '+' : ''}${effect.mood} mood`);
+        }
+      }
+    }
+
+    if (parts.length === 0) return null;
+
+    // Skill checks introduce randomness — mark with ± in the existing palette.
+    const randomMarker = choice.skillCheck ? '± ' : '';
+    return `${randomMarker}${parts.join(' • ')}`;
   };
 
   return (
