@@ -499,22 +499,6 @@ const EventFeed: React.FC<EventFeedProps> = ({
 
       {/* Footer Actions */}
       <div className="border-t border-slate-800/80 bg-[#070b10]/90 p-4 space-y-3">
-        {/* Quick Stats */}
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-          <span>
-            <i className="fas fa-bolt mr-1 text-yellow-500"></i>
-            Energy: {playerStats.energy ?? 100}
-          </span>
-          <span>
-            <i className="fas fa-brain mr-1 text-purple-500"></i>
-            Stress: {playerStats.stress ?? 0}
-          </span>
-          <span>
-            <i className="fas fa-dollar-sign mr-1 text-green-500"></i>
-            Cash: ${(playerStats.cash ?? 0).toLocaleString()}
-          </span>
-        </div>
-
         {/* Advance Week Button */}
         {canAdvanceWeek && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

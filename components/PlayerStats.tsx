@@ -88,6 +88,19 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
     return 'bg-gradient-to-r from-emerald-600 to-emerald-400';
   };
 
+  // Energy color (inverse of stress: low is bad)
+  const getEnergyColor = (energy: number) => {
+    if (energy < 20) return 'text-red-400';
+    if (energy < 40) return 'text-amber-400';
+    return 'text-emerald-400';
+  };
+
+  const getEnergyBarColor = (energy: number) => {
+    if (energy < 20) return 'bg-gradient-to-r from-red-600 to-red-400';
+    if (energy < 40) return 'bg-gradient-to-r from-amber-600 to-amber-400';
+    return 'bg-gradient-to-r from-emerald-600 to-emerald-400';
+  };
+
   return (
     <>
       {/* Time & Action Bar */}
@@ -226,8 +239,9 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
             cashFlash === 'up' ? 'bg-emerald-900/60 border-emerald-500/60 scale-105' :
             cashFlash === 'down' ? 'bg-red-900/40 border-red-600/50 scale-105' :
             'bg-emerald-950/40 border-emerald-700/40'
-          }`} title="Your bank account. Earn through salary, bonuses, and carry.">
+          }`} title="Your personal bank account. Earn through salary, bonuses, and carry.">
             <i className={`fas fa-wallet text-sm ${cashFlash === 'down' ? 'text-red-400' : 'text-emerald-400'}`}></i>
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider">Bank</span>
             <span className={`font-bold tabular-nums text-sm ${cashFlash === 'up' ? 'text-emerald-200' : cashFlash === 'down' ? 'text-red-300' : 'text-emerald-300'}`}>{formatCurrency(stats.personalFinances?.bankBalance ?? stats.cash)}</span>
             {cashFlash && (
               <i className={`fas ${cashFlash === 'up' ? 'fa-arrow-up text-emerald-400' : 'fa-arrow-down text-red-400'} text-[10px] animate-bounce`}></i>
@@ -235,8 +249,9 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           </div>
 
           {/* Dry Powder (fund capital) */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/40 border border-cyan-700/30" title="Fund capital available for new deals.">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/40 border border-cyan-700/30" title="Dry Powder — uncalled fund capital available for new deals.">
             <i className="fas fa-briefcase text-cyan-400 text-sm"></i>
+            <span className="text-[10px] text-cyan-400/70 uppercase tracking-wider">Dry</span>
             <span className="text-cyan-200 font-bold tabular-nums text-sm">
               {formatMoney(stats.fundFinances?.dryPowder || 50000000)}
             </span>
@@ -246,6 +261,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           {stats.loanBalance > 0 && (
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-950/40 border border-red-800/40" title="Outstanding debt — pay this off to avoid interest charges.">
               <i className="fas fa-skull text-red-400 text-xs"></i>
+              <span className="text-[10px] text-red-400/70 uppercase tracking-wider">Debt</span>
               <span className="text-red-300 font-bold tabular-nums text-sm">-{formatMoney(stats.loanBalance)}</span>
             </div>
           )}
@@ -260,6 +276,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
             'bg-slate-800/50 border-slate-600/40'
           }`} title="Stress — builds from overwork. At 100% you burn out.">
             <i className={`fas fa-brain ${getStressColor(stats.stress)} text-sm ${stressFlash === 'up' ? 'animate-pulse' : ''}`}></i>
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider">Stress</span>
             <div className="w-24 h-2.5 bg-slate-700 rounded-full overflow-hidden">
               <div
                 className={`h-full ${getStressBarColor(stats.stress)} transition-all duration-500`}
@@ -274,6 +291,24 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
             )}
           </div>
 
+          {/* Energy */}
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-slate-800/50 border-slate-600/40"
+            title="Energy — depletes from actions and crises. Low energy reduces performance."
+          >
+            <i className={`fas fa-bolt ${getEnergyColor(stats.energy ?? 100)} text-sm`}></i>
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider">Energy</span>
+            <div className="w-20 h-2.5 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full ${getEnergyBarColor(stats.energy ?? 100)} transition-all duration-500`}
+                style={{ width: `${Math.min(100, Math.max(0, stats.energy ?? 100))}%` }}
+              />
+            </div>
+            <span className={`font-bold tabular-nums text-sm ${getEnergyColor(stats.energy ?? 100)}`}>
+              {stats.energy ?? 100}%
+            </span>
+          </div>
+
           {/* Reputation */}
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all duration-300 ${
             repFlash === 'up' ? 'bg-blue-900/60 border-blue-500/60 scale-105' :
@@ -281,6 +316,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
             'bg-blue-950/40 border-blue-700/40'
           }`} title="Your standing in the industry. Higher = better deals and contacts.">
             <i className={`fas fa-star text-sm ${repFlash === 'up' ? 'text-yellow-400' : repFlash === 'down' ? 'text-red-400' : 'text-blue-400'}`}></i>
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider">Rep</span>
             <span className={`font-bold tabular-nums text-sm ${repFlash === 'up' ? 'text-yellow-200' : repFlash === 'down' ? 'text-red-300' : 'text-blue-200'}`}>{stats.reputation}</span>
             {repFlash && (
               <i className={`fas ${repFlash === 'up' ? 'fa-arrow-up text-emerald-400' : 'fa-arrow-down text-red-400'} text-[10px] animate-bounce`}></i>
@@ -308,6 +344,7 @@ const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVola
           {stats.auditRisk > 30 && (
             <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${stats.auditRisk >= 50 ? 'bg-red-950/40 border-red-800/40 animate-pulse' : 'bg-amber-950/30 border-amber-800/30'}`} title="Audit Risk — regulators are watching you.">
               <i className={`fas fa-magnifying-glass ${stats.auditRisk >= 50 ? 'text-red-400' : 'text-amber-400'} text-xs`}></i>
+              <span className={`text-[10px] uppercase tracking-wider ${stats.auditRisk >= 50 ? 'text-red-400/80' : 'text-amber-400/80'}`}>Audit</span>
               <span className={`text-xs font-bold ${stats.auditRisk >= 50 ? 'text-red-300' : 'text-amber-300'}`}>{stats.auditRisk}%</span>
             </div>
           )}

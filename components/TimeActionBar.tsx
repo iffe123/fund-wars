@@ -54,21 +54,34 @@ const TimeActionBar: React.FC<TimeActionBarProps> = memo(({
           {/* Divider */}
           <div className="hidden md:block w-px h-10 bg-slate-700/50"></div>
 
-          {/* Actions Remaining */}
-          <div className="flex flex-col gap-1">
+          {/* Action Points Remaining */}
+          <div
+            className="flex flex-col gap-1"
+            title={`Action Points: ${Math.floor(actionsRemaining)} remaining of ${maxActions} budgeted this week`}
+          >
             <div className="flex items-center gap-2">
               <i className="fas fa-bolt text-amber-500 text-sm"></i>
-              <span className="text-xs text-slate-400 uppercase tracking-wider">Actions</span>
-              <span className="text-sm font-bold text-white tabular-nums">
+              <span className="text-xs text-slate-400 uppercase tracking-wider">AP</span>
+              <span className="text-sm font-bold text-white tabular-nums" aria-label={`${Math.floor(actionsRemaining)} action points remaining of ${maxActions}`}>
                 {Math.floor(actionsRemaining)}/{maxActions}
               </span>
             </div>
-            {/* Action Bar */}
-            <div className="w-32 h-2 bg-slate-700/50 rounded-full overflow-hidden border border-slate-600/50">
+            {/* AP Fill Bar */}
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] text-slate-500 uppercase tracking-wider shrink-0">AP</span>
               <div
-                className={`h-full transition-all duration-300 ${getActionBarColor()}`}
-                style={{ width: `${actionFillPercent}%` }}
-              />
+                className="w-32 h-2 bg-slate-700/50 rounded-full overflow-hidden border border-slate-600/50"
+                role="progressbar"
+                aria-valuenow={Math.floor(actionsRemaining)}
+                aria-valuemin={0}
+                aria-valuemax={maxActions}
+                aria-label="Action points remaining this week"
+              >
+                <div
+                  className={`h-full transition-all duration-300 ${getActionBarColor()}`}
+                  style={{ width: `${actionFillPercent}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>
