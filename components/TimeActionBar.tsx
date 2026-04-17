@@ -18,23 +18,14 @@ const TimeActionBar: React.FC<TimeActionBarProps> = memo(({
 }) => {
   const { week, year, quarter, actionsRemaining, maxActions, isNightGrinder, actionsUsedThisWeek } = gameTime;
 
-  const remaining = Math.max(0, Math.floor(actionsRemaining));
-  const actionsUsed = Math.max(0, maxActions - remaining);
+  // Calculate action bar fill
+  const actionFillPercent = (actionsRemaining / maxActions) * 100;
 
-  // Action bar fills from empty → full based on remaining actions
-  const actionFillPercent = maxActions > 0 ? (remaining / maxActions) * 100 : 0;
-
-  // Color grammar: red = spent/threat, amber = warning, green = healthy
+  // Determine action bar color based on remaining actions
   const getActionBarColor = () => {
-    if (remaining === 0) return 'bg-red-500';
-    if (remaining <= 1) return 'bg-amber-400';
-    return 'bg-emerald-400';
-  };
-
-  const getActionTextColor = () => {
-    if (remaining === 0) return 'text-red-300';
-    if (remaining <= 1) return 'text-amber-300';
-    return 'text-emerald-300';
+    if (actionsRemaining === 0) return 'bg-red-500';
+    if (actionsRemaining <= 1) return 'bg-amber-500';
+    return 'bg-emerald-500';
   };
 
   // Get quarter display string
@@ -63,25 +54,17 @@ const TimeActionBar: React.FC<TimeActionBarProps> = memo(({
           {/* Divider */}
           <div className="hidden md:block w-px h-10 bg-slate-700/50"></div>
 
-          {/* Actions Remaining — explicit "X left of Y" framing, not "8/3" */}
-          <div className="flex flex-col gap-1" title={`${actionsUsed} of ${maxActions} actions used this week`}>
-            <div className="flex items-baseline gap-2">
-              <i className="fas fa-bolt text-amber-400 text-sm self-center"></i>
-              <span className="text-[11px] text-slate-300 uppercase tracking-wider font-bold">Actions</span>
-              <span className={`text-sm font-bold tabular-nums ${getActionTextColor()}`}>
-                {remaining}
+          {/* Actions Remaining */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <i className="fas fa-bolt text-amber-500 text-sm"></i>
+              <span className="text-xs text-slate-400 uppercase tracking-wider">Actions</span>
+              <span className="text-sm font-bold text-white tabular-nums">
+                {Math.floor(actionsRemaining)}/{maxActions}
               </span>
-              <span className="text-[11px] text-slate-400 tabular-nums">/ {maxActions} left</span>
             </div>
             {/* Action Bar */}
-            <div
-              className="w-32 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-600"
-              role="progressbar"
-              aria-valuenow={remaining}
-              aria-valuemin={0}
-              aria-valuemax={maxActions}
-              aria-label={`Actions remaining: ${remaining} of ${maxActions}`}
-            >
+            <div className="w-32 h-2 bg-slate-700/50 rounded-full overflow-hidden border border-slate-600/50">
               <div
                 className={`h-full transition-all duration-300 ${getActionBarColor()}`}
                 style={{ width: `${actionFillPercent}%` }}

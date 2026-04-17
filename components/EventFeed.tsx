@@ -265,45 +265,45 @@ const EventFeed: React.FC<EventFeedProps> = ({
   return (
     <div className={`flex flex-col h-full bg-transparent ${className}`}>
       {/* Phase Header */}
-      <div className="border-b border-slate-700 p-4 md:p-5 bg-[#070b10]/85">
+      <div className="border-b border-slate-800/80 p-4 md:p-5 bg-[#070b10]/80">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-600 flex items-center justify-center text-amber-400 shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700/70 flex items-center justify-center text-amber-400 shrink-0">
               <i className={`fas ${phaseInfo.icon}`}></i>
             </div>
             <div className="min-w-0">
-              <h2 className="font-prose font-bold text-white text-lg leading-tight">{phaseInfo.title}</h2>
-              <p className="font-prose text-sm text-slate-300 leading-relaxed">{phaseInfo.description}</p>
+              <h2 className="font-bold text-white">{phaseInfo.title}</h2>
+              <p className="text-xs text-slate-500 leading-relaxed">{phaseInfo.description}</p>
             </div>
           </div>
-          <div className="flex items-center justify-between lg:block lg:text-right gap-3 rounded-lg border border-slate-700 bg-black/40 px-3 py-2 shrink-0">
-            <div className="text-xs text-slate-300 font-mono uppercase tracking-wider">
-              Week {playerStats.gameTime?.week ?? 1} · Year {playerStats.gameTime?.year ?? 1}
+          <div className="flex items-center justify-between lg:block lg:text-right gap-3 rounded-lg border border-slate-800 bg-black/30 px-3 py-2 shrink-0">
+            <div className="text-xs text-slate-500">
+              Week {playerStats.gameTime?.week ?? 1}, Year {playerStats.gameTime?.year ?? 1}
             </div>
-            <div className={`text-sm font-bold font-mono ${apRemaining > 0 ? 'text-cyan-300' : 'text-red-300'}`}>
-              {apRemaining} action{apRemaining === 1 ? '' : 's'} left
+            <div className={`text-sm font-bold ${apRemaining > 0 ? 'text-cyan-400' : 'text-red-400'}`}>
+              {apRemaining} AP remaining
             </div>
           </div>
         </div>
-        <div className="mt-3 text-[11px] text-slate-400 flex items-start gap-2 leading-relaxed">
-          <i className="fas fa-chevron-down text-slate-500"></i>
+        <div className="mt-3 text-[11px] text-slate-500 flex items-start gap-2 leading-relaxed">
+          <i className="fas fa-chevron-down text-slate-600"></i>
           <span>Tip: Click the chevron on any event card to collapse old events and keep new options visible.</span>
         </div>
         {spotlightEvent && spotlightProfile && (
-          <div className="mt-4 rounded-lg border-2 border-cyan-700/50 bg-[#08111a]/90 p-3 space-y-3">
+          <div className="mt-4 rounded-lg border border-cyan-900/50 bg-[#08111a]/90 p-3 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-mono">This Week&apos;s Edge</div>
-                <div className="font-prose text-base font-semibold text-white leading-snug">{spotlightEvent.title}</div>
+                <div className="text-[10px] uppercase tracking-[0.25em] text-slate-500">This Week&apos;s Edge</div>
+                <div className="text-sm font-semibold text-white">{spotlightEvent.title}</div>
               </div>
               <div className={`text-xs font-bold uppercase tracking-widest ${spotlightProfile.pressure.accent}`}>
                 {spotlightProfile.pressure.label}
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-              <div className="rounded border border-red-700/60 bg-red-950/25 p-2">
-                <div className="text-[10px] uppercase tracking-wider text-red-200 font-mono font-bold">Clock</div>
-                <div className="mt-1 font-prose text-slate-100 text-sm leading-snug">
+              <div className="rounded border border-red-900/60 bg-red-950/20 p-2">
+                <div className="text-[10px] uppercase tracking-wider text-red-300/70">Clock</div>
+                <div className="mt-1 text-slate-200">
                   {spotlightEvent.expiresInWeeks === undefined
                     ? 'No hard deadline yet'
                     : spotlightEvent.expiresInWeeks === 0
@@ -311,16 +311,16 @@ const EventFeed: React.FC<EventFeedProps> = ({
                     : `${spotlightEvent.expiresInWeeks} week${spotlightEvent.expiresInWeeks > 1 ? 's' : ''} to act`}
                 </div>
               </div>
-              <div className="rounded border border-emerald-700/60 bg-emerald-950/25 p-2">
-                <div className="text-[10px] uppercase tracking-wider text-emerald-200 font-mono font-bold">Best Payoff</div>
-                <div className="mt-1 font-prose text-slate-100 text-sm leading-snug">{spotlightProfile.reward}</div>
+              <div className="rounded border border-emerald-900/60 bg-emerald-950/20 p-2">
+                <div className="text-[10px] uppercase tracking-wider text-emerald-300/70">Best Payoff</div>
+                <div className="mt-1 text-slate-200">{spotlightProfile.reward}</div>
               </div>
-              <div className="rounded border border-amber-700/60 bg-amber-950/25 p-2">
-                <div className="text-[10px] uppercase tracking-wider text-amber-200 font-mono font-bold">Costliest Miss</div>
-                <div className="mt-1 font-prose text-slate-100 text-sm leading-snug">{spotlightProfile.risk}</div>
+              <div className="rounded border border-amber-900/60 bg-amber-950/20 p-2">
+                <div className="text-[10px] uppercase tracking-wider text-amber-300/70">Costliest Miss</div>
+                <div className="mt-1 text-slate-200">{spotlightProfile.risk}</div>
               </div>
             </div>
-            <div className="font-prose text-sm text-slate-300 border-t border-slate-700 pt-2 leading-relaxed">
+            <div className="text-xs text-slate-400 border-t border-slate-800 pt-2">
               {spotlightEvent.context || spotlightEvent.hook}
             </div>
           </div>
@@ -410,10 +410,10 @@ const EventFeed: React.FC<EventFeedProps> = ({
 
       {/* Event List */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-        {/* Priority Event — the spotlight. Dominant card, glow, larger type. */}
+        {/* Priority Event - Must handle first */}
         {priorityEvent && (
           <div className="relative">
-            <div className="absolute -left-2 top-0 bottom-0 w-1 bg-amber-400 rounded-full shadow-[0_0_10px_rgba(251,191,36,0.6)]"></div>
+            <div className="absolute -left-2 top-0 bottom-0 w-1 bg-amber-500 rounded-full"></div>
             <EventCard
               event={priorityEvent}
               playerStats={playerStats}
@@ -422,31 +422,28 @@ const EventFeed: React.FC<EventFeedProps> = ({
               onChoice={(choice) => handleChoice(priorityEvent, choice)}
               onConsultAdvisor={onConsultAdvisor}
               expanded={expandedEventId === priorityEvent.id}
-              isSpotlight
               className="ml-2"
             />
           </div>
         )}
 
-        {/* Optional Events — the first one is the spotlight when there's no priority */}
+        {/* Optional Events */}
         {sortedOptional.length > 0 && (
           <div className="space-y-3">
             {!priorityEvent && (
-              <div className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.18em] flex items-center gap-2">
-                <span className="h-px flex-1 bg-slate-700" aria-hidden="true" />
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                 <span>Events Requiring Attention</span>
-                <span className="px-2 py-0.5 bg-slate-800 border border-slate-600 rounded-full text-slate-200">
+                <span className="px-2 py-0.5 bg-slate-800 rounded-full">
                   {sortedOptional.length}
                 </span>
-                <span className="h-px flex-1 bg-slate-700" aria-hidden="true" />
               </div>
             )}
             {priorityEvent && (
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mt-6">
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-6">
                 Other Events (handle priority first)
               </div>
             )}
-            {sortedOptional.map((event, index) => (
+            {sortedOptional.map((event) => (
               <EventCard
                 key={event.id}
                 event={event}
@@ -457,26 +454,24 @@ const EventFeed: React.FC<EventFeedProps> = ({
                 onDismiss={() => onDismissEvent(event.id)}
                 onConsultAdvisor={onConsultAdvisor}
                 expanded={expandedEventId === event.id && !priorityEvent}
-                isSpotlight={!priorityEvent && index === 0}
-                className={priorityEvent ? 'opacity-55 pointer-events-none' : ''}
+                className={priorityEvent ? 'opacity-60 pointer-events-none' : ''}
               />
             ))}
           </div>
         )}
 
-        {/* Background Messages — clearly ambient atmosphere, not CTAs */}
+        {/* Background Messages */}
         {backgroundMessages.length > 0 && (
-          <div className="mt-6 space-y-2 rounded-lg border border-slate-800 bg-black/40 p-3">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-              <i className="fas fa-signal text-slate-500"></i>
+          <div className="mt-6 space-y-2 rounded-lg border border-slate-800/70 bg-black/30 p-3">
+            <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">
               Background Activity
             </div>
             {backgroundMessages.map((msg, i) => (
               <div
                 key={i}
-                className="ambient-text font-prose text-xs flex items-center gap-2 py-0.5 leading-relaxed"
+                className="text-xs text-slate-500 flex items-center gap-2 py-1"
               >
-                <i className="fas fa-circle text-[6px] text-slate-600"></i>
+                <i className="fas fa-circle text-[6px] text-slate-700"></i>
                 {msg}
               </div>
             ))}
@@ -502,8 +497,24 @@ const EventFeed: React.FC<EventFeedProps> = ({
         )}
       </div>
 
-      {/* Footer Actions — no stat duplication; stats live in the top bar */}
-      <div className="border-t border-slate-700 bg-[#070b10]/90 p-4 space-y-3">
+      {/* Footer Actions */}
+      <div className="border-t border-slate-800/80 bg-[#070b10]/90 p-4 space-y-3">
+        {/* Quick Stats */}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+          <span>
+            <i className="fas fa-bolt mr-1 text-yellow-500"></i>
+            Energy: {playerStats.energy ?? 100}
+          </span>
+          <span>
+            <i className="fas fa-brain mr-1 text-purple-500"></i>
+            Stress: {playerStats.stress ?? 0}
+          </span>
+          <span>
+            <i className="fas fa-dollar-sign mr-1 text-green-500"></i>
+            Cash: ${(playerStats.cash ?? 0).toLocaleString()}
+          </span>
+        </div>
+
         {/* Advance Week Button */}
         {canAdvanceWeek && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -511,30 +522,30 @@ const EventFeed: React.FC<EventFeedProps> = ({
               onClick={handleContinue}
               disabled={!priorityEvent && sortedOptional.length === 0}
               className={`
-                choice-btn w-full py-3 rounded-lg border-2 flex items-center justify-center gap-2
+                w-full py-3 rounded border transition-all flex items-center justify-center gap-2
                 ${(!priorityEvent && sortedOptional.length === 0)
-                  ? 'border-slate-700 text-slate-500 cursor-not-allowed bg-slate-900/30'
-                  : 'border-cyan-600 text-cyan-200 bg-cyan-950/25 hover:bg-cyan-900/40 hover:border-cyan-400'
+                  ? 'border-slate-700 text-slate-600 cursor-not-allowed'
+                  : 'border-cyan-700 text-cyan-300 hover:bg-cyan-900/20 hover:border-cyan-500'
                 }
               `}
             >
               <i className="fas fa-arrow-down"></i>
-              <span className="text-xs font-bold uppercase tracking-wider">Continue Event Feed</span>
+              <span className="text-xs font-bold uppercase tracking-wide">Continue Event Feed</span>
             </button>
             <button
               data-tutorial="advance-btn"
               onClick={onAdvanceWeek}
               disabled={!!priorityEvent}
               className={`
-                choice-btn w-full py-3 rounded-lg border-2 flex items-center justify-center gap-3
+                w-full py-3 rounded border transition-all flex items-center justify-center gap-3
                 ${priorityEvent
-                  ? 'border-slate-700 text-slate-500 cursor-not-allowed bg-slate-900/30'
-                  : 'border-amber-500 text-amber-100 bg-amber-950/40 hover:bg-amber-900/50 hover:border-amber-300'
+                  ? 'border-slate-700 text-slate-600 cursor-not-allowed'
+                  : 'border-amber-600 text-amber-400 hover:bg-amber-900/30 hover:border-amber-500'
                 }
               `}
             >
               <i className={`fas fa-forward ${!priorityEvent ? 'animate-pulse' : ''}`}></i>
-              <span className="text-sm font-bold uppercase tracking-wider">
+              <span className="text-sm font-bold uppercase tracking-wide">
                 {priorityEvent ? 'Handle Priority Event First' : 'Advance to Next Week'}
               </span>
             </button>
@@ -543,7 +554,7 @@ const EventFeed: React.FC<EventFeedProps> = ({
 
         {/* Hint for priority events */}
         {priorityEvent && currentPhase === 'PRIORITY_EVENT' && (
-          <p className="text-xs text-center text-amber-300">
+          <p className="text-xs text-center text-amber-500/70">
             <i className="fas fa-exclamation-triangle mr-1"></i>
             Priority events must be resolved before advancing
           </p>
