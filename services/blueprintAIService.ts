@@ -288,6 +288,27 @@ export const updateMachiavelliState = (
   };
 };
 
+/**
+ * Tone modifier for the advisor: when stakes rise, his voice should sharpen.
+ * Callers append the result onto whatever they pass as machiavelliAddendum.
+ */
+export const getMachiavelliToneAddendum = (
+  playerStats: Pick<PlayerStats, 'stress'>,
+  context: { priorityEventActive: boolean; priorityEventStakes?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' },
+): string => {
+  const stress = playerStats.stress ?? 0;
+  const bigDealPending = context.priorityEventActive
+    && (context.priorityEventStakes === 'CRITICAL' || context.priorityEventStakes === 'HIGH');
+
+  if (stress >= 85 || bigDealPending) {
+    return `\n\nTONE DIRECTIVE: The stakes just rose. Drop the small talk. No caveats, no hedges. One or two sentences, direct and cutting. You have seen how this ends before \u2014 tell them the one thing that matters, not the five that might.`;
+  }
+  if (stress >= 70) {
+    return `\n\nTONE DIRECTIVE: They are fraying. Be shorter than usual. If you sense a self-destructive impulse, name it plainly. Do not be cruel \u2014 be the friend who tells the truth when no one else will.`;
+  }
+  return '';
+};
+
 export const getMachiavelliSystemAddendum = (state: MachiavelliState): string => {
   if (state.unmasked) {
     return `\n\nMETA-AWARENESS: The player has discovered your hidden loyalty. You are now genuinely transparent. Acknowledge past misdirections when relevant. Your tone shifts from manipulative to respectfully direct. You still have opinions \u2014 you just no longer hide your reasoning.`;

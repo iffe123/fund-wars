@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import type { PlayerStats, ChatMessage, Choice, StatChanges, CompetitiveDeal, CompanyActiveEvent, NPCDrama } from './types';
 import { SCENARIOS, NEWS_EVENTS, PREDEFINED_QUESTIONS, Z_INDEX } from './constants';
-import { getMachiavelliSystemAddendum } from './services/blueprintAIService';
+import { getMachiavelliSystemAddendum, getMachiavelliToneAddendum } from './services/blueprintAIService';
 import NewsTicker from './components/NewsTicker';
 import CommsTerminal from './components/CommsTerminal';
 import PortfolioView from './components/PortfolioView';
@@ -231,9 +231,20 @@ const App: React.FC = () => {
     addToast,
     sendNpcMessage,
     updatePlayerStats,
-    machiavelliAddendum: blueprintAI?.machiavelliState
-      ? getMachiavelliSystemAddendum(blueprintAI.machiavelliState)
-      : undefined,
+    machiavelliAddendum: (() => {
+      if (!playerStats) return undefined;
+      const base = blueprintAI?.machiavelliState
+        ? getMachiavelliSystemAddendum(blueprintAI.machiavelliState)
+        : '';
+      // Priority events are the game's high-stakes decisions by construction,
+      // so treat their presence as a big-deal signal for tone.
+      const tone = getMachiavelliToneAddendum(playerStats, {
+        priorityEventActive: Boolean(rpgState.eventQueue.priorityEvent),
+        priorityEventStakes: rpgState.eventQueue.priorityEvent ? 'HIGH' : undefined,
+      });
+      const combined = base + tone;
+      return combined.length > 0 ? combined : undefined;
+    })(),
   });
 
   // --- AUCTION STATE (from useAuctionFlow hook) ---

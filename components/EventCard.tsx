@@ -187,6 +187,9 @@ const EventCard: React.FC<EventCardProps> = ({
   // choice id).
   const riskyClickCountsRef = useRef<Record<string, number>>({});
   const [burnoutChatter, setBurnoutChatter] = useState<string | null>(null);
+  // Machiavelli idle nudge: if the card has been on screen for 30s with no
+  // resolution, his tone goes terser and he volunteers a prod.
+  const [isIdle, setIsIdle] = useState(false);
 
   const style = stakeStyles[event.stakes] || stakeStyles.LOW;
   const categoryIcon = categoryIcons[event.category] || 'fa-circle-info';
@@ -247,6 +250,17 @@ const EventCard: React.FC<EventCardProps> = ({
       delete document.body.dataset.eventActive;
     };
   }, [isExpanded, event.choices, playerStats, npcs, worldFlags, handleChoiceClick, showConfirm]);
+
+  // Idle-nudge timer. Resets whenever the card opens or identity changes.
+  useEffect(() => {
+    if (!isExpanded) {
+      setIsIdle(false);
+      return;
+    }
+    setIsIdle(false);
+    const timer = setTimeout(() => setIsIdle(true), 30_000);
+    return () => clearTimeout(timer);
+  }, [isExpanded, event.id]);
 
   const handleConfirm = useCallback(() => {
     const choice = event.choices.find(c => c.id === selectedChoice);
@@ -427,7 +441,7 @@ const EventCard: React.FC<EventCardProps> = ({
           )}
 
           {/* Machiavelli AI Advisor Panel — hide from priority/onboarding/story events (BUG A fix) */}
-          {onConsultAdvisor && !event.isOnboarding && event.type !== 'PRIORITY' && (event.advisorHints?.machiavelli || event.stakes === 'HIGH' || event.stakes === 'CRITICAL' || (playerStats.stress ?? 0) >= STRESS_THRESHOLDS.WARNING) && (
+          {onConsultAdvisor && !event.isOnboarding && event.type !== 'PRIORITY' && (event.advisorHints?.machiavelli || event.stakes === 'HIGH' || event.stakes === 'CRITICAL' || (playerStats.stress ?? 0) >= STRESS_THRESHOLDS.WARNING || isIdle) && (
             <div className={`rounded-lg border overflow-hidden transition-all ${
               event.stakes === 'HIGH' || event.stakes === 'CRITICAL'
                 ? 'border-purple-500/60 bg-gradient-to-br from-purple-900/30 to-slate-900/50'
@@ -464,6 +478,11 @@ const EventCard: React.FC<EventCardProps> = ({
               {/* Advisor Content - Expandable */}
               {advisorExpanded && (
                 <div className="px-3 pb-3 border-t border-purple-500/20">
+                  {isIdle && (
+                    <p className="text-purple-200 text-xs italic mt-2 leading-relaxed">
+                      "The room is watching you not decide. Pick something. Even the wrong answer beats standing in the doorway."
+                    </p>
+                  )}
                   {(playerStats.stress ?? 0) >= STRESS_THRESHOLDS.WARNING && (
                     <p className="text-purple-200 text-xs italic mt-2 leading-relaxed">
                       "You are fraying. A tired mind makes enemies cheaply. Sleep before you sign."
