@@ -32,6 +32,21 @@ import type {
   WeekPhase,
 } from '../types/rpgEvents';
 import { formatFlagLabel, formatStatDisplayName, humanizeIdentifier } from './presentationText';
+import { STRESS_THRESHOLDS } from '../constants/difficulty';
+
+// An event is "restorative" if it reduces stress or restores energy on any
+// choice. Used to bias the deck toward recovery options when burnout is
+// imminent. Keeps the check heuristic so content doesn't need retagging.
+const isRestorativeEvent = (event: StoryEvent): boolean => {
+  if (event.category === 'PERSONAL') return true;
+  return event.choices.some(choice => {
+    const stats = choice.consequences?.stats;
+    if (!stats) return false;
+    return (typeof stats.stress === 'number' && stats.stress < 0)
+      || (typeof stats.energy === 'number' && stats.energy > 0)
+      || (typeof stats.health === 'number' && stats.health > 0);
+  });
+};
 
 // Re-export for use in context
 export type ChoiceResult = ChoiceResultType;
@@ -478,12 +493,15 @@ const selectRandomEvent = (
 
   if (eligibleEvents.length === 0) return null;
 
-  // Weight by stakes
+  // Weight by stakes. When burnout is imminent, bias toward restorative
+  // events so the deck pushes sleep / delegation / time-off to the surface.
+  const burnoutImminent = playerStats.stress >= STRESS_THRESHOLDS.WARNING;
   const weightedEvents = eligibleEvents.flatMap(event => {
-    const weight = event.stakes === 'CRITICAL' ? 4 : 
-                   event.stakes === 'HIGH' ? 3 :
-                   event.stakes === 'MEDIUM' ? 2 : 1;
-    return Array(weight).fill(event);
+    const stakesWeight = event.stakes === 'CRITICAL' ? 4 :
+                         event.stakes === 'HIGH' ? 3 :
+                         event.stakes === 'MEDIUM' ? 2 : 1;
+    const burnoutBias = burnoutImminent && isRestorativeEvent(event) ? 3 : 1;
+    return Array(stakesWeight * burnoutBias).fill(event);
   });
 
   const selectedEvent = weightedEvents[Math.floor(Math.random() * weightedEvents.length)];

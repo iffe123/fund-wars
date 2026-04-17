@@ -5,10 +5,27 @@
  * This is the core building block of the event-driven RPG experience.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { StoryEvent, EventChoice } from '../types/rpgEvents';
 import type { PlayerStats, NPC } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
+import { STRESS_THRESHOLDS } from '../constants/difficulty';
+
+// Classify a choice's burnout risk against current stress. Returns:
+//   'fatal'   → choice would push stress past BREAKDOWN (disable)
+//   'risky'   → burnout imminent and choice raises stress further
+//   'safe'    → otherwise
+const classifyBurnoutRisk = (
+  choice: EventChoice,
+  playerStats: PlayerStats,
+): 'fatal' | 'risky' | 'safe' => {
+  const stressDelta = choice.consequences?.stats?.stress;
+  if (typeof stressDelta !== 'number' || stressDelta <= 0) return 'safe';
+  const projected = (playerStats.stress ?? 0) + stressDelta;
+  if (projected >= STRESS_THRESHOLDS.BREAKDOWN) return 'fatal';
+  if ((playerStats.stress ?? 0) >= STRESS_THRESHOLDS.WARNING) return 'risky';
+  return 'safe';
+};
 
 /**
  * Render inline markdown (***bold italic***, **bold**, *italic*) to React nodes
@@ -165,18 +182,85 @@ const EventCard: React.FC<EventCardProps> = ({
   const [advisorExpanded, setAdvisorExpanded] = useState(
     event.stakes === 'HIGH' || event.stakes === 'CRITICAL'
   );
+  // Tracks repeated risky-choice clicks while burnout is imminent, so we can
+  // surface in-fiction terminal chatter on the third attempt (counted per
+  // choice id).
+  const riskyClickCountsRef = useRef<Record<string, number>>({});
+  const [burnoutChatter, setBurnoutChatter] = useState<string | null>(null);
+  // Machiavelli idle nudge: if the card has been on screen for 30s with no
+  // resolution, his tone goes terser and he volunteers a prod.
+  const [isIdle, setIsIdle] = useState(false);
 
   const style = stakeStyles[event.stakes] || stakeStyles.LOW;
   const categoryIcon = categoryIcons[event.category] || 'fa-circle-info';
 
   const handleChoiceClick = useCallback((choice: EventChoice) => {
+    const risk = classifyBurnoutRisk(choice, playerStats);
+
+    // Repeated risky clicks while burnout is imminent: surface in-fiction
+    // terminal chatter on the 3rd attempt instead of a modal.
+    if (risk === 'risky') {
+      const count = (riskyClickCountsRef.current[choice.id] ?? 0) + 1;
+      riskyClickCountsRef.current[choice.id] = count;
+      if (count >= 3) {
+        setBurnoutChatter('SYSTEM: You are running on fumes. Pick your battles.');
+      } else if (count === 2) {
+        setBurnoutChatter('SYSTEM: Risky move. Your stress is already in the red.');
+      }
+    }
+
     if (choice.requiresConfirmation) {
       setSelectedChoice(choice.id);
       setShowConfirm(true);
     } else {
       onChoice(choice);
     }
-  }, [onChoice]);
+  }, [onChoice, playerStats]);
+
+  // Keyboard shortcuts (1/2/3) fire the matching choice when the card is
+  // expanded. While active, the App-level tab shortcuts yield via
+  // document.body.dataset.eventActive.
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    document.body.dataset.eventActive = 'true';
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (showConfirm) return;
+
+      const index = ['1', '2', '3', '4', '5'].indexOf(e.key);
+      if (index === -1) return;
+
+      const choice = event.choices[index];
+      if (!choice) return;
+
+      const { available } = checkChoiceAvailability(choice, playerStats, npcs, worldFlags);
+      if (!available) return;
+
+      e.preventDefault();
+      handleChoiceClick(choice);
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+      delete document.body.dataset.eventActive;
+    };
+  }, [isExpanded, event.choices, playerStats, npcs, worldFlags, handleChoiceClick, showConfirm]);
+
+  // Idle-nudge timer. Resets whenever the card opens or identity changes.
+  useEffect(() => {
+    if (!isExpanded) {
+      setIsIdle(false);
+      return;
+    }
+    setIsIdle(false);
+    const timer = setTimeout(() => setIsIdle(true), 30_000);
+    return () => clearTimeout(timer);
+  }, [isExpanded, event.id]);
 
   const handleConfirm = useCallback(() => {
     const choice = event.choices.find(c => c.id === selectedChoice);
@@ -212,21 +296,75 @@ const EventCard: React.FC<EventCardProps> = ({
   const formatStatName = (key: string): string =>
     statDisplayNames[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
 
-  const describeChoiceImpact = (choice: EventChoice): string | null => {
-    const stats = choice.consequences?.stats;
-    if (!stats) return null;
+  // Canonical display order for stat deltas so every preview reads left-to-right
+  // in the same rhythm. Anything not listed here is appended in definition order.
+  const STAT_ORDER: readonly string[] = [
+    'cash',
+    'reputation',
+    'stress',
+    'energy',
+    'health',
+    'ethics',
+    'analystRating',
+    'financialEngineering',
+    'auditRisk',
+    'score',
+    'dependency',
+  ];
 
+  const orderStatKeys = (keys: string[]): string[] => {
+    const indexed = keys.map(k => ({ key: k, idx: STAT_ORDER.indexOf(k) }));
+    indexed.sort((a, b) => {
+      if (a.idx === -1 && b.idx === -1) return a.key.localeCompare(b.key);
+      if (a.idx === -1) return 1;
+      if (b.idx === -1) return -1;
+      return a.idx - b.idx;
+    });
+    return indexed.map(i => i.key);
+  };
+
+  const describeChoiceImpact = (choice: EventChoice): string | null => {
     const parts: string[] = [];
-    for (const [key, value] of Object.entries(stats)) {
-      if (typeof value !== 'number' || value === 0) continue;
-      if (key === 'cash') {
-        parts.push(`${value > 0 ? '+' : '-'}${formatCurrency(Math.abs(value))} Cash`);
-      } else {
-        parts.push(`${value > 0 ? '+' : ''}${value} ${formatStatName(key)}`);
+    const stats = choice.consequences?.stats;
+
+    if (stats) {
+      const nonZeroKeys = Object.keys(stats).filter(k => {
+        const v = (stats as Record<string, unknown>)[k];
+        return typeof v === 'number' && v !== 0;
+      });
+      for (const key of orderStatKeys(nonZeroKeys)) {
+        const value = (stats as Record<string, number>)[key];
+        if (key === 'cash') {
+          parts.push(`${value > 0 ? '+' : '-'}${formatCurrency(Math.abs(value))} Cash`);
+        } else {
+          parts.push(`${value > 0 ? '+' : ''}${value} ${formatStatName(key)}`);
+        }
       }
     }
 
-    return parts.length > 0 ? parts.join(' • ') : null;
+    // NPC relationship / trust / mood deltas — attribute to the named person.
+    const npcEffects = choice.consequences?.npcEffects;
+    if (npcEffects && npcEffects.length > 0) {
+      for (const effect of npcEffects) {
+        const npc = npcs.find(n => n.id === effect.npcId);
+        const name = npc?.name || effect.npcId;
+        if (typeof effect.trust === 'number' && effect.trust !== 0) {
+          parts.push(`${name}: ${effect.trust > 0 ? '+' : ''}${effect.trust}% trust`);
+        }
+        if (typeof effect.relationship === 'number' && effect.relationship !== 0) {
+          parts.push(`${name}: ${effect.relationship > 0 ? '+' : ''}${effect.relationship} relationship`);
+        }
+        if (typeof effect.mood === 'number' && effect.mood !== 0) {
+          parts.push(`${name}: ${effect.mood > 0 ? '+' : ''}${effect.mood} mood`);
+        }
+      }
+    }
+
+    if (parts.length === 0) return null;
+
+    // Skill checks introduce randomness — mark with ± in the existing palette.
+    const randomMarker = choice.skillCheck ? '± ' : '';
+    return `${randomMarker}${parts.join(' • ')}`;
   };
 
   return (
@@ -303,7 +441,7 @@ const EventCard: React.FC<EventCardProps> = ({
           )}
 
           {/* Machiavelli AI Advisor Panel — hide from priority/onboarding/story events (BUG A fix) */}
-          {onConsultAdvisor && !event.isOnboarding && event.type !== 'PRIORITY' && (event.advisorHints?.machiavelli || event.stakes === 'HIGH' || event.stakes === 'CRITICAL') && (
+          {onConsultAdvisor && !event.isOnboarding && event.type !== 'PRIORITY' && (event.advisorHints?.machiavelli || event.stakes === 'HIGH' || event.stakes === 'CRITICAL' || (playerStats.stress ?? 0) >= STRESS_THRESHOLDS.WARNING || isIdle) && (
             <div className={`rounded-lg border overflow-hidden transition-all ${
               event.stakes === 'HIGH' || event.stakes === 'CRITICAL'
                 ? 'border-purple-500/60 bg-gradient-to-br from-purple-900/30 to-slate-900/50'
@@ -340,6 +478,16 @@ const EventCard: React.FC<EventCardProps> = ({
               {/* Advisor Content - Expandable */}
               {advisorExpanded && (
                 <div className="px-3 pb-3 border-t border-purple-500/20">
+                  {isIdle && (
+                    <p className="text-purple-200 text-xs italic mt-2 leading-relaxed">
+                      "The room is watching you not decide. Pick something. Even the wrong answer beats standing in the doorway."
+                    </p>
+                  )}
+                  {(playerStats.stress ?? 0) >= STRESS_THRESHOLDS.WARNING && (
+                    <p className="text-purple-200 text-xs italic mt-2 leading-relaxed">
+                      "You are fraying. A tired mind makes enemies cheaply. Sleep before you sign."
+                    </p>
+                  )}
                   {event.advisorHints?.machiavelli && (
                     <p className="text-purple-200 text-xs italic mt-2 leading-relaxed">
                       "{event.advisorHints.machiavelli}"
@@ -378,11 +526,17 @@ const EventCard: React.FC<EventCardProps> = ({
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Your Options
             </div>
-            {event.choices.map((choice) => {
-              const { available, reason } = checkChoiceAvailability(choice, playerStats, npcs, worldFlags);
+            {event.choices.map((choice, choiceIndex) => {
+              const baseAvailability = checkChoiceAvailability(choice, playerStats, npcs, worldFlags);
+              const burnoutRisk = classifyBurnoutRisk(choice, playerStats);
+              const available = baseAvailability.available && burnoutRisk !== 'fatal';
+              const reason = burnoutRisk === 'fatal'
+                ? 'Burnout: this choice would push stress past breakdown.'
+                : baseAvailability.reason;
               const alignment = choice.alignment || 'NEUTRAL';
               const alignStyle = alignmentStyles[alignment];
               const impactPreview = describeChoiceImpact(choice);
+              const hotkey = choiceIndex < 5 ? `${choiceIndex + 1}` : null;
 
               return (
                 <button
@@ -396,8 +550,23 @@ const EventCard: React.FC<EventCardProps> = ({
                   `}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="font-medium break-words">{choice.label}</span>
+                    <span className="font-medium break-words">
+                      {hotkey && (
+                        <span
+                          aria-hidden="true"
+                          className="mr-2 text-[10px] uppercase tracking-wider opacity-70"
+                        >
+                          [{hotkey}]
+                        </span>
+                      )}
+                      {choice.label}
+                    </span>
                     <div className="flex items-center gap-2 text-xs">
+                      {burnoutRisk !== 'safe' && (
+                        <span className="px-1.5 py-0.5 bg-amber-950/50 border border-amber-800/50 text-amber-300 rounded text-[10px] uppercase tracking-wider">
+                          [RISK]
+                        </span>
+                      )}
                       {choice.skillCheck && (
                         <span className="px-1.5 py-0.5 bg-yellow-900/50 text-yellow-400 rounded">
                           <i className="fas fa-dice mr-1"></i>
@@ -427,6 +596,15 @@ const EventCard: React.FC<EventCardProps> = ({
                 </button>
               );
             })}
+            {burnoutChatter && (
+              <p
+                className="mt-2 text-[11px] text-amber-300/80 font-mono uppercase tracking-wider"
+                role="status"
+                aria-live="polite"
+              >
+                &gt; {burnoutChatter}
+              </p>
+            )}
           </div>
 
           {/* Dismiss button for optional events */}

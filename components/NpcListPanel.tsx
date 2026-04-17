@@ -8,6 +8,15 @@ interface NpcListPanelProps {
   onSelectNpc: (npcId: string) => void;
 }
 
+// An NPC has a pending interaction when the last message in their dialogue
+// history was sent by someone other than the player — i.e. the player owes
+// a reply. Keeps "pending" purely derived state; no schema change required.
+const hasPendingInteraction = (npc: NPC): boolean => {
+  const history = npc.dialogueHistory;
+  if (!history || history.length === 0) return false;
+  return history[history.length - 1].sender !== 'player';
+};
+
 /** One-liner flavor based on mood + trust (deterministic by NPC id) */
 const getMicroFlavor = (npc: NPC): string => {
   const mood = npc.mood ?? 50;
@@ -32,22 +41,44 @@ const NpcListPanel: React.FC<NpcListPanelProps> = memo(({
     onSelectNpc(npc.id);
   };
 
+  // Bubble NPCs with a pending message to the top of the list. Stable sort —
+  // within each group, original order is preserved so family/work grouping
+  // intent upstream isn't scrambled.
+  const sortedNpcs = useMemo(() => {
+    return npcs
+      .map((npc, index) => ({ npc, index, pending: hasPendingInteraction(npc) }))
+      .sort((a, b) => {
+        if (a.pending !== b.pending) return a.pending ? -1 : 1;
+        return a.index - b.index;
+      })
+      .map(entry => entry.npc);
+  }, [npcs]);
+
   return (
     <TerminalPanel
       title="COMMS"
       className="h-full flex flex-col"
     >
       <div className="flex-1 bg-black overflow-y-auto">
-        {npcs.map(npc => {
+        {sortedNpcs.map(npc => {
           const flavor = getMicroFlavor(npc);
+          const pending = hasPendingInteraction(npc);
           return (
             <button
               key={npc.id}
               onClick={() => handleNpcClick(npc)}
-              title={flavor}
+              title={pending ? `${flavor} — waiting on your reply` : flavor}
               className={`w-full text-left p-3 border-b border-slate-800 hover:bg-slate-800 transition-colors flex items-center space-x-3 ${selectedNpcId === npc.id ? 'bg-slate-800 text-amber-500' : 'text-slate-400'}`}
             >
-              <div className={`w-2 h-2 rounded-full shrink-0 ${(npc.mood ?? 50) > 60 && (npc.trust ?? 50) > 50 ? 'bg-green-500' : ((npc.mood ?? 50) < 30 || (npc.trust ?? 50) < 30) ? 'bg-red-500' : 'bg-amber-500'}`}></div>
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <div className={`w-2 h-2 rounded-full ${(npc.mood ?? 50) > 60 && (npc.trust ?? 50) > 50 ? 'bg-green-500' : ((npc.mood ?? 50) < 30 || (npc.trust ?? 50) < 30) ? 'bg-red-500' : 'bg-amber-500'}`}></div>
+                {pending && (
+                  <div
+                    className="w-2 h-2 rounded-full bg-cyan-400"
+                    aria-label="pending reply"
+                  ></div>
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-xs">{npc.name}</div>
                 <div className="text-[10px] opacity-70">{npc.role}</div>

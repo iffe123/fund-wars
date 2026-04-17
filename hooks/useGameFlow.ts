@@ -235,29 +235,52 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
   const handleAdvanceTime = useCallback(() => {
     if (!playerStats) return;
 
-    // Loan interest is handled inside the ADVANCE_TIME reducer (weekly: APR/52).
-    // Only add stress feedback here so the player knows interest was charged.
+    // State math first, so stats stay truthful; feed/chat lines then play
+    // out as a short sequence instead of a single blast, so the terminal
+    // "chatters" for a beat. Respects prefers-reduced-motion by delivering
+    // everything instantly.
+    advanceTime();
+    generateNewDeals();
+    playSfx('KEYPRESS');
+    startWeekTransition();
+
+    const reducedMotion = typeof window !== 'undefined'
+      && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+    const beats: Array<() => void> = [];
+
     if (playerStats.loanBalance > 0) {
       const activeRate = Math.max(0.05, Math.min(0.5, playerStats.loanRate || 0.28));
       const weeklyInterest = Math.round((playerStats.loanBalance * activeRate) / 52);
       if (weeklyInterest > 0) {
-        updatePlayerStats({ stress: +3 });
-        addToast(`Your lender says hello: $${weeklyInterest.toLocaleString()} in interest.`, 'error');
-        addLogEntry(`Loan interest: $${weeklyInterest.toLocaleString()} at ${(activeRate * 100).toFixed(1)}% APR. Compound math is nobody's friend.`);
+        beats.push(() => {
+          updatePlayerStats({ stress: +3 });
+          addToast(`Your lender says hello: $${weeklyInterest.toLocaleString()} in interest.`, 'error');
+          addLogEntry(`Loan interest: $${weeklyInterest.toLocaleString()} at ${(activeRate * 100).toFixed(1)}% APR. Compound math is nobody's friend.`);
+        });
       }
     }
-    advanceTime();
-    generateNewDeals(); // Generate new competitive deals
-    playSfx('KEYPRESS');
-    addToast('Another week in the books.', 'success');
-    appendChatMessage({ sender: 'system', text: 'The week blurs past. Onto the next one.' });
+
+    beats.push(() => {
+      addToast('Another week in the books.', 'success');
+      appendChatMessage({ sender: 'system', text: 'The week blurs past. Onto the next one.' });
+    });
 
     if (activeDeals.length > 0) {
-      addToast(`${activeDeals.length} deal${activeDeals.length > 1 ? 's' : ''} waiting for your attention.`, 'info');
+      beats.push(() => {
+        addToast(`${activeDeals.length} deal${activeDeals.length > 1 ? 's' : ''} waiting for your attention.`, 'info');
+      });
     }
 
-    // Trigger week transition animation
-    startWeekTransition();
+    if (reducedMotion) {
+      beats.forEach(beat => beat());
+      return;
+    }
+
+    const BEAT_GAP_MS = 220;
+    beats.forEach((beat, i) => {
+      setTimeout(beat, i * BEAT_GAP_MS);
+    });
   }, [
     playerStats,
     activeDeals,

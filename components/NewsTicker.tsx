@@ -53,6 +53,30 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [], newspa
     'MARKET INTEL': 'text-amber-400',
   };
 
+  // Map a headline to one of the five types deterministically so the same
+  // story always carries the same label/color, regardless of scroll order.
+  // Uses a cheap string hash — no crypto needed, just stability.
+  const typeForHeadline = (headline: string): typeof headlineTypes[number] => {
+    const lower = headline.toLowerCase();
+    // Heuristic first: keywords pin the type when present.
+    if (/\b(breaking|just in|alert)\b/.test(lower)) return 'BREAKING';
+    if (/\b(rumor|whisper|sources say|reportedly)\b/.test(lower)) return 'RUMOR';
+    if (/\b(analysis|analyst|outlook)\b/.test(lower)) return 'ANALYSIS';
+    if (/\b(sector|industry|market share|segment)\b/.test(lower)) return 'SECTOR UPDATE';
+    if (/\b(intel|insider|leak|tip)\b/.test(lower)) return 'MARKET INTEL';
+    // Fallback: stable hash of the headline string.
+    let h = 0;
+    for (let i = 0; i < headline.length; i++) {
+      h = ((h << 5) - h) + headline.charCodeAt(i);
+      h |= 0;
+    }
+    return headlineTypes[Math.abs(h) % headlineTypes.length];
+  };
+
+  // Items older than STALE_AFTER positions (approximation: list is newest-
+  // first from producers) dim out. N=3 per the flow-pass brief.
+  const STALE_AFTER = 3;
+
   return (
     <div className="bg-gradient-to-b from-black to-slate-950/50 border-l border-slate-700/50 h-full flex flex-col font-mono">
       {/* Header */}
@@ -104,8 +128,10 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [], newspa
           <div className="space-y-3">
             {events.slice(0, 5).map((e, i) => {
               const sentiment = getSentiment(e.headline);
-              const hType = headlineTypes[i % headlineTypes.length];
+              const hType = typeForHeadline(e.headline);
               const hStyle = headlineTypeStyles[hType] || 'text-slate-500';
+              const actionable = Boolean(e.effect);
+              const stale = i >= STALE_AFTER;
               return (
                 <div
                   key={i}
@@ -113,6 +139,7 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [], newspa
                     border-l-2 pl-3 py-2 rounded-r transition-all duration-200
                     hover:bg-slate-800/30 cursor-default
                     ${getSentimentStyle(sentiment)}
+                    ${stale ? 'opacity-50' : ''}
                   `}
                 >
                   <div className="flex items-center justify-between text-[9px] text-slate-500 mb-1.5">
@@ -123,6 +150,9 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ events, systemLogs = [], newspa
                     <span className="text-slate-400">{getTimeAgo(i)}</span>
                   </div>
                   <div className="text-xs text-slate-200 leading-relaxed hover:text-white transition-colors">
+                    {actionable && (
+                      <span className="text-amber-400 mr-1" aria-label="actionable">&gt;</span>
+                    )}
                     {e.headline}
                   </div>
                 </div>
