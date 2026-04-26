@@ -73,14 +73,14 @@ describe('IntroSequence difficulty flow', () => {
     const onComplete = vi.fn();
     const { container, unmount } = renderIntro(onComplete);
 
-    for (const label of ['Step Inside', 'Sit Down', 'Get Started', 'Got It', 'Understood']) {
+    // Walk through the streamlined 3-slide intro: Step Inside → Get Started →
+    // Enter Sterling Partners (which opens the name-entry overlay).
+    for (const label of ['Step Inside', 'Get Started', 'Enter Sterling Partners']) {
       clickButton(container, label);
       act(() => {
         vi.advanceTimersByTime(450);
       });
     }
-
-    clickButton(container, 'Enter Sterling Partners');
 
     const input = container.querySelector('input[placeholder="Enter your name..."]') as HTMLInputElement;
     setInputValue(input, 'Alex');
@@ -108,12 +108,8 @@ describe('IntroSequence difficulty flow', () => {
     const onComplete = vi.fn();
     const { container, unmount } = renderIntro(onComplete);
 
+    // Slide 1 → slide 2 (the Assignment slide where Chad appears).
     clickButton(container, 'Step Inside');
-    act(() => {
-      vi.advanceTimersByTime(450);
-    });
-
-    clickButton(container, 'Sit Down');
     act(() => {
       vi.advanceTimersByTime(450);
     });
