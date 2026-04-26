@@ -13,10 +13,15 @@ interface PlayerStatsProps {
   onStatsClick?: () => void;
   showTimeActionBar?: boolean;
   onOpenTransparency?: () => void;
+  // Optional override for the End Week button. App.tsx passes a wrapper that
+  // also fires the paced weekly-chatter beats so the top-bar End Week path
+  // and the EventFeed Advance Week path produce the same feed updates.
+  onEndWeek?: () => void;
 }
 
-const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVolatility, onStatsClick, showTimeActionBar = true, onOpenTransparency }) => {
-  const { endWeek, toggleNightGrinder } = useGame();
+const PlayerStatsDisplay: React.FC<PlayerStatsProps> = memo(({ stats, marketVolatility, onStatsClick, showTimeActionBar = true, onOpenTransparency, onEndWeek }) => {
+  const { endWeek: contextEndWeek, toggleNightGrinder } = useGame();
+  const endWeek = onEndWeek ?? contextEndWeek;
 
   // Modal state for stats explainer
   const [showStatsModal, setShowStatsModal] = useState(false);

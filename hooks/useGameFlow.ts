@@ -13,6 +13,7 @@ import type {
 import { DealType } from '../types';
 import { DIFFICULTY_SETTINGS, SCENARIOS, COMPENSATION_BY_LEVEL } from '../constants';
 import { logEvent } from '../services/analytics';
+import { paceBeats } from '../utils/paceBeats';
 
 interface GameFlowDependencies {
   playerStats: PlayerStats | null;
@@ -52,6 +53,11 @@ interface UseGameFlowReturn {
   handleChoice: (choice: Choice) => void;
   handleScenarioFallback: () => void;
   handleAdvanceTime: () => void;
+  // Returns the user-visible chatter beats (toasts, chat lines) for a week
+  // tick. Callers that already drive the state-side of the tick (e.g. the
+  // TimeActionBar's endWeek path) can fire these to keep the feed consistent
+  // with the EventFeed Advance Week path.
+  buildWeeklyChatterBeats: () => Array<() => void>;
   handleResetSimulation: () => void;
   handleConsultMachiavelli: (event: CompanyActiveEvent | NPCDrama) => Promise<void>;
   handleWarningActionWithNavigation: (warning: any) => void;
@@ -232,20 +238,12 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
     setActiveTab('WORKSPACE');
   }, [addToast, addLogEntry, setGamePhase, setActiveTab]);
 
-  const handleAdvanceTime = useCallback(() => {
-    if (!playerStats) return;
-
-    // State math first, so stats stay truthful; feed/chat lines then play
-    // out as a short sequence instead of a single blast, so the terminal
-    // "chatters" for a beat. Respects prefers-reduced-motion by delivering
-    // everything instantly.
-    advanceTime();
-    generateNewDeals();
-    playSfx('KEYPRESS');
-    startWeekTransition();
-
-    const reducedMotion = typeof window !== 'undefined'
-      && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  // Build the user-visible chatter beats for a week tick. Same content for
+  // both end-week paths (TimeActionBar "End Week" and EventFeed "Advance
+  // Week") so the experience is consistent regardless of where the player
+  // clicked. State math is the caller's responsibility — this is feed only.
+  const buildWeeklyChatterBeats = useCallback((): Array<() => void> => {
+    if (!playerStats) return [];
 
     const beats: Array<() => void> = [];
 
@@ -272,26 +270,34 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
       });
     }
 
-    if (reducedMotion) {
-      beats.forEach(beat => beat());
-      return;
-    }
-
-    const BEAT_GAP_MS = 220;
-    beats.forEach((beat, i) => {
-      setTimeout(beat, i * BEAT_GAP_MS);
-    });
+    return beats;
   }, [
     playerStats,
     activeDeals,
     updatePlayerStats,
-    advanceTime,
-    generateNewDeals,
-    playSfx,
     addToast,
     addLogEntry,
     appendChatMessage,
+  ]);
+
+  const handleAdvanceTime = useCallback(() => {
+    if (!playerStats) return;
+
+    // State math first, so stats stay truthful; feed/chat lines then play
+    // out as a short sequence so the terminal chatters for a beat.
+    advanceTime();
+    generateNewDeals();
+    playSfx('KEYPRESS');
+    startWeekTransition();
+
+    paceBeats(buildWeeklyChatterBeats());
+  }, [
+    playerStats,
+    advanceTime,
+    generateNewDeals,
+    playSfx,
     startWeekTransition,
+    buildWeeklyChatterBeats,
   ]);
 
   const handleResetSimulation = useCallback(() => {
@@ -381,6 +387,7 @@ export const useGameFlow = (deps: GameFlowDependencies): UseGameFlowReturn => {
     handleChoice,
     handleScenarioFallback,
     handleAdvanceTime,
+    buildWeeklyChatterBeats,
     handleResetSimulation,
     handleConsultMachiavelli,
     handleWarningActionWithNavigation,

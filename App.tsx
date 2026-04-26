@@ -35,6 +35,7 @@ import { useAuctionFlow } from './hooks/useAuctionFlow';
 import { useChatHandlers } from './hooks/useChatHandlers';
 // useTutorialEffects removed - using RPG event-driven onboarding
 import { useGameFlow } from './hooks/useGameFlow';
+import { paceBeats } from './utils/paceBeats';
 import CompetitiveAuctionModal, { AuctionResult } from './components/CompetitiveAuctionModal';
 import DealMarket from './components/DealMarket';
 import RivalLeaderboard from './components/RivalLeaderboard';
@@ -117,7 +118,7 @@ const App: React.FC = () => {
     activeWarnings, activeDrama, activeCompanyEvent, eventQueue, pendingDecision,
     dismissWarning, handleWarningAction, setActiveDrama, setActiveCompanyEvent, handleEventDecision,
     // Time & Action System
-    useAction,
+    useAction, endWeek,
     // Blueprint AI
     blueprintAI,
     markNewspaperRead,
@@ -274,6 +275,7 @@ const App: React.FC = () => {
     handleChoice,
     handleScenarioFallback,
     handleAdvanceTime,
+    buildWeeklyChatterBeats,
     handleResetSimulation,
     handleConsultMachiavelli,
     handleWarningActionWithNavigation,
@@ -727,6 +729,14 @@ const App: React.FC = () => {
                     marketVolatility={marketVolatility}
                     onStatsClick={handleStatsClick}
                     onOpenTransparency={() => setShowTransparencyModal(true)}
+                    onEndWeek={() => {
+                        // Run the canonical week tick (END_WEEK + ADVANCE_TIME +
+                        // newspaper + machiavelli + gossip), then play the same
+                        // paced chatter beats the EventFeed Advance Week path
+                        // uses, so both buttons feel the same.
+                        endWeek();
+                        paceBeats(buildWeeklyChatterBeats());
+                    }}
                 />
              )}
         </div>
