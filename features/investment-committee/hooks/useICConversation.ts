@@ -248,8 +248,30 @@ export const useICConversation = (): UseICConversationReturn => {
       currentPartnerIndexRef.current = 0;
 
     } catch (error) {
-      console.error('Error submitting opening pitch:', error);
-      setError('Failed to get partner response. Please try again.');
+      console.error('Error submitting opening pitch, falling back to offline:', error);
+      // Fallback to offline question instead of showing an error
+      try {
+        const firstPartner = session.partners[0];
+        const offlineQuestion = generateOfflineQuestion(firstPartner, session.deal, 0);
+        addMessage(offlineQuestion, false, firstPartner);
+        updatePartnerMood(firstPartner.id, 'SKEPTICAL');
+
+        setSession((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            phase: 'INTERROGATION',
+            currentQuestionIndex: 1,
+            timeRemaining: prev.responseTimeSeconds,
+          };
+        });
+
+        questionCountRef.current = 1;
+        currentPartnerIndexRef.current = 0;
+      } catch (fallbackError) {
+        console.error('Offline fallback also failed:', fallbackError);
+        setError('Failed to get partner response. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -362,8 +384,42 @@ export const useICConversation = (): UseICConversationReturn => {
       });
 
     } catch (error) {
-      console.error('Error submitting response:', error);
-      setError('Failed to get partner response. Please try again.');
+      console.error('Error submitting response, falling back to offline:', error);
+      // Fallback to offline question instead of showing an error
+      try {
+        const nextPartnerIndex = (currentPartnerIndexRef.current + 1) % session.partners.length;
+        const nextPartner = session.partners[nextPartnerIndex];
+        currentPartnerIndexRef.current = nextPartnerIndex;
+        questionCountRef.current += 1;
+
+        if (questionCountRef.current >= session.maxQuestions) {
+          // All questions asked, move to deliberation so verdict can be triggered
+          setSession((prev) => {
+            if (!prev) return prev;
+            return { ...prev, phase: 'DELIBERATION' };
+          });
+          return;
+        }
+
+        const offlineQuestion = generateOfflineQuestion(
+          nextPartner,
+          session.deal,
+          questionCountRef.current
+        );
+        addMessage(offlineQuestion, false, nextPartner);
+
+        setSession((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            currentQuestionIndex: questionCountRef.current,
+            timeRemaining: prev.responseTimeSeconds,
+          };
+        });
+      } catch (fallbackError) {
+        console.error('Offline fallback also failed:', fallbackError);
+        setError('Failed to get partner response. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

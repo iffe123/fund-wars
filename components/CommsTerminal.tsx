@@ -303,7 +303,7 @@ const CommsTerminal: React.FC<CommsTerminalProps> = ({
     return (
         <button
          onClick={openTerminal}
-         className={`fixed bottom-6 right-6 bg-amber-500 text-black font-mono text-sm py-3 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-40 flex items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-amber-400 rounded-md ${tutorialStep === 4 ? 'z-[100] animate-bounce ring-2 ring-white' : ''}`}
+         className={`hidden lg:flex fixed bottom-6 right-6 bg-amber-500 text-black font-mono text-sm py-3 px-4 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-30 items-center space-x-2 transition-transform duration-200 hover:scale-105 hover:bg-amber-400 rounded-md ${tutorialStep === 4 ? 'z-[100] animate-bounce ring-2 ring-white' : ''}`}
         >
           <div className="relative">
              <i className="fas fa-terminal animate-pulse"></i>

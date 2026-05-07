@@ -58,8 +58,8 @@ export const callAI = async (options: AICallOptions): Promise<string> => {
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
 
-      // If the server says AI isn't configured, cache that
-      if (response.status === 503) {
+      // If the server says AI isn't configured or the endpoint doesn't exist, cache that
+      if (response.status === 503 || response.status === 404) {
         _aiConfigured = false;
         throw new Error('AI not configured');
       }

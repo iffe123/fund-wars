@@ -174,7 +174,7 @@ const TimeActionBar: React.FC<TimeActionBarProps> = memo(({
         <div className="mt-2 flex items-center gap-2 text-[10px] text-amber-400/80 bg-amber-950/30 px-3 py-1.5 rounded border border-amber-800/30">
           <i className="fas fa-hourglass-end text-amber-500"></i>
           <span>
-            No actions remaining this week. End the week to continue, or activate Night Grinder for one more action.
+            No weekly AP remains. Finish any open story or auction choice first; otherwise end the week to continue.
           </span>
         </div>
       )}

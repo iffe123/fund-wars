@@ -139,7 +139,7 @@ export const CompanyList: React.FC<CompanyListProps> = memo(({
 
         {/* DESKTOP TABLE VIEW */}
         <table className="hidden md:table w-full text-left border-collapse">
-          <thead className="bg-gradient-to-r from-slate-800/80 to-slate-800/60 text-slate-400 text-[11px] uppercase sticky top-0 z-10">
+          <thead className="bg-gradient-to-r from-slate-800/80 to-slate-800/60 text-slate-400 text-[11px] uppercase sticky top-0 z-[1] pointer-events-none">
             <tr>
               <th className="p-3 border-b border-slate-700/60 font-bold tracking-wider">Asset Name</th>
               <th className="p-3 border-b border-slate-700/60 font-bold tracking-wider">Type</th>

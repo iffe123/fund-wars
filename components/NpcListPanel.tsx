@@ -8,13 +8,16 @@ interface NpcListPanelProps {
   onSelectNpc: (npcId: string) => void;
 }
 
-// An NPC has a pending interaction when the last message in their dialogue
-// history was sent by someone other than the player — i.e. the player owes
-// a reply. Keeps "pending" purely derived state; no schema change required.
-const hasPendingInteraction = (npc: NPC): boolean => {
+// An NPC has a pending interaction when a real post-start message is waiting
+// on the player. Seed greetings should not light up the whole COMMS rail.
+export const hasPendingInteraction = (npc: NPC): boolean => {
   const history = npc.dialogueHistory;
   if (!history || history.length === 0) return false;
-  return history[history.length - 1].sender !== 'player';
+  const lastMessage = history[history.length - 1];
+  const isSeedGreeting = history.length === 1 && lastMessage.timestamp === undefined;
+
+  if (isSeedGreeting) return false;
+  return lastMessage.sender === 'npc' || lastMessage.sender === 'advisor';
 };
 
 /** One-liner flavor based on mood + trust (deterministic by NPC id) */
@@ -41,7 +44,7 @@ const NpcListPanel: React.FC<NpcListPanelProps> = memo(({
     onSelectNpc(npc.id);
   };
 
-  // Bubble NPCs with a pending message to the top of the list. Stable sort —
+  // Bubble NPCs with a pending message to the top of the list. Stable sort --
   // within each group, original order is preserved so family/work grouping
   // intent upstream isn't scrambled.
   const sortedNpcs = useMemo(() => {
@@ -67,7 +70,7 @@ const NpcListPanel: React.FC<NpcListPanelProps> = memo(({
             <button
               key={npc.id}
               onClick={() => handleNpcClick(npc)}
-              title={pending ? `${flavor} — waiting on your reply` : flavor}
+              title={pending ? `${flavor} - waiting on your reply` : flavor}
               className={`w-full text-left p-3 border-b border-slate-800 hover:bg-slate-800 transition-colors flex items-center space-x-3 ${selectedNpcId === npc.id ? 'bg-slate-800 text-amber-500' : 'text-slate-400'}`}
             >
               <div className="flex flex-col items-center gap-1 shrink-0">

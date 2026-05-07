@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Z_INDEX } from '../constants';
-import { TerminalButton, TerminalPanel } from './TerminalUI';
+import { TerminalButton } from './TerminalUI';
 import { useHaptic } from '../hooks/useHaptic';
 
 interface AuctionModalProps {
@@ -12,35 +12,44 @@ interface AuctionModalProps {
   onClose: () => void;
 }
 
-const AuctionModal: React.FC<AuctionModalProps> = ({ companyName, initialBid, rivalName, onComplete, onClose }) => {
+const AuctionModal: React.FC<AuctionModalProps> = ({ companyName, initialBid, rivalName, onComplete }) => {
   const { triggerImpact } = useHaptic();
   const [currentBid, setCurrentBid] = useState(initialBid);
-  const [playerBid, setPlayerBid] = useState(initialBid);
   const [turn, setTurn] = useState<'PLAYER' | 'RIVAL'>('RIVAL');
   const [timer, setTimer] = useState(100); // percentage
+  const [timerExpired, setTimerExpired] = useState(false);
   const [log, setLog] = useState<string[]>([`> AUCTION_INIT: ${companyName}`, `> OPENING_BID: $${(initialBid / 1000000).toFixed(1)}M`]);
   const [isOver, setIsOver] = useState(false);
+  const completedRef = useRef(false);
 
   // Define handlers first (before useEffects that use them)
-  const handleWin = useCallback(() => {
+  const completeAuction = useCallback((success: boolean, finalBid: number) => {
+      if (completedRef.current) return;
+      completedRef.current = true;
       setIsOver(true);
+      setTimeout(() => onComplete(success, finalBid), 1500);
+  }, [onComplete]);
+
+  const handleWin = useCallback(() => {
+      if (completedRef.current) return;
       triggerImpact('MEDIUM');
       setLog(prev => [...prev, `> AUCTION CLOSED. WINNER: YOU`]);
-      setTimeout(() => onComplete(true, currentBid), 2000);
-  }, [currentBid, onComplete, triggerImpact]);
+      completeAuction(true, currentBid);
+  }, [completeAuction, currentBid, triggerImpact]);
 
   const handleLoss = useCallback(() => {
-      setIsOver(true);
+      if (completedRef.current) return;
       triggerImpact('HEAVY'); // Losing hurts
       setLog(prev => [...prev, `> AUCTION CLOSED. WINNER: ${rivalName.toUpperCase()}`]);
-      setTimeout(() => onComplete(false, currentBid), 2000);
-  }, [currentBid, onComplete, rivalName, triggerImpact]);
+      completeAuction(false, currentBid);
+  }, [completeAuction, currentBid, rivalName, triggerImpact]);
 
   const handleBid = (amount: number) => {
+      if (isOver || turn !== 'PLAYER') return;
       const newBid = currentBid + amount;
-      setPlayerBid(newBid);
       setCurrentBid(newBid);
       setLog(prev => [...prev, `> YOU BID $${(newBid/1000000).toFixed(1)}M`]);
+      setTimerExpired(false);
       setTurn('RIVAL');
   };
 
@@ -64,6 +73,7 @@ const AuctionModal: React.FC<AuctionModalProps> = ({ companyName, initialBid, ri
              triggerImpact('HEAVY'); // Rival bids are intense
              setTurn('PLAYER');
              setTimer(100);
+             setTimerExpired(false);
         } else {
              // Rival Folds
              setLog(prev => [...prev, `> ${rivalName.toUpperCase()} WITHDRAWS`]);
@@ -80,19 +90,20 @@ const AuctionModal: React.FC<AuctionModalProps> = ({ companyName, initialBid, ri
     if (turn === 'PLAYER') {
         const interval = setInterval(() => {
             setTimer(prev => {
-                if (prev <= 0) {
+                if (prev <= 1) {
                     clearInterval(interval);
-                    handleLoss(); // Time out
+                    setTimerExpired(true);
                     return 0;
                 }
-                return prev - 1; // 100 ticks = ~10s if 100ms interval
+                return prev - 1; // 100 ticks = ~30s at the current interval
             });
-        }, 100);
+        }, 300);
         return () => clearInterval(interval);
     } else {
         setTimer(100); // Reset when not player turn
+        setTimerExpired(false);
     }
-  }, [turn, isOver, handleLoss]);
+  }, [turn, isOver]);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm p-4" style={{ zIndex: Z_INDEX.modal }}>
@@ -119,6 +130,11 @@ const AuctionModal: React.FC<AuctionModalProps> = ({ companyName, initialBid, ri
                     <div className="mb-6">
                         <div className="h-1 bg-slate-800 rounded-full overflow-hidden mb-2">
                             <div className="h-full bg-red-500 transition-all duration-100 ease-linear" style={{ width: `${timer}%` }}></div>
+                        </div>
+                        <div className={`mb-3 text-[10px] font-mono uppercase tracking-wider ${timerExpired ? 'text-amber-300' : 'text-slate-500'}`}>
+                            {timerExpired
+                              ? 'Decision paused. Choose Match, Bully, or Fold to continue.'
+                              : 'Auction reaction. This forced choice does not spend AP.'}
                         </div>
                         <div className="flex justify-between gap-4">
                              <TerminalButton 

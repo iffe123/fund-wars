@@ -7,7 +7,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import type { PortfolioCompany, PlayerLevel } from '../../../types';
-import type { ICPhase, ICVerdict } from '../types/icTypes';
+import type { ICVerdict } from '../types/icTypes';
 import { IC_CONSTANTS } from '../types/icTypes';
 import { useICConversation } from '../hooks/useICConversation';
 import { useICTimer } from '../hooks/useICTimer';
@@ -50,6 +50,7 @@ export const ICMeetingScreen: React.FC<ICMeetingScreenProps> = ({
     acceptVerdict,
     pushBackOnVerdict,
   } = useICConversation();
+  const partnerQuestionTarget = session ? Math.max(1, session.maxQuestions - 1) : 1;
 
   const timer = useICTimer(() => {
     // Timer expired - force submit or move on
@@ -151,7 +152,7 @@ export const ICMeetingScreen: React.FC<ICMeetingScreenProps> = ({
             <div className="text-lg font-bold text-slate-200">IC Meeting: {deal.name}</div>
             <div className="text-xs text-slate-500">
               {session.phase === 'OPENING' && 'Opening Pitch'}
-              {session.phase === 'INTERROGATION' && `Question ${session.currentQuestionIndex} of ${session.maxQuestions}`}
+              {session.phase === 'INTERROGATION' && `Question ${Math.min(session.currentQuestionIndex, partnerQuestionTarget)} of ${partnerQuestionTarget}`}
               {session.phase === 'DELIBERATION' && 'Committee Deliberating...'}
             </div>
           </div>
@@ -217,7 +218,7 @@ export const ICMeetingScreen: React.FC<ICMeetingScreenProps> = ({
               placeholder={
                 showOpeningInput
                   ? 'Present your investment thesis. Be specific about the opportunity, value creation plan, and key risks...'
-                  : 'Respond to the question. Be specific and reference the deal details...'
+                  : 'Answer the exact question first, then tie it back to the thesis and one hard number...'
               }
               onSubmit={showOpeningInput ? handleOpeningPitch : handleResponse}
               disabled={uiState.isLoading}

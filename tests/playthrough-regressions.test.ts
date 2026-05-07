@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createEventMap } from '../constants/rpgContent';
 import { NORMAL_STATS } from '../constants/player';
 import { checkChoiceRequirements } from '../utils/eventQueueManager';
+import { hasPendingInteraction } from '../components/NpcListPanel';
 import {
   formatStatDisplayName,
   getCanonicalSpeakerName,
@@ -43,6 +44,50 @@ describe('April 5 playthrough regressions', () => {
   it('formats stat labels into player-facing copy', () => {
     expect(formatStatDisplayName('analystRating')).toBe('Analyst Rating');
     expect(formatStatDisplayName('financialEngineering')).toBe('Financial Engineering');
+    expect(formatStatDisplayName('riskManagement')).toBe('Risk Management');
+    expect(formatStatDisplayName('dealExecution')).toBe('Deal Execution');
+  });
+
+  it('does not mark initial NPC seed greetings as pending replies', () => {
+    expect(
+      hasPendingInteraction({
+        id: 'sarah',
+        name: 'Sarah',
+        role: 'Senior Analyst',
+        avatar: 'fa-glasses',
+        relationship: 60,
+        mood: 65,
+        trust: 60,
+        traits: [],
+        memories: [],
+        isRival: false,
+        dialogueHistory: [
+          { sender: 'npc', senderName: 'Sarah', text: 'Welcome to the desk.' },
+        ],
+      })
+    ).toBe(false);
+  });
+
+  it('marks real NPC follow-ups as pending after the player starts a thread', () => {
+    expect(
+      hasPendingInteraction({
+        id: 'sarah',
+        name: 'Sarah',
+        role: 'Senior Analyst',
+        avatar: 'fa-glasses',
+        relationship: 60,
+        mood: 65,
+        trust: 60,
+        traits: [],
+        memories: [],
+        isRival: false,
+        dialogueHistory: [
+          { sender: 'npc', senderName: 'Sarah', text: 'Welcome to the desk.' },
+          { sender: 'player', senderName: 'Alex', text: 'Can you review PackFancy?' },
+          { sender: 'npc', senderName: 'Sarah', text: 'Yes. Patent 8829 matters.', timestamp: Date.now() },
+        ],
+      })
+    ).toBe(true);
   });
 
   it('normalizes legacy story copy to canonical names', () => {

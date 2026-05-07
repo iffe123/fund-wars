@@ -403,7 +403,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
     const company = portfolio.find(c => c.id === companyId);
     if (!company) return;
 
-    if (tutorialStep === 0 && !useAction('SUBMIT_IOI')) {
+    if (tutorialStep === 0 && !useAction('FINAL_BID')) {
       return;
     }
 
@@ -1218,7 +1218,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = memo(({ playerStats, onActio
                   }`}></i>
                   {getSelectedCompanyStatus()}
                 </div>
-                {(playerStats.gameTime?.actionsRemaining || 0) === 0 && tutorialStep === 0 && (
+                {(playerStats.gameTime?.actionsRemaining || 0) === 0 && tutorialStep === 0 && selectedDealPhase !== 'BIDDING' && (
                   <span className="text-xs text-red-400 font-bold">
                     <i className="fas fa-exclamation-circle mr-1"></i>
                     NO ACTIONS - ADVANCE WEEK

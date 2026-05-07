@@ -6,6 +6,7 @@
 
 import React from 'react';
 import type { ICVerdict, ICPartner, ICOutcome } from '../types/icTypes';
+import { formatStatDisplayName } from '../../../utils/presentationText';
 
 interface ICVerdictScreenProps {
   verdict: ICVerdict;
@@ -218,7 +219,7 @@ export const ICVerdictScreen: React.FC<ICVerdictScreenProps> = ({
                   key={skill}
                   className="px-2 py-1 bg-emerald-950/30 border border-emerald-700/30 rounded text-[10px] text-emerald-400"
                 >
-                  +{points} {skill}
+                  +{points} {formatStatDisplayName(skill)}
                 </div>
               )
             ))}

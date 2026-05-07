@@ -12,6 +12,10 @@ const STAT_DISPLAY_NAMES: Record<string, string> = {
   dependency: 'Dependency',
   dealcraft: 'Deal Craft',
   politics: 'Politics',
+  valuation: 'Valuation',
+  negotiation: 'Negotiation',
+  riskManagement: 'Risk Management',
+  dealExecution: 'Deal Execution',
 };
 
 const STORY_COPY_REPLACEMENTS: Array<[RegExp, string]> = [

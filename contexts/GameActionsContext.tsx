@@ -87,7 +87,7 @@ export const GameActionsProvider: React.FC<{ children: ReactNode }> = ({ childre
             payload: { 
                 id: npcId, 
                 updates: {
-                    dialogueHistory: [...npc.dialogueHistory, { sender, senderName, text: message }],
+                    dialogueHistory: [...npc.dialogueHistory, { sender, senderName, text: message, timestamp: Date.now() }],
                     lastContactTick: sender === 'player' ? (state.playerStats?.timeCursor ?? 0) : npc.lastContactTick
                 }
             } 
